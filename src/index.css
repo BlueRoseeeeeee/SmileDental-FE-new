@@ -1,0 +1,322 @@
+/* Import Ant Design styles */
+@import 'antd/dist/reset.css';
+
+/* Tailwind CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Custom CSS Variables */
+:root {
+  --primary-color: #1890ff;
+  --primary-hover: #40a9ff;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --error-color: #ff4d4f;
+  --text-primary: #262626;
+  --text-secondary: #8c8c8c;
+  --border-color: #d9d9d9;
+  --background-light: #fafafa;
+  --background-white: #ffffff;
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Ant Design Theme Customization */
+.ant-layout {
+  background: var(--background-light);
+}
+
+.ant-layout-sider {
+  background: var(--background-white) !important;
+  box-shadow: var(--shadow-medium) !important;
+  border-right: 1px solid var(--border-color) !important;
+}
+
+.ant-layout-header {
+  background: var(--background-white) !important;
+  box-shadow: var(--shadow-light) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 0 24px !important;
+  height: 64px !important;
+  line-height: 64px !important;
+}
+
+.ant-layout-content {
+  background: var(--background-light) !important;
+  padding: 24px !important;
+}
+
+/* Menu Customization */
+.ant-menu {
+  background: transparent !important;
+  border: none !important;
+}
+
+.ant-menu-item {
+  margin: 4px 8px !important;
+  border-radius: var(--border-radius) !important;
+  transition: all 0.3s ease !important;
+  height: 40px !important;
+  line-height: 40px !important;
+}
+
+.ant-menu-item:hover {
+  background: rgba(24, 144, 255, 0.08) !important;
+  color: var(--primary-color) !important;
+}
+
+.ant-menu-item-selected {
+  background: var(--primary-color) !important;
+  color: white !important;
+  box-shadow: var(--shadow-light) !important;
+}
+
+.ant-menu-item-selected:hover {
+  background: var(--primary-hover) !important;
+  color: white !important;
+}
+
+/* Card Customization */
+.ant-card {
+  border-radius: var(--border-radius-lg) !important;
+  box-shadow: var(--shadow-light) !important;
+  border: 1px solid var(--border-color) !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-card:hover {
+  box-shadow: var(--shadow-medium) !important;
+  transform: translateY(-2px) !important;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 16px 24px !important;
+}
+
+.ant-card-body {
+  padding: 24px !important;
+}
+
+/* Button Customization */
+.ant-btn {
+  border-radius: var(--border-radius) !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  box-shadow: none !important;
+}
+
+.ant-btn-primary {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: var(--shadow-light) !important;
+}
+
+.ant-btn-primary:hover {
+  background: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-medium) !important;
+}
+
+.ant-btn-lg {
+  height: 40px !important;
+  padding: 0 24px !important;
+  font-size: 16px !important;
+}
+
+/* Input Customization */
+.ant-input {
+  border-radius: var(--border-radius) !important;
+  border: 1px solid var(--border-color) !important;
+  transition: all 0.3s ease !important;
+  height: 40px !important;
+}
+
+.ant-input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+.ant-input-affix-wrapper {
+  border-radius: var(--border-radius) !important;
+  border: 1px solid var(--border-color) !important;
+  transition: all 0.3s ease !important;
+  height: 40px !important;
+}
+
+.ant-input-affix-wrapper:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* Form Customization */
+.ant-form-item-label > label {
+  font-weight: 500 !important;
+  color: var(--text-primary) !important;
+}
+
+/* Typography Customization */
+.ant-typography {
+  color: var(--text-primary) !important;
+}
+
+.ant-typography.ant-typography-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* Avatar Customization */
+.ant-avatar {
+  box-shadow: var(--shadow-light) !important;
+}
+
+/* Badge Customization */
+.ant-badge-count {
+  background: var(--error-color) !important;
+  box-shadow: var(--shadow-light) !important;
+}
+
+/* Progress Customization */
+.ant-progress-bg {
+  background: var(--primary-color) !important;
+}
+
+/* Steps Customization */
+.ant-steps-item-process .ant-steps-item-icon {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.ant-steps-item-finish .ant-steps-item-icon {
+  background: var(--success-color) !important;
+  border-color: var(--success-color) !important;
+}
+
+/* Alert Customization */
+.ant-alert {
+  border-radius: var(--border-radius) !important;
+  border: none !important;
+  box-shadow: var(--shadow-light) !important;
+}
+
+/* Drawer Customization */
+.ant-drawer-content {
+  background: var(--background-white) !important;
+}
+
+.ant-drawer-header {
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* Dropdown Customization */
+.ant-dropdown-menu {
+  border-radius: var(--border-radius-lg) !important;
+  box-shadow: var(--shadow-heavy) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* Utility Classes */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.primary-gradient {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+}
+
+.success-gradient {
+  background: linear-gradient(135deg, var(--success-color) 0%, #389e0d 100%);
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ant-layout-content {
+    padding: 16px !important;
+  }
+  
+  .ant-card-body {
+    padding: 16px !important;
+  }
+  
+  .ant-layout-header {
+    padding: 0 16px !important;
+  }
+}
