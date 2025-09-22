@@ -51,6 +51,9 @@ import {
 } from '@mui/icons-material';
 import { userService } from '../../services/userService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import AddEmployeeForm from './AddEmployeeForm.jsx';
+import EmployeeDetailModal from './EmployeeDetailModal.jsx';
+import EditEmployeeForm from './EditEmployeeForm.jsx';
 
 const UserManagement = () => {
   const { user: currentUser } = useAuth();
@@ -61,6 +64,9 @@ const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
   // Fetch users
@@ -105,6 +111,26 @@ const UserManagement = () => {
         setSnackbar({ open: true, message: 'Có lỗi xảy ra khi xóa người dùng', severity: 'error' });
       }
     }
+  };
+
+  const handleAddEmployeeSuccess = () => {
+    fetchUsers(currentPage, selectedRole, searchTerm);
+    setSnackbar({ open: true, message: 'Thêm nhân viên thành công!', severity: 'success' });
+  };
+
+  const handleViewUser = (userId) => {
+    setSelectedUserId(userId);
+    setShowDetailModal(true);
+  };
+
+  const handleEditUser = (userId) => {
+    setSelectedUserId(userId);
+    setShowEditModal(true);
+  };
+
+  const handleEditSuccess = () => {
+    fetchUsers(currentPage, selectedRole, searchTerm);
+    setSnackbar({ open: true, message: 'Cập nhật thông tin nhân viên thành công!', severity: 'success' });
   };
 
   const getRoleConfig = (role) => {
@@ -343,12 +369,20 @@ const UserManagement = () => {
                       <TableCell align="right">
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                           <Tooltip title="Xem chi tiết">
-                            <IconButton size="small" color="primary">
+                            <IconButton 
+                              size="small" 
+                              color="primary"
+                              onClick={() => handleViewUser(user._id)}
+                            >
                               <VisibilityIcon />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Chỉnh sửa">
-                            <IconButton size="small" color="success">
+                            <IconButton 
+                              size="small" 
+                              color="success"
+                              onClick={() => handleEditUser(user._id)}
+                            >
                               <EditIcon />
                             </IconButton>
                           </Tooltip>
@@ -388,24 +422,28 @@ const UserManagement = () => {
         )}
       </Card>
 
-      {/* Add User Dialog */}
-      <Dialog open={showAddUser} onClose={() => setShowAddUser(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Typography variant="h6" component="div">
-            Thêm nhân viên mới
-          </Typography>
-        </DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Tính năng này đang được phát triển. Hiện tại nhân viên có thể đăng ký tài khoản thông qua trang đăng ký.
-          </Alert>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowAddUser(false)}>
-            Đóng
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Add Employee Form */}
+      <AddEmployeeForm
+        open={showAddUser}
+        onClose={() => setShowAddUser(false)}
+        onSuccess={handleAddEmployeeSuccess}
+      />
+
+      {/* Employee Detail Modal */}
+      <EmployeeDetailModal
+        open={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        userId={selectedUserId}
+        onEdit={handleEditUser}
+      />
+
+      {/* Edit Employee Form */}
+      <EditEmployeeForm
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        userId={selectedUserId}
+        onSuccess={handleEditSuccess}
+      />
 
       {/* Snackbar for notifications */}
       <Snackbar

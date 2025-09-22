@@ -40,11 +40,6 @@ export const userService = {
     return response.data;
   },
 
-  createUser: async (userData) => {
-    const response = await api.post('/user/create', userData);
-    return response.data;
-  },
-
   deleteUser: async (userId) => {
     const response = await api.delete(`/user/${userId}`);
     return response.data;
@@ -105,6 +100,12 @@ export const userService = {
   // Batch operations
   getStaffByIds: async (ids) => {
     const response = await api.post('/user/staff/batch', { ids });
+    return response.data;
+  },
+
+  // Create new employee (Admin/Manager only)
+  createEmployee: async (employeeData) => {
+    const response = await api.post('/auth/register', employeeData);
     return response.data;
   },
 };
