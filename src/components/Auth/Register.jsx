@@ -14,12 +14,13 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const Register = () => {
-  const [step, setStep] = useState(0); // 0: Send OTP, 1: Enter OTP & Complete Registration
+  const [step, setStep] = useState(0); // 0: Send OTP, 1: Enter OTP, 2: Personal Info, 3: Create Password
   const [email, setEmail] = useState('');
   const [otpSent, setOtpSent] = useState(false);
 
@@ -40,11 +41,38 @@ const Register = () => {
     }
   };
 
-  // Step 2: Complete Registration
+  // Step 2: Verify OTP
+  const handleVerifyOTP = async (values) => {
+    try {
+      clearError();
+      // Lưu thông tin OTP và chuyển sang step 3
+      setStep(2);
+    } catch (err) {
+      // Error is handled by AuthContext
+    }
+  };
+
+  // Step 3: Personal Information
+  const handlePersonalInfo = async (values) => {
+    try {
+      clearError();
+      // Lưu thông tin cá nhân và chuyển sang step 4
+      setStep(3);
+    } catch (err) {
+      // Error is handled by AuthContext
+    }
+  };
+
+  // Step 4: Create Password & Complete Registration
   const handleRegister = async (values) => {
     try {
       clearError();
-      await registerUser(values);
+      // Tự động set role là 'patient' cho người dùng đăng ký
+      const userData = {
+        ...values,
+        role: 'patient'
+      };
+      await registerUser(userData);
       navigate('/login', {
         state: { message: 'Đăng ký thành công! Vui lòng đăng nhập.' },
       });
@@ -59,65 +87,237 @@ const Register = () => {
       description: 'Nhập email để nhận mã OTP',
     },
     {
-      title: 'Hoàn thành đăng ký',
-      description: 'Nhập thông tin cá nhân',
+      title: 'Xác thực OTP',
+      description: 'Nhập mã OTP để xác thực',
+    },
+    {
+      title: 'Thông tin cá nhân',
+      description: 'Nhập thông tin cơ bản',
+    },
+    {
+      title: 'Tạo mật khẩu',
+      description: 'Tạo mật khẩu bảo mật',
     },
   ];
 
   return (
+    <>
+      <style>
+        {`
+          .register-steps .ant-steps-item {
+            margin-right: 48px !important;
+            flex: 1 !important;
+            min-width: 120px !important;
+          }
+          .register-steps .ant-steps-item:last-child {
+            margin-right: 0 !important;
+          }
+          .register-steps .ant-steps-item-title {
+            font-size: 13px !important;
+            line-height: 1.3 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+          .register-steps .ant-steps-item-description {
+            font-size: 11px !important;
+            margin-top: 2px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+          .register-steps .ant-steps-item-icon {
+            margin-right: 8px !important;
+          }
+          
+          /* Responsive cho header/footer */
+          @media (max-width: 1200px) {
+            .register-container {
+              max-width: 100% !important;
+              margin: 0 !important;
+            }
+          }
+          
+          @media (max-width: 768px) {
+            .register-steps .ant-steps-item {
+              margin-right: 16px !important;
+              min-width: 80px !important;
+            }
+            .register-steps .ant-steps-item-title {
+              font-size: 11px !important;
+            }
+            .register-steps .ant-steps-item-description {
+              font-size: 10px !important;
+            }
+            
+            .register-container {
+              flex-direction: column !important;
+              min-height: auto !important;
+            }
+            
+            .register-image {
+              flex: none !important;
+              height: 300px !important;
+            }
+            
+            .register-form {
+              flex: none !important;
+              padding: 24px !important;
+            }
+          }
+        `}
+      </style>
     <div style={{ 
       minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: '#bfedfc', // Màu xanh nhạt như yêu cầu
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        padding: '20px 0' // Thêm padding để có không gian cho header/footer
+      }}>
+      <div 
+        className="register-container"
+        style={{ 
+          width: '100%', 
+          maxWidth: '1400px', // Giới hạn chiều rộng tối đa
+          display: 'flex',
+          background: 'white',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          overflow: 'hidden',
+          minHeight: 'calc(100vh - 40px)' // Trừ đi padding
+        }}>
+
+         {/* Hình ảnh bên trái */}
+         <div 
+           className="register-image"
+           style={{ 
+             flex: 1, 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
-      padding: '16px' 
+             padding: '24px',
+             background: '#bfedfc' // Thêm màu nền cho phần hình ảnh
     }}>
-      <div style={{ width: '100%', maxWidth: '800px' }}>
-        <Card 
+          <img 
+            src={registerImage} 
+            alt="Register" 
           style={{ 
-            borderRadius: '16px',
-            background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(10px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-          }}
-        >
+              width: '100%', 
+              height: 'auto',
+              maxHeight: '500px',
+              objectFit: 'contain'
+            }} 
+          />
+        </div>
+
+        {/* Form bên phải */}
+        <div 
+          className="register-form"
+          style={{ 
+            flex: 1, 
+            padding: '48px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center'
+          }}>
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <div style={{ 
-                width: '80px', 
-                height: '80px', 
-                borderRadius: '50%', 
-                background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
-              }}>
-                <span style={{ fontSize: '32px' }}>🦷</span>
-              </div>
-            </div>
-            <Title level={2} style={{ marginBottom: '8px' }}>
-              Đăng ký tài khoản
+          <div style={{ textAlign: 'left', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <Title level={2} style={{ marginBottom: '4px', color: '#2e7d32' }}>
+                  ĐĂNG KÝ
             </Title>
             <Text type="secondary">
               Tạo tài khoản mới để sử dụng hệ thống Smile Dental
             </Text>
+              </div>
+            </div>
           </div>
 
           {/* Steps */}
-          <div style={{ marginBottom: '32px' }}>
-            <Steps
-              current={step}
-              items={steps}
-            />
+          <div style={{ 
+            marginBottom: '32px',
+            padding: '0 24px'
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              width: '100%',
+              gap: '16px'
+            }}>
+              {steps.map((stepItem, index) => (
+                <div key={index} style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  minWidth: '120px'
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '8px',
+                    backgroundColor: index < step ? '#4caf50' : index === step ? '#2e7d32' : '#d9d9d9',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}>
+                    {index < step ? '✓' : index + 1}
+                  </div>
+                  <div style={{
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    color: index <= step ? '#2e7d32' : '#8c8c8c',
+                    marginBottom: '4px',
+                    lineHeight: '1.2'
+                  }}>
+                    {stepItem.title}
+                  </div>
+                  <div style={{
+                    fontSize: '11px',
+                    color: '#8c8c8c',
+                    lineHeight: '1.2',
+                    textAlign: 'center'
+                  }}>
+                    {stepItem.description}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Success Alert for OTP sent */}
           {otpSent && step === 1 && (
             <Alert
               message={`Mã OTP đã được gửi đến email ${email}`}
+              type="success"
+              showIcon
+              icon={<CheckCircleOutlined />}
+              style={{ marginBottom: '24px' }}
+            />
+          )}
+
+          {/* Success Alert for OTP verified */}
+          {step === 2 && (
+            <Alert
+              message="Mã OTP đã được xác thực thành công!"
+              type="success"
+              showIcon
+              icon={<CheckCircleOutlined />}
+              style={{ marginBottom: '24px' }}
+            />
+          )}
+
+          {/* Success Alert for Personal Info completed */}
+          {step === 3 && (
+            <Alert
+              message="Thông tin cá nhân đã được lưu thành công!"
               type="success"
               showIcon
               icon={<CheckCircleOutlined />}
@@ -167,7 +367,7 @@ const Register = () => {
                   loading={loading}
                   block
                   style={{
-                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    background: '#2e7d32',
                     border: 'none',
                     borderRadius: '8px',
                     height: '48px'
@@ -182,11 +382,10 @@ const Register = () => {
           {step === 1 && (
             <Form
               form={form}
-              name="register"
-              onFinish={handleRegister}
+              name="verifyOTP"
+              onFinish={handleVerifyOTP}
               layout="vertical"
               size="large"
-              initialValues={{ email: email }}
             >
               <Form.Item
                 name="otp"
@@ -203,6 +402,48 @@ const Register = () => {
                 />
               </Form.Item>
 
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
+                    background: '#2e7d32',
+                    border: 'none',
+                    borderRadius: '8px',
+                    height: '48px'
+                  }}
+                >
+                  {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
+                </Button>
+
+                <Button
+                  type="default"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => {
+                    setStep(0);
+                    setOtpSent(false);
+                    clearError();
+                  }}
+                  block
+                  style={{ borderRadius: '8px', height: '48px' }}
+                >
+                  Quay lại
+                </Button>
+              </Space>
+            </Form>
+          )}
+
+          {step === 2 && (
+            <Form
+              form={form}
+              name="personalInfo"
+              onFinish={handlePersonalInfo}
+              layout="vertical"
+              size="large"
+              initialValues={{ email: email }}
+            >
               <Form.Item
                 name="email"
                 label="Email"
@@ -261,19 +502,46 @@ const Register = () => {
                 </Radio.Group>
               </Form.Item>
 
-              <Form.Item
-                name="role"
-                label="Vai trò"
-                rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
-              >
-                <Select placeholder="Chọn vai trò">
-                  <Option value="patient">Bệnh nhân</Option>
-                  <Option value="dentist">Nha sĩ</Option>
-                  <Option value="nurse">Y tá</Option>
-                  <Option value="receptionist">Lễ tân</Option>
-                </Select>
-              </Form.Item>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
+                    background: '#2e7d32',
+                    border: 'none',
+                    borderRadius: '8px',
+                    height: '48px'
+                  }}
+                >
+                  {loading ? 'Đang lưu...' : 'Tiếp tục'}
+                </Button>
 
+                <Button
+                  type="default"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => {
+                    setStep(1);
+                    clearError();
+                  }}
+                  block
+                  style={{ borderRadius: '8px', height: '48px' }}
+                >
+                  Quay lại
+                </Button>
+              </Space>
+            </Form>
+          )}
+
+          {step === 3 && (
+            <Form
+              form={form}
+              name="createPassword"
+              onFinish={handleRegister}
+              layout="vertical"
+              size="large"
+            >
               <Form.Item
                 name="password"
                 label="Mật khẩu"
@@ -318,7 +586,7 @@ const Register = () => {
                   loading={loading}
                   block
                   style={{
-                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    background: '#2e7d32',
                     border: 'none',
                     borderRadius: '8px',
                     height: '48px'
@@ -331,8 +599,7 @@ const Register = () => {
                   type="default"
                   icon={<ArrowLeftOutlined />}
                   onClick={() => {
-                    setStep(0);
-                    setOtpSent(false);
+                    setStep(2);
                     clearError();
                   }}
                   block
@@ -348,17 +615,19 @@ const Register = () => {
             <Text type="secondary">hoặc</Text>
           </Divider>
 
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'left' }}>
             <Text type="secondary">
-              Đã có tài khoản?{' '}
-              <Link to="/login">
-                Đăng nhập ngay
+              Bạn đã có tài khoản?{' '}
+              <Link to="/login" style={{ color: '#2e7d32', fontWeight: 'bold' }}>
+                ĐĂNG NHẬP
               </Link>
             </Text>
           </div>
-        </Card>
+        </div>
+
       </div>
     </div>
+    </>
   );
 };
 
