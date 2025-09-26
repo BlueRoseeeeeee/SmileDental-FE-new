@@ -411,6 +411,20 @@ const Register = () => {
                     height: '56px',
                     fontSize: '16px'
                   }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value) {
+                      // Tự động viết hoa chữ cái đầu của mỗi từ
+                      const formattedName = value
+                        .toLowerCase()
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ');
+                      
+                      // Cập nhật giá trị trong form
+                      form.setFieldsValue({ fullName: formattedName });
+                    }
+                  }}
                 />
               </Form.Item>
 
