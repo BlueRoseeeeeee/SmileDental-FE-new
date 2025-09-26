@@ -5,11 +5,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Card, Typography, Alert, Radio, Steps, Space, Divider } from 'antd';
 import { 
-  UserOutlined, 
-  MailOutlined, 
-  PhoneOutlined, 
-  CalendarOutlined, 
-  LockOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined
 } from '@ant-design/icons';
@@ -27,7 +22,7 @@ const RegisterRHF = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpMessage, setOtpMessage] = useState('');
   
-  const { sendOtpRegister, register: registerUser, loading, error, clearError } = useAuth();
+  const { sendOtpRegister, register: registerUser, verifyOtp, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
   // Default values cho form
@@ -157,12 +152,15 @@ const RegisterRHF = () => {
     try {
       clearError();
       
-      // Lấy tất cả dữ liệu từ form
+      // Bước 1: Verify OTP trước
+      await verifyOtp(data.otp, email);
+      
+      // Bước 2: Lấy tất cả dữ liệu từ form
       const allData = form.getValues();
       console.log('All form data:', allData); // Debug log
       
       // Kiểm tra xem có đủ dữ liệu không
-      if (!allData.fullName || !allData.phone || !allData.dateOfBirth || !allData.gender || !allData.password) {
+      if (!allData.fullName || !allData.phone || !allData.dateOfBirth || !allData.gender || !allData.password || !allData.email) {
         console.error('Missing required data:', allData);
         return; // Không gửi nếu thiếu dữ liệu
       }
@@ -174,8 +172,8 @@ const RegisterRHF = () => {
         dateOfBirth: allData.dateOfBirth,
         gender: allData.gender,
         password: allData.password,
+        confirmPassword: allData.confirmPassword, // Backend yêu cầu confirmPassword
         email: allData.email || email, // Ưu tiên email từ form state
-        otp: data.otp,
         role: 'patient', // CỐ ĐỊNH: Form đăng ký này chỉ dành cho bệnh nhân
         type: 'fullTime' // Type mặc định cho bệnh nhân
       };

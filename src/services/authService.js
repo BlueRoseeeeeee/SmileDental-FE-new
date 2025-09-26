@@ -77,6 +77,12 @@ export const authService = {
     return response.data;
   },
 
+  // Verify OTP for registration
+  verifyOtp: async (otp, email) => {
+    const response = await api.post('/auth/verify-otp', { email, otp });
+    return response.data;
+  },
+
   // Auto refresh token when needed
   refreshTokenIfNeeded: async () => {
     const refreshToken = localStorage.getItem('refreshToken');
