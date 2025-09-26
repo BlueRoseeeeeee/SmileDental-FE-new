@@ -155,6 +155,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Verify OTP function
+  const verifyOtp = async (otp, email) => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      const response = await authService.verifyOtp(otp, email);
+      dispatch({ type: 'SET_LOADING', payload: false });
+      return response;
+    } catch (error) {
+      dispatch({
+        type: 'SET_ERROR',
+        payload: error.response?.data?.message || error.message || 'Xác thực OTP thất bại',
+      });
+      throw error;
+    }
+  };
+
   // Change password
   const changePassword = async (passwordData) => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -209,6 +225,7 @@ export const AuthProvider = ({ children }) => {
     register,
     sendOtpRegister,
     sendOtpResetPassword,
+    verifyOtp,
     changePassword,
     resetPassword,
     updateUser,
