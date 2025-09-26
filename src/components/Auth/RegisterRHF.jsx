@@ -14,18 +14,16 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useForm } from 'react-hook-form';
+import { useFormPersistence } from '../../hooks/useFormPersistence';
 import { useAuth } from '../../contexts/AuthContext';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 
 const { Title } = Typography;
 
-
-// Form đăng ký dành cho BỆNH NHÂN - role luôn là 'patient'
 const RegisterRHF = () => {
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [otpMessage, setOtpMessage] = useState('');
   
   const { sendOtpRegister, register: registerUser, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
@@ -42,41 +40,8 @@ const RegisterRHF = () => {
     otp: ''
   };
 
-  // Sử dụng React Hook Form với persistence
-  const form = useForm({
-    defaultValues,
-    mode: 'onBlur'
-  });
-  
-  const { handleSubmit, formState: { errors }, setValue, getValues, watch, register, reset } = form;
-  
-  // Khôi phục dữ liệu từ localStorage khi component mount (trừ OTP)
-  React.useEffect(() => {
-    const savedData = localStorage.getItem('registerFormData');
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      // OTP không được khôi phục vì chỉ dùng 1 lần
-      reset(data);
-      setStep(data.step || 0);
-      setEmail(data.email || '');
-      setOtpSent(data.otpSent || false);
-    }
-  }, [reset]);
-  
-  // Lưu dữ liệu vào localStorage mỗi khi có thay đổi (trừ OTP)
-  React.useEffect(() => {
-    const subscription = watch((value) => {
-      // Loại bỏ OTP khỏi dữ liệu lưu trữ
-      const { otp, ...dataToSave } = value;
-      localStorage.setItem('registerFormData', JSON.stringify({
-        ...dataToSave,
-        step,
-        email,
-        otpSent
-      }));
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, step, email, otpSent]);
+  // Sử dụng custom hook cho form persistence
+  const { form, clearStoredData } = useFormPersistence('registerFormData', defaultValues);
 
   // Steps configuration
   const steps = [
@@ -102,16 +67,6 @@ const RegisterRHF = () => {
   const handlePersonalInfo = async (data) => {
     try {
       clearError();
-      // Kiểm tra validation cơ bản
-      if (!data.fullName || !data.phone || !data.dateOfBirth || !data.gender) {
-        return; // Không chuyển bước nếu thiếu thông tin
-      }
-      console.log('Personal info saved:', data); // Debug log
-      // Lưu dữ liệu vào form state
-      setValue('fullName', data.fullName);
-      setValue('phone', data.phone);
-      setValue('dateOfBirth', data.dateOfBirth);
-      setValue('gender', data.gender);
       setStep(1);
     } catch (err) {
       // Error is handled by AuthContext
@@ -122,14 +77,6 @@ const RegisterRHF = () => {
   const handleCreatePassword = async (data) => {
     try {
       clearError();
-      // Kiểm tra validation cơ bản
-      if (!data.password || !data.confirmPassword || data.password !== data.confirmPassword) {
-        return; // Không chuyển bước nếu thiếu thông tin
-      }
-      console.log('Password info saved:', data); // Debug log
-      // Lưu dữ liệu vào form state
-      setValue('password', data.password);
-      setValue('confirmPassword', data.confirmPassword);
       setStep(2);
     } catch (err) {
       // Error is handled by AuthContext
@@ -141,10 +88,7 @@ const RegisterRHF = () => {
     try {
       clearError();
       setEmail(data.email);
-      // Lưu email vào form state
-      setValue('email', data.email);
-      const response = await sendOtpRegister(data.email);
-      setOtpMessage(response.message || 'OTP đăng ký đã được gửi đến email');
+      await sendOtpRegister(data.email);
       setOtpSent(true);
       setStep(3);
     } catch (err) {
@@ -159,33 +103,23 @@ const RegisterRHF = () => {
       
       // Lấy tất cả dữ liệu từ form
       const allData = form.getValues();
-      console.log('All form data:', allData); // Debug log
       
-      // Kiểm tra xem có đủ dữ liệu không
-      if (!allData.fullName || !allData.phone || !allData.dateOfBirth || !allData.gender || !allData.password) {
-        console.error('Missing required data:', allData);
-        return; // Không gửi nếu thiếu dữ liệu
-      }
-      
-      // Form đăng ký dành cho BỆNH NHÂN - role luôn là 'patient'
+      // Tự động set role là 'patient' cho người dùng đăng ký
       const userData = {
         fullName: allData.fullName,
         phone: allData.phone,
         dateOfBirth: allData.dateOfBirth,
         gender: allData.gender,
         password: allData.password,
-        email: allData.email || email, // Ưu tiên email từ form state
+        email: email,
         otp: data.otp,
-        role: 'patient', // CỐ ĐỊNH: Form đăng ký này chỉ dành cho bệnh nhân
-        type: 'fullTime' // Type mặc định cho bệnh nhân
+        role: 'patient'
       };
-      
-      console.log('User data to register:', userData); // Debug log
 
       await registerUser(userData);
       
       // Xóa dữ liệu đã lưu sau khi đăng ký thành công
-      localStorage.removeItem('registerFormData');
+      clearStoredData();
       
       navigate('/login', {
         state: { message: 'Đăng ký thành công! Vui lòng đăng nhập.' },
@@ -384,7 +318,7 @@ const RegisterRHF = () => {
             {/* Success Alerts */}
             {otpSent && step === 2 && (
               <Alert
-                message={otpMessage}
+                message={`Mã OTP đã được gửi đến email ${email}`}
                 type="success"
                 showIcon
                 icon={<CheckCircleOutlined />}
@@ -394,7 +328,7 @@ const RegisterRHF = () => {
 
             {step === 3 && (
               <Alert
-                message="OTP đăng ký đã được gửi đến email!"
+                message="Thông tin cá nhân đã được lưu thành công!"
                 type="success"
                 showIcon
                 icon={<CheckCircleOutlined />}
@@ -416,19 +350,23 @@ const RegisterRHF = () => {
 
             {/* Step 1: Personal Information Form */}
             {step === 0 && (
-              <form onSubmit={handleSubmit(handlePersonalInfo)}>
+              <form onSubmit={form.handleSubmit(handlePersonalInfo)}>
                 <div className="form-group">
                   <label className="form-label">
                     Họ và tên <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('fullName', { required: 'Vui lòng nhập họ và tên!' })}
+                    {...form.register('fullName', {
+                      required: 'Vui lòng nhập họ và tên!',
+                      minLength: { value: 2, message: 'Họ và tên phải có ít nhất 2 ký tự!' },
+                      maxLength: { value: 50, message: 'Họ và tên không được quá 50 ký tự!' }
+                    })}
                     className="form-input"
                     placeholder="Nhập họ và tên đầy đủ (VD: Nguyễn Văn A)"
                     onBlur={handleFullNameBlur}
                   />
-                  {errors.fullName && (
-                    <div className="form-error">{errors.fullName.message}</div>
+                  {form.formState.errors.fullName && (
+                    <div className="form-error">{form.formState.errors.fullName.message}</div>
                   )}
                 </div>
 
@@ -437,12 +375,18 @@ const RegisterRHF = () => {
                     Số điện thoại <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('phone', { required: 'Vui lòng nhập số điện thoại!' })}
+                    {...form.register('phone', {
+                      required: 'Vui lòng nhập số điện thoại!',
+                      pattern: {
+                        value: /^[0-9]{10,11}$/,
+                        message: 'Số điện thoại phải có 10-11 chữ số (VD: 0123456789)'
+                      }
+                    })}
                     className="form-input"
                     placeholder="Nhập số điện thoại (VD: 0123456789)"
                   />
-                  {errors.phone && (
-                    <div className="form-error">{errors.phone.message}</div>
+                  {form.formState.errors.phone && (
+                    <div className="form-error">{form.formState.errors.phone.message}</div>
                   )}
                 </div>
 
@@ -451,13 +395,25 @@ const RegisterRHF = () => {
                     Ngày sinh <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('dateOfBirth', { required: 'Vui lòng chọn ngày sinh!' })}
+                    {...form.register('dateOfBirth', {
+                      required: 'Vui lòng chọn ngày sinh!',
+                      validate: (value) => {
+                        if (!value) return 'Vui lòng chọn ngày sinh!';
+                        const today = new Date();
+                        const birthDate = new Date(value);
+                        const age = today.getFullYear() - birthDate.getFullYear();
+                        if (age < 0) return 'Ngày sinh không hợp lệ!';
+                        if (age < 1) return 'Tuổi tối thiểu là 1 tuổi!';
+                        if (age > 100) return 'Tuổi tối đa là 100 tuổi!';
+                        return true;
+                      }
+                    })}
                     type="date"
                     className="form-input"
                     placeholder="dd/mm/yyyy"
                   />
-                  {errors.dateOfBirth && (
-                    <div className="form-error">{errors.dateOfBirth.message}</div>
+                  {form.formState.errors.dateOfBirth && (
+                    <div className="form-error">{form.formState.errors.dateOfBirth.message}</div>
                   )}
                 </div>
 
@@ -468,7 +424,7 @@ const RegisterRHF = () => {
                   <div className="radio-group">
                     <div className="radio-item">
                       <input
-                        {...register('gender', { required: 'Vui lòng chọn giới tính!' })}
+                        {...form.register('gender', { required: 'Vui lòng chọn giới tính!' })}
                         type="radio"
                         value="male"
                         id="male"
@@ -477,7 +433,7 @@ const RegisterRHF = () => {
                     </div>
                     <div className="radio-item">
                       <input
-                        {...register('gender')}
+                        {...form.register('gender')}
                         type="radio"
                         value="female"
                         id="female"
@@ -486,7 +442,7 @@ const RegisterRHF = () => {
                     </div>
                     <div className="radio-item">
                       <input
-                        {...register('gender')}
+                        {...form.register('gender')}
                         type="radio"
                         value="other"
                         id="other"
@@ -494,8 +450,8 @@ const RegisterRHF = () => {
                       <label htmlFor="other">Khác</label>
                     </div>
                   </div>
-                  {errors.gender && (
-                    <div className="form-error">{errors.gender.message}</div>
+                  {form.formState.errors.gender && (
+                    <div className="form-error">{form.formState.errors.gender.message}</div>
                   )}
                 </div>
 
@@ -520,14 +476,14 @@ const RegisterRHF = () => {
 
             {/* Step 2: Create Password Form */}
             {step === 1 && (
-              <form onSubmit={handleSubmit(handleCreatePassword)}>
+              <form onSubmit={form.handleSubmit(handleCreatePassword)}>
                 <div className="form-group">
                   <label className="form-label">
                     Mật khẩu <span style={{ color: 'red' }}>*</span>
                   </label>
                   <div className="password-input">
                     <input
-                      {...register('password', {
+                      {...form.register('password', {
                         required: 'Vui lòng nhập mật khẩu!',
                         minLength: { value: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự!' },
                         maxLength: { value: 16, message: 'Mật khẩu không được quá 16 ký tự!' },
@@ -541,8 +497,8 @@ const RegisterRHF = () => {
                       placeholder="Nhập mật khẩu (8-16 ký tự, có chữ hoa, thường và số)"
                     />
                   </div>
-                  {errors.password && (
-                    <div className="form-error">{errors.password.message}</div>
+                  {form.formState.errors.password && (
+                    <div className="form-error">{form.formState.errors.password.message}</div>
                   )}
                 </div>
 
@@ -552,7 +508,7 @@ const RegisterRHF = () => {
                   </label>
                   <div className="password-input">
                     <input
-                      {...register('confirmPassword', {
+                      {...form.register('confirmPassword', {
                         required: 'Vui lòng xác nhận mật khẩu!',
                         validate: (value) => {
                           const password = form.getValues('password');
@@ -564,8 +520,8 @@ const RegisterRHF = () => {
                       placeholder="Nhập lại mật khẩu để xác nhận"
                     />
                   </div>
-                  {errors.confirmPassword && (
-                    <div className="form-error">{errors.confirmPassword.message}</div>
+                  {form.formState.errors.confirmPassword && (
+                    <div className="form-error">{form.formState.errors.confirmPassword.message}</div>
                   )}
                 </div>
 
@@ -601,13 +557,13 @@ const RegisterRHF = () => {
 
             {/* Step 3: Send OTP Form */}
             {step === 2 && (
-              <form onSubmit={handleSubmit(handleSendOTP)}>
+              <form onSubmit={form.handleSubmit(handleSendOTP)}>
                 <div className="form-group">
                   <label className="form-label">
                     Email <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('email', {
+                    {...form.register('email', {
                       required: 'Vui lòng nhập email!',
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -617,8 +573,8 @@ const RegisterRHF = () => {
                     className="form-input"
                     placeholder="Nhập email của bạn (VD: example@gmail.com)"
                   />
-                  {errors.email && (
-                    <div className="form-error">{errors.email.message}</div>
+                  {form.formState.errors.email && (
+                    <div className="form-error">{form.formState.errors.email.message}</div>
                   )}
                 </div>
 
@@ -655,13 +611,13 @@ const RegisterRHF = () => {
 
             {/* Step 4: Verify OTP Form */}
             {step === 3 && (
-              <form onSubmit={handleSubmit(handleVerifyOTP)}>
+              <form onSubmit={form.handleSubmit(handleVerifyOTP)}>
                 <div className="form-group">
                   <label className="form-label">
                     Mã OTP <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('otp', {
+                    {...form.register('otp', {
                       required: 'Vui lòng nhập mã OTP!',
                       pattern: {
                         value: /^[0-9]{6}$/,
@@ -677,8 +633,8 @@ const RegisterRHF = () => {
                       letterSpacing: '4px'
                     }}
                   />
-                  {errors.otp && (
-                    <div className="form-error">{errors.otp.message}</div>
+                  {form.formState.errors.otp && (
+                    <div className="form-error">{form.formState.errors.otp.message}</div>
                   )}
                 </div>
 
