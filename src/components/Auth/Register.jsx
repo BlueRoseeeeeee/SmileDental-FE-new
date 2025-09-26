@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, Alert, Radio, Select, Steps, Space, Divider } from 'antd';
 import { 
@@ -12,7 +11,6 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import smileDentalLogo from '../../assets/image/smile-dental-logo.png';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -64,24 +62,40 @@ const Register = () => {
   ];
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      padding: '16px' 
+    }}>
+      <div style={{ width: '100%', maxWidth: '800px' }}>
         <Card 
-          className="glass-effect"
-          style={{ borderRadius: 'var(--border-radius-xl)' }}
+          style={{ 
+            borderRadius: '16px',
+            background: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          }}
         >
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 rounded-full primary-gradient flex items-center justify-center shadow-lg">
-                <img 
-                  src={smileDentalLogo} 
-                  alt="Smile Dental" 
-                  className="w-12 h-12 object-contain"
-                />
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+              <div style={{ 
+                width: '80px', 
+                height: '80px', 
+                borderRadius: '50%', 
+                background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
+              }}>
+                <span style={{ fontSize: '32px' }}>🦷</span>
               </div>
             </div>
-            <Title level={2} className="!mb-2">
+            <Title level={2} style={{ marginBottom: '8px' }}>
               Đăng ký tài khoản
             </Title>
             <Text type="secondary">
@@ -90,11 +104,10 @@ const Register = () => {
           </div>
 
           {/* Steps */}
-          <div className="mb-8">
+          <div style={{ marginBottom: '32px' }}>
             <Steps
               current={step}
               items={steps}
-              className="custom-steps"
             />
           </div>
 
@@ -105,7 +118,7 @@ const Register = () => {
               type="success"
               showIcon
               icon={<CheckCircleOutlined />}
-              className="mb-6"
+              style={{ marginBottom: '24px' }}
             />
           )}
 
@@ -115,7 +128,7 @@ const Register = () => {
               message={error}
               type="error"
               showIcon
-              className="mb-6"
+              style={{ marginBottom: '24px' }}
               closable
               onClose={clearError}
             />
@@ -139,9 +152,8 @@ const Register = () => {
                 ]}
               >
                 <Input
-                  prefix={<MailOutlined className="text-gray-400" />}
+                  prefix={<MailOutlined />}
                   placeholder="Nhập email của bạn"
-                  className="h-12"
                 />
               </Form.Item>
 
@@ -150,12 +162,12 @@ const Register = () => {
                   type="primary"
                   htmlType="submit"
                   loading={loading}
-                  className="w-full h-12 text-base font-medium"
+                  block
                   style={{
                     background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
                     border: 'none',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 15px rgba(24, 144, 255, 0.3)'
+                    borderRadius: '8px',
+                    height: '48px'
                   }}
                 >
                   {loading ? 'Đang gửi...' : 'Gửi mã OTP'}
@@ -184,7 +196,7 @@ const Register = () => {
                 <Input
                   placeholder="000000"
                   maxLength={6}
-                  className="h-12 text-center text-lg tracking-widest"
+                  style={{ textAlign: 'center', fontSize: '18px', letterSpacing: '4px' }}
                 />
               </Form.Item>
 
@@ -202,9 +214,8 @@ const Register = () => {
                 rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
               >
                 <Input
-                  prefix={<UserOutlined className="text-gray-400" />}
+                  prefix={<UserOutlined />}
                   placeholder="Nhập họ và tên"
-                  className="h-12"
                 />
               </Form.Item>
 
@@ -217,9 +228,8 @@ const Register = () => {
                 ]}
               >
                 <Input
-                  prefix={<PhoneOutlined className="text-gray-400" />}
+                  prefix={<PhoneOutlined />}
                   placeholder="Nhập số điện thoại"
-                  className="h-12"
                 />
               </Form.Item>
 
@@ -229,9 +239,8 @@ const Register = () => {
                 rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}
               >
                 <Input
-                  prefix={<CalendarOutlined className="text-gray-400" />}
+                  prefix={<CalendarOutlined />}
                   type="date"
-                  className="h-12"
                 />
               </Form.Item>
 
@@ -254,7 +263,7 @@ const Register = () => {
                 label="Vai trò"
                 rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
               >
-                <Select placeholder="Chọn vai trò" className="h-12">
+                <Select placeholder="Chọn vai trò">
                   <Option value="patient">Bệnh nhân</Option>
                   <Option value="dentist">Nha sĩ</Option>
                   <Option value="nurse">Y tá</Option>
@@ -272,9 +281,8 @@ const Register = () => {
                 ]}
               >
                 <Input.Password
-                  prefix={<LockOutlined className="text-gray-400" />}
+                  prefix={<LockOutlined />}
                   placeholder="Nhập mật khẩu (8-16 ký tự)"
-                  className="h-12"
                 />
               </Form.Item>
 
@@ -295,23 +303,22 @@ const Register = () => {
                 ]}
               >
                 <Input.Password
-                  prefix={<LockOutlined className="text-gray-400" />}
+                  prefix={<LockOutlined />}
                   placeholder="Nhập lại mật khẩu"
-                  className="h-12"
                 />
               </Form.Item>
 
-              <Space direction="vertical" size="middle" className="w-full">
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                 <Button
                   type="primary"
                   htmlType="submit"
                   loading={loading}
-                  className="w-full h-12 text-base font-medium"
+                  block
                   style={{
                     background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
                     border: 'none',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 15px rgba(24, 144, 255, 0.3)'
+                    borderRadius: '8px',
+                    height: '48px'
                   }}
                 >
                   {loading ? 'Đang đăng ký...' : 'Hoàn thành đăng ký'}
@@ -325,8 +332,8 @@ const Register = () => {
                     setOtpSent(false);
                     clearError();
                   }}
-                  className="w-full h-12"
-                  style={{ borderRadius: '12px' }}
+                  block
+                  style={{ borderRadius: '8px', height: '48px' }}
                 >
                   Quay lại
                 </Button>
@@ -334,17 +341,14 @@ const Register = () => {
             </Form>
           )}
 
-          <Divider className="!my-6">
-            <Text className="text-gray-500">hoặc</Text>
+          <Divider style={{ margin: '24px 0' }}>
+            <Text type="secondary">hoặc</Text>
           </Divider>
 
-          <div className="text-center">
-            <Text className="text-gray-600">
+          <div style={{ textAlign: 'center' }}>
+            <Text type="secondary">
               Đã có tài khoản?{' '}
-              <Link 
-                to="/login" 
-                className="text-blue-600 hover:text-blue-500 font-medium"
-              >
+              <Link to="/login">
                 Đăng nhập ngay
               </Link>
             </Text>

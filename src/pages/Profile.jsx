@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import { Card, Form, Input, Button, Upload, Avatar, Typography, Row, Col, Radio, DatePicker, message, Space, Divider, Tag } from 'antd';
 import { 
   CameraOutlined, 
@@ -8,8 +7,7 @@ import {
   MailOutlined, 
   PhoneOutlined, 
   CalendarOutlined,
-  EditOutlined,
-  CheckOutlined
+  EditOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { userService } from '../services/userService.js';
@@ -20,8 +18,6 @@ const { Title, Text } = Typography;
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
   const [form] = Form.useForm();
 
   // Load user data on mount
@@ -96,14 +92,14 @@ const Profile = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Page Header */}
-      <Card className="border-0 shadow-lg" style={{ borderRadius: '16px' }}>
-        <div className="text-center py-6">
-          <Title level={1} className="!mb-2 !text-gray-800">
+      <Card style={{ borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+          <Title level={1} style={{ marginBottom: '8px', color: '#262626' }}>
             Hồ sơ cá nhân
           </Title>
-          <Text className="text-lg text-gray-600">
+          <Text style={{ fontSize: '18px', color: '#8c8c8c' }}>
             Quản lý thông tin cá nhân và cài đặt tài khoản
           </Text>
         </div>
@@ -113,31 +109,37 @@ const Profile = () => {
         {/* Avatar Section */}
         <Col xs={24} lg={8}>
           <Card 
-            className="border-0 shadow-lg text-center"
-            style={{ borderRadius: '16px' }}
+            style={{ 
+              borderRadius: '16px', 
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+              textAlign: 'center'
+            }}
           >
-            <div className="py-6">
-              <div className="mb-6">
+            <div style={{ padding: '24px 0' }}>
+              <div style={{ marginBottom: '24px' }}>
                 <Avatar
                   size={120}
                   src={user?.avatar}
                   icon={<UserOutlined />}
-                  className="bg-gradient-to-br from-blue-500 to-purple-600"
+                  style={{ 
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    fontSize: '48px'
+                  }}
                 />
               </div>
 
-              <Title level={3} className="!mb-2 !text-gray-800">
+              <Title level={3} style={{ marginBottom: '8px', color: '#262626' }}>
                 {user?.fullName}
               </Title>
               
-              <div className="mb-4">
-                <Tag color={getRoleColor(user?.role)} className="text-sm px-3 py-1">
+              <div style={{ marginBottom: '16px' }}>
+                <Tag color={getRoleColor(user?.role)} style={{ fontSize: '14px', padding: '4px 12px' }}>
                   {getRoleDisplayName(user?.role)}
                 </Tag>
               </div>
 
               {user?.employeeCode && (
-                <Text type="secondary" className="text-sm">
+                <Text type="secondary" style={{ fontSize: '14px' }}>
                   Mã NV: {user.employeeCode}
                 </Text>
               )}
@@ -153,7 +155,7 @@ const Profile = () => {
                   type="primary" 
                   icon={<CameraOutlined />}
                   loading={loading}
-                  className="w-full"
+                  block
                   style={{ borderRadius: '8px' }}
                 >
                   Thay đổi ảnh đại diện
@@ -167,9 +169,8 @@ const Profile = () => {
         <Col xs={24} lg={16}>
           <Card 
             title="Thông tin cá nhân" 
-            className="border-0 shadow-lg"
-            style={{ borderRadius: '16px' }}
-            extra={<EditOutlined className="text-gray-400" />}
+            style={{ borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+            extra={<EditOutlined style={{ color: '#8c8c8c' }} />}
           >
             <Form
               form={form}
@@ -186,9 +187,8 @@ const Profile = () => {
                     rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
                   >
                     <Input
-                      prefix={<UserOutlined className="text-gray-400" />}
+                      prefix={<UserOutlined />}
                       placeholder="Nhập họ và tên"
-                      className="h-12"
                     />
                   </Form.Item>
                 </Col>
@@ -203,9 +203,8 @@ const Profile = () => {
                     ]}
                   >
                     <Input
-                      prefix={<MailOutlined className="text-gray-400" />}
+                      prefix={<MailOutlined />}
                       placeholder="Nhập email"
-                      className="h-12"
                       disabled
                     />
                   </Form.Item>
@@ -221,9 +220,8 @@ const Profile = () => {
                     ]}
                   >
                     <Input
-                      prefix={<PhoneOutlined className="text-gray-400" />}
+                      prefix={<PhoneOutlined />}
                       placeholder="Nhập số điện thoại"
-                      className="h-12"
                     />
                   </Form.Item>
                 </Col>
@@ -235,7 +233,7 @@ const Profile = () => {
                     rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}
                   >
                     <DatePicker
-                      className="w-full h-12"
+                      style={{ width: '100%' }}
                       placeholder="Chọn ngày sinh"
                       format="DD/MM/YYYY"
                     />
@@ -276,15 +274,16 @@ const Profile = () => {
 
               <Divider />
 
-              <div className="flex justify-end">
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                   type="primary"
                   htmlType="submit"
                   loading={loading}
                   icon={<SaveOutlined />}
                   size="large"
-                  className="px-8"
                   style={{
+                    paddingLeft: '32px',
+                    paddingRight: '32px',
                     background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
                     border: 'none',
                     borderRadius: '8px',

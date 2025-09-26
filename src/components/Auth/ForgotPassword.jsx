@@ -1,262 +1,361 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
-import { Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Form, Input, Button, Card, Typography, Alert, Steps, Space, Divider } from 'antd';
+import { 
+  MailOutlined, 
+  LockOutlined, 
+  CheckCircleOutlined, 
+  ArrowLeftOutlined,
+  EyeInvisibleOutlined,
+  EyeTwoTone
+} from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 
+const { Title, Text } = Typography;
+
 const ForgotPassword = () => {
-  const [step, setStep] = useState(1); // 1: Send OTP, 2: Reset Password
+  const [step, setStep] = useState(0); // 0: Send OTP, 1: Reset Password, 2: Success
   const [email, setEmail] = useState('');
   const { sendOtpResetPassword, resetPassword, loading, error, clearError } = useAuth();
+  const [form] = Form.useForm();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-  } = useForm();
-
-  const newPassword = watch('newPassword');
-
-  const handleSendOTP = async (data) => {
+  const handleSendOTP = async (values) => {
     try {
       clearError();
-      setEmail(data.email);
-      await sendOtpResetPassword(data.email);
-      setStep(2);
+      setEmail(values.email);
+      await sendOtpResetPassword(values.email);
+      setStep(1);
     } catch (err) {
       // Error handled by context
     }
   };
 
-  const handleResetPassword = async (data) => {
+  const handleResetPassword = async (values) => {
     try {
       clearError();
       await resetPassword({
         email,
-        otp: data.otp,
-        newPassword: data.newPassword,
-        confirmPassword: data.confirmPassword,
+        otp: values.otp,
+        newPassword: values.newPassword,
+        confirmPassword: values.confirmPassword,
       });
-      setStep(3); // Success step
+      setStep(2); // Success step
     } catch (err) {
       // Error handled by context
     }
   };
 
-  const onSubmit = step === 1 ? handleSendOTP : handleResetPassword;
+  const steps = [
+    {
+      title: 'Nhập Email',
+      description: 'Nhập email để nhận mã OTP',
+    },
+    {
+      title: 'Đặt lại mật khẩu',
+      description: 'Nhập mã OTP và mật khẩu mới',
+    },
+  ];
 
-  if (step === 3) {
+  if (step === 2) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8 text-center">
-          <div className="mx-auto h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle className="h-8 w-8 text-green-600" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Đặt lại mật khẩu thành công!</h2>
-            <p className="mt-2 text-gray-600">
+      <div style={{ 
+        minHeight: '100vh', 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        padding: '16px' 
+      }}>
+        <Card 
+          style={{ 
+            width: '100%', 
+            maxWidth: '400px', 
+            borderRadius: '16px',
+            background: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+            textAlign: 'center'
+          }}
+        >
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ 
+              width: '80px', 
+              height: '80px', 
+              margin: '0 auto 16px', 
+              backgroundColor: '#f6ffed', 
+              borderRadius: '50%', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center' 
+            }}>
+              <CheckCircleOutlined style={{ fontSize: '40px', color: '#52c41a' }} />
+            </div>
+            <Title level={2} style={{ marginBottom: '8px' }}>
+              Đặt lại mật khẩu thành công!
+            </Title>
+            <Text type="secondary">
               Mật khẩu của bạn đã được cập nhật. Bạn có thể đăng nhập với mật khẩu mới.
-            </p>
+            </Text>
           </div>
-          <Link
-            to="/login"
-            className="dental-button-primary inline-flex items-center"
+          
+          <Button
+            type="primary"
+            size="large"
+            block
+            href="/login"
+            style={{
+              background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+              border: 'none',
+              borderRadius: '8px',
+              height: '48px'
+            }}
           >
             Đăng nhập ngay
-          </Link>
-        </div>
+          </Button>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div>
-          <Link
-            to="/login"
-            className="inline-flex items-center text-sm text-primary-600 hover:text-primary-500 mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Quay lại đăng nhập
-          </Link>
-          
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full dental-gradient">
-            <Mail className="h-8 w-8 text-white" />
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-            {step === 1 ? 'Quên mật khẩu' : 'Đặt lại mật khẩu'}
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {step === 1
-              ? 'Nhập email để nhận mã xác thực đặt lại mật khẩu'
-              : `Nhập mã OTP đã gửi đến ${email} và mật khẩu mới`
-            }
-          </p>
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="flex items-center justify-center space-x-4">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
-          }`}>
-            1
-          </div>
-          <div className={`w-12 h-0.5 ${step >= 2 ? 'bg-primary-600' : 'bg-gray-200'}`}></div>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
-          }`}>
-            2
-          </div>
-        </div>
-
-        {/* Success Alert for OTP sent */}
-        {step === 2 && (
-          <div className="bg-green-50 border border-green-200 rounded-md p-4">
-            <div className="flex">
-              <CheckCircle className="h-5 w-5 text-green-400" />
-              <div className="ml-3">
-                <p className="text-sm text-green-800">
-                  Mã OTP đã được gửi đến email {email}
-                </p>
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      padding: '16px' 
+    }}>
+      <div style={{ width: '100%', maxWidth: '500px' }}>
+        <Card 
+          style={{ 
+            borderRadius: '16px',
+            background: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          }}
+        >
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <Link
+              to="/login"
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                color: '#1890ff', 
+                textDecoration: 'none', 
+                marginBottom: '16px' 
+              }}
+            >
+              <ArrowLeftOutlined style={{ marginRight: '4px' }} />
+              Quay lại đăng nhập
+            </Link>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+              <div style={{ 
+                width: '80px', 
+                height: '80px', 
+                borderRadius: '50%', 
+                background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
+              }}>
+                <span style={{ fontSize: '32px' }}>🦷</span>
               </div>
             </div>
+            <Title level={2} style={{ marginBottom: '8px' }}>
+              {step === 0 ? 'Quên mật khẩu' : 'Đặt lại mật khẩu'}
+            </Title>
+            <Text type="secondary">
+              {step === 0
+                ? 'Nhập email để nhận mã xác thực đặt lại mật khẩu'
+                : `Nhập mã OTP đã gửi đến ${email} và mật khẩu mới`
+              }
+            </Text>
           </div>
-        )}
 
-        {/* Error Alert */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            </div>
+          {/* Steps */}
+          <div style={{ marginBottom: '32px' }}>
+            <Steps
+              current={step}
+              items={steps}
+            />
           </div>
-        )}
 
-        {/* Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          {/* Success Alert for OTP sent */}
           {step === 1 && (
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  type="email"
-                  {...register('email', {
-                    required: 'Vui lòng nhập email',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Email không hợp lệ',
-                    },
-                  })}
-                  className="dental-input pl-10"
+            <Alert
+              message={`Mã OTP đã được gửi đến email ${email}`}
+              type="success"
+              showIcon
+              icon={<CheckCircleOutlined />}
+              style={{ marginBottom: '24px' }}
+            />
+          )}
+
+          {/* Error Alert */}
+          {error && (
+            <Alert
+              message={error}
+              type="error"
+              showIcon
+              style={{ marginBottom: '24px' }}
+              closable
+              onClose={clearError}
+            />
+          )}
+
+          {/* Form */}
+          {step === 0 && (
+            <Form
+              form={form}
+              name="sendOTP"
+              onFinish={handleSendOTP}
+              layout="vertical"
+              size="large"
+            >
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập email!' },
+                  { type: 'email', message: 'Email không hợp lệ!' }
+                ]}
+              >
+                <Input
+                  prefix={<MailOutlined />}
                   placeholder="Nhập email của bạn"
                 />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                )}
-              </div>
-            </div>
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    height: '48px'
+                  }}
+                >
+                  {loading ? 'Đang gửi...' : 'Gửi mã OTP'}
+                </Button>
+              </Form.Item>
+            </Form>
           )}
 
-          {step === 2 && (
-            <div className="space-y-4">
-              {/* OTP */}
-              <div>
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
-                  Mã OTP <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="otp"
-                  type="text"
-                  maxLength="6"
-                  {...register('otp', {
-                    required: 'Vui lòng nhập mã OTP',
-                    pattern: {
-                      value: /^[0-9]{6}$/,
-                      message: 'Mã OTP phải là 6 chữ số',
-                    },
-                  })}
-                  className="dental-input text-center text-lg tracking-widest"
+          {step === 1 && (
+            <Form
+              form={form}
+              name="resetPassword"
+              onFinish={handleResetPassword}
+              layout="vertical"
+              size="large"
+            >
+              <Form.Item
+                name="otp"
+                label="Mã OTP"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập mã OTP!' },
+                  { pattern: /^[0-9]{6}$/, message: 'Mã OTP phải là 6 chữ số!' }
+                ]}
+              >
+                <Input
                   placeholder="000000"
+                  maxLength={6}
+                  style={{ textAlign: 'center', fontSize: '18px', letterSpacing: '4px' }}
                 />
-                {errors.otp && (
-                  <p className="mt-1 text-sm text-red-600">{errors.otp.message}</p>
-                )}
-              </div>
+              </Form.Item>
 
-              {/* New Password */}
-              <div>
-                <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-                  Mật khẩu mới <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  {...register('newPassword', {
-                    required: 'Vui lòng nhập mật khẩu mới',
-                    minLength: {
-                      value: 8,
-                      message: 'Mật khẩu phải có ít nhất 8 ký tự',
-                    },
-                    maxLength: {
-                      value: 16,
-                      message: 'Mật khẩu không được quá 16 ký tự',
-                    },
-                  })}
-                  className="dental-input"
+              <Form.Item
+                name="newPassword"
+                label="Mật khẩu mới"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập mật khẩu mới!' },
+                  { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự!' },
+                  { max: 16, message: 'Mật khẩu không được quá 16 ký tự!' }
+                ]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined />}
                   placeholder="Nhập mật khẩu mới (8-16 ký tự)"
+                  iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
                 />
-                {errors.newPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.newPassword.message}</p>
-                )}
-              </div>
+              </Form.Item>
 
-              {/* Confirm Password */}
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Xác nhận mật khẩu <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  {...register('confirmPassword', {
-                    required: 'Vui lòng xác nhận mật khẩu',
-                    validate: value =>
-                      value === newPassword || 'Mật khẩu xác nhận không khớp',
-                  })}
-                  className="dental-input"
+              <Form.Item
+                name="confirmPassword"
+                label="Xác nhận mật khẩu"
+                dependencies={['newPassword']}
+                rules={[
+                  { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('newPassword') === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined />}
                   placeholder="Nhập lại mật khẩu mới"
+                  iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
                 />
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-                )}
-              </div>
-            </div>
+              </Form.Item>
+
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    height: '48px'
+                  }}
+                >
+                  {loading ? 'Đang đặt lại...' : 'Đặt lại mật khẩu'}
+                </Button>
+
+                <Button
+                  type="default"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => {
+                    setStep(0);
+                    clearError();
+                  }}
+                  block
+                  style={{ borderRadius: '8px', height: '48px' }}
+                >
+                  Quay lại
+                </Button>
+              </Space>
+            </Form>
           )}
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full dental-button-primary disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading
-              ? (step === 1 ? 'Đang gửi...' : 'Đang đặt lại...')
-              : (step === 1 ? 'Gửi mã OTP' : 'Đặt lại mật khẩu')
-            }
-          </button>
-        </form>
+          <Divider style={{ margin: '24px 0' }}>
+            <Text type="secondary">hoặc</Text>
+          </Divider>
+
+          <div style={{ textAlign: 'center' }}>
+            <Text type="secondary">
+              Đã có tài khoản?{' '}
+              <Link to="/login">
+                Đăng nhập ngay
+              </Link>
+            </Text>
+          </div>
+        </Card>
       </div>
     </div>
   );

@@ -1,10 +1,7 @@
 /* Import Ant Design styles */
 @import 'antd/dist/reset.css';
 
-/* Tailwind CSS */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Removed Tailwind CSS - Using only Ant Design + inline styles */
 
 /* Global Styles */
 * {

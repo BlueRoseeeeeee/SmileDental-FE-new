@@ -1,9 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, Alert, Checkbox, Space, Divider, Row, Col } from 'antd';
-import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone, MedicineBoxOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import smileDentalLogo from '../../assets/image/smile-dental-logo.png';
 
 const { Title, Text } = Typography;
 
@@ -23,52 +22,71 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
-      <Row justify="center" className="w-full max-w-6xl">
-        <Col xs={24} lg={12} className="flex items-center justify-center">
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      padding: '16px' 
+    }}>
+      <Row justify="center" style={{ width: '100%', maxWidth: '1200px' }}>
+        <Col xs={24} lg={12} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* Left side - Branding */}
-          <div className="text-center text-white p-8">
-            <div className="mb-8">
-              <div className="w-24 h-24 mx-auto mb-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <img 
-                  src={smileDentalLogo} 
-                  alt="Smile Dental" 
-                  className="w-16 h-16 object-contain"
-                />
+          <div style={{ textAlign: 'center', color: 'white', padding: '32px' }}>
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ 
+                width: '96px', 
+                height: '96px', 
+                margin: '0 auto 24px', 
+                background: 'rgba(255,255,255,0.2)', 
+                borderRadius: '50%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                backdropFilter: 'blur(10px)'
+              }}>
+                <span style={{ fontSize: '48px' }}>🦷</span>
               </div>
-              <Title level={1} className="!text-white !mb-4">
+              <Title level={1} style={{ color: 'white', marginBottom: '16px' }}>
                 Smile Dental
               </Title>
-              <Text className="text-white text-lg opacity-90">
+              <Text style={{ color: 'white', fontSize: '18px', opacity: 0.9 }}>
                 Hệ thống quản lý phòng khám nha khoa hiện đại
               </Text>
             </div>
             
-            <div className="space-y-4 text-left max-w-md mx-auto">
-              <div className="flex items-center space-x-3">
-                <MedicineBoxOutlined className="text-2xl text-white opacity-80" />
-                <Text className="text-white opacity-90">Quản lý lịch hẹn thông minh</Text>
+            <div style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{ fontSize: '24px', color: 'white', opacity: 0.8, marginRight: '12px' }}>🦷</span>
+                <Text style={{ color: 'white', opacity: 0.9 }}>Quản lý lịch hẹn thông minh</Text>
               </div>
-              <div className="flex items-center space-x-3">
-                <MedicineBoxOutlined className="text-2xl text-white opacity-80" />
-                <Text className="text-white opacity-90">Theo dõi bệnh nhân chi tiết</Text>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                <span style={{ fontSize: '24px', color: 'white', opacity: 0.8, marginRight: '12px' }}>🦷</span>
+                <Text style={{ color: 'white', opacity: 0.9 }}>Theo dõi bệnh nhân chi tiết</Text>
               </div>
-              <div className="flex items-center space-x-3">
-                <MedicineBoxOutlined className="text-2xl text-white opacity-80" />
-                <Text className="text-white opacity-90">Báo cáo thống kê đầy đủ</Text>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontSize: '24px', color: 'white', opacity: 0.8, marginRight: '12px' }}>🦷</span>
+                <Text style={{ color: 'white', opacity: 0.9 }}>Báo cáo thống kê đầy đủ</Text>
               </div>
             </div>
           </div>
         </Col>
         
-        <Col xs={24} lg={12} className="flex items-center justify-center">
+        <Col xs={24} lg={12} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* Right side - Login Form */}
           <Card 
-            className="w-full max-w-md glass-effect"
-            style={{ borderRadius: 'var(--border-radius-xl)' }}
+            style={{ 
+              width: '100%', 
+              maxWidth: '400px',
+              borderRadius: '16px',
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+            }}
           >
-            <div className="text-center mb-8">
-              <Title level={2} className="!mb-2">
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <Title level={2} style={{ marginBottom: '8px' }}>
                 Chào mừng trở lại
               </Title>
               <Text type="secondary">
@@ -82,7 +100,7 @@ const Login = () => {
                 message={error}
                 type="error"
                 showIcon
-                className="mb-6"
+                style={{ marginBottom: '24px' }}
                 closable
                 onClose={clearError}
               />
@@ -123,8 +141,8 @@ const Login = () => {
                 />
               </Form.Item>
 
-              <div className="flex items-center justify-between mb-6">
-                <Form.Item name="remember" valuePropName="checked" className="!mb-0">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <Form.Item name="remember" valuePropName="checked" style={{ margin: 0 }}>
                   <Checkbox>Ghi nhớ đăng nhập</Checkbox>
                 </Form.Item>
                 <Link to="/forgot-password">
@@ -132,13 +150,19 @@ const Login = () => {
                 </Link>
               </div>
 
-              <Form.Item className="!mb-6">
+              <Form.Item style={{ marginBottom: '24px' }}>
                 <Button
                   type="primary"
                   htmlType="submit"
                   loading={loading}
                   size="large"
                   block
+                  style={{
+                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    height: '48px'
+                  }}
                 >
                   {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
                 </Button>
@@ -149,7 +173,7 @@ const Login = () => {
               <Text type="secondary">hoặc</Text>
             </Divider>
 
-            <div className="text-center">
+            <div style={{ textAlign: 'center' }}>
               <Text type="secondary">
                 Chưa có tài khoản?{' '}
                 <Link to="/register">

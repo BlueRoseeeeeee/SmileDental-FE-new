@@ -22,69 +22,128 @@ import {
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import smileDentalLogo from '../../assets/image/smile-dental-logo.png';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
 const DashboardLayout = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    await logout();
+    navigate('/login');
   };
 
-  // Navigation items based on user role
-  const getNavigationItems = () => {
+  const getRoleDisplayName = (role) => {
+    const roleNames = {
+      admin: 'Quản trị viên',
+      manager: 'Quản lý',
+      dentist: 'Nha sĩ',
+      nurse: 'Y tá',
+      receptionist: 'Lễ tân',
+      patient: 'Bệnh nhân',
+    };
+    return roleNames[role] || role;
+  };
+
+  const getRoleColor = (role) => {
+    const colors = {
+      admin: 'red',
+      manager: 'blue',
+      dentist: 'green',
+      nurse: 'orange',
+      receptionist: 'purple',
+      patient: 'cyan',
+    };
+    return colors[role] || 'default';
+  };
+
+  // Menu items based on user role
+  const getMenuItems = () => {
     const baseItems = [
-      { key: '/dashboard', icon: <HomeOutlined />, label: 'Trang chủ' },
-      { key: '/profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân' },
-      { key: '/users', icon: <TeamOutlined />, label: 'Quản lý nhân viên' },
+      {
+        key: '/dashboard',
+        icon: <HomeOutlined />,
+        label: 'Trang chủ',
+      },
+      {
+        key: '/profile',
+        icon: <UserOutlined />,
+        label: 'Hồ sơ cá nhân',
+      },
     ];
 
-    const roleBasedItems = {
-      admin: [
-        { key: '/users', icon: <TeamOutlined />, label: 'Quản lý nhân viên' },
-        { key: '/permissions', icon: <SafetyOutlined />, label: 'Phân quyền' },
-        { key: '/statistics', icon: <BarChartOutlined />, label: 'Thống kê' },
-      ],
-      manager: [
-        { key: '/users', icon: <TeamOutlined />, label: 'Quản lý nhân viên' },
-        { key: '/schedules', icon: <ClockCircleOutlined />, label: 'Lịch làm việc' },
-        { key: '/reports', icon: <FileTextOutlined />, label: 'Báo cáo' },
-      ],
-      dentist: [
-        { key: '/appointments', icon: <CalendarOutlined />, label: 'Lịch khám' },
-        { key: '/certificates', icon: <FileTextOutlined />, label: 'Chứng chỉ' },
-        { key: '/patients', icon: <HeartOutlined />, label: 'Bệnh nhân' },
-      ],
-      nurse: [
-        { key: '/assistance', icon: <MedicineBoxOutlined />, label: 'Hỗ trợ khám' },
-        { key: '/schedule', icon: <ClockCircleOutlined />, label: 'Lịch làm việc' },
-      ],
-      receptionist: [
-        { key: '/bookings', icon: <CalendarOutlined />, label: 'Đặt lịch hẹn' },
-        { key: '/customers', icon: <UserSwitchOutlined />, label: 'Khách hàng' },
-      ],
-      patient: [
-        { key: '/my-appointments', icon: <CalendarOutlined />, label: 'Lịch hẹn của tôi' },
-        { key: '/dentists', icon: <TeamOutlined />, label: 'Nha sĩ' },
-      ],
-    };
+    const roleBasedItems = [];
 
-    return [...baseItems, ...(roleBasedItems[user?.role] || [])];
+    if (user?.role === 'admin' || user?.role === 'manager') {
+      roleBasedItems.push(
+        {
+          key: '/users',
+          icon: <UserSwitchOutlined />,
+          label: 'Quản lý người dùng',
+        }
+      );
+    }
+
+    if (user?.role === 'dentist') {
+      roleBasedItems.push(
+        {
+          key: '/certificates',
+          icon: <FileTextOutlined />,
+          label: 'Quản lý chứng chỉ',
+        }
+      );
+    }
+
+    if (user?.role === 'patient') {
+      roleBasedItems.push(
+        {
+          key: '/dentists',
+          icon: <TeamOutlined />,
+          label: 'Danh sách nha sĩ',
+        }
+      );
+    }
+
+    if (user?.role === 'dentist' || user?.role === 'nurse') {
+      roleBasedItems.push(
+        {
+          key: '/patients',
+          icon: <HeartOutlined />,
+          label: 'Quản lý bệnh nhân',
+        }
+      );
+    }
+
+    if (user?.role === 'admin' || user?.role === 'manager') {
+      roleBasedItems.push(
+        {
+          key: '/schedules',
+          icon: <ClockCircleOutlined />,
+          label: 'Quản lý lịch làm việc',
+        }
+      );
+    }
+
+    roleBasedItems.push(
+      {
+        key: '/appointments',
+        icon: <CalendarOutlined />,
+        label: 'Lịch hẹn',
+      },
+      {
+        key: '/settings',
+        icon: <SettingOutlined />,
+        label: 'Cài đặt',
+      }
+    );
+
+    return [...baseItems, ...roleBasedItems];
   };
-
-  const menuItems = getNavigationItems();
 
   const userMenuItems = [
     {
@@ -107,190 +166,161 @@ const DashboardLayout = () => {
       icon: <LogoutOutlined />,
       label: 'Đăng xuất',
       onClick: handleLogout,
-      danger: true,
     },
   ];
 
+  const menuItems = getMenuItems();
+
   return (
-    <Layout className="min-h-screen">
-      {/* Desktop Sidebar */}
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        className="hidden lg:block"
-        width={280}
-        collapsedWidth={80}
-      >
-        {/* Logo */}
-        <div className="flex items-center justify-center h-16 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl primary-gradient flex items-center justify-center shadow-lg">
-              <img 
-                src={smileDentalLogo} 
-                alt="Smile Dental" 
-                className="w-6 h-6 object-contain"
-              />
-            </div>
-            {!collapsed && (
-              <span className="text-lg font-bold text-gray-800">Smile Dental</span>
-            )}
-          </div>
-        </div>
-
-        {/* User Info */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <Avatar 
-              size={40} 
-              icon={<UserOutlined />}
-              className="primary-gradient"
-            />
-            {!collapsed && (
-              <div>
-                <Text className="text-sm font-medium text-gray-900 block">
-                  {user?.fullName}
-                </Text>
-                <Text className="text-xs text-gray-500 capitalize">
-                  {user?.role}
-                </Text>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Navigation Menu */}
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          className="border-0 bg-transparent"
-          style={{ background: 'transparent' }}
-          onClick={({ key }) => navigate(key)}
-        />
-      </Sider>
-
+    <Layout style={{ minHeight: '100vh' }}>
       {/* Mobile Drawer */}
       <Drawer
-        title={
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg primary-gradient flex items-center justify-center">
-              <img 
-                src={smileDentalLogo} 
-                alt="Smile Dental" 
-                className="w-5 h-5 object-contain"
-              />
-            </div>
-            <span className="text-lg font-bold text-gray-800">Smile Dental</span>
-          </div>
-        }
+        title="Menu"
         placement="left"
         onClose={() => setMobileMenuVisible(false)}
         open={mobileMenuVisible}
         width={280}
-        className="lg:hidden"
+        bodyStyle={{ padding: 0 }}
       >
-        {/* User Info */}
-        <div className="p-4 border-b border-gray-200 mb-4">
-          <div className="flex items-center space-x-3">
-            <Avatar 
-              size={40} 
-              icon={<UserOutlined />}
-              className="primary-gradient"
-            />
-            <div>
-              <Text className="text-sm font-medium text-gray-900 block">
-                {user?.fullName}
-              </Text>
-              <Text className="text-xs text-gray-500 capitalize">
-                {user?.role}
-              </Text>
-            </div>
-          </div>
+        <div style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
+          <div style={{ fontSize: '24px', marginBottom: '8px' }}>🦷</div>
+          <Text strong>Smile Dental</Text>
         </div>
-
-        {/* Navigation Menu */}
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
           items={menuItems}
-          className="border-0"
           onClick={({ key }) => {
             navigate(key);
             setMobileMenuVisible(false);
           }}
+          style={{ border: 'none' }}
         />
       </Drawer>
 
+      {/* Desktop Sider */}
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        style={{
+          background: '#fff',
+          boxShadow: '2px 0 8px rgba(0,0,0,0.06)',
+        }}
+        breakpoint="lg"
+        onBreakpoint={(broken) => {
+          if (broken) {
+            setCollapsed(true);
+          }
+        }}
+      >
+        <div style={{ 
+          padding: '16px', 
+          textAlign: 'center', 
+          borderBottom: '1px solid #f0f0f0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start'
+        }}>
+          <div style={{ fontSize: '24px', marginRight: collapsed ? 0 : '8px' }}>🦷</div>
+          {!collapsed && <Text strong>Smile Dental</Text>}
+        </div>
+        
+        <Menu
+          mode="inline"
+          selectedKeys={[location.pathname]}
+          items={menuItems}
+          onClick={({ key }) => navigate(key)}
+          style={{ border: 'none', marginTop: '16px' }}
+        />
+      </Sider>
+
       <Layout>
         {/* Header */}
-        <Header className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            {/* Mobile menu button */}
-            <Button
-              type="text"
-              icon={<MenuOutlined />}
-              onClick={() => setMobileMenuVisible(true)}
-              className="lg:hidden"
-            />
-            
-            {/* Desktop collapse button */}
+        <Header style={{ 
+          background: '#fff', 
+          padding: '0 24px', 
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
-              className="hidden lg:block"
+              style={{ fontSize: '16px', width: 64, height: 64 }}
             />
-
-            {/* Search bar */}
-            <Input
-              placeholder="Tìm kiếm..."
-              prefix={<SearchOutlined />}
-              className="w-80 hidden md:block"
+            
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => setMobileMenuVisible(true)}
+              style={{ 
+                fontSize: '16px', 
+                width: 64, 
+                height: 64,
+                display: 'none'
+              }}
+              className="mobile-menu-btn"
             />
           </div>
 
-          <div className="flex items-center space-x-4">
-            {/* Notifications */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Input
+              placeholder="Tìm kiếm..."
+              prefix={<SearchOutlined />}
+              style={{ width: 200 }}
+            />
+            
             <Tooltip title="Thông báo">
               <Badge count={5} size="small">
-                <Button 
-                  type="text" 
-                  icon={<BellOutlined />} 
-                />
+                <Button type="text" icon={<BellOutlined />} />
               </Badge>
             </Tooltip>
 
-            {/* User Menu */}
             <Dropdown
               menu={{ items: userMenuItems }}
               placement="bottomRight"
-              arrow
+              trigger={['click']}
             >
-              <div className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                cursor: 'pointer',
+                padding: '8px',
+                borderRadius: '8px',
+                transition: 'background-color 0.3s'
+              }}>
                 <Avatar 
-                  size={32} 
+                  src={user?.avatar} 
                   icon={<UserOutlined />}
-                  className="primary-gradient"
+                  style={{ marginRight: '8px' }}
                 />
-                <div className="hidden md:block">
-                  <Text className="text-sm font-medium text-gray-900 block">
+                <div>
+                  <div style={{ fontWeight: 500, fontSize: '14px' }}>
                     {user?.fullName}
-                  </Text>
-                  <Text className="text-xs text-gray-500 capitalize">
-                    {user?.role}
-                  </Text>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                    {getRoleDisplayName(user?.role)}
+                  </div>
                 </div>
               </div>
             </Dropdown>
           </div>
         </Header>
 
-        {/* Main Content */}
-        <Content>
-          <div className="fade-in">
-            <Outlet />
-          </div>
+        {/* Content */}
+        <Content style={{ 
+          margin: '24px', 
+          padding: '24px', 
+          background: '#fff', 
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          minHeight: 'calc(100vh - 112px)'
+        }}>
+          <Outlet />
         </Content>
       </Layout>
     </Layout>
