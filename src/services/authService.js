@@ -1,6 +1,9 @@
+/*
+* @author: HoTram
+*/
 import api from './api.js';
 
-// Auth Service
+// Auth Service - Updated to match backend API
 export const authService = {
   // Gửi OTP cho đăng ký
   sendOtpRegister: async (email) => {
@@ -14,13 +17,13 @@ export const authService = {
     return response.data;
   },
 
-  // Đăng ký
+  // Đăng ký với OTP verification
   register: async (userData) => {
     const response = await api.post('/auth/register', userData);
     return response.data;
   },
 
-  // Đăng nhập
+  // Đăng nhập (hỗ trợ email hoặc employeeCode)
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
     const { accessToken, refreshToken, user } = response.data;
@@ -33,11 +36,16 @@ export const authService = {
     return response.data;
   },
 
-  // Đăng xuất
+  // Đăng xuất với refresh token
   logout: async () => {
     const refreshToken = localStorage.getItem('refreshToken');
     if (refreshToken) {
-      await api.post('/auth/logout', { refreshToken });
+      try {
+        await api.post('/auth/logout', { refreshToken });
+      } catch (error) {
+        console.error('Logout API error:', error);
+        // Continue with local logout even if API fails
+      }
     }
     
     // Xóa tokens khỏi localStorage
@@ -46,22 +54,42 @@ export const authService = {
     localStorage.removeItem('user');
   },
 
-  // Refresh token
+  // Refresh access token
   refreshToken: async (refreshToken) => {
     const response = await api.post('/auth/refresh', { refreshToken });
+    const { accessToken } = response.data;
+    
+    // Update access token in localStorage
+    localStorage.setItem('accessToken', accessToken);
+    
     return response.data;
   },
 
-  // Đổi mật khẩu
+  // Đổi mật khẩu (yêu cầu mật khẩu hiện tại)
   changePassword: async (passwordData) => {
     const response = await api.post('/auth/change-password', passwordData);
     return response.data;
   },
 
-  // Reset mật khẩu
+  // Reset mật khẩu với OTP
   resetPassword: async (resetData) => {
     const response = await api.post('/auth/reset-password', resetData);
     return response.data;
+  },
+
+  // Auto refresh token when needed
+  refreshTokenIfNeeded: async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return false;
+
+    try {
+      const response = await authService.refreshToken(refreshToken);
+      return response.accessToken;
+    } catch (error) {
+      // If refresh fails, logout user
+      await authService.logout();
+      return false;
+    }
   },
 
   // Check if user is authenticated
@@ -74,5 +102,34 @@ export const authService = {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   },
+
+  // Get access token
+  getAccessToken: () => {
+    return localStorage.getItem('accessToken');
+  },
+
+  // Get refresh token
+  getRefreshToken: () => {
+    return localStorage.getItem('refreshToken');
+  },
+
+  // Update user info in localStorage
+  updateUserInfo: (userData) => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      const updatedUser = { ...currentUser, ...userData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    }
+    return null;
+  },
+
+  // Clear all auth data
+  clearAuthData: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+  }
 };
+
 export default authService;

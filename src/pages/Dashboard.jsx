@@ -1,3 +1,6 @@
+/*
+* @author: HoTram
+*/
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { Card, Row, Col, Statistic, Typography, Button, List, Avatar, Badge, Progress, Space, Divider } from 'antd';
@@ -108,14 +111,20 @@ const Dashboard = () => {
   const userQuickActions = quickActions[user?.role] || quickActions.patient;
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Welcome Section */}
-      <Card className="primary-gradient text-white border-0">
-        <div className="text-center py-8">
-          <Title level={1} className="!mb-2 !text-white">
+      <Card 
+        style={{ 
+          background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+          border: 'none',
+          color: 'white'
+        }}
+      >
+        <div style={{ textAlign: 'center', padding: '32px 0' }}>
+          <Title level={1} style={{ marginBottom: '8px', color: 'white' }}>
             {getGreeting()}
           </Title>
-          <Text className="text-lg text-white opacity-90">
+          <Text style={{ fontSize: '18px', color: 'white', opacity: 0.9 }}>
             {getRoleTitle()} • {new Date().toLocaleDateString('vi-VN', { 
               weekday: 'long', 
               year: 'numeric', 
@@ -130,15 +139,19 @@ const Dashboard = () => {
       <Row gutter={[24, 24]}>
         {userStats.map((stat, index) => (
           <Col xs={24} sm={12} lg={6} key={index}>
-            <Card className="fade-in">
+            <Card>
               <Statistic
                 title={stat.title}
                 value={stat.value}
                 suffix={stat.suffix}
                 prefix={
                   <div 
-                    className="p-3 rounded-xl flex items-center justify-center"
                     style={{ 
+                      padding: '12px',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       background: `linear-gradient(135deg, ${stat.color}20, ${stat.color}10)`,
                       color: stat.color 
                     }}
@@ -153,8 +166,8 @@ const Dashboard = () => {
                 }}
               />
               {stat.change > 0 && (
-                <div className="mt-2">
-                  <Text type="success" className="text-sm">
+                <div style={{ marginTop: '8px' }}>
+                  <Text type="success" style={{ fontSize: '14px' }}>
                     <RiseOutlined /> +{stat.change} so với tháng trước
                   </Text>
                 </div>
@@ -171,7 +184,6 @@ const Dashboard = () => {
           <Card 
             title="Hoạt động gần đây" 
             extra={<Badge count={3} />}
-            className="fade-in"
           >
             <List
               dataSource={recentActivities}
@@ -183,7 +195,7 @@ const Dashboard = () => {
                     description={
                       <div>
                         <div>{item.description}</div>
-                        <Text type="secondary" className="text-xs">{item.time}</Text>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>{item.time}</Text>
                       </div>
                     }
                   />
@@ -196,10 +208,9 @@ const Dashboard = () => {
         {/* Quick Actions */}
         <Col xs={24} lg={12}>
           <Card 
-            title="Thao tác nhanh" 
-            className="fade-in"
+            title="Thao tác nhanh"
           >
-            <Space direction="vertical" size="middle" className="w-full">
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               {userQuickActions.map((action, index) => (
                 <Button
                   key={index}
@@ -207,7 +218,13 @@ const Dashboard = () => {
                   icon={action.icon}
                   size="large"
                   block
-                  className="h-12 text-left flex items-center justify-start"
+                  style={{ 
+                    height: '48px', 
+                    textAlign: 'left', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'flex-start' 
+                  }}
                 >
                   {action.title}
                 </Button>
@@ -217,7 +234,13 @@ const Dashboard = () => {
                 icon={<SettingOutlined />}
                 size="large"
                 block
-                className="h-12 text-left flex items-center justify-start"
+                style={{ 
+                  height: '48px', 
+                  textAlign: 'left', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'flex-start' 
+                }}
               >
                 Cập nhật hồ sơ cá nhân
               </Button>
@@ -229,29 +252,37 @@ const Dashboard = () => {
       {/* Role-specific content */}
       {user?.role === 'admin' && (
         <Card 
-          title="Thông báo quản trị" 
-          className="fade-in"
+          title="Thông báo quản trị"
         >
-          <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-6">
-            <div className="flex items-start space-x-4">
-              <div className="p-3 bg-yellow-100 rounded-full">
-                <BellOutlined className="text-yellow-600 text-xl" />
+          <div style={{ 
+            background: 'linear-gradient(to right, #fffbe6, #fff7e6)', 
+            border: '1px solid #ffe58f', 
+            borderRadius: '12px', 
+            padding: '24px' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#fff1b8', 
+                borderRadius: '50%' 
+              }}>
+                <BellOutlined style={{ color: '#d48806', fontSize: '20px' }} />
               </div>
               <div>
-                <Title level={4} className="!mb-2 !text-yellow-800">
+                <Title level={4} style={{ marginBottom: '8px', color: '#d48806' }}>
                   Cập nhật hệ thống
                 </Title>
-                <Text className="text-yellow-700">
+                <Text style={{ color: '#d48806' }}>
                   Hệ thống sẽ được bảo trì vào 2:00 AM ngày mai. Thời gian dự kiến: 2 tiếng.
                 </Text>
-                <div className="mt-4">
+                <div style={{ marginTop: '16px' }}>
                   <Progress 
                     percent={75} 
                     strokeColor="#faad14" 
                     trailColor="#fff7e6"
                     showInfo={false}
                   />
-                  <Text type="secondary" className="text-xs">Tiến độ chuẩn bị: 75%</Text>
+                  <Text type="secondary" style={{ fontSize: '12px' }}>Tiến độ chuẩn bị: 75%</Text>
                 </div>
               </div>
             </div>
@@ -263,19 +294,18 @@ const Dashboard = () => {
       <Row gutter={[24, 24]}>
         <Col xs={24} md={12}>
           <Card 
-            title="Trạng thái hệ thống" 
-            className="fade-in"
+            title="Trạng thái hệ thống"
           >
-            <Space direction="vertical" size="large" className="w-full">
-              <div className="flex justify-between items-center">
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text>Hiệu suất server</Text>
                 <Progress percent={85} strokeColor="#52c41a" />
               </div>
-              <div className="flex justify-between items-center">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text>Băng thông</Text>
                 <Progress percent={60} strokeColor="#1890ff" />
               </div>
-              <div className="flex justify-between items-center">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text>Dung lượng lưu trữ</Text>
                 <Progress percent={45} strokeColor="#faad14" />
               </div>
@@ -285,32 +315,51 @@ const Dashboard = () => {
         
         <Col xs={24} md={12}>
           <Card 
-            title="Thống kê nhanh" 
-            className="fade-in"
+            title="Thống kê nhanh"
           >
             <Row gutter={[16, 16]}>
               <Col span={12}>
-                <div className="text-center p-4 bg-blue-50 rounded-xl">
-                  <Text className="text-2xl font-bold text-blue-600 block">98%</Text>
-                  <Text type="secondary" className="text-sm">Uptime</Text>
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '16px', 
+                  backgroundColor: '#e6f7ff', 
+                  borderRadius: '12px' 
+                }}>
+                  <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff', display: 'block' }}>98%</Text>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>Uptime</Text>
                 </div>
               </Col>
               <Col span={12}>
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <Text className="text-2xl font-bold text-green-600 block">2.3s</Text>
-                  <Text type="secondary" className="text-sm">Response Time</Text>
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '16px', 
+                  backgroundColor: '#f6ffed', 
+                  borderRadius: '12px' 
+                }}>
+                  <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a', display: 'block' }}>2.3s</Text>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>Response Time</Text>
                 </div>
               </Col>
               <Col span={12}>
-                <div className="text-center p-4 bg-purple-50 rounded-xl">
-                  <Text className="text-2xl font-bold text-purple-600 block">1,234</Text>
-                  <Text type="secondary" className="text-sm">Active Users</Text>
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '16px', 
+                  backgroundColor: '#f9f0ff', 
+                  borderRadius: '12px' 
+                }}>
+                  <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1', display: 'block' }}>1,234</Text>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>Active Users</Text>
                 </div>
               </Col>
               <Col span={12}>
-                <div className="text-center p-4 bg-orange-50 rounded-xl">
-                  <Text className="text-2xl font-bold text-orange-600 block">45</Text>
-                  <Text type="secondary" className="text-sm">New Today</Text>
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '16px', 
+                  backgroundColor: '#fff7e6', 
+                  borderRadius: '12px' 
+                }}>
+                  <Text style={{ fontSize: '24px', fontWeight: 'bold', color: '#fa8c16', display: 'block' }}>45</Text>
+                  <Text type="secondary" style={{ fontSize: '14px' }}>New Today</Text>
                 </div>
               </Col>
             </Row>

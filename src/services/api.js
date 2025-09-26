@@ -1,7 +1,11 @@
+/*
+* @author: HoTram
+*/
 import axios from 'axios';
+import { authService } from './authService.js';
 
-// Base API URL
-const API_BASE_URL = 'http://localhost:3001/api';
+// Base API URL - Update to match your backend
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Create axios instance
 const api = axios.create({
@@ -9,12 +13,13 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 seconds timeout
 });
 
 // Request interceptor để thêm token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = authService.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,29 +36,33 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 403 && !originalRequest._retry) {
+    // Handle 401 Unauthorized (token expired)
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken,
-          });
-
-          const { accessToken } = response.data;
-          localStorage.setItem('accessToken', accessToken);
-          
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        const newToken = await authService.refreshTokenIfNeeded();
+        if (newToken) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh token expired, redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+        console.error('Token refresh failed:', refreshError);
+        // Clear auth data and redirect to login
+        authService.clearAuthData();
         window.location.href = '/login';
+        return Promise.reject(refreshError);
       }
+    }
+
+    // Handle 403 Forbidden (insufficient permissions)
+    if (error.response?.status === 403) {
+      console.error('Access forbidden:', error.response.data);
+    }
+
+    // Handle network errors
+    if (!error.response) {
+      console.error('Network error:', error.message);
     }
 
     return Promise.reject(error);

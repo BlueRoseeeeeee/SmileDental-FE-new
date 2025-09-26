@@ -1,4 +1,6 @@
-
+/*
+* @author: HoTram
+*/
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
@@ -16,6 +18,8 @@ import DashboardLayout from './components/Layout/DashboardLayout.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
+import CertificateManagement from './components/User/CertificateManagement.jsx';
+import ChangePassword from './components/Auth/ChangePassword.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -31,7 +35,7 @@ import {
 
 // Error Pages
 const NotFound = () => (
-  <div className="min-h-screen flex items-center justify-center">
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <Result
       status="404"
       title="404"
@@ -46,7 +50,7 @@ const NotFound = () => (
 );
 
 const Unauthorized = () => (
-  <div className="min-h-screen flex items-center justify-center">
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <Result
       status="403"
       title="403"
@@ -62,13 +66,13 @@ const Unauthorized = () => (
 
 // Placeholder pages for development
 const Settings = () => (
-  <div className="space-y-6">
-    <div className="flex items-center space-x-3">
-      <SettingOutlined className="text-2xl text-blue-600" />
-      <h1 className="text-2xl font-bold text-gray-900">Cài đặt</h1>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <SettingOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+      <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Cài đặt</h1>
     </div>
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <p className="text-gray-600">Trang cài đặt sẽ được phát triển ở đây...</p>
+    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+      <p style={{ color: '#8c8c8c', margin: 0 }}>Trang cài đặt sẽ được phát triển ở đây...</p>
     </div>
   </div>
 );
@@ -100,48 +104,44 @@ function App() {
             {/* Profile */}
             <Route path="profile" element={<Profile />} />
             
+            {/* Change Password */}
+            <Route path="change-password" element={<ChangePassword />} />
+            
             {/* Admin/Manager routes */}
             <Route path="users" element={<UserManagement />} />
+            
+            {/* Certificate Management (Dentist only) */}
+            <Route path="certificates" element={
+              <ProtectedRoute roles={['dentist']}>
+                <CertificateManagement />
+              </ProtectedRoute>
+            } />
             
             {/* Settings */}
             <Route path="settings" element={<Settings />} />
             
             {/* Placeholder routes for future development */}
             <Route path="appointments" element={
-              <div className="space-y-6">
-                <div className="flex items-center space-x-3">
-                  <CalendarOutlined className="text-2xl text-blue-600" />
-                  <h1 className="text-2xl font-bold text-gray-900">Lịch hẹn</h1>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <CalendarOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Lịch hẹn</h1>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm border">
-                  <p className="text-gray-600">Đang phát triển...</p>
+                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
                 </div>
               </div>
             } />
             
-            <Route path="certificates" element={
-              <ProtectedRoute roles={['dentist']}>
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-3">
-                    <FileTextOutlined className="text-2xl text-blue-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">Quản lý chứng chỉ</h1>
-                  </div>
-                  <div className="bg-white p-6 rounded-lg shadow-sm border">
-                    <p className="text-gray-600">Đang phát triển...</p>
-                  </div>
-                </div>
-              </ProtectedRoute>
-            } />
-            
             <Route path="patients" element={
               <ProtectedRoute roles={['dentist', 'nurse']}>
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-3">
-                    <HeartOutlined className="text-2xl text-blue-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">Quản lý bệnh nhân</h1>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <HeartOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Quản lý bệnh nhân</h1>
                   </div>
-                  <div className="bg-white p-6 rounded-lg shadow-sm border">
-                    <p className="text-gray-600">Đang phát triển...</p>
+                  <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                    <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
                   </div>
                 </div>
               </ProtectedRoute>
@@ -149,13 +149,13 @@ function App() {
             
             <Route path="schedules" element={
               <ProtectedRoute roles={['admin', 'manager']}>
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-3">
-                    <ClockCircleOutlined className="text-2xl text-blue-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">Quản lý lịch làm việc</h1>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <ClockCircleOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Quản lý lịch làm việc</h1>
                   </div>
-                  <div className="bg-white p-6 rounded-lg shadow-sm border">
-                    <p className="text-gray-600">Đang phát triển...</p>
+                  <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                    <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
                   </div>
                 </div>
               </ProtectedRoute>
@@ -163,13 +163,13 @@ function App() {
             
             <Route path="dentists" element={
               <ProtectedRoute roles={['patient']}>
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-3">
-                    <TeamOutlined className="text-2xl text-blue-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">Danh sách nha sĩ</h1>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <TeamOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Danh sách nha sĩ</h1>
                   </div>
-                  <div className="bg-white p-6 rounded-lg shadow-sm border">
-                    <p className="text-gray-600">Đang phát triển...</p>
+                  <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                    <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
                   </div>
                 </div>
               </ProtectedRoute>

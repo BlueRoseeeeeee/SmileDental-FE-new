@@ -1,3 +1,6 @@
+/*
+* @author: HoTram
+*/
 import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Avatar, Dropdown, Button, Input, Badge, Typography, Space, Drawer, Tooltip } from 'antd';
@@ -151,6 +154,12 @@ const DashboardLayout = () => {
       icon: <UserOutlined />,
       label: 'Hồ sơ cá nhân',
       onClick: () => navigate('/profile'),
+    },
+    {
+      key: 'change-password',
+      icon: <SafetyOutlined />,
+      label: 'Đổi mật khẩu',
+      onClick: () => navigate('/change-password'),
     },
     {
       key: 'settings',
