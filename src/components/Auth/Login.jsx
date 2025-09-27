@@ -17,6 +17,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
+import './Login.css';
 
 const { Title, Text } = Typography;
 
@@ -25,10 +26,84 @@ const Login = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
+  // Kiểm tra xem người dùng đã từng chọn "Ghi nhớ đăng nhập" chưa
+  React.useEffect(() => {
+    const rememberLogin = localStorage.getItem('rememberLogin');
+    if (rememberLogin === 'true') {
+      form.setFieldsValue({ remember: true });
+    }
+  }, [form]);
+
+  // Lưu giá trị input email/mã nhân viên vào localStorage
+  React.useEffect(() => {
+    // Restore giá trị đã lưu
+    const savedLoginData = localStorage.getItem('loginFormData');
+    if (savedLoginData) {
+      try {
+        const data = JSON.parse(savedLoginData);
+        form.setFieldsValue({
+          login: data.login || '',
+          remember: data.remember || false
+        });
+      } catch (error) {
+        console.error('Error parsing saved login data:', error);
+      }
+    }
+  }, [form]);
+
+  // Lưu giá trị khi người dùng thay đổi input
+  const handleInputChange = (changedValues, allValues) => {
+    // Chỉ lưu login và remember, không lưu password
+    const dataToSave = {
+      login: allValues.login || '',
+      remember: allValues.remember || false
+    };
+    localStorage.setItem('loginFormData', JSON.stringify(dataToSave));
+  };
+
+  // Xóa password field khi logout (giữ lại login và remember)
+  React.useEffect(() => {
+    const handleLogout = () => {
+      // Chỉ xóa password field, giữ nguyên login và remember
+      form.setFieldsValue({ password: '' });
+    };
+
+    // Listen for logout event (có thể từ AuthContext)
+    const checkLogout = () => {
+      const isAuthenticated = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      if (!isAuthenticated) {
+        handleLogout();
+      }
+    };
+
+    // Check khi component mount
+    checkLogout();
+
+    // Listen for storage changes (khi logout từ tab khác)
+    window.addEventListener('storage', checkLogout);
+    
+    return () => {
+      window.removeEventListener('storage', checkLogout);
+    };
+  }, [form]);
+
   const onFinish = async (values) => {
     try {
       clearError();
-      await login(values);
+      // Truyền giá trị remember vào login function
+      await login({
+        login: values.login,
+        password: values.password,
+        remember: values.remember || false
+      });
+      
+      // Lưu giá trị login và remember sau khi đăng nhập thành công
+      const dataToSave = {
+        login: values.login,
+        remember: values.remember || false
+      };
+      localStorage.setItem('loginFormData', JSON.stringify(dataToSave));
+      
       navigate('/dashboard');
     } catch (err) {
       // Error is handled by AuthContext
@@ -37,101 +112,6 @@ const Login = () => {
 
   return (
     <>
-      <style>
-        {`
-          /* Fix Ant Design Form styling */
-          .ant-form-item {
-            margin-bottom: 24px !important;
-          }
-          
-          .ant-input {
-            height: 48px !important;
-            border-radius: 8px !important;
-            border: 1px solid #d9d9d9 !important;
-            font-size: 16px !important;
-            padding: 12px 16px !important;
-            line-height: 1.5 !important;
-            display: flex !important;
-            align-items: center !important;
-          }
-          
-          .ant-input:focus {
-            border-color: #2596be !important;
-            box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
-          }
-          
-          .ant-input-affix-wrapper {
-            height: 48px !important;
-            border-radius: 8px !important;
-            border: 1px solid #d9d9d9 !important;
-            display: flex !important;
-            align-items: center !important;
-          }
-          
-          .ant-input-affix-wrapper:focus-within {
-            border-color: #2596be !important;
-            box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
-          }
-          
-          .ant-input-affix-wrapper .ant-input {
-            height: auto !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-          
-          .ant-input-password {
-            height: 48px !important;
-          }
-          
-          .ant-input-password .ant-input {
-            height: 48px !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
-          
-          .ant-input-password:focus-within {
-            border-color: #2596be !important;
-            box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
-          }
-          
-          .ant-form-item-label > label {
-            font-weight: 600 !important;
-            color: #333 !important;
-          }
-          
-          .ant-btn-primary {
-            background: #2596be !important;
-            border-color: #2596be !important;
-            height: 48px !important;
-            border-radius: 8px !important;
-            font-size: 16px !important;
-            font-weight: 600 !important;
-          }
-          
-          .ant-btn-primary:hover {
-            background: #1e7ba8 !important;
-            border-color: #1e7ba8 !important;
-          }
-
-          /* Responsive layout for container */
-          @media (max-width: 768px) {
-            .register-container {
-              flex-direction: column !important;
-              min-height: auto !important;
-            }
-            .register-image {
-              flex: none !important;
-              height: 400px !important;
-              padding: 20px !important;
-            }
-            .register-form {
-              flex: none !important;
-              padding: 24px !important;
-            }
-          }
-        `}
-      </style>
       <div style={{ 
         minHeight: '100vh', 
         background: '#e8f5e8', // Màu xanh nhạt cho nha khoa
@@ -295,6 +275,7 @@ const Login = () => {
               form={form}
               name="login"
               onFinish={onFinish}
+              onValuesChange={handleInputChange}
               layout="vertical"
               size="large"
             >

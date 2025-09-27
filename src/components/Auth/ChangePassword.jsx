@@ -12,6 +12,7 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import './ChangePassword.css';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;

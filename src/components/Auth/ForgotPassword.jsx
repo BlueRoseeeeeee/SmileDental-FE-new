@@ -19,6 +19,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
+import './ForgotPassword.css';
 
 const { Title, Text } = Typography;
 
@@ -229,90 +230,6 @@ const ForgotPassword = () => {
 
   return (
     <>
-      <style>
-        {`
-          /* Responsive layout for container */
-          @media (max-width: 768px) {
-            .register-container {
-              flex-direction: column !important;
-              min-height: auto !important;
-            }
-            .register-image {
-              flex: none !important;
-              height: 400px !important;
-              padding: 20px !important;
-            }
-            .register-form {
-              flex: none !important;
-              padding: 24px !important;
-            }
-          }
-          
-          /* Fix Ant Design Form styling */
-          .ant-form-item {
-            margin-bottom: 24px !important;
-          }
-          .ant-input {
-            height: 48px !important;
-            border-radius: 8px !important;
-            border: 1px solid #d9d9d9 !important;
-            font-size: 16px !important;
-            padding: 12px 16px !important;
-            line-height: 1.5 !important;
-            display: flex !important;
-            align-items: center !important;
-          }
-          .ant-input:focus {
-            border-color: #2596be !important;
-            box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
-          }
-          .ant-input-affix-wrapper {
-            height: 48px !important;
-            border-radius: 8px !important;
-            border: 1px solid #d9d9d9 !important;
-            display: flex !important;
-            align-items: center !important;
-          }
-          .ant-input-affix-wrapper:focus-within {
-            border-color: #2596be !important;
-            box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
-          }
-          .ant-input-affix-wrapper .ant-input {
-            height: auto !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-          .ant-input-password {
-            height: 48px !important;
-          }
-          .ant-input-password .ant-input {
-            height: 48px !important;
-            border: none !important;
-            box-shadow: none !important;
-          }
-          .ant-input-password:focus-within {
-            border-color: #2596be !important;
-            box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
-          }
-          .ant-form-item-label > label {
-            font-weight: 600 !important;
-            color: #333 !important;
-          }
-          .ant-btn-primary {
-            background: #2596be !important;
-            border-color: #2596be !important;
-            height: 48px !important;
-            border-radius: 8px !important;
-            font-size: 16px !important;
-            font-weight: 600 !important;
-          }
-          .ant-btn-primary:hover {
-            background: #1e7ba8 !important;
-            border-color: #1e7ba8 !important;
-          }
-        `}
-      </style>
       <div style={{ 
         minHeight: '100vh', 
         background: '#e8f5e8',

@@ -66,15 +66,48 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication on mount
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    const user = authService.getCurrentUser();
-
-    if (token && user) {
-      dispatch({
-        type: 'LOGIN_SUCCESS',
-        payload: { user },
-      });
-    }
+    const checkAuth = async () => {
+      // Kiểm tra localStorage trước (ghi nhớ đăng nhập)
+      let token = localStorage.getItem('accessToken');
+      let userData = localStorage.getItem('userData');
+      
+      // Nếu không có trong localStorage, kiểm tra sessionStorage
+      if (!token) {
+        token = sessionStorage.getItem('accessToken');
+      }
+      
+      // Nếu có token và user data
+      if (token && userData) {
+        try {
+          const user = JSON.parse(userData);
+          
+          // Kiểm tra token validity với backend (optional)
+          try {
+          } catch (error) {
+            
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('userData');
+            localStorage.removeItem('rememberLogin');
+            sessionStorage.removeItem('accessToken');
+            return;
+          }
+          
+          dispatch({
+            type: 'LOGIN_SUCCESS',
+            payload: { user },
+          });
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          // Xóa dữ liệu không hợp lệ
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('userData');
+          localStorage.removeItem('rememberLogin');
+          sessionStorage.removeItem('accessToken');
+        }
+      }
+    };
+    
+    checkAuth();
   }, []);
 
   // Login function
@@ -82,6 +115,20 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'LOGIN_START' });
     try {
       const response = await authService.login(credentials);
+      
+      // Xử lý ghi nhớ đăng nhập
+      if (credentials.remember) {
+        // Lưu token vào localStorage để ghi nhớ
+        localStorage.setItem('accessToken', response.token);
+        localStorage.setItem('rememberLogin', 'true');
+        localStorage.setItem('userData', JSON.stringify(response.user));
+      } else {
+        // Chỉ lưu vào sessionStorage (sẽ mất khi đóng browser)
+        sessionStorage.setItem('accessToken', response.token);
+        localStorage.removeItem('rememberLogin');
+        localStorage.removeItem('userData');
+      }
+      
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: { user: response.user },
@@ -100,10 +147,15 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authService.logout();
-      dispatch({ type: 'LOGOUT' });
     } catch (error) {
       console.error('Logout error:', error);
-      // Force logout even if API call fails
+    } finally {
+      // Xóa tất cả dữ liệu authentication
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('rememberLogin');
+      sessionStorage.removeItem('accessToken');
+      
       dispatch({ type: 'LOGOUT' });
     }
   };
@@ -218,6 +270,13 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'CLEAR_ERROR' });
   };
 
+  // Clear remember login
+  const clearRememberLogin = () => {
+    localStorage.removeItem('rememberLogin');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('accessToken');
+  };
+
   const value = {
     ...state,
     login,
@@ -230,6 +289,7 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     updateUser,
     clearError,
+    clearRememberLogin,
   };
 
   return (
