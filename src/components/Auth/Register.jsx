@@ -45,33 +45,45 @@ const RegisterRHF = () => {
   
   const { handleSubmit, formState: { errors }, setValue, getValues, watch, register, reset } = form;
   
+  // Watch email để kiểm tra validation
+  const emailValue = watch('email');
+  
+  // Validation email
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+  
   // Khôi phục dữ liệu từ localStorage khi component mount (trừ OTP)
   React.useEffect(() => {
     const savedData = localStorage.getItem('registerFormData');
     if (savedData) {
       const data = JSON.parse(savedData);
       // OTP không được khôi phục vì chỉ dùng 1 lần
-      reset(data);
+      const { otp, ...dataToRestore } = data;
+      reset(dataToRestore);
       setStep(data.step || 0);
       setEmail(data.email || '');
       setOtpSent(data.otpSent || false);
+      setOtpMessage(data.otpMessage || '');
     }
   }, [reset]);
   
   // Lưu dữ liệu vào localStorage mỗi khi có thay đổi (trừ OTP)
   React.useEffect(() => {
     const subscription = watch((value) => {
-      // Loại bỏ OTP khỏi dữ liệu lưu trữ
+      // Loại bỏ OTP khỏi dữ liệu lưu trữ, nhưng giữ lại email
       const { otp, ...dataToSave } = value;
       localStorage.setItem('registerFormData', JSON.stringify({
         ...dataToSave,
         step,
         email,
-        otpSent
+        otpSent,
+        otpMessage
       }));
     });
     return () => subscription.unsubscribe();
-  }, [watch, step, email, otpSent]);
+  }, [watch, step, email, otpSent, otpMessage]);
 
   // Steps configuration
   const steps = [
@@ -253,6 +265,7 @@ const RegisterRHF = () => {
           /* Custom form styling */
           .form-group {
             margin-bottom: 24px;
+            position: relative;
           }
 
           .form-label {
@@ -269,12 +282,15 @@ const RegisterRHF = () => {
             border: 1px solid #d9d9d9;
             border-radius: 8px;
             transition: all 0.3s;
+            position: relative;
+            z-index: 1;
           }
 
           .form-input:focus {
             border-color: #40a9ff;
             box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
             outline: none;
+            z-index: 2;
           }
 
           .form-error {
@@ -392,20 +408,10 @@ const RegisterRHF = () => {
               style={{ marginBottom: '40px' }}
             />
 
-            {/* Success Alerts */}
+            {/* Success Alerts - Ưu tiên thông báo từ BE */}
             {otpSent && step === 1 && (
               <Alert
-                message={otpMessage}
-                type="success"
-                showIcon
-                icon={<CheckCircleOutlined />}
-                style={{ marginBottom: '24px' }}
-              />
-            )}
-
-            {step === 1 && (
-              <Alert
-                message="OTP đăng ký đã được gửi đến email!"
+                message={otpMessage || "OTP đăng ký đã được gửi đến email!"}
                 type="success"
                 showIcon
                 icon={<CheckCircleOutlined />}
@@ -433,7 +439,13 @@ const RegisterRHF = () => {
                     Email <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('email', { required: 'Vui lòng nhập email!' })}
+                    {...register('email', { 
+                      required: 'Vui lòng nhập email!',
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: 'Email không đúng định dạng! (VD: example@gmail.com)'
+                      }
+                    })}
                     type="email"
                     className="form-input"
                     placeholder="Nhập email của bạn (VD: example@gmail.com)"
@@ -447,12 +459,16 @@ const RegisterRHF = () => {
                   type="primary"
                   htmlType="submit"
                   loading={loading}
+                  disabled={!emailValue || !isValidEmail(emailValue) || loading}
                   block
                   style={{
-                    background: '#2e7d32',
+                    background: (!emailValue || !isValidEmail(emailValue)) ? '#bfbfbf' : '#2e7d32',
                     border: 'none',
                     borderRadius: '8px',
-                    height: '48px'
+                    height: '48px',
+                    cursor: (!emailValue || !isValidEmail(emailValue)) ? 'not-allowed' : 'pointer',
+                    color: (!emailValue || !isValidEmail(emailValue)) ? '#8c8c8c' : 'white',
+                    opacity: (!emailValue || !isValidEmail(emailValue)) ? 0.6 : 1
                   }}
                 >
                   {loading ? 'Đang gửi OTP...' : 'Gửi mã OTP'}
@@ -530,6 +546,8 @@ const RegisterRHF = () => {
                     className="form-input"
                     placeholder="Nhập họ và tên đầy đủ (VD: Nguyễn Văn A)"
                     onBlur={handleFullNameBlur}
+                    tabIndex={1}
+                    autoComplete="name"
                   />
                   {errors.fullName && (
                     <div className="form-error">{errors.fullName.message}</div>
@@ -544,6 +562,8 @@ const RegisterRHF = () => {
                     {...register('phone', { required: 'Vui lòng nhập số điện thoại!' })}
                     className="form-input"
                     placeholder="Nhập số điện thoại (VD: 0123456789)"
+                    tabIndex={2}
+                    autoComplete="tel"
                   />
                   {errors.phone && (
                     <div className="form-error">{errors.phone.message}</div>
@@ -559,6 +579,8 @@ const RegisterRHF = () => {
                     type="date"
                     className="form-input"
                     placeholder="dd/mm/yyyy"
+                    tabIndex={3}
+                    autoComplete="bday"
                   />
                   {errors.dateOfBirth && (
                     <div className="form-error">{errors.dateOfBirth.message}</div>
