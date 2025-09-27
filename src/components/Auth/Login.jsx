@@ -152,11 +152,11 @@ const Login = () => {
             minHeight: 'calc(100vh - 40px)'
           }}>
 
-          {/* Hình ảnh bên trái - 30% */}
+          {/* Hình ảnh bên trái - 50% */}
           <div 
             className="register-image"
             style={{ 
-              flex: '0 0 30%', // Chiếm 30% width
+              flex: '0 0 50%', // Chiếm 50% width
               display: 'flex', 
               flexDirection: 'column',
               alignItems: 'center', 
@@ -258,11 +258,11 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Form đăng nhập bên phải - 70% */}
+          {/* Form đăng nhập bên phải - 50% */}
           <div 
             className="register-form"
             style={{ 
-              flex: '0 0 70%', // Chiếm 70% width
+              flex: '0 0 50%', // Chiếm 50% width
               padding: '48px', 
               display: 'flex', 
               flexDirection: 'column', 
