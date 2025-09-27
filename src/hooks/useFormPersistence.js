@@ -10,8 +10,7 @@ export const useFormPersistence = (storageKey, defaultValues = {}) => {
     try {
       const stored = localStorage.getItem(storageKey);
       return stored ? JSON.parse(stored) : defaultValues;
-    } catch (error) {
-      console.error('Error parsing stored form data:', error);
+    } catch {
       return defaultValues;
     }
   };

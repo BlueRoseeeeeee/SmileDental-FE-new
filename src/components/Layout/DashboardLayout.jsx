@@ -25,6 +25,8 @@ import {
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import logo from '../../assets/image/smile-dental-logo.png';
+import './DashboardLayout.css';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -192,7 +194,7 @@ const DashboardLayout = () => {
         bodyStyle={{ padding: 0 }}
       >
         <div style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
-          <div style={{ fontSize: '24px', marginBottom: '8px' }}>🦷</div>
+          <img src={logo} alt="Smile Dental" style={{ width: '100%', height: '100%' }} />
           <Text strong>Smile Dental</Text>
         </div>
         <Menu
@@ -252,14 +254,25 @@ const DashboardLayout = () => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          height: '64px',
+          borderBottom: '1px solid #f0f0f0'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Left Section - Menu Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: '16px', width: 64, height: 64 }}
+              style={{ 
+                fontSize: '18px', 
+                width: '48px', 
+                height: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px'
+              }}
             />
             
             <Button
@@ -267,51 +280,110 @@ const DashboardLayout = () => {
               icon={<MenuOutlined />}
               onClick={() => setMobileMenuVisible(true)}
               style={{ 
-                fontSize: '16px', 
-                width: 64, 
-                height: 64,
-                display: 'none'
+                fontSize: '18px', 
+                width: '48px', 
+                height: '48px',
+                display: 'none',
+                borderRadius: '8px'
               }}
               className="mobile-menu-btn"
             />
+            
+            {/* Mobile Search Button */}
+            <Button
+              type="text"
+              icon={<SearchOutlined />}
+              onClick={() => setMobileMenuVisible(true)}
+              style={{ 
+                fontSize: '18px', 
+                width: '48px', 
+                height: '48px',
+                display: 'none',
+                borderRadius: '8px'
+              }}
+              className="mobile-search-btn"
+            />
           </div>
 
+          {/* Right Section - Notifications & User */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Input
-              placeholder="Tìm kiếm..."
-              prefix={<SearchOutlined />}
-              style={{ width: 200 }}
-            />
-            
+            {/* Notification Bell */}
             <Tooltip title="Thông báo">
-              <Badge count={5} size="small">
-                <Button type="text" icon={<BellOutlined />} />
+              <Badge 
+                count={5} 
+                size="small"
+                style={{ 
+                  backgroundColor: '#ff4d4f',
+                  boxShadow: '0 0 0 1px #fff'
+                }}
+              >
+                <Button 
+                  type="text" 
+                  icon={<BellOutlined />}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px'
+                  }}
+                />
               </Badge>
             </Tooltip>
 
+            {/* User Profile Dropdown */}
             <Dropdown
               menu={{ items: userMenuItems }}
               placement="bottomRight"
               trigger={['click']}
             >
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                cursor: 'pointer',
-                padding: '8px',
-                borderRadius: '8px',
-                transition: 'background-color 0.3s'
-              }}>
+              <div 
+                className="user-profile-dropdown"
+                style={{
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  cursor: 'pointer',
+                  padding: '8px 12px',
+                  borderRadius: '12px',
+                  transition: 'all 0.3s ease',
+                  border: '1px solid transparent',
+                  minWidth: '200px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f5f5f5';
+                  e.currentTarget.style.borderColor = '#d9d9d9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}>
                 <Avatar 
                   src={user?.avatar} 
                   icon={<UserOutlined />}
-                  style={{ marginRight: '8px' }}
+                  style={{ 
+                    marginRight: '12px',
+                    width: '36px',
+                    height: '36px',
+                    backgroundColor: '#2596be'
+                  }}
                 />
-                <div>
-                  <div style={{ fontWeight: 500, fontSize: '14px' }}>
-                    {user?.fullName}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ 
+                    fontWeight: 600, 
+                    fontSize: '14px',
+                    color: '#262626',
+                    lineHeight: '1.2',
+                    marginBottom: '2px'
+                  }}>
+                    {user?.fullName || 'Admin'}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#8c8c8c',
+                    lineHeight: '1.2'
+                  }}>
                     {getRoleDisplayName(user?.role)}
                   </div>
                 </div>

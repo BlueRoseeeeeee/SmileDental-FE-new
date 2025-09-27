@@ -57,9 +57,8 @@ const EmployeeDetailModal = ({ open, onClose, userId, onEdit }) => {
     try {
       const response = await userService.getUserById(userId);
       setUser(response.user);
-    } catch (error) {
+    } catch {
       setError('Không thể tải thông tin nhân viên');
-      console.error('Error fetching user details:', error);
     } finally {
       setLoading(false);
     }

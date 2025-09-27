@@ -46,23 +46,21 @@ api.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         }
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
-        // Clear auth data and redirect to login
-        authService.clearAuthData();
+      } catch {
+        // Token refresh failed, redirect to login
         window.location.href = '/login';
-        return Promise.reject(refreshError);
+        return Promise.reject(originalRequest);
       }
     }
 
     // Handle 403 Forbidden (insufficient permissions)
     if (error.response?.status === 403) {
-      console.error('Access forbidden:', error.response.data);
+      // Forbidden access
     }
 
     // Handle network errors
     if (!error.response) {
-      console.error('Network error:', error.message);
+      // Network error occurred
     }
 
     return Promise.reject(error);

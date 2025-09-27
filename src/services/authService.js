@@ -42,16 +42,17 @@ export const authService = {
     if (refreshToken) {
       try {
         await api.post('/auth/logout', { refreshToken });
-      } catch (error) {
-        console.error('Logout API error:', error);
-        // Continue with local logout even if API fails
+      } catch {
+        // Silently handle logout API errors
       }
     }
     
     // Xóa tokens khỏi localStorage
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('authToken'); // Remove authToken if exists
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('rememberLogin');
   },
 
   // Refresh access token

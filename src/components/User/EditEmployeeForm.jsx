@@ -89,9 +89,8 @@ const EditEmployeeForm = ({ open, onClose, userId, onSuccess }) => {
         description: user.description || '',
         isActive: user.isActive !== undefined ? user.isActive : true
       });
-    } catch (error) {
+    } catch {
       setError('Không thể tải thông tin nhân viên');
-      console.error('Error fetching user data:', error);
     } finally {
       setLoading(false);
     }

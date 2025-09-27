@@ -177,7 +177,6 @@ const RegisterRHF = () => {
       if (!data.fullName || !data.phone || !data.dateOfBirth || !data.gender) {
         return; // Không chuyển bước nếu thiếu thông tin
       }
-      console.log('Personal info saved:', data); // Debug log
       // Lưu dữ liệu vào form state
       setValue('fullName', data.fullName);
       setValue('phone', data.phone);
@@ -197,18 +196,15 @@ const RegisterRHF = () => {
       if (!data.password || !data.confirmPassword || data.password !== data.confirmPassword) {
         return; // Không chuyển bước nếu thiếu thông tin
       }
-      console.log('Password info saved:', data); // Debug log
       // Lưu dữ liệu vào form state
       setValue('password', data.password);
       setValue('confirmPassword', data.confirmPassword);
       
       // Lấy tất cả dữ liệu từ form
       const allData = form.getValues();
-      console.log('All form data:', allData); // Debug log
       
       // Kiểm tra xem có đủ dữ liệu không
       if (!allData.fullName || !allData.phone || !allData.dateOfBirth || !allData.gender || !allData.password || !allData.email) {
-        console.error('Missing required data:', allData);
         return; // Không gửi nếu thiếu dữ liệu
       }
       
