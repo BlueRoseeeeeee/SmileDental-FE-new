@@ -6,7 +6,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button, Card, Typography, Alert, Radio, Steps, Space, Divider, message } from 'antd';
 import { 
   CheckCircleOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  HeartOutlined,
+  StarOutlined,
+  TeamOutlined,
+  SafetyOutlined
 } from '@ant-design/icons';
 import { useForm } from 'react-hook-form';
 import { useFormPersistence } from '../../hooks/useFormPersistence';
@@ -325,7 +329,8 @@ const RegisterRHF = () => {
             }
             .register-image {
               flex: none !important;
-              height: 300px !important;
+              height: 400px !important;
+              padding: 20px !important;
             }
             .register-form {
               flex: none !important;
@@ -449,33 +454,118 @@ const RegisterRHF = () => {
             minHeight: 'calc(100vh - 40px)'
           }}>
 
-          {/* Hình ảnh bên trái */}
+          {/* Hình ảnh bên trái - 30% */}
           <div 
             className="register-image"
             style={{ 
-              flex: 1, 
+              flex: '0 0 30%', // Chiếm 30% width
               display: 'flex', 
+              flexDirection: 'column',
               alignItems: 'center', 
               justifyContent: 'center', 
-              padding: '24px',
-              background: '#f0f8f0' // Màu xanh nhạt cho phần hình ảnh
+              padding: '40px 24px',
+              background: 'linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%)',
+              position: 'relative'
             }}>
-            <img 
-              src={registerImage} 
-              alt="Register" 
-              style={{ 
-                maxWidth: '100%', 
-                maxHeight: '100%', 
-                objectFit: 'contain' 
-              }} 
-            />
+            {/* Nội dung bổ sung */}
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+              <h2 style={{ 
+                color: '#2596be', 
+                fontSize: '2rem', 
+                fontWeight: 'bold',
+                marginBottom: '16px',
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}>
+                Chào mừng đến với
+              </h2>
+              <h1 style={{ 
+                color: '#2596be', 
+                fontSize: '2.5rem', 
+                fontWeight: 'bold',
+                marginBottom: '20px',
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}>
+                SmileDental
+              </h1>
+              <p style={{ 
+                color: '#666', 
+                fontSize: '1.1rem', 
+                lineHeight: '1.6',
+                maxWidth: '300px',
+                margin: '0 auto'
+              }}>
+                Nụ cười khỏe mạnh là nụ cười đẹp nhất. 
+                Hãy để chúng tôi chăm sóc răng miệng của bạn.
+              </p>
+            </div>
+            
+            {/* Hình ảnh */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img 
+                src={registerImage} 
+                alt="Register" 
+                style={{ 
+                  maxWidth: '100%', 
+                  maxHeight: '100%', 
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
+                }} 
+              />
+            </div>
+            
+            {/* Thông tin bổ sung */}
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: '20px',
+              padding: '20px',
+              background: 'rgba(255,255,255,0.8)',
+              borderRadius: '12px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <div style={{ 
+                color: '#2596be', 
+                fontSize: '1rem', 
+                fontWeight: 'bold',
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <SafetyOutlined style={{ fontSize: '16px' }} />
+                  Chuyên nghiệp
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <StarOutlined style={{ fontSize: '16px' }} />
+                  Uy tín
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <HeartOutlined style={{ fontSize: '16px' }} />
+                  Tận tâm
+                </span>
+              </div>
+              <p style={{ 
+                color: '#666', 
+                fontSize: '0.9rem',
+                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}>
+                <TeamOutlined style={{ fontSize: '14px' }} />
+                Đội ngũ bác sĩ giàu kinh nghiệm
+              </p>
+            </div>
           </div>
 
-          {/* Form đăng ký bên phải */}
+          {/* Form đăng ký bên phải - 70% */}
           <div 
             className="register-form"
             style={{ 
-              flex: 1, 
+              flex: '0 0 70%', // Chiếm 70% width
               padding: '48px', 
               display: 'flex', 
               flexDirection: 'column', 
