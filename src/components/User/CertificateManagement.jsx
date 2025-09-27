@@ -9,7 +9,7 @@ import {
   Modal, 
   Form, 
   Input, 
-  message, 
+  // message, // Replaced with toast service 
   Space, 
   Typography, 
   Row, 
@@ -21,6 +21,7 @@ import {
   Spin,
   Alert
 } from 'antd';
+import { toast } from '../../services/toastService';
 import { 
   PlusOutlined, 
   UploadOutlined, 
@@ -60,7 +61,7 @@ const CertificateManagement = () => {
       const response = await userService.getUserById(user._id);
       setCertificates(response.user.certificates || []);
     } catch (error) {
-      message.error('Không thể tải danh sách chứng chỉ');
+      toast.error('Không thể tải danh sách chứng chỉ');
     } finally {
       setLoading(false);
     }
@@ -76,12 +77,12 @@ const CertificateManagement = () => {
       }
 
       await userService.uploadCertificate(user._id, values.file.file, values.notes);
-      message.success('Upload chứng chỉ thành công');
+      toast.success('Upload chứng chỉ thành công');
       setUploadModalVisible(false);
       form.resetFields();
       loadCertificates();
     } catch (error) {
-      message.error(error.response?.data?.message || 'Upload chứng chỉ thất bại');
+      toast.error(error.response?.data?.message || 'Upload chứng chỉ thất bại');
     } finally {
       setUploading(false);
     }
@@ -90,10 +91,10 @@ const CertificateManagement = () => {
   const handleDelete = async (certificateId) => {
     try {
       await userService.deleteCertificate(user._id, certificateId);
-      message.success('Xóa chứng chỉ thành công');
+      toast.success('Xóa chứng chỉ thành công');
       loadCertificates();
     } catch (error) {
-      message.error('Xóa chứng chỉ thất bại');
+      toast.error('Xóa chứng chỉ thất bại');
     }
   };
 
@@ -110,12 +111,12 @@ const CertificateManagement = () => {
         editingCertificate._id, 
         values.notes
       );
-      message.success('Cập nhật ghi chú thành công');
+      toast.success('Cập nhật ghi chú thành công');
       setEditModalVisible(false);
       form.resetFields();
       loadCertificates();
     } catch (error) {
-      message.error('Cập nhật ghi chú thất bại');
+      toast.error('Cập nhật ghi chú thất bại');
     }
   };
 

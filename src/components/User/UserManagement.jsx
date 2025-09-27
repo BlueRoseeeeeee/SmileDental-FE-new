@@ -13,7 +13,7 @@ import {
   Tag, 
   Modal, 
   Form, 
-  message, 
+  // message, // Replaced with toast service 
   Popconfirm,
   Avatar,
   Row,
@@ -23,6 +23,7 @@ import {
   Tooltip,
   Badge
 } from 'antd';
+import { toast } from '../../services/toastService';
 import { 
   SearchOutlined, 
   PlusOutlined, 
@@ -78,7 +79,7 @@ const UserManagement = () => {
         total: response.total || 0
       }));
     } catch (error) {
-      message.error('Không thể tải danh sách người dùng');
+      toast.error('Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
     }
@@ -111,10 +112,10 @@ const UserManagement = () => {
   const handleDelete = async (userId) => {
     try {
       await userService.deleteUser(userId);
-      message.success('Xóa người dùng thành công');
+      toast.success('Xóa người dùng thành công');
       loadUsers();
     } catch (error) {
-      message.error(error.response?.data?.message || 'Xóa người dùng thất bại');
+      toast.error(error.response?.data?.message || 'Xóa người dùng thất bại');
     }
   };
 
@@ -126,12 +127,12 @@ const UserManagement = () => {
       };
       
       await userService.updateUserByAdmin(selectedUser._id, updateData);
-      message.success('Cập nhật thông tin thành công');
+      toast.success('Cập nhật thông tin thành công');
       setModalVisible(false);
       form.resetFields();
       loadUsers();
     } catch (error) {
-      message.error(error.response?.data?.message || 'Cập nhật thất bại');
+      toast.error(error.response?.data?.message || 'Cập nhật thất bại');
     }
   };
 

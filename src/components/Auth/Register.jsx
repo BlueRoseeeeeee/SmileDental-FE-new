@@ -3,7 +3,8 @@
 */
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Card, Typography, Alert, Radio, Steps, Space, Divider, message } from 'antd';
+import { Button, Card, Typography, Alert, Radio, Steps, Space, Divider } from 'antd';
+import { toast } from '../../services/toastService';
 import { 
   CheckCircleOutlined,
   ArrowLeftOutlined,
@@ -231,34 +232,7 @@ const RegisterRHF = () => {
       const successMessage = response?.message || 'Đăng ký thành công! Vui lòng đăng nhập.';
       
       // Hiển thị toast thành công
-      console.log('Success message:', successMessage); // Debug log
-      
-      const successAlert = document.createElement('div'); 
-      successAlert.innerHTML = `
-        <div style="
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          background: #52c41a;
-          color: white;
-          padding: 16px 24px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          z-index: 9999;
-          font-size: 16px;
-          font-weight: 500;
-        ">
-          ✅ ${successMessage}
-        </div>
-      `;
-      document.body.appendChild(successAlert);
-      
-      // Tự động xóa sau 3 giây
-      setTimeout(() => {
-        if (successAlert.parentNode) {
-          successAlert.parentNode.removeChild(successAlert);
-        }
-      }, 3000);
+      toast.success(successMessage, 3000);
       
       // Xóa dữ liệu đã lưu sau khi đăng ký thành công
       localStorage.removeItem('registerFormData');

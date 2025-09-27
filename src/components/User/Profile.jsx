@@ -12,7 +12,7 @@ import {
   Col, 
   Avatar, 
   Upload, 
-  message, 
+  // message, // Replaced with toast service 
   Space, 
   Divider,
   Select,
@@ -21,6 +21,7 @@ import {
   Alert,
   Spin
 } from 'antd';
+import { toast } from '../../services/toastService';
 import { 
   UserOutlined, 
   MailOutlined, 
@@ -62,7 +63,7 @@ const Profile = () => {
         dateOfBirth: response.user.dateOfBirth ? dayjs(response.user.dateOfBirth) : null
       });
     } catch (error) {
-      message.error('Không thể tải thông tin profile');
+      toast.error('Không thể tải thông tin profile');
     } finally {
       setLoadingProfile(false);
     }
@@ -94,9 +95,9 @@ const Profile = () => {
       setProfileData(response.user);
       updateUser(response.user);
       setEditing(false);
-      message.success('Cập nhật thông tin thành công');
+      toast.success('Cập nhật thông tin thành công');
     } catch (error) {
-      message.error(error.response?.data?.message || 'Cập nhật thất bại');
+      toast.error(error.response?.data?.message || 'Cập nhật thất bại');
     }
   };
 
@@ -106,9 +107,9 @@ const Profile = () => {
       const response = await userService.uploadAvatar(user._id, file);
       setProfileData(response.user);
       updateUser(response.user);
-      message.success('Cập nhật avatar thành công');
+      toast.success('Cập nhật avatar thành công');
     } catch (error) {
-      message.error('Cập nhật avatar thất bại');
+      toast.error('Cập nhật avatar thất bại');
     } finally {
       setUploading(false);
     }

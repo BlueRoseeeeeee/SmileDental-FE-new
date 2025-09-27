@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, Alert, Steps, Space, Divider } from 'antd';
+import { toast } from '../../services/toastService';
 import { 
   MailOutlined, 
   LockOutlined, 
@@ -33,8 +34,9 @@ const ForgotPassword = () => {
       setEmail(values.email);
       await sendOtpResetPassword(values.email);
       setStep(1);
+      toast.success(`Mã OTP đã được gửi đến email ${values.email}`);
     } catch (err) {
-      // Error handled by context
+      toast.error(err.response?.data?.message || 'Gửi OTP thất bại');
     }
   };
 
@@ -48,8 +50,9 @@ const ForgotPassword = () => {
         confirmPassword: values.confirmPassword,
       });
       setStep(2); // Success step
+      toast.success('Đặt lại mật khẩu thành công!');
     } catch (err) {
-      // Error handled by context
+      toast.error(err.response?.data?.message || 'Đặt lại mật khẩu thất bại');
     }
   };
 
@@ -482,28 +485,7 @@ const ForgotPassword = () => {
               />
             </div>
 
-            {/* Success Alert for OTP sent */}
-            {step === 1 && (
-              <Alert
-                message={`Mã OTP đã được gửi đến email ${email}`}
-                type="success"
-                showIcon
-                icon={<CheckCircleOutlined />}
-                style={{ marginBottom: '24px' }}
-              />
-            )}
-
-            {/* Error Alert */}
-            {error && (
-              <Alert
-                message={error}
-                type="error"
-                showIcon
-                style={{ marginBottom: '24px' }}
-                closable
-                onClose={clearError}
-              />
-            )}
+            {/* Toast notifications đã được xử lý trong handleSendOTP và handleResetPassword */}
 
             {/* Form */}
             {step === 0 && (

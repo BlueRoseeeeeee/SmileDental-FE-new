@@ -120,6 +120,7 @@ function App() {
             {/* Settings */}
             <Route path="settings" element={<Settings />} />
             
+            
             {/* Placeholder routes for future development */}
             <Route path="appointments" element={
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
