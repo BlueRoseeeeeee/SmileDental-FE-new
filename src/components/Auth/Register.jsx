@@ -66,13 +66,18 @@ const RegisterRHF = () => {
       setEmail(data.email || '');
       setOtpSent(data.otpSent || false);
       setOtpMessage(data.otpMessage || '');
+      
+      // Đảm bảo email được set vào form state
+      if (data.email) {
+        setValue('email', data.email);
+      }
     }
-  }, [reset]);
+  }, [reset, setValue]);
   
   // Lưu dữ liệu vào localStorage mỗi khi có thay đổi (trừ OTP)
   React.useEffect(() => {
     const subscription = watch((value) => {
-      // Loại bỏ OTP khỏi dữ liệu lưu trữ, nhưng giữ lại email
+      // Loại bỏ OTP khỏi dữ liệu lưu trữ, nhưng giữ lại email và thông tin cá nhân
       const { otp, ...dataToSave } = value;
       localStorage.setItem('registerFormData', JSON.stringify({
         ...dataToSave,
@@ -84,6 +89,21 @@ const RegisterRHF = () => {
     });
     return () => subscription.unsubscribe();
   }, [watch, step, email, otpSent, otpMessage]);
+
+  // Lưu state changes vào localStorage
+  React.useEffect(() => {
+    const currentData = localStorage.getItem('registerFormData');
+    if (currentData) {
+      const data = JSON.parse(currentData);
+      localStorage.setItem('registerFormData', JSON.stringify({
+        ...data,
+        step,
+        email,
+        otpSent,
+        otpMessage
+      }));
+    }
+  }, [step, email, otpSent, otpMessage]);
 
   // Steps configuration
   const steps = [
@@ -112,6 +132,8 @@ const RegisterRHF = () => {
       setEmail(data.email);
       // Lưu email vào form state
       setValue('email', data.email);
+      // Xóa OTP cũ khi gửi OTP mới
+      setValue('otp', '');
       const response = await sendOtpRegister(data.email);
       setOtpMessage(response.message || 'OTP đăng ký đã được gửi đến email');
       setOtpSent(true);
@@ -521,6 +543,8 @@ const RegisterRHF = () => {
                     onClick={() => {
                       setStep(0);
                       clearError();
+                      // Xóa OTP khi quay lại
+                      setValue('otp', '');
                     }}
                     block
                     style={{
