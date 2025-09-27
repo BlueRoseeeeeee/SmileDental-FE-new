@@ -573,9 +573,9 @@ const RegisterRHF = () => {
             }}>
             <Title level={2} style={{ 
               textAlign: 'center', 
-              marginBottom: '32px', 
+              marginBottom: '100px', 
               color: '#2596be', // Màu xanh chủ đạo
-              fontSize: '2.5rem',
+              fontSize: '3.5rem',
               fontWeight: 'bold'
             }}>
               ĐĂNG KÝ
