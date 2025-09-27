@@ -11,6 +11,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { useFormPersistence } from '../../hooks/useFormPersistence';
 import { useAuth } from '../../contexts/AuthContext';
+import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 
 const { Title, Text } = Typography;
 
@@ -319,9 +320,15 @@ const RegisterRHF = () => {
           /* Responsive layout for container */
           @media (max-width: 768px) {
             .register-container {
+              flex-direction: column !important;
               min-height: auto !important;
             }
+            .register-image {
+              flex: none !important;
+              height: 300px !important;
+            }
             .register-form {
+              flex: none !important;
               padding: 24px !important;
             }
             .register-steps .ant-steps-item {
@@ -358,7 +365,7 @@ const RegisterRHF = () => {
             font-size: 16px;
             border: 1px solid #d9d9d9;
             border-radius: 8px;
-            transition: all 0.3s;
+            transition: border-color 0.3s;
             position: relative;
             z-index: 1;
           }
@@ -424,36 +431,63 @@ const RegisterRHF = () => {
       </style>
       <div style={{ 
         minHeight: '100vh', 
-        background: '#bfedfc', // Màu xanh nhạt như yêu cầu
+        background: '#e8f5e8', // Màu xanh nhạt cho nha khoa
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        padding: '20px 0' // Thêm padding để có không gian cho header/footer
+        padding: '20px 0'
       }}>
         <div 
           className="register-container"
           style={{ 
             width: '100%', 
-            maxWidth: '1400px', // Giới hạn chiều rộng tối đa
+            maxWidth: '100%', // Full width 100%
             display: 'flex',
             background: 'white',
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
             overflow: 'hidden',
-            minHeight: 'calc(100vh - 40px)' // Trừ đi padding
+            minHeight: 'calc(100vh - 40px)'
           }}>
 
+          {/* Hình ảnh bên trái */}
+          <div 
+            className="register-image"
+            style={{ 
+              flex: 1, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              padding: '24px',
+              background: '#f0f8f0' // Màu xanh nhạt cho phần hình ảnh
+            }}>
+            <img 
+              src={registerImage} 
+              alt="Register" 
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '100%', 
+                objectFit: 'contain' 
+              }} 
+            />
+          </div>
 
-          {/* Form đăng ký */}
+          {/* Form đăng ký bên phải */}
           <div 
             className="register-form"
             style={{ 
-              width: '100%', 
+              flex: 1, 
               padding: '48px', 
               display: 'flex', 
               flexDirection: 'column', 
               justifyContent: 'center' 
             }}>
-            <Title level={2} style={{ textAlign: 'center', marginBottom: '32px', color: '#2e7d32' }}>
+            <Title level={2} style={{ 
+              textAlign: 'center', 
+              marginBottom: '32px', 
+              color: '#2596be', // Màu xanh chủ đạo
+              fontSize: '2.5rem',
+              fontWeight: 'bold'
+            }}>
               ĐĂNG KÝ
             </Title>
 
@@ -518,7 +552,7 @@ const RegisterRHF = () => {
                   disabled={!emailValue || !isValidEmail(emailValue) || loading}
                   block
                   style={{
-                    background: (!emailValue || !isValidEmail(emailValue)) ? '#bfbfbf' : '#2e7d32',
+                    background: (!emailValue || !isValidEmail(emailValue)) ? '#bfbfbf' : '#2596be',
                     border: 'none',
                     borderRadius: '8px',
                     height: '48px',
@@ -562,7 +596,7 @@ const RegisterRHF = () => {
                     loading={loading}
                     block
                     style={{
-                      background: '#2e7d32',
+                      background: '#2596be',
                       border: 'none',
                       borderRadius: '8px',
                       height: '48px'
@@ -675,7 +709,7 @@ const RegisterRHF = () => {
                     loading={loading}
                     block
                     style={{
-                      background: '#2e7d32',
+                      background: '#2596be',
                       border: 'none',
                       borderRadius: '8px',
                       height: '48px'
@@ -747,7 +781,7 @@ const RegisterRHF = () => {
                     loading={loading}
                     block
                     style={{
-                      background: '#2e7d32',
+                      background: '#2596be',
                       border: 'none',
                       borderRadius: '8px',
                       height: '48px'
