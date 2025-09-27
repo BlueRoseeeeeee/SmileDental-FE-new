@@ -17,6 +17,7 @@ import { useForm } from 'react-hook-form';
 import { useFormPersistence } from '../../hooks/useFormPersistence';
 import { useAuth } from '../../contexts/AuthContext';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
+import './Register.css';
 
 const { Title, Text } = Typography;
 
@@ -263,151 +264,6 @@ const RegisterRHF = () => {
 
   return (
     <>
-      <style>
-        {`
-          /* Custom CSS for responsive steps */
-          .register-steps {
-            width: 100% !important;
-            overflow: visible !important;
-            display: flex !important;
-            flex-wrap: nowrap !important;
-          }
-          .register-steps .ant-steps {
-            width: 100% !important;
-            overflow: visible !important;
-          }
-          .register-steps .ant-steps-item {
-            margin-right: 80px !important;
-            flex: 1 !important;
-            min-width: 160px !important;
-          }
-          .register-steps .ant-steps-item-title {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          .register-steps .ant-steps-item-description {
-            white-space: normal;
-            overflow: visible;
-            text-overflow: unset;
-            line-height: 1.4;
-            max-width: none !important;
-            width: auto !important;
-          }
-
-          /* Responsive layout for container */
-          @media (max-width: 768px) {
-            .register-container {
-              flex-direction: column !important;
-              min-height: auto !important;
-            }
-            .register-image {
-              flex: none !important;
-              height: 400px !important;
-              padding: 20px !important;
-            }
-            .register-form {
-              flex: none !important;
-              padding: 24px !important;
-            }
-            .register-steps .ant-steps-item {
-              margin-right: 20px !important;
-              min-width: 100px !important;
-            }
-            .register-steps .ant-steps-item-description {
-              max-width: 100px !important;
-              font-size: 12px !important;
-            }
-          }
-          
-          /* Đưa con mắt vào trong ô input */
-          .ant-input-password .ant-input-suffix {
-            right: 8px !important;
-          }
-
-          /* Custom form styling */
-          .form-group {
-            margin-bottom: 24px;
-            position: relative;
-          }
-
-          .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-          }
-
-          .form-input {
-            width: 100%;
-            height: 56px;
-            padding: 12px 16px;
-            font-size: 16px;
-            border: 1px solid #d9d9d9;
-            border-radius: 8px;
-            transition: border-color 0.3s;
-            position: relative;
-            z-index: 1;
-          }
-
-          .form-input:focus {
-            border-color: #40a9ff;
-            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-            outline: none;
-            z-index: 2;
-          }
-
-          .form-error {
-            color: red;
-            font-size: 14px;
-            margin-top: 8px;
-          }
-
-          /* Date input specific styling */
-          input[type="date"] {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background: #fff;
-            padding-right: 12px; /* Space for the calendar icon */
-          }
-
-          /* Custom calendar icon for date input */
-          input[type="date"]::-webkit-calendar-picker-indicator {
-            background: transparent;
-            bottom: 0;
-            color: transparent;
-            cursor: pointer;
-            height: auto;
-            left: 0;
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: auto;
-          }
-
-          /* Ensure date format is dd/mm/yyyy in placeholder */
-          input[type="date"]::before {
-            content: attr(placeholder);
-            width: 100%;
-            color: #bfbfbf;
-          }
-          input[type="date"]:valid::before {
-            content: '';
-          }
-
-          /* Force dd/mm/yyyy display for native date input */
-          input[type="date"]::-webkit-datetime-edit-day-field,
-          input[type="date"]::-webkit-datetime-edit-month-field,
-          input[type="date"]::-webkit-datetime-edit-year-field {
-            padding: 0;
-          }
-
-          input[type="date"]::-webkit-datetime-edit-day-field { order: 1; }
-          input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
-          input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
-          input[type="date"]::-webkit-datetime-edit-text { order: 4; }
-        `}
-      </style>
       <div style={{ 
         minHeight: '100vh', 
         background: '#e8f5e8', // Màu xanh nhạt cho nha khoa
@@ -428,11 +284,11 @@ const RegisterRHF = () => {
             minHeight: 'calc(100vh - 40px)'
           }}>
 
-          {/* Hình ảnh bên trái - 30% */}
+          {/* Hình ảnh bên trái - 40% */}
           <div 
             className="register-image"
             style={{ 
-              flex: '0 0 30%', // Chiếm 30% width
+              flex: '0 0 40%', // Chiếm 40% width
               display: 'flex', 
               flexDirection: 'column',
               alignItems: 'center', 
@@ -535,11 +391,11 @@ const RegisterRHF = () => {
             </div>
           </div>
 
-          {/* Form đăng ký bên phải - 70% */}
+          {/* Form đăng ký bên phải - 60% */}
           <div 
             className="register-form"
             style={{ 
-              flex: '0 0 70%', // Chiếm 70% width
+              flex: '0 0 60%', // Chiếm 60% width
               padding: '48px', 
               display: 'flex', 
               flexDirection: 'column', 
