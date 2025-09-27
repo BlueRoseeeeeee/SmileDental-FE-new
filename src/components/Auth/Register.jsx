@@ -11,7 +11,6 @@ import {
 import { useForm } from 'react-hook-form';
 import { useFormPersistence } from '../../hooks/useFormPersistence';
 import { useAuth } from '../../contexts/AuthContext';
-import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 
 const { Title, Text } = Typography;
 
@@ -288,10 +287,20 @@ const RegisterRHF = () => {
       <style>
         {`
           /* Custom CSS for responsive steps */
+          .register-steps {
+            width: 100% !important;
+            overflow: visible !important;
+            display: flex !important;
+            flex-wrap: nowrap !important;
+          }
+          .register-steps .ant-steps {
+            width: 100% !important;
+            overflow: visible !important;
+          }
           .register-steps .ant-steps-item {
-            margin-right: 48px !important;
+            margin-right: 80px !important;
             flex: 1 !important;
-            min-width: 120px !important;
+            min-width: 160px !important;
           }
           .register-steps .ant-steps-item-title {
             white-space: nowrap;
@@ -299,24 +308,29 @@ const RegisterRHF = () => {
             text-overflow: ellipsis;
           }
           .register-steps .ant-steps-item-description {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+            line-height: 1.4;
+            max-width: none !important;
+            width: auto !important;
           }
 
           /* Responsive layout for container */
           @media (max-width: 768px) {
             .register-container {
-              flex-direction: column !important;
               min-height: auto !important;
             }
-            .register-image {
-              flex: none !important;
-              height: 300px !important;
-            }
             .register-form {
-              flex: none !important;
               padding: 24px !important;
+            }
+            .register-steps .ant-steps-item {
+              margin-right: 20px !important;
+              min-width: 100px !important;
+            }
+            .register-steps .ant-steps-item-description {
+              max-width: 100px !important;
+              font-size: 12px !important;
             }
           }
           
@@ -428,33 +442,12 @@ const RegisterRHF = () => {
             minHeight: 'calc(100vh - 40px)' // Trừ đi padding
           }}>
 
-          {/* Hình ảnh bên trái */}
-          <div 
-            className="register-image"
-            style={{ 
-              flex: 1, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              padding: '24px',
-              background: '#bfedfc' // Thêm màu nền cho phần hình ảnh
-            }}>
-            <img 
-              src={registerImage} 
-              alt="Register" 
-              style={{ 
-                maxWidth: '100%', 
-                maxHeight: '100%', 
-                objectFit: 'contain' 
-              }} 
-            />
-          </div>
 
-          {/* Form đăng ký bên phải */}
+          {/* Form đăng ký */}
           <div 
             className="register-form"
             style={{ 
-              flex: 1, 
+              width: '100%', 
               padding: '48px', 
               display: 'flex', 
               flexDirection: 'column', 
