@@ -36,7 +36,12 @@ const Login = () => {
 
   // Lưu giá trị input email/mã nhân viên vào localStorage
   React.useEffect(() => {
-    // Restore giá trị đã lưu
+    localStorage.removeItem('rememberedPassword');
+    localStorage.removeItem('rememberedLogin');
+    localStorage.removeItem('rememberMe');
+    localStorage.removeItem('rememberedEmail');
+    
+    // Restore giá trị đã lưu (chỉ login và remember)
     const savedLoginData = localStorage.getItem('loginFormData');
     if (savedLoginData) {
       try {
@@ -47,17 +52,27 @@ const Login = () => {
         });
       } catch (error) {
         console.error('Error parsing saved login data:', error);
+        // Xóa dữ liệu không hợp lệ
+        localStorage.removeItem('loginFormData');
       }
     }
   }, [form]);
 
   // Lưu giá trị khi người dùng thay đổi input
   const handleInputChange = (changedValues, allValues) => {
-    // Chỉ lưu login và remember, không lưu password
+    // CHỈ LƯU LOGIN VÀ REMEMBER - KHÔNG BAO GIỜ LƯU PASSWORD
     const dataToSave = {
       login: allValues.login || '',
       remember: allValues.remember || false
+      // KHÔNG LƯU PASSWORD - BẢO MẬT TỐI ĐA
     };
+    
+    // Xóa tất cả dữ liệu password không an toàn
+    localStorage.removeItem('rememberedPassword');
+    localStorage.removeItem('rememberedLogin');
+    localStorage.removeItem('rememberMe');
+    localStorage.removeItem('rememberedEmail');
+    
     localStorage.setItem('loginFormData', JSON.stringify(dataToSave));
   };
 
@@ -102,6 +117,13 @@ const Login = () => {
         login: values.login,
         remember: values.remember || false
       };
+      
+      // XÓA TẤT CẢ DỮ LIỆU PASSWORD KHÔNG AN TOÀN
+      localStorage.removeItem('rememberedPassword');
+      localStorage.removeItem('rememberedLogin');
+      localStorage.removeItem('rememberMe');
+      localStorage.removeItem('rememberedEmail');
+      
       localStorage.setItem('loginFormData', JSON.stringify(dataToSave));
       
       navigate('/dashboard');

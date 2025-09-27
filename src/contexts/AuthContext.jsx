@@ -67,6 +67,12 @@ export const AuthProvider = ({ children }) => {
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
+      // XÓA TẤT CẢ DỮ LIỆU PASSWORD KHÔNG AN TOÀN NGAY KHI APP KHỞI ĐỘNG
+      localStorage.removeItem('rememberedPassword');
+      localStorage.removeItem('rememberedLogin');
+      localStorage.removeItem('rememberMe');
+      localStorage.removeItem('rememberedEmail');
+      
       // Kiểm tra localStorage trước (ghi nhớ đăng nhập)
       let token = localStorage.getItem('accessToken');
       let userData = localStorage.getItem('userData');
@@ -155,6 +161,12 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('userData');
       localStorage.removeItem('rememberLogin');
       sessionStorage.removeItem('accessToken');
+      
+      // XÓA TẤT CẢ DỮ LIỆU PASSWORD KHÔNG AN TOÀN
+      localStorage.removeItem('rememberedPassword');
+      localStorage.removeItem('rememberedLogin');
+      localStorage.removeItem('rememberMe');
+      localStorage.removeItem('rememberedEmail');
       
       dispatch({ type: 'LOGOUT' });
     }
