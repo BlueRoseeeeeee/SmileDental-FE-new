@@ -9,11 +9,11 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useForm } from 'react-hook-form';
+import { useFormPersistence } from '../../hooks/useFormPersistence';
 import { useAuth } from '../../contexts/AuthContext';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 
-const { Title } = Typography;
-
+const { Title, Text } = Typography;
 
 // Form đăng ký dành cho BỆNH NHÂN - role luôn là 'patient'
 const RegisterRHF = () => {
@@ -76,14 +76,6 @@ const RegisterRHF = () => {
   // Steps configuration
   const steps = [
     {
-      title: 'Thông tin cá nhân',
-      description: 'Nhập thông tin cơ bản',
-    },
-    {
-      title: 'Tạo mật khẩu',
-      description: 'Tạo mật khẩu bảo mật',
-    },
-    {
       title: 'Xác thực Email',
       description: 'Nhập email để nhận mã OTP',
     },
@@ -91,9 +83,48 @@ const RegisterRHF = () => {
       title: 'Xác thực OTP',
       description: 'Nhập mã OTP để xác thực',
     },
+    {
+      title: 'Thông tin cá nhân',
+      description: 'Nhập thông tin cơ bản',
+    },
+    {
+      title: 'Tạo mật khẩu',
+      description: 'Tạo mật khẩu bảo mật',
+    },
   ];
 
-  // Step 1: Personal Information
+  // Step 1: Send OTP (Xác thực Email)
+  const handleSendOTP = async (data) => {
+    try {
+      clearError();
+      setEmail(data.email);
+      // Lưu email vào form state
+      setValue('email', data.email);
+      const response = await sendOtpRegister(data.email);
+      setOtpMessage(response.message || 'OTP đăng ký đã được gửi đến email');
+      setOtpSent(true);
+      setStep(1);
+    } catch (err) {
+      // Error is handled by AuthContext
+    }
+  };
+
+  // Step 2: Verify OTP
+  const handleVerifyOTP = async (data) => {
+    try {
+      clearError();
+      
+      // Verify OTP
+      await verifyOtp(data.otp, email);
+      
+      // Chuyển sang bước tiếp theo
+      setStep(2);
+    } catch (err) {
+      // Error is handled by AuthContext
+    }
+  };
+
+  // Step 3: Personal Information
   const handlePersonalInfo = async (data) => {
     try {
       clearError();
@@ -107,13 +138,13 @@ const RegisterRHF = () => {
       setValue('phone', data.phone);
       setValue('dateOfBirth', data.dateOfBirth);
       setValue('gender', data.gender);
-      setStep(1);
+      setStep(3);
     } catch (err) {
       // Error is handled by AuthContext
     }
   };
 
-  // Step 2: Create Password
+  // Step 4: Create Password & Complete Registration
   const handleCreatePassword = async (data) => {
     try {
       clearError();
@@ -125,37 +156,8 @@ const RegisterRHF = () => {
       // Lưu dữ liệu vào form state
       setValue('password', data.password);
       setValue('confirmPassword', data.confirmPassword);
-      setStep(2);
-    } catch (err) {
-      // Error is handled by AuthContext
-    }
-  };
-
-  // Step 3: Send OTP
-  const handleSendOTP = async (data) => {
-    try {
-      clearError();
-      setEmail(data.email);
-      // Lưu email vào form state
-      setValue('email', data.email);
-      const response = await sendOtpRegister(data.email);
-      setOtpMessage(response.message || 'OTP đăng ký đã được gửi đến email');
-      setOtpSent(true);
-      setStep(3);
-    } catch (err) {
-      // Error is handled by AuthContext
-    }
-  };
-
-  // Step 4: Verify OTP & Complete Registration
-  const handleVerifyOTP = async (data) => {
-    try {
-      clearError();
       
-      // Bước 1: Verify OTP trước
-      await verifyOtp(data.otp, email);
-      
-      // Bước 2: Lấy tất cả dữ liệu từ form
+      // Lấy tất cả dữ liệu từ form
       const allData = form.getValues();
       console.log('All form data:', allData); // Debug log
       
@@ -210,137 +212,141 @@ const RegisterRHF = () => {
     <>
       <style>
         {`
+          /* Custom CSS for responsive steps */
           .register-steps .ant-steps-item {
             margin-right: 48px !important;
             flex: 1 !important;
             min-width: 120px !important;
           }
-          
-          .register-container {
-            display: flex;
-            min-height: 600px;
-            background: white;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+          .register-steps .ant-steps-item-title {
+            white-space: nowrap;
             overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .register-steps .ant-steps-item-description {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          /* Responsive layout for container */
+          @media (max-width: 768px) {
+            .register-container {
+              flex-direction: column !important;
+              min-height: auto !important;
+            }
+            .register-image {
+              flex: none !important;
+              height: 300px !important;
+            }
+            .register-form {
+              flex: none !important;
+              padding: 24px !important;
+            }
           }
           
-          .register-image {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            background: #bfedfc;
+          /* Đưa con mắt vào trong ô input */
+          .ant-input-password .ant-input-suffix {
+            right: 8px !important;
           }
-          
-          .register-form {
-            flex: 1;
-            padding: 40px;
-            background: #bfedfc;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-          }
-          
+
+          /* Custom form styling */
           .form-group {
             margin-bottom: 24px;
           }
-          
+
           .form-label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 500;
-            color: #333;
+            font-weight: bold;
           }
-          
+
           .form-input {
             width: 100%;
+            height: 56px;
             padding: 12px 16px;
+            font-size: 16px;
             border: 1px solid #d9d9d9;
             border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
           }
-          
+
           .form-input:focus {
-            outline: none;
-            border-color: #1890ff;
+            border-color: #40a9ff;
             box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+            outline: none;
           }
-          
+
           .form-error {
-            color: #ff4d4f;
+            color: red;
             font-size: 14px;
-            margin-top: 4px;
+            margin-top: 8px;
           }
-          
-          .radio-group {
-            display: flex;
-            gap: 16px;
+
+          /* Date input specific styling */
+          input[type="date"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background: #fff;
+            padding-right: 12px; /* Space for the calendar icon */
           }
-          
-          .radio-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
-          
-          .password-input {
-            position: relative;
-          }
-          
-          .password-toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
+
+          /* Custom calendar icon for date input */
+          input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
             cursor: pointer;
-            color: #8c8c8c;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
           }
-          
-          .password-toggle:hover {
-            color: #1890ff;
+
+          /* Ensure date format is dd/mm/yyyy in placeholder */
+          input[type="date"]::before {
+            content: attr(placeholder);
+            width: 100%;
+            color: #bfbfbf;
           }
-          
-          @media (max-width: 768px) {
-            .register-container {
-              flex-direction: column;
-              min-height: auto;
-            }
-            
-            .register-image {
-              flex: none;
-              height: 300px;
-            }
-            
-            .register-form {
-              flex: none;
-              padding: 24px;
-            }
+          input[type="date"]:valid::before {
+            content: '';
           }
+
+          /* Force dd/mm/yyyy display for native date input */
+          input[type="date"]::-webkit-datetime-edit-day-field,
+          input[type="date"]::-webkit-datetime-edit-month-field,
+          input[type="date"]::-webkit-datetime-edit-year-field {
+            padding: 0;
+          }
+
+          input[type="date"]::-webkit-datetime-edit-day-field { order: 1; }
+          input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
+          input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
+          input[type="date"]::-webkit-datetime-edit-text { order: 4; }
         `}
       </style>
-
       <div style={{ 
         minHeight: '100vh', 
-        background: '#bfedfc',
+        background: '#bfedfc', // Màu xanh nhạt như yêu cầu
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        padding: '20px 0'
+        padding: '20px 0' // Thêm padding để có không gian cho header/footer
       }}>
         <div 
           className="register-container"
           style={{ 
             width: '100%', 
-            maxWidth: '1400px',
+            maxWidth: '1400px', // Giới hạn chiều rộng tối đa
             display: 'flex',
             background: 'white',
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
             overflow: 'hidden',
-            minHeight: 'calc(100vh - 40px)'
+            minHeight: 'calc(100vh - 40px)' // Trừ đi padding
           }}>
 
           {/* Hình ảnh bên trái */}
@@ -352,11 +358,11 @@ const RegisterRHF = () => {
               alignItems: 'center', 
               justifyContent: 'center', 
               padding: '24px',
-              background: '#bfedfc'
+              background: '#bfedfc' // Thêm màu nền cho phần hình ảnh
             }}>
             <img 
               src={registerImage} 
-              alt="Đăng ký" 
+              alt="Register" 
               style={{ 
                 maxWidth: '100%', 
                 maxHeight: '100%', 
@@ -365,22 +371,29 @@ const RegisterRHF = () => {
             />
           </div>
 
-          {/* Form bên phải */}
-          <div className="register-form">
-            <Title level={2} style={{ color: '#2e7d32', textAlign: 'center', marginBottom: '30px' }}>
+          {/* Form đăng ký bên phải */}
+          <div 
+            className="register-form"
+            style={{ 
+              flex: 1, 
+              padding: '48px', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              justifyContent: 'center' 
+            }}>
+            <Title level={2} style={{ textAlign: 'center', marginBottom: '32px', color: '#2e7d32' }}>
               ĐĂNG KÝ
             </Title>
 
-            {/* Steps */}
-            <Steps
-              current={step}
-              items={steps}
+            <Steps 
+              current={step} 
+              items={steps} 
               className="register-steps"
               style={{ marginBottom: '40px' }}
             />
 
             {/* Success Alerts */}
-            {otpSent && step === 2 && (
+            {otpSent && step === 1 && (
               <Alert
                 message={otpMessage}
                 type="success"
@@ -390,7 +403,7 @@ const RegisterRHF = () => {
               />
             )}
 
-            {step === 3 && (
+            {step === 1 && (
               <Alert
                 message="OTP đăng ký đã được gửi đến email!"
                 type="success"
@@ -412,8 +425,101 @@ const RegisterRHF = () => {
               />
             )}
 
-            {/* Step 1: Personal Information Form */}
+            {/* Step 1: Email Verification Form */}
             {step === 0 && (
+              <form onSubmit={handleSubmit(handleSendOTP)}>
+                <div className="form-group">
+                  <label className="form-label">
+                    Email <span style={{ color: 'red' }}>*</span>
+                  </label>
+                  <input
+                    {...register('email', { required: 'Vui lòng nhập email!' })}
+                    type="email"
+                    className="form-input"
+                    placeholder="Nhập email của bạn (VD: example@gmail.com)"
+                  />
+                  {errors.email && (
+                    <div className="form-error">{errors.email.message}</div>
+                  )}
+                </div>
+
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
+                    background: '#2e7d32',
+                    border: 'none',
+                    borderRadius: '8px',
+                    height: '48px'
+                  }}
+                >
+                  {loading ? 'Đang gửi OTP...' : 'Gửi mã OTP'}
+                </Button>
+              </form>
+            )}
+
+            {/* Step 2: OTP Verification Form */}
+            {step === 1 && (
+              <form onSubmit={handleSubmit(handleVerifyOTP)}>
+                <div className="form-group">
+                  <label className="form-label">
+                    Mã OTP <span style={{ color: 'red' }}>*</span>
+                  </label>
+                  <input
+                    {...register('otp', { required: 'Vui lòng nhập mã OTP!' })}
+                    maxLength={6}
+                    className="form-input"
+                    placeholder="Nhập 6 chữ số OTP (VD: 123456)"
+                    style={{ 
+                      textAlign: 'center', 
+                      fontSize: '18px', 
+                      letterSpacing: '4px'
+                    }}
+                  />
+                  {errors.otp && (
+                    <div className="form-error">{errors.otp.message}</div>
+                  )}
+                </div>
+
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    block
+                    style={{
+                      background: '#2e7d32',
+                      border: 'none',
+                      borderRadius: '8px',
+                      height: '48px'
+                    }}
+                  >
+                    {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
+                  </Button>
+
+                  <Button
+                    type="default"
+                    icon={<ArrowLeftOutlined />}
+                    onClick={() => {
+                      setStep(0);
+                      clearError();
+                    }}
+                    block
+                    style={{
+                      borderRadius: '8px',
+                      height: '48px'
+                    }}
+                  >
+                    Quay lại
+                  </Button>
+                </Space>
+              </form>
+            )}
+
+            {/* Step 3: Personal Information Form */}
+            {step === 2 && (
               <form onSubmit={handleSubmit(handlePersonalInfo)}>
                 <div className="form-group">
                   <label className="form-label">
@@ -463,82 +569,70 @@ const RegisterRHF = () => {
                   <label className="form-label">
                     Giới tính <span style={{ color: 'red' }}>*</span>
                   </label>
-                  <div className="radio-group">
-                    <div className="radio-item">
-                      <input
-                        {...register('gender', { required: 'Vui lòng chọn giới tính!' })}
-                        type="radio"
-                        value="male"
-                        id="male"
-                      />
-                      <label htmlFor="male">Nam</label>
-                    </div>
-                    <div className="radio-item">
-                      <input
-                        {...register('gender')}
-                        type="radio"
-                        value="female"
-                        id="female"
-                      />
-                      <label htmlFor="female">Nữ</label>
-                    </div>
-                    <div className="radio-item">
-                      <input
-                        {...register('gender')}
-                        type="radio"
-                        value="other"
-                        id="other"
-                      />
-                      <label htmlFor="other">Khác</label>
-                    </div>
-                  </div>
+                  <Radio.Group
+                    {...register('gender', { required: 'Vui lòng chọn giới tính!' })}
+                    value={watch('gender')}
+                    onChange={(e) => setValue('gender', e.target.value, { shouldValidate: true })}
+                  >
+                    <Space direction="horizontal" size="large">
+                      <Radio value="male" style={{ fontSize: '16px' }}>Nam</Radio>
+                      <Radio value="female" style={{ fontSize: '16px' }}>Nữ</Radio>
+                      <Radio value="other" style={{ fontSize: '16px' }}>Khác</Radio>
+                    </Space>
+                  </Radio.Group>
                   {errors.gender && (
                     <div className="form-error">{errors.gender.message}</div>
                   )}
                 </div>
 
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  style={{
-                    width: '100%',
-                    height: '56px',
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    backgroundColor: '#2e7d32',
-                    borderColor: '#2e7d32',
-                    borderRadius: '8px'
-                  }}
-                >
-                  Tiếp theo
-                </Button>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    block
+                    style={{
+                      background: '#2e7d32',
+                      border: 'none',
+                      borderRadius: '8px',
+                      height: '48px'
+                    }}
+                  >
+                    Tiếp theo
+                  </Button>
+
+                  <Button
+                    type="default"
+                    icon={<ArrowLeftOutlined />}
+                    onClick={() => {
+                      setStep(1);
+                      clearError();
+                    }}
+                    block
+                    style={{
+                      borderRadius: '8px',
+                      height: '48px'
+                    }}
+                  >
+                    Quay lại
+                  </Button>
+                </Space>
               </form>
             )}
 
-            {/* Step 2: Create Password Form */}
-            {step === 1 && (
+            {/* Step 4: Create Password Form */}
+            {step === 3 && (
               <form onSubmit={handleSubmit(handleCreatePassword)}>
                 <div className="form-group">
                   <label className="form-label">
                     Mật khẩu <span style={{ color: 'red' }}>*</span>
                   </label>
-                  <div className="password-input">
-                    <input
-                      {...register('password', {
-                        required: 'Vui lòng nhập mật khẩu!',
-                        minLength: { value: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự!' },
-                        maxLength: { value: 16, message: 'Mật khẩu không được quá 16 ký tự!' },
-                        pattern: {
-                          value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                          message: 'Mật khẩu phải có ít nhất 1 chữ hoa, 1 chữ thường và 1 số!'
-                        }
-                      })}
-                      type="password"
-                      className="form-input"
-                      placeholder="Nhập mật khẩu (8-16 ký tự, có chữ hoa, thường và số)"
-                    />
-                  </div>
+                  <input
+                    {...register('password', { required: 'Vui lòng nhập mật khẩu!' })}
+                    type="password"
+                    className="form-input"
+                    placeholder="Nhập mật khẩu (8-16 ký tự, có chữ hoa, thường và số)"
+                  />
                   {errors.password && (
                     <div className="form-error">{errors.password.message}</div>
                   )}
@@ -548,20 +642,16 @@ const RegisterRHF = () => {
                   <label className="form-label">
                     Xác nhận mật khẩu <span style={{ color: 'red' }}>*</span>
                   </label>
-                  <div className="password-input">
-                    <input
-                      {...register('confirmPassword', {
-                        required: 'Vui lòng xác nhận mật khẩu!',
-                        validate: (value) => {
-                          const password = form.getValues('password');
-                          return value === password || 'Mật khẩu xác nhận không khớp!';
-                        }
-                      })}
-                      type="password"
-                      className="form-input"
-                      placeholder="Nhập lại mật khẩu để xác nhận"
-                    />
-                  </div>
+                  <input
+                    {...register('confirmPassword', {
+                      required: 'Vui lòng xác nhận mật khẩu!',
+                      validate: (value) =>
+                        value === watch('password') || 'Mật khẩu xác nhận không khớp! Vui lòng nhập lại.'
+                    })}
+                    type="password"
+                    className="form-input"
+                    placeholder="Nhập lại mật khẩu để xác nhận"
+                  />
                   {errors.confirmPassword && (
                     <div className="form-error">{errors.confirmPassword.message}</div>
                   )}
@@ -571,79 +661,30 @@ const RegisterRHF = () => {
                   <Button
                     type="primary"
                     htmlType="submit"
-                    size="large"
-                    style={{
-                      width: '100%',
-                      height: '56px',
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      backgroundColor: '#2e7d32',
-                      borderColor: '#2e7d32',
-                      borderRadius: '8px'
-                    }}
-                  >
-                    Tiếp theo
-                  </Button>
-
-                  <Button
-                    type="default"
-                    icon={<ArrowLeftOutlined />}
-                    onClick={() => setStep(0)}
-                    style={{ width: '100%', height: '48px' }}
-                  >
-                    Quay lại
-                  </Button>
-                </Space>
-              </form>
-            )}
-
-            {/* Step 3: Send OTP Form */}
-            {step === 2 && (
-              <form onSubmit={handleSubmit(handleSendOTP)}>
-                <div className="form-group">
-                  <label className="form-label">
-                    Email <span style={{ color: 'red' }}>*</span>
-                  </label>
-                  <input
-                    {...register('email', {
-                      required: 'Vui lòng nhập email!',
-                      pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                        message: 'Email không hợp lệ! (VD: example@gmail.com)'
-                      }
-                    })}
-                    className="form-input"
-                    placeholder="Nhập email của bạn (VD: example@gmail.com)"
-                  />
-                  {errors.email && (
-                    <div className="form-error">{errors.email.message}</div>
-                  )}
-                </div>
-
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
                     loading={loading}
-                    size="large"
+                    block
                     style={{
-                      width: '100%',
-                      height: '56px',
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      backgroundColor: '#2e7d32',
-                      borderColor: '#2e7d32',
-                      borderRadius: '8px'
+                      background: '#2e7d32',
+                      border: 'none',
+                      borderRadius: '8px',
+                      height: '48px'
                     }}
                   >
-                    {loading ? 'Đang gửi...' : 'Gửi mã OTP'}
+                    {loading ? 'Đang đăng ký...' : 'Hoàn thành đăng ký'}
                   </Button>
 
                   <Button
                     type="default"
                     icon={<ArrowLeftOutlined />}
-                    onClick={() => setStep(1)}
-                    style={{ width: '100%', height: '48px' }}
+                    onClick={() => {
+                      setStep(2);
+                      clearError();
+                    }}
+                    block
+                    style={{
+                      borderRadius: '8px',
+                      height: '48px'
+                    }}
                   >
                     Quay lại
                   </Button>
@@ -651,81 +692,14 @@ const RegisterRHF = () => {
               </form>
             )}
 
-            {/* Step 4: Verify OTP Form */}
-            {step === 3 && (
-              <form onSubmit={handleSubmit(handleVerifyOTP)}>
-                <div className="form-group">
-                  <label className="form-label">
-                    Mã OTP <span style={{ color: 'red' }}>*</span>
-                  </label>
-                  <input
-                    {...register('otp', {
-                      required: 'Vui lòng nhập mã OTP!',
-                      pattern: {
-                        value: /^[0-9]{6}$/,
-                        message: 'Mã OTP phải là 6 chữ số! (VD: 123456)'
-                      }
-                    })}
-                    className="form-input"
-                    placeholder="Nhập 6 chữ số OTP (VD: 123456)"
-                    maxLength={6}
-                    style={{ 
-                      textAlign: 'center', 
-                      fontSize: '18px', 
-                      letterSpacing: '4px'
-                    }}
-                  />
-                  {errors.otp && (
-                    <div className="form-error">{errors.otp.message}</div>
-                  )}
-                </div>
+            <Divider style={{ margin: '40px 0 24px 0' }} />
 
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={loading}
-                    size="large"
-                    style={{
-                      width: '100%',
-                      height: '56px',
-                      fontSize: '18px',
-                      fontWeight: 'bold',
-                      backgroundColor: '#2e7d32',
-                      borderColor: '#2e7d32',
-                      borderRadius: '8px'
-                    }}
-                  >
-                    {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
-                  </Button>
-
-                  <Button
-                    type="default"
-                    icon={<ArrowLeftOutlined />}
-                    onClick={() => setStep(2)}
-                    style={{ width: '100%', height: '48px' }}
-                  >
-                    Quay lại
-                  </Button>
-                </Space>
-              </form>
-            )}
-
-            {/* Login Link */}
-            <Divider />
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ color: '#666' }}>Bạn đã có tài khoản? </span>
-              <Link 
-                to="/login" 
-                style={{ 
-                  color: '#2e7d32', 
-                  fontWeight: 'bold',
-                  textDecoration: 'none'
-                }}
-              >
+            <Text style={{ textAlign: 'center', fontSize: '16px' }}>
+              Bạn đã có tài khoản?{' '}
+              <Link to="/login" style={{ color: '#2e7d32', fontWeight: 'bold' }}>
                 ĐĂNG NHẬP
               </Link>
-            </div>
+            </Text>
           </div>
         </div>
       </div>
