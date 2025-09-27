@@ -6,6 +6,8 @@
 /* Global Styles */
 * {
   box-sizing: border-box;
+  transition: none !important;
+  animation: none !important;
 }
 
 html, body {
@@ -70,6 +72,16 @@ html, body {
   background: var(--background-white) !important;
   box-shadow: var(--shadow-medium) !important;
   border-right: 1px solid var(--border-color) !important;
+  min-width: 200px !important;
+}
+
+.ant-layout-sider .ant-menu {
+  width: 100% !important;
+}
+
+.ant-layout-sider .ant-menu-item {
+  width: 100% !important;
+  padding: 0 16px !important;
 }
 
 .ant-layout-header {
@@ -95,9 +107,17 @@ html, body {
 .ant-menu-item {
   margin: 4px 8px !important;
   border-radius: var(--border-radius) !important;
-  transition: all 0.3s ease !important;
   height: 40px !important;
   line-height: 40px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+}
+
+.ant-menu-item span {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
 }
 
 .ant-menu-item:hover {
@@ -121,12 +141,10 @@ html, body {
   border-radius: var(--border-radius-lg) !important;
   box-shadow: var(--shadow-light) !important;
   border: 1px solid var(--border-color) !important;
-  transition: all 0.3s ease !important;
 }
 
 .ant-card:hover {
   box-shadow: var(--shadow-medium) !important;
-  transform: translateY(-2px) !important;
 }
 
 .ant-card-head {
@@ -142,7 +160,6 @@ html, body {
 .ant-btn {
   border-radius: var(--border-radius) !important;
   font-weight: 500 !important;
-  transition: all 0.3s ease !important;
   box-shadow: none !important;
 }
 
@@ -155,7 +172,6 @@ html, body {
 .ant-btn-primary:hover {
   background: var(--primary-hover) !important;
   border-color: var(--primary-hover) !important;
-  transform: translateY(-1px) !important;
   box-shadow: var(--shadow-medium) !important;
 }
 
@@ -165,35 +181,138 @@ html, body {
   font-size: 16px !important;
 }
 
-/* Input Customization */
-.ant-input {
+/* Universal Form Elements - Thống nhất toàn cục */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-picker,
+.ant-select .ant-select-selector {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
   border-radius: var(--border-radius) !important;
   border: 1px solid var(--border-color) !important;
-  transition: all 0.3s ease !important;
-  height: 40px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  line-height: 24px !important;
+  box-sizing: border-box !important;
 }
 
-.ant-input:focus {
+.ant-input:focus,
+.ant-input-affix-wrapper:focus,
+.ant-picker:focus,
+.ant-select:focus .ant-select-selector {
   border-color: var(--primary-color) !important;
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
 }
 
-.ant-input-affix-wrapper {
-  border-radius: var(--border-radius) !important;
-  border: 1px solid var(--border-color) !important;
-  transition: all 0.3s ease !important;
-  height: 40px !important;
+/* Icon spacing - Thống nhất cho tất cả icons */
+.ant-input-affix-wrapper .ant-input-prefix,
+.ant-input-affix-wrapper .ant-input-suffix,
+.ant-picker .ant-picker-suffix,
+.ant-select .ant-select-arrow {
+  color: #999 !important;
+  font-size: 14px !important;
 }
 
-.ant-input-affix-wrapper:focus {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+.ant-input-affix-wrapper .ant-input-prefix {
+  margin-right: 8px !important;
+}
+
+.ant-input-affix-wrapper .ant-input-suffix {
+  margin-left: 8px !important;
+}
+
+.ant-picker .ant-picker-suffix {
+  margin-left: 8px !important;
+}
+
+.ant-select .ant-select-arrow {
+  margin-left: 8px !important;
+}
+
+/* DatePicker specific - Đảm bảo height đồng đều */
+.ant-picker {
+  padding: 4px 11px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.ant-picker .ant-picker-input {
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.ant-picker .ant-picker-input input {
+  padding: 0 !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Select specific - Đảm bảo height đồng đều */
+.ant-select {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+.ant-select .ant-select-selector {
+  padding: 4px 11px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.ant-select .ant-select-selection-item,
+.ant-select .ant-select-selection-placeholder {
+  line-height: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 /* Form Customization */
 .ant-form-item-label > label {
   font-weight: 500 !important;
   color: var(--text-primary) !important;
+}
+
+/* Đảm bảo tất cả form elements có height hoàn toàn đồng đều */
+.ant-form-item-control-input {
+  min-height: 40px !important;
+}
+
+.ant-form-item-control-input-content {
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Override any conflicting styles */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-picker,
+.ant-select {
+  vertical-align: top !important;
+}
+
+/* Ensure consistent display */
+.ant-input-affix-wrapper {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.ant-input-affix-wrapper .ant-input {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
 }
 
 /* Typography Customization */
@@ -274,34 +393,7 @@ html, body {
   background: linear-gradient(135deg, var(--success-color) 0%, #389e0d 100%);
 }
 
-/* Animation Classes */
-.fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.slide-in {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
+/* Animation Classes - DISABLED */
 
 /* Responsive Design */
 @media (max-width: 768px) {

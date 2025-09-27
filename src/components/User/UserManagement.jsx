@@ -2,6 +2,7 @@
 * @author: HoTram
 */
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Card, 
   Table, 
@@ -55,6 +56,7 @@ const { Option } = Select;
 const { Search } = Input;
 
 const UserManagement = () => {
+  const navigate = useNavigate();
   const { user: currentUser, sendOtpRegister, verifyOtp, error: authError, clearError } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -156,12 +158,8 @@ const UserManagement = () => {
   };
 
   const handleEdit = (user) => {
-    setSelectedUser(user);
-    form.setFieldsValue({
-      ...user,
-      dateOfBirth: user.dateOfBirth ? dayjs(user.dateOfBirth) : null
-    });
-    setModalVisible(true);
+    // Navigate to edit page instead of opening modal
+    navigate(`/users/edit/${user._id}`);
   };
 
   const handleView = (user) => {
@@ -181,17 +179,35 @@ const UserManagement = () => {
 
   const handleUpdate = async (values) => {
     try {
-      const updateData = {
-        ...values,
-        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
-      };
-      
       if (selectedUser) {
-        // Cập nhật user hiện có
-        await userService.updateUserByAdmin(selectedUser._id, updateData);
-        toast.success('Cập nhật thông tin thành công');
+        // CHỈNH SỬA USER - Không cần OTP, chỉ cần thông tin từ form
+        const updateData = {
+          ...values,
+          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
+        };
+        
+        console.log('UserManagement: Editing user:', selectedUser._id);
+        console.log('UserManagement: Update data:', updateData);
+        
+        // Sử dụng API update profile của backend
+        const response = await fetch(`http://localhost:3001/api/user/update/${selectedUser._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: JSON.stringify(updateData)
+        });
+        
+        if (response.ok) {
+          toast.success('Cập nhật thông tin thành công');
+        } else {
+          const error = await response.json();
+          toast.error(error.message || 'Cập nhật thông tin thất bại');
+          return;
+        }
       } else {
-        // Lấy dữ liệu từ step 4 hiện tại
+        // THÊM USER MỚI - Cần OTP verification
         const step4Data = form.getFieldsValue();
         
         // Kết hợp dữ liệu từ tất cả các steps
@@ -199,9 +215,11 @@ const UserManagement = () => {
           ...formData, // Dữ liệu từ step 3 đã lưu
           ...step4Data, // Dữ liệu từ step 4
           email: email, // Email từ step 1
-          role: step4Data.role || 'patient'
+          role: step4Data.role || 'patient',
+          dateOfBirth: step4Data.dateOfBirth ? step4Data.dateOfBirth.format('YYYY-MM-DD') : null
         };
         
+        console.log('UserManagement: Adding new user');
         console.log('UserManagement: Step 3 data (formData):', formData);
         console.log('UserManagement: Step 4 data (step4Data):', step4Data);
         console.log('UserManagement: Email from step 1:', email);
@@ -557,7 +575,18 @@ const UserManagement = () => {
               {/* Steps */}
               <Steps 
                 current={currentStep} 
-                items={[
+                items={selectedUser ? [
+                  // EDIT MODE - Chỉ có 2 steps
+                  {
+                    title: 'Thông tin cá nhân',
+                    description: 'Nhập thông tin cơ bản',
+                  },
+                  {
+                    title: 'Thông tin công việc',
+                    description: 'Vai trò, Loại công việc, Trạng thái',
+                  }
+                ] : [
+                  // ADD MODE - Có 4 steps với OTP
                   {
                     title: 'Xác thực Email',
                     description: 'Nhập email để nhận mã OTP',
@@ -594,8 +623,8 @@ const UserManagement = () => {
                 layout="vertical"
                 onFinish={handleUpdate}
               >
-                {/* Step 1: Email Verification */}
-                {currentStep === 0 && (
+                {/* Step 1: Email Verification - Chỉ hiển thị khi thêm mới */}
+                {!selectedUser && currentStep === 0 && (
                   <div>
                     <Form.Item
                       name="email"
@@ -660,8 +689,8 @@ const UserManagement = () => {
                   </div>
                 )}
 
-                {/* Step 2: OTP Verification */}
-                {currentStep === 1 && (
+                {/* Step 2: OTP Verification - Chỉ hiển thị khi thêm mới */}
+                {!selectedUser && currentStep === 1 && (
                   <div>
                     <Form.Item
                       name="otp"
@@ -737,7 +766,7 @@ const UserManagement = () => {
                   </div>
                 )}
 
-                {/* Step 3: Personal Information */}
+                {/* Step 3: Personal Information - Hiển thị cho cả edit và add */}
                 {currentStep === 2 && (
                   <div>
                     <Row gutter={[16, 16]}>
@@ -811,7 +840,7 @@ const UserManagement = () => {
                       <Button
                         type="default"
                         icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(1)}
+                        onClick={() => setCurrentStep(selectedUser ? 0 : 1)}
                         block
                         style={{
                           borderRadius: '8px',
@@ -824,7 +853,7 @@ const UserManagement = () => {
                   </div>
                 )}
 
-                {/* Step 4: Work Information */}
+                {/* Step 4: Work Information - Hiển thị cho cả edit và add */}
                 {currentStep === 3 && (
                   <div>
                     <Row gutter={[16, 16]}>
@@ -936,7 +965,7 @@ const UserManagement = () => {
                       <Button
                         type="default"
                         icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(2)}
+                        onClick={() => setCurrentStep(selectedUser ? 0 : 2)}
                         block
                         style={{
                           borderRadius: '8px',
@@ -977,17 +1006,6 @@ const UserManagement = () => {
             borderRadius: '50%',
             border: '2px solid #ddd',
             cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = '#ff4d4f';
-            e.target.style.color = 'white';
-            e.target.style.borderColor = '#ff4d4f';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = '#f5f5f5';
-            e.target.style.color = '#666';
-            e.target.style.borderColor = '#ddd';
           }}
           >
             ×

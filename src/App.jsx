@@ -18,6 +18,7 @@ import DashboardLayout from './components/Layout/DashboardLayout.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
+import EditUser from './pages/EditUser.jsx';
 import CertificateManagement from './components/User/CertificateManagement.jsx';
 import ChangePassword from './components/Auth/ChangePassword.jsx';
 
@@ -107,6 +108,7 @@ function App() {
             
             {/* Admin/Manager routes */}
             <Route path="users" element={<UserManagement />} />
+            <Route path="users/edit/:id" element={<EditUser />} />
             
             {/* Certificate Management (Dentist only) */}
             <Route path="certificates" element={
