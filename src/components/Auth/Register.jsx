@@ -809,10 +809,20 @@ const RegisterRHF = () => {
                     Mật khẩu <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('password', { required: 'Vui lòng nhập mật khẩu!' })}
+                    {...register('password', { 
+                      required: 'Vui lòng nhập mật khẩu!',
+                      minLength: {
+                        value: 8,
+                        message: 'Mật khẩu phải có ít nhất 8 ký tự!'
+                      },
+                      maxLength: {
+                        value: 16,
+                        message: 'Mật khẩu không được quá 16 ký tự!'
+                      }
+                    })}
                     type="password"
                     className="form-input"
-                    placeholder="Nhập mật khẩu (8-16 ký tự, có chữ hoa, thường và số)"
+                    placeholder="Nhập mật khẩu (8-16 ký tự)"
                   />
                   {errors.password && (
                     <div className="form-error">{errors.password.message}</div>
@@ -826,6 +836,14 @@ const RegisterRHF = () => {
                   <input
                     {...register('confirmPassword', {
                       required: 'Vui lòng xác nhận mật khẩu!',
+                      minLength: {
+                        value: 8,
+                        message: 'Mật khẩu phải có ít nhất 8 ký tự!'
+                      },
+                      maxLength: {
+                        value: 16,
+                        message: 'Mật khẩu không được quá 16 ký tự!'
+                      },
                       validate: (value) =>
                         value === watch('password') || 'Mật khẩu xác nhận không khớp! Vui lòng nhập lại.'
                     })}
