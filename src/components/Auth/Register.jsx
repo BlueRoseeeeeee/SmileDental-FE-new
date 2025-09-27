@@ -13,7 +13,6 @@ import {
   TeamOutlined,
   SafetyOutlined
 } from '@ant-design/icons';
-import { useForm } from 'react-hook-form';
 import { useFormPersistence } from '../../hooks/useFormPersistence';
 import { useAuth } from '../../contexts/AuthContext';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
@@ -21,13 +20,13 @@ import './Register.css';
 
 const { Title, Text } = Typography;
 
-// Form đăng ký dành cho BỆNH NHÂN - role luôn là 'patient'
+
 const RegisterRHF = () => {
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpMessage, setOtpMessage] = useState('');
-  
+
   const { sendOtpRegister, register: registerUser, verifyOtp, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
@@ -43,16 +42,8 @@ const RegisterRHF = () => {
     otp: ''
   };
 
-  // Sử dụng React Hook Form với persistence
-  const form = useForm({
-    defaultValues,
-    mode: 'onBlur',
-    rules: {
-      gender: {
-        required: 'Vui lòng chọn giới tính!'
-      }
-    }
-  });
+  // Sử dụng useFormPersistence hook
+  const { form, clearStoredData } = useFormPersistence('registerFormData', defaultValues);
   
   const { handleSubmit, formState: { errors }, setValue, getValues, watch, register, reset } = form;
   
@@ -64,57 +55,6 @@ const RegisterRHF = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
-  
-  // Khôi phục dữ liệu từ localStorage khi component mount (trừ OTP)
-  React.useEffect(() => {
-    const savedData = localStorage.getItem('registerFormData');
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      // OTP không được khôi phục vì chỉ dùng 1 lần
-      const { otp, ...dataToRestore } = data;
-      reset(dataToRestore);
-      setStep(data.step || 0);
-      setEmail(data.email || '');
-      setOtpSent(data.otpSent || false);
-      setOtpMessage(data.otpMessage || '');
-      
-      // Đảm bảo email được set vào form state
-      if (data.email) {
-        setValue('email', data.email);
-      }
-    }
-  }, [reset, setValue]);
-  
-  // Lưu dữ liệu vào localStorage mỗi khi có thay đổi (trừ OTP)
-  React.useEffect(() => {
-    const subscription = watch((value) => {
-      // Loại bỏ OTP khỏi dữ liệu lưu trữ, nhưng giữ lại email và thông tin cá nhân
-      const { otp, ...dataToSave } = value;
-      localStorage.setItem('registerFormData', JSON.stringify({
-        ...dataToSave,
-        step,
-        email,
-        otpSent,
-        otpMessage
-      }));
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, step, email, otpSent, otpMessage]);
-
-  // Lưu state changes vào localStorage
-  React.useEffect(() => {
-    const currentData = localStorage.getItem('registerFormData');
-    if (currentData) {
-      const data = JSON.parse(currentData);
-      localStorage.setItem('registerFormData', JSON.stringify({
-        ...data,
-        step,
-        email,
-        otpSent,
-        otpMessage
-      }));
-    }
-  }, [step, email, otpSent, otpMessage]);
 
   // Steps configuration
   const steps = [
@@ -232,13 +172,13 @@ const RegisterRHF = () => {
       toast.success(successMessage, 3000);
       
       // Xóa dữ liệu đã lưu sau khi đăng ký thành công
-      localStorage.removeItem('registerFormData');
+      clearStoredData();
       
       // Chuyển trang sau khi hiển thị thông báo
       setTimeout(() => {
-        navigate('/login', {
+      navigate('/login', {
           state: { message: successMessage },
-        });
+      });
       }, 2000); // Đợi 2 giây để user đọc thông báo
     } catch (err) {
       // Error is handled by AuthContext
@@ -260,12 +200,12 @@ const RegisterRHF = () => {
 
   return (
     <>
-      <div style={{ 
-        minHeight: '100vh', 
+    <div style={{ 
+      minHeight: '100vh', 
         background: '#e8f5e8', // Màu xanh nhạt cho nha khoa
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
         padding: '20px 0'
       }}>
         <div 
@@ -330,7 +270,7 @@ const RegisterRHF = () => {
               <img 
                 src={registerImage} 
                 alt="Register" 
-                style={{ 
+          style={{ 
                   maxWidth: '100%', 
                   maxHeight: '100%', 
                   objectFit: 'contain',
@@ -376,16 +316,16 @@ const RegisterRHF = () => {
                 color: '#666', 
                 fontSize: '0.9rem',
                 margin: 0,
-                display: 'flex',
-                alignItems: 'center',
+                display: 'flex', 
+                alignItems: 'center', 
                 justifyContent: 'center',
                 gap: '6px'
               }}>
                 <TeamOutlined style={{ fontSize: '14px' }} />
                 Đội ngũ bác sĩ giàu kinh nghiệm
               </p>
+              </div>
             </div>
-          </div>
 
           {/* Form đăng ký bên phải - 60% */}
           <div 
@@ -407,35 +347,35 @@ const RegisterRHF = () => {
               ĐĂNG KÝ
             </Title>
 
-            <Steps 
-              current={step} 
-              items={steps} 
+            <Steps
+              current={step}
+              items={steps}
               className="register-steps"
               style={{ marginBottom: '40px' }}
             />
 
             {/* Success Alerts - Ưu tiên thông báo từ BE */}
-            {otpSent && step === 1 && (
-              <Alert
+          {otpSent && step === 1 && (
+            <Alert
                 message={otpMessage || "OTP đăng ký đã được gửi đến email!"}
-                type="success"
-                showIcon
-                icon={<CheckCircleOutlined />}
-                style={{ marginBottom: '24px' }}
-              />
-            )}
+              type="success"
+              showIcon
+              icon={<CheckCircleOutlined />}
+              style={{ marginBottom: '24px' }}
+            />
+          )}
 
-            {/* Error Alert */}
-            {error && (
-              <Alert
-                message={error}
-                type="error"
-                showIcon
-                style={{ marginBottom: '24px' }}
-                closable
-                onClose={clearError}
-              />
-            )}
+          {/* Error Alert */}
+          {error && (
+            <Alert
+              message={error}
+              type="error"
+              showIcon
+              style={{ marginBottom: '24px' }}
+              closable
+              onClose={clearError}
+            />
+          )}
 
             {/* Step 1: Email Verification Form */}
             {step === 0 && (
@@ -506,18 +446,18 @@ const RegisterRHF = () => {
                 </div>
 
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={loading}
-                    block
-                    style={{
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
                       background: '#2596be',
-                      border: 'none',
-                      borderRadius: '8px',
-                      height: '48px'
-                    }}
-                  >
+                    border: 'none',
+                    borderRadius: '8px',
+                    height: '48px'
+                  }}
+                >
                     {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
                   </Button>
 
@@ -537,7 +477,7 @@ const RegisterRHF = () => {
                     }}
                   >
                     Quay lại
-                  </Button>
+                </Button>
                 </Space>
               </form>
             )}
@@ -584,7 +524,7 @@ const RegisterRHF = () => {
                   </label>
                   <input
                     {...register('dateOfBirth', { required: 'Vui lòng chọn ngày sinh!' })}
-                    type="date"
+                  type="date"
                     className="form-input"
                     placeholder="dd/mm/yyyy"
                     tabIndex={3}
@@ -611,8 +551,8 @@ const RegisterRHF = () => {
                       <Radio value="male" style={{ fontSize: '16px' }}>Nam</Radio>
                       <Radio value="female" style={{ fontSize: '16px' }}>Nữ</Radio>
                       <Radio value="other" style={{ fontSize: '16px' }}>Khác</Radio>
-                    </Space>
-                  </Radio.Group>
+                  </Space>
+                </Radio.Group>
                   {errors.gender && (
                     <div className="form-error">{errors.gender.message}</div>
                   )}
@@ -674,8 +614,8 @@ const RegisterRHF = () => {
                     })}
                     type="password"
                     className="form-input"
-                    placeholder="Nhập mật khẩu (8-16 ký tự)"
-                  />
+                  placeholder="Nhập mật khẩu (8-16 ký tự)"
+                />
                   {errors.password && (
                     <div className="form-error">{errors.password.message}</div>
                   )}
@@ -708,38 +648,38 @@ const RegisterRHF = () => {
                   )}
                 </div>
 
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    loading={loading}
-                    block
-                    style={{
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
                       background: '#2596be',
-                      border: 'none',
-                      borderRadius: '8px',
-                      height: '48px'
-                    }}
-                  >
-                    {loading ? 'Đang đăng ký...' : 'Hoàn thành đăng ký'}
-                  </Button>
+                    border: 'none',
+                    borderRadius: '8px',
+                    height: '48px'
+                  }}
+                >
+                  {loading ? 'Đang đăng ký...' : 'Hoàn thành đăng ký'}
+                </Button>
 
-                  <Button
-                    type="default"
-                    icon={<ArrowLeftOutlined />}
-                    onClick={() => {
+                <Button
+                  type="default"
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => {
                       setStep(2);
-                      clearError();
-                    }}
-                    block
+                    clearError();
+                  }}
+                  block
                     style={{
                       borderRadius: '8px',
                       height: '48px'
                     }}
-                  >
-                    Quay lại
-                  </Button>
-                </Space>
+                >
+                  Quay lại
+                </Button>
+              </Space>
               </form>
             )}
 
@@ -752,8 +692,8 @@ const RegisterRHF = () => {
               </Link>
             </Text>
           </div>
-        </div>
       </div>
+    </div>
     </>
   );
 };

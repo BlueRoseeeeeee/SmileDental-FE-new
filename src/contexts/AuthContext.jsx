@@ -85,6 +85,54 @@ export const AuthProvider = ({ children }) => {
     setError(null);
   };
 
+  // Send OTP for registration
+  const sendOtpRegister = async (email) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { authService } = await import('../services/authService.js');
+      const response = await authService.sendOtpRegister(email);
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Gửi OTP thất bại');
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  // Verify OTP
+  const verifyOtp = async (otp, email) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { authService } = await import('../services/authService.js');
+      const response = await authService.verifyOtp(otp, email);
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Xác thực OTP thất bại');
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  // Register user
+  const register = async (userData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { authService } = await import('../services/authService.js');
+      const response = await authService.register(userData);
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Đăng ký thất bại');
+      setLoading(false);
+      throw error;
+    }
+  };
+
   const value = {
     isAuthenticated,
     user,
@@ -92,7 +140,10 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
-    clearError
+    clearError,
+    sendOtpRegister,
+    verifyOtp,
+    register
   };
 
   return (

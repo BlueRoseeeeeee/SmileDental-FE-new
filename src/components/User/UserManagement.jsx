@@ -21,8 +21,19 @@ import {
   Statistic,
   Divider,
   Tooltip,
-  Badge
+  Badge,
+  Steps,
+  Radio,
+  Alert
 } from 'antd';
+import { 
+  HeartOutlined,
+  StarOutlined,
+  TeamOutlined,
+  SafetyOutlined,
+  CheckCircleOutlined,
+  ArrowLeftOutlined
+} from '@ant-design/icons';
 import { toast } from '../../services/toastService';
 import { 
   SearchOutlined, 
@@ -43,7 +54,7 @@ const { Option } = Select;
 const { Search } = Input;
 
 const UserManagement = () => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, sendOtpRegister, verifyOtp, error: authError, clearError } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -60,6 +71,17 @@ const UserManagement = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [email, setEmail] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpMessage, setOtpMessage] = useState('');
+  const [localLoading, setLocalLoading] = useState(false);
+  const [formData, setFormData] = useState({}); // Lưu dữ liệu từ các steps
+
+  // Debug step changes
+  React.useEffect(() => {
+    console.log('UserManagement: Current step changed to:', currentStep);
+  }, [currentStep]);
 
   useEffect(() => {
     loadUsers();
@@ -126,13 +148,53 @@ const UserManagement = () => {
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
       };
       
-      await userService.updateUserByAdmin(selectedUser._id, updateData);
-      toast.success('Cập nhật thông tin thành công');
+      if (selectedUser) {
+        // Cập nhật user hiện có
+        await userService.updateUserByAdmin(selectedUser._id, updateData);
+        toast.success('Cập nhật thông tin thành công');
+      } else {
+        // Lấy dữ liệu từ step 4 hiện tại
+        const step4Data = form.getFieldsValue();
+        
+        // Kết hợp dữ liệu từ tất cả các steps
+        const registerData = {
+          ...formData, // Dữ liệu từ step 3 đã lưu
+          ...step4Data, // Dữ liệu từ step 4
+          email: email, // Email từ step 1
+          role: step4Data.role || 'patient'
+        };
+        
+        console.log('UserManagement: Step 3 data (formData):', formData);
+        console.log('UserManagement: Step 4 data (step4Data):', step4Data);
+        console.log('UserManagement: Email from step 1:', email);
+        console.log('UserManagement: Final registerData:', registerData);
+        
+        const response = await fetch('http://localhost:3001/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(registerData)
+        });
+        
+        if (response.ok) {
+          toast.success('Thêm nhân viên thành công');
+        } else {
+          const error = await response.json();
+          toast.error(error.message || 'Thêm nhân viên thất bại');
+          return;
+        }
+      }
+      
       setModalVisible(false);
       form.resetFields();
+      setCurrentStep(0);
+      setEmail('');
+      setOtpSent(false);
+      setOtpMessage('');
       loadUsers();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Cập nhật thất bại');
+      toast.error(error.response?.data?.message || 'Thao tác thất bại');
     }
   };
 
@@ -424,139 +486,432 @@ const UserManagement = () => {
           scroll={{ x: 1000 }}
         />
       </Card>
-
-      {/* Edit/Add Modal */}
+      
       <Modal
         title={selectedUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
           form.resetFields();
+          setCurrentStep(0);
+          setEmail('');
+          setOtpSent(false);
+          setOtpMessage('');
         }}
         footer={null}
-        width={800}
+        width={1000}
+        style={{ top: 20 }}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleUpdate}
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="fullName"
-                label="Họ và tên"
-                rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
-              >
-                <Input placeholder="Nhập họ và tên" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập email!' },
-                  { type: 'email', message: 'Email không hợp lệ!' }
-                ]}
-              >
-                <Input placeholder="Nhập email" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="phone"
-                label="Số điện thoại"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập số điện thoại!' },
-                  { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại không hợp lệ!' }
-                ]}
-              >
-                <Input placeholder="Nhập số điện thoại" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="role"
-                label="Vai trò"
-                rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
-              >
-                <Select placeholder="Chọn vai trò">
-                  <Option value="admin">Quản trị viên</Option>
-                  <Option value="manager">Quản lý</Option>
-                  <Option value="dentist">Nha sĩ</Option>
-                  <Option value="nurse">Y tá</Option>
-                  <Option value="receptionist">Lễ tân</Option>
-                  <Option value="patient">Bệnh nhân</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="dateOfBirth"
-                label="Ngày sinh"
-                rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}
-              >
-                <Input type="date" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="gender"
-                label="Giới tính"
-                rules={[{ required: true, message: 'Vui lòng chọn giới tính!' }]}
-              >
-                <Select placeholder="Chọn giới tính">
-                  <Option value="male">Nam</Option>
-                  <Option value="female">Nữ</Option>
-                  <Option value="other">Khác</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="type"
-                label="Loại công việc"
-              >
-                <Select placeholder="Chọn loại công việc">
-                  <Option value="fullTime">Toàn thời gian</Option>
-                  <Option value="partTime">Bán thời gian</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12}>
-              <Form.Item
-                name="isActive"
-                label="Trạng thái"
-                valuePropName="checked"
-              >
-                <Select placeholder="Chọn trạng thái">
-                  <Option value={true}>Hoạt động</Option>
-                  <Option value={false}>Không hoạt động</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item
-                name="description"
-                label="Mô tả"
-              >
-                <Input.TextArea rows={3} placeholder="Nhập mô tả..." />
-              </Form.Item>
-            </Col>
-          </Row>
+        <div style={{ 
+          padding: '20px',
+          background: 'white'
+        }}>
+              <Typography.Title level={2} style={{ 
+                textAlign: 'center', 
+                marginBottom: '40px', 
+                color: '#2596be',
+                fontSize: '2.5rem',
+                fontWeight: 'bold'
+              }}>
+                {selectedUser ? 'CHỈNH SỬA' : 'THÊM MỚI'}
+              </Typography.Title>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
-              <Button onClick={() => setModalVisible(false)}>
-                Hủy
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {selectedUser ? 'Cập nhật' : 'Thêm mới'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+              {/* Steps */}
+              <Steps 
+                current={currentStep} 
+                items={[
+                  {
+                    title: 'Xác thực Email',
+                    description: 'Nhập email để nhận mã OTP',
+                  },
+                  {
+                    title: 'Xác thực OTP',
+                    description: 'Nhập mã OTP để xác thực',
+                  },
+                  {
+                    title: 'Thông tin cá nhân',
+                    description: 'Nhập thông tin cơ bản',
+                  },
+                  {
+                    title: 'Thông tin công việc',
+                    description: 'Vai trò, Loại công việc, Trạng thái',
+                  }
+                ]}
+                style={{ marginBottom: '40px' }}
+              />
+
+              {/* Success Alerts */}
+              {otpSent && currentStep === 1 && (
+                <Alert
+                  message={otpMessage || "OTP đã được gửi đến email!"}
+                  type="success"
+                  showIcon
+                  icon={<CheckCircleOutlined />}
+                  style={{ marginBottom: '24px' }}
+                />
+              )}
+
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={handleUpdate}
+              >
+                {/* Step 1: Email Verification */}
+                {currentStep === 0 && (
+                  <div>
+                    <Form.Item
+                      name="email"
+                      label="Email"
+                      rules={[
+                        { required: true, message: 'Vui lòng nhập email!' },
+                        { type: 'email', message: 'Email không hợp lệ!' }
+                      ]}
+                    >
+                      <Input placeholder="Nhập email của nhân viên" />
+                    </Form.Item>
+
+                    <Button
+                      type="primary"
+                      onClick={async () => {
+                        const emailValue = form.getFieldValue('email');
+                        if (emailValue) {
+                          try {
+                            console.log('UserManagement: Starting send OTP for email:', emailValue);
+                            setLocalLoading(true);
+                            // Sử dụng fetch trực tiếp để tránh global loading
+                            const response = await fetch('http://localhost:3001/api/auth/send-otp-register', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({ email: emailValue })
+                            });
+                            
+                            if (response.ok) {
+                              const data = await response.json();
+                              console.log('UserManagement: OTP response:', data);
+                              setEmail(emailValue);
+                              setOtpMessage(data.message || 'OTP đã được gửi đến email!');
+                              setOtpSent(true);
+                              console.log('UserManagement: About to setCurrentStep(1)');
+                              setCurrentStep(1);
+                              console.log('UserManagement: setCurrentStep(1) called');
+                            } else {
+                              const error = await response.json();
+                              toast.error(error.message || 'Gửi OTP thất bại!');
+                            }
+                            setLocalLoading(false);
+                          } catch (error) {
+                            console.error('Error sending OTP:', error);
+                            toast.error('Có lỗi xảy ra khi gửi OTP!');
+                            setLocalLoading(false);
+                          }
+                        }
+                      }}
+                      loading={localLoading}
+                      block
+                      style={{
+                        background: '#2596be',
+                        border: 'none',
+                        borderRadius: '8px',
+                        height: '48px'
+                      }}
+                    >
+                      {localLoading ? 'Đang gửi OTP...' : 'Gửi mã OTP'}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Step 2: OTP Verification */}
+                {currentStep === 1 && (
+                  <div>
+                    <Form.Item
+                      name="otp"
+                      label="Mã OTP"
+                      rules={[{ required: true, message: 'Vui lòng nhập mã OTP!' }]}
+                    >
+                      <Input 
+                        placeholder="Nhập 6 chữ số OTP"
+                        maxLength={6}
+                        style={{ 
+                          textAlign: 'center', 
+                          fontSize: '18px', 
+                          letterSpacing: '4px'
+                        }}
+                      />
+                    </Form.Item>
+
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      <Button
+                        type="primary"
+                        onClick={async () => {
+                          const otpValue = form.getFieldValue('otp');
+                          if (otpValue) {
+                            try {
+                              // Sử dụng fetch trực tiếp để tránh global loading
+                              const response = await fetch('http://localhost:3001/api/auth/verify-otp', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({ 
+                                  email: email, 
+                                  otp: otpValue 
+                                })
+                              });
+                              
+                              if (response.ok) {
+                                setCurrentStep(2);
+                              } else {
+                                const error = await response.json();
+                                toast.error(error.message || 'Mã OTP không chính xác!');
+                              }
+                            } catch (error) {
+                              console.error('Error verifying OTP:', error);
+                              toast.error('Có lỗi xảy ra khi xác thực OTP!');
+                            }
+                          }
+                        }}
+                        block
+                        style={{
+                          background: '#2596be',
+                          border: 'none',
+                          borderRadius: '8px',
+                          height: '48px'
+                        }}
+                      >
+                        Xác thực OTP
+                      </Button>
+
+                      <Button
+                        type="default"
+                        icon={<ArrowLeftOutlined />}
+                        onClick={() => setCurrentStep(0)}
+                        block
+                        style={{
+                          borderRadius: '8px',
+                          height: '48px'
+                        }}
+                      >
+                        Quay lại
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+
+                {/* Step 3: Personal Information */}
+                {currentStep === 2 && (
+                  <div>
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="fullName"
+                          label="Họ và tên"
+                          rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
+                        >
+                          <Input placeholder="Nhập họ và tên" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="phone"
+                          label="Số điện thoại"
+                          rules={[
+                            { required: true, message: 'Vui lòng nhập số điện thoại!' },
+                            { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại không hợp lệ!' }
+                          ]}
+                        >
+                          <Input placeholder="Nhập số điện thoại" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="dateOfBirth"
+                          label="Ngày sinh"
+                          rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}
+                        >
+                          <Input type="date" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="gender"
+                          label="Giới tính"
+                          rules={[{ required: true, message: 'Vui lòng chọn giới tính!' }]}
+                        >
+                          <Radio.Group>
+                            <Space direction="horizontal" size="large">
+                              <Radio value="male">Nam</Radio>
+                              <Radio value="female">Nữ</Radio>
+                              <Radio value="other">Khác</Radio>
+                            </Space>
+                          </Radio.Group>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: '24px' }}>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          // Lưu dữ liệu step 3 trước khi chuyển
+                          const step3Data = form.getFieldsValue(['fullName', 'phone', 'dateOfBirth', 'gender']);
+                          setFormData(prev => ({ ...prev, ...step3Data }));
+                          setCurrentStep(3);
+                        }}
+                        block
+                        style={{
+                          background: '#2596be',
+                          border: 'none',
+                          borderRadius: '8px',
+                          height: '48px'
+                        }}
+                      >
+                        Tiếp theo
+                      </Button>
+
+                      <Button
+                        type="default"
+                        icon={<ArrowLeftOutlined />}
+                        onClick={() => setCurrentStep(1)}
+                        block
+                        style={{
+                          borderRadius: '8px',
+                          height: '48px'
+                        }}
+                      >
+                        Quay lại
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+
+                {/* Step 4: Work Information */}
+                {currentStep === 3 && (
+                  <div>
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="role"
+                          label="Vai trò"
+                          rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
+                        >
+                          <Select placeholder="Chọn vai trò">
+                            <Option value="admin">Quản trị viên</Option>
+                            <Option value="manager">Quản lý</Option>
+                            <Option value="dentist">Nha sĩ</Option>
+                            <Option value="nurse">Y tá</Option>
+                            <Option value="receptionist">Lễ tân</Option>
+                            <Option value="patient">Bệnh nhân</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="type"
+                          label="Loại công việc"
+                          initialValue="fullTime"
+                        >
+                          <Select placeholder="Chọn loại công việc">
+                            <Option value="fullTime">Toàn thời gian</Option>
+                            <Option value="partTime">Bán thời gian</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="isActive"
+                          label="Trạng thái"
+                          initialValue={true}
+                        >
+                          <Select placeholder="Chọn trạng thái">
+                            <Option value={true}>Hoạt động</Option>
+                            <Option value={false}>Không hoạt động</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    {/* Password Row - Riêng biệt để đảm bảo nằm ngang hàng */}
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="password"
+                          label="Mật khẩu"
+                          rules={[
+                            { required: true, message: 'Vui lòng nhập mật khẩu!' },
+                            { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự!' },
+                            { max: 16, message: 'Mật khẩu không được quá 16 ký tự!' }
+                          ]}
+                        >
+                          <Input.Password placeholder="Nhập mật khẩu (8-16 ký tự)" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="confirmPassword"
+                          label="Xác nhận mật khẩu"
+                          dependencies={['password']}
+                          rules={[
+                            { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                            ({ getFieldValue }) => ({
+                              validator(_, value) {
+                                if (!value || getFieldValue('password') === value) {
+                                  return Promise.resolve();
+                                }
+                                return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                              },
+                            }),
+                          ]}
+                        >
+                          <Input.Password placeholder="Nhập lại mật khẩu để xác nhận" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24}>
+                        <Form.Item
+                          name="description"
+                          label="Mô tả"
+                        >
+                          <Input.TextArea rows={3} placeholder="Nhập mô tả..." />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+
+                    <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: '24px' }}>
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        block
+                        style={{
+                          background: '#2596be',
+                          border: 'none',
+                          borderRadius: '8px',
+                          height: '48px'
+                        }}
+                      >
+                        {selectedUser ? 'Cập nhật' : 'Thêm mới'}
+                      </Button>
+
+                      <Button
+                        type="default"
+                        icon={<ArrowLeftOutlined />}
+                        onClick={() => setCurrentStep(2)}
+                        block
+                        style={{
+                          borderRadius: '8px',
+                          height: '48px'
+                        }}
+                      >
+                        Quay lại
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+              </Form>
+        </div>
       </Modal>
 
       {/* View Modal */}
