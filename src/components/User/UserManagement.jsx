@@ -24,7 +24,8 @@ import {
   Badge,
   Steps,
   Radio,
-  Alert
+  Alert,
+  Tabs
 } from 'antd';
 import { 
   HeartOutlined,
@@ -77,6 +78,43 @@ const UserManagement = () => {
   const [otpMessage, setOtpMessage] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
   const [formData, setFormData] = useState({}); // Lưu dữ liệu từ các steps
+
+  // Helper function để tạo info item dạng list
+  const createInfoItem = (label, value, copyable = false, icon = null) => (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '16px 20px',
+      borderBottom: '1px solid #f0f0f0'
+    }}
+    >
+      <div style={{
+        minWidth: '160px',
+        fontSize: '15px',
+        color: '#666',
+        fontWeight: '500'
+      }}>
+        {label}
+      </div>
+      <div style={{
+        flex: 1,
+        fontSize: '16px',
+        color: '#333',
+        fontWeight: '400'
+      }}>
+        {copyable ? (
+          <Text copyable={{ text: value }} style={{ fontSize: '16px' }}>
+            {value}
+          </Text>
+        ) : value}
+      </div>
+      {icon && (
+        <div style={{ marginLeft: '12px', color: '#2596be' }}>
+          {icon}
+        </div>
+      )}
+    </div>
+  );
 
   // Debug step changes
   React.useEffect(() => {
@@ -209,14 +247,14 @@ const UserManagement = () => {
     };
     
     const config = roleConfig[role] || { color: 'default', text: role };
-    return <Tag color={config.color}>{config.text}</Tag>;
+    return <Tag color={config.color} style={{ fontSize: '16px' }}>{config.text}</Tag>;
   };
 
   const getStatusTag = (isActive) => {
     return isActive ? (
-      <Tag color="green">Hoạt động</Tag>
+      <Tag color="green" style={{ fontSize: '16px' }}>Hoạt động</Tag>
     ) : (
-      <Tag color="red">Không hoạt động</Tag>
+      <Tag color="red" style={{ fontSize: '16px' }}>Không hoạt động</Tag>
     );
   };
 
@@ -914,66 +952,166 @@ const UserManagement = () => {
         </div>
       </Modal>
 
-      {/* View Modal */}
+      {/* View Modal - Redesigned */}
       <Modal
-        title="Chi tiết người dùng"
+        title={null}
         open={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
         footer={null}
-        width={600}
+        width={1000}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: 0 }}
+        transitionName=""
+        maskTransitionName=""
+        closeIcon={
+          <div style={{
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#666',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#f5f5f5',
+            borderRadius: '50%',
+            border: '2px solid #ddd',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.background = '#ff4d4f';
+            e.target.style.color = 'white';
+            e.target.style.borderColor = '#ff4d4f';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.background = '#f5f5f5';
+            e.target.style.color = '#666';
+            e.target.style.borderColor = '#ddd';
+          }}
+          >
+            ×
+          </div>
+        }
       >
         {selectedUser && (
-          <div>
-            <Row gutter={[16, 16]}>
-              <Col span={24} style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <Avatar 
-                  size={80} 
-                  src={selectedUser.avatar} 
-                  icon={<UserOutlined />}
-                />
-                <div style={{ marginTop: '16px' }}>
-                  <Title level={4}>{selectedUser.fullName}</Title>
-                  <Text type="secondary">{getRoleTag(selectedUser.role)}</Text>
+          <div style={{ 
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '12px',
+            overflow: 'hidden'
+          }}>
+            {/* Header với gradient */}
+            <div style={{ 
+              padding: '32px 32px 24px 32px',
+              textAlign: 'center',
+              background: 'rgba(255,255,255,0.1)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Avatar 
+                size={100} 
+                src={selectedUser.avatar} 
+                icon={<UserOutlined />}
+                style={{ 
+                  border: '4px solid rgba(255,255,255,0.3)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                }}
+              />
+              <div style={{ marginTop: '20px' }}>
+                <Title level={3} style={{ 
+                  color: 'white', 
+                  margin: 0,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                  {selectedUser.fullName}
+                </Title>
+                <div style={{ marginTop: '8px' }}>
+                  {getRoleTag(selectedUser.role)}
                 </div>
-              </Col>
-              <Col span={12}>
-                <Text strong>Email:</Text>
-                <br />
-                <Text copyable={{ text: selectedUser.email }}>{selectedUser.email}</Text>
-              </Col>
-              <Col span={12}>
-                <Text strong>Số điện thoại:</Text>
-                <br />
-                <Text copyable={{ text: selectedUser.phone }}>{selectedUser.phone}</Text>
-              </Col>
-              <Col span={12}>
-                <Text strong>Ngày sinh:</Text>
-                <br />
-                <Text>{dayjs(selectedUser.dateOfBirth).format('DD/MM/YYYY')}</Text>
-              </Col>
-              <Col span={12}>
-                <Text strong>Giới tính:</Text>
-                <br />
-                <Text>{selectedUser.gender === 'male' ? 'Nam' : selectedUser.gender === 'female' ? 'Nữ' : 'Khác'}</Text>
-              </Col>
-              {selectedUser.employeeCode && (
-                <Col span={12}>
-                  <Text strong>Mã nhân viên:</Text>
-                  <br />
-                  <Text code>{selectedUser.employeeCode}</Text>
-                </Col>
-              )}
-              <Col span={12}>
-                <Text strong>Trạng thái:</Text>
-                <br />
-                {getStatusTag(selectedUser.isActive)}
-              </Col>
-              <Col span={24}>
-                <Text strong>Mô tả:</Text>
-                <br />
-                <Text>{selectedUser.description || 'Không có mô tả'}</Text>
-              </Col>
-            </Row>
+              </div>
+            </div>
+
+            {/* Content với layout linh hoạt */}
+            <div style={{ 
+              padding: '32px',
+              background: 'white'
+            }}>
+              {/* Tabs để dễ mở rộng */}
+              <Tabs 
+                defaultActiveKey="basic" 
+                items={[
+                  {
+                    key: 'basic',
+                    label: 'Thông tin cơ bản',
+                    children: (
+                      <div style={{
+                        background: 'white',
+                        borderRadius: '8px',
+                        border: '1px solid #e8e8e8',
+                        overflow: 'hidden'
+                      }}>
+                        {selectedUser.employeeCode && 
+                          createInfoItem('Mã nhân viên', <Text code>{selectedUser.employeeCode}</Text>)
+                        }
+                        {createInfoItem('Email', selectedUser.email, true)}
+                        {createInfoItem('Số điện thoại', selectedUser.phone, true)}
+                        {createInfoItem('Ngày sinh', dayjs(selectedUser.dateOfBirth).format('DD/MM/YYYY'))}
+                        {createInfoItem('Giới tính', selectedUser.gender === 'male' ? 'Nam' : selectedUser.gender === 'female' ? 'Nữ' : 'Khác')}
+                        {createInfoItem('Trạng thái', getStatusTag(selectedUser.isActive))}
+                        
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'work',
+                    label: 'Thông tin công việc',
+                    children: (
+                      <div style={{
+                        background: 'white',
+                        borderRadius: '8px',
+                        border: '1px solid #e8e8e8',
+                        overflow: 'hidden'
+                      }}>
+                        {createInfoItem('Vai trò', getRoleTag(selectedUser.role))}
+                        {createInfoItem('Loại công việc', selectedUser.type === 'fullTime' ? 'Toàn thời gian' : 'Bán thời gian')}
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          padding: '16px 20px',
+                          borderBottom: 'none'
+                        }}>
+                          <div style={{
+                            minWidth: '160px',
+                            fontSize: '15px',
+                            color: '#666',
+                            fontWeight: '500'
+                          }}>
+                            Mô tả
+                          </div>
+                          <div style={{
+                            flex: 1,
+                            fontSize: '16px',
+                            color: '#333',
+                            fontWeight: '400',
+                            lineHeight: '1.5'
+                          }}>
+                            {selectedUser.description || 'Không có mô tả'}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'certificates',
+                    label: 'Chứng chỉ & Bằng cấp',
+                    children: (
+                      <div style={{ textAlign: 'center', padding: '40px' }}>
+                      </div>
+                    )
+                  }
+                ]}
+                style={{ marginTop: '16px' }}
+              />
+            </div>
           </div>
         )}
       </Modal>
