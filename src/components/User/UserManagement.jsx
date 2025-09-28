@@ -584,7 +584,7 @@ const UserManagement = () => {
       </Card>
       
       <Modal
-        title={selectedUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
+        title={selectedUser ? 'Chỉnh sửa người dùng' : 'Thêm nhân viên mới'}
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
@@ -1162,7 +1162,172 @@ const UserManagement = () => {
                     key: 'certificates',
                     label: 'Chứng chỉ & Bằng cấp',
                     children: (
-                      <div style={{ textAlign: 'center', padding: '40px' }}>
+                      <div style={{ padding: '20px' }}>
+                        {selectedUser?.role === 'dentist' ? (
+                          <div style={{
+                            background: 'white',
+                            borderRadius: '8px',
+                            border: '1px solid #e8e8e8',
+                            padding: '20px'
+                          }}>
+                            <div style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center',
+                              marginBottom: '16px'
+                            }}>
+                              <h4 style={{ margin: 0, color: '#333' }}>Chứng chỉ & Bằng cấp</h4>
+                              <Button 
+                                type="primary" 
+                                icon={<PlusOutlined />}
+                                size="small"
+                                style={{
+                                  borderRadius: '6px',
+                                  background: '#2596be',
+                                  border: 'none'
+                                }}
+                                onClick={() => {
+                                  toast.info('Chức năng upload chứng chỉ đang được phát triển');
+                                }}
+                              >
+                                Thêm chứng chỉ
+                              </Button>
+                            </div>
+                            
+                            {/* Danh sách chứng chỉ cho dentist */}
+                            {selectedUser?.certificates && selectedUser.certificates.length > 0 ? (
+                              <div>
+                                {selectedUser.certificates.map((cert, index) => (
+                                  <div key={cert._id || index} style={{
+                                    border: '1px solid #e8e8e8',
+                                    borderRadius: '8px',
+                                    padding: '16px',
+                                    marginBottom: '12px',
+                                    background: '#fafafa'
+                                  }}>
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      justifyContent: 'space-between', 
+                                      alignItems: 'flex-start',
+                                      marginBottom: '8px'
+                                    }}>
+                                      <div style={{ flex: 1 }}>
+                                        <h5 style={{ margin: 0, color: '#333', fontSize: '16px' }}>
+                                          Chứng chỉ {index + 1}
+                                        </h5>
+                                        <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: '14px' }}>
+                                          Upload: {new Date(cert.uploadedAt).toLocaleDateString('vi-VN')}
+                                        </p>
+                                        {cert.notes && (
+                                          <p style={{ margin: '4px 0 0 0', color: '#999', fontSize: '12px' }}>
+                                            Ghi chú: {cert.notes}
+                                          </p>
+                                        )}
+                                      </div>
+                                      <div style={{ display: 'flex', gap: '8px' }}>
+                                        <Button 
+                                          type="text" 
+                                          icon={<EyeOutlined />}
+                                          size="small"
+                                          style={{ color: '#2596be' }}
+                                          onClick={() => {
+                                            // Mở ảnh trong tab mới
+                                            window.open(cert.imageUrl, '_blank');
+                                          }}
+                                        >
+                                          Xem
+                                        </Button>
+                                        <Button 
+                                          type="text" 
+                                          danger
+                                          icon={<DeleteOutlined />}
+                                          size="small"
+                                          onClick={() => {
+                                            // Logic xóa chứng chỉ
+                                            console.log('Xóa chứng chỉ:', cert._id);
+                                          }}
+                                        >
+                                          Xóa
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      gap: '8px', 
+                                      alignItems: 'center',
+                                      marginTop: '8px'
+                                    }}>
+                                      <Tag color={cert.isVerified ? "green" : "orange"} style={{ fontSize: '12px' }}>
+                                        {cert.isVerified ? 'Đã xác thực' : 'Chờ xác thực'}
+                                      </Tag>
+                                      {cert.verifiedAt && (
+                                        <span style={{ fontSize: '12px', color: '#999' }}>
+                                          Xác thực: {new Date(cert.verifiedAt).toLocaleDateString('vi-VN')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                                <div style={{ 
+                                  fontSize: '48px', 
+                                  color: '#d9d9d9',
+                                  marginBottom: '16px'
+                                }}>
+                                  📜
+                                </div>
+                                <div style={{ 
+                                  fontSize: '16px', 
+                                  color: '#999',
+                                  marginBottom: '8px'
+                                }}>
+                                  Chưa có chứng chỉ nào
+                                </div>
+                                <div style={{ 
+                                  fontSize: '14px', 
+                                  color: '#ccc'
+                                }}>
+                                  Nhấn "Thêm chứng chỉ" để upload ảnh
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ 
+                            textAlign: 'center', 
+                            padding: '40px',
+                            background: '#f8f9fa',
+                            borderRadius: '8px',
+                            border: '1px solid #e8e8e8'
+                          }}>
+                            <div style={{ 
+                              fontSize: '48px', 
+                              color: '#d9d9d9',
+                              marginBottom: '16px'
+                            }}>
+                              🚫
+                            </div>
+                            <div style={{ 
+                              fontSize: '16px', 
+                              color: '#666',
+                              marginBottom: '8px'
+                            }}>
+                              Chỉ nha sĩ mới có chứng chỉ
+                            </div>
+                            <div style={{ 
+                              fontSize: '14px', 
+                              color: '#999'
+                            }}>
+                              Vai trò hiện tại: {selectedUser?.role === 'admin' ? 'Quản trị viên' : 
+                                              selectedUser?.role === 'manager' ? 'Quản lý' :
+                                              selectedUser?.role === 'nurse' ? 'Y tá' :
+                                              selectedUser?.role === 'receptionist' ? 'Lễ tân' :
+                                              selectedUser?.role === 'patient' ? 'Bệnh nhân' : selectedUser?.role}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   }
