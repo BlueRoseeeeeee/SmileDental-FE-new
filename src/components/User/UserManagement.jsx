@@ -211,7 +211,7 @@ const UserManagement = () => {
       if (selectedUser) {
         // CHỈNH SỬA USER - Không cần OTP, chỉ cần thông tin từ form
         // Loại bỏ certificates khỏi dữ liệu update vì certificates được quản lý riêng
-        const { certificates, ...formData } = values;
+        const {...formData } = values;
         const updateData = {
           ...formData,
           dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
@@ -787,7 +787,7 @@ const UserManagement = () => {
                           if (otpValue) {
                             try {
                               // Sử dụng fetch trực tiếp để tránh global loading
-                              const response = await fetch('http://localhost:3001/api/auth/verify-otp', {
+                              const response = await fetch('http://localhost:3001/api/auth/verify-otp-register', {
                                 method: 'POST',
                                 headers: {
                                   'Content-Type': 'application/json',

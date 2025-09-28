@@ -80,7 +80,7 @@ export const authService = {
 
   // Verify OTP for registration
   verifyOtp: async (otp, email) => {
-    const response = await api.post('/auth/verify-otp', { email, otp });
+    const response = await api.post('/auth/verify-otp-register', { email, otp });
     return response.data;
   },
 
