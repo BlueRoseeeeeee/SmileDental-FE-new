@@ -55,18 +55,6 @@ const DashboardLayout = () => {
     return roleNames[role] || role;
   };
 
-  const getRoleColor = (role) => {
-    const colors = {
-      admin: 'red',
-      manager: 'blue',
-      dentist: 'green',
-      nurse: 'orange',
-      receptionist: 'purple',
-      patient: 'cyan',
-    };
-    return colors[role] || 'default';
-  };
-
   // Menu items based on user role
   const getMenuItems = () => {
     const baseItems = [
@@ -214,6 +202,8 @@ const DashboardLayout = () => {
         trigger={null}
         collapsible
         collapsed={collapsed}
+        width={240}
+        collapsedWidth={80}
         style={{
           background: '#fff',
           boxShadow: '2px 0 8px rgba(0,0,0,0.06)',
@@ -224,17 +214,63 @@ const DashboardLayout = () => {
             setCollapsed(true);
           }
         }}
+        className="dashboard-sider"
       >
         <div style={{ 
           padding: '16px', 
           textAlign: 'center', 
           borderBottom: '1px solid #f0f0f0',
+          height: '64px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-start'
+          justifyContent: collapsed ? 'center' : 'center'
         }}>
-          <div style={{ fontSize: '24px', marginRight: collapsed ? 0 : '8px' }}>🦷</div>
-          {!collapsed && <Text strong>Smile Dental</Text>}
+          {!collapsed && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%'
+            }}>
+              <img 
+                src={logo} 
+                alt="Smile Dental" 
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  marginRight: '8px',
+                  filter: 'drop-shadow(0 2px 4px rgba(37, 150, 190, 0.2))'
+                }}
+              />
+              <Text 
+                strong 
+                style={{
+                  fontSize: '18px',
+                  color: '#2596be',
+                  letterSpacing: '0.5px',
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  background: 'linear-gradient(45deg, #2596be, #40a9ff)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
+              >
+                Smile Dental
+              </Text>
+            </div>
+          )}
+          {collapsed && (
+            <img 
+              src={logo} 
+              alt="Smile Dental" 
+              style={{
+                width: '28px',
+                height: '28px',
+                filter: 'drop-shadow(0 2px 4px rgba(37, 150, 190, 0.2))'
+              }}
+            />
+          )}
         </div>
         
         <Menu
@@ -242,7 +278,10 @@ const DashboardLayout = () => {
           selectedKeys={[location.pathname]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ border: 'none', marginTop: '16px' }}
+          style={{ 
+            border: 'none',
+            background: 'transparent'
+          }}
         />
       </Sider>
 
@@ -264,6 +303,7 @@ const DashboardLayout = () => {
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
+              className="header-toggle-btn"
               style={{ 
                 fontSize: '18px', 
                 width: '48px', 
@@ -271,7 +311,8 @@ const DashboardLayout = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: '8px'
+                borderRadius: '8px',
+                transition: 'all 0.3s ease'
               }}
             />
             

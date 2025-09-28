@@ -2,6 +2,73 @@
 * @author: HoTram
 */
 
+/* Sidebar logo styling */
+.dashboard-sider .sidebar-logo {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dashboard-sider .sidebar-logo:hover {
+  transform: scale(1.05);
+}
+
+.dashboard-sider .logo-text {
+  background: linear-gradient(45deg, #2596be, #40a9ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.dashboard-sider .logo-image {
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(37, 150, 190, 0.2));
+}
+
+.dashboard-sider .logo-image:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 4px 8px rgba(37, 150, 190, 0.3));
+}
+
+/* Sidebar text display fix */
+.dashboard-sider .ant-menu-item {
+  margin: 4px 8px;
+  border-radius: 6px;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: nowrap !important;
+  padding: 0 16px !important;
+}
+
+.dashboard-sider .ant-menu-item .ant-menu-title-content {
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-sider .ant-menu-item:hover {
+  background-color: #f0f8ff !important;
+}
+
+.dashboard-sider .ant-menu-item-selected {
+  background-color: #e6f3ff !important;
+  color: #2596be !important;
+}
+
+/* Header toggle button styling */
+.header-toggle-btn {
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.header-toggle-btn:hover {
+  background-color: #f0f8ff !important;
+  border-color: #d9d9d9 !important;
+  color: #2596be !important;
+}
+
 /* Desktop styles */
 @media (min-width: 1024px) {
   .desktop-search {
@@ -37,6 +104,11 @@
     display: flex !important;
     align-items: center;
     justify-content: center;
+  }
+  
+  /* Hide sidebar on mobile */
+  .dashboard-sider {
+    display: none !important;
   }
   
   /* Adjust header layout for mobile */

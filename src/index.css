@@ -6,8 +6,6 @@
 /* Global Styles */
 * {
   box-sizing: border-box;
-  transition: none !important;
-  animation: none !important;
 }
 
 html, body {
@@ -72,16 +70,6 @@ html, body {
   background: var(--background-white) !important;
   box-shadow: var(--shadow-medium) !important;
   border-right: 1px solid var(--border-color) !important;
-  min-width: 200px !important;
-}
-
-.ant-layout-sider .ant-menu {
-  width: 100% !important;
-}
-
-.ant-layout-sider .ant-menu-item {
-  width: 100% !important;
-  padding: 0 16px !important;
 }
 
 .ant-layout-header {
@@ -109,15 +97,14 @@ html, body {
   border-radius: var(--border-radius) !important;
   height: 40px !important;
   line-height: 40px !important;
-  white-space: nowrap !important;
   overflow: visible !important;
-  text-overflow: unset !important;
+  white-space: nowrap !important;
 }
 
-.ant-menu-item span {
-  white-space: nowrap !important;
+.ant-menu-item .ant-menu-title-content {
   overflow: visible !important;
   text-overflow: unset !important;
+  white-space: nowrap !important;
 }
 
 .ant-menu-item:hover {
