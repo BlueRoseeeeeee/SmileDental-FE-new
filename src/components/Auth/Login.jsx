@@ -169,46 +169,12 @@ const Login = () => {
                 marginBottom: '16px',
                 textShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}>
-                Chào mừng trở lại
+                 Chào mừng trở lại- SmileDental 
               </h2>
-              <h1 style={{ 
-                color: '#2596be', 
-                fontSize: '2.5rem', 
-                fontWeight: 'bold',
-                marginBottom: '20px',
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                SmileDental
-              </h1>
-              <p style={{ 
-                color: '#666', 
-                fontSize: '1.1rem', 
-                lineHeight: '1.6',
-                maxWidth: '300px',
-                margin: '0 auto'
-              }}>
-                Đăng nhập để tiếp tục sử dụng hệ thống quản lý phòng khám nha khoa hiện đại.
-              </p>
+              
             </div>
-            
-            {/* Hình ảnh */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img 
-                src={registerImage} 
-                alt="Login" 
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '100%', 
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
-                }} 
-              />
-            </div>
-            
-            {/* Thông tin bổ sung */}
             <div style={{ 
               textAlign: 'center', 
-              marginTop: '20px',
               padding: '20px',
               background: 'rgba(255,255,255,0.8)',
               borderRadius: '12px',
@@ -248,9 +214,24 @@ const Login = () => {
                 gap: '6px'
               }}>
                 <TeamOutlined style={{ fontSize: '14px' }} />
-                Đội ngũ bác sĩ giàu kinh nghiệm
+                Đội ngũ nha sĩ giàu kinh nghiệm
               </p>
             </div>
+            
+            {/* Hình ảnh */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img 
+                src={registerImage} 
+                alt="Login" 
+                style={{ 
+                  maxWidth: '80%', 
+                  maxHeight: '80%', 
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
+                }} 
+              />
+            </div>
+         
           </div>
 
           {/* Form đăng nhập bên phải - 50% */}
@@ -265,9 +246,9 @@ const Login = () => {
             }}>
             <Title level={2} style={{ 
               textAlign: 'center', 
-              marginBottom: '100px', 
+              marginBottom: '30px', 
               color: '#2596be', // Màu xanh chủ đạo
-              fontSize: '3.5rem',
+              fontSize: '2.5rem',
               fontWeight: 'bold'
             }}>
               ĐĂNG NHẬP
