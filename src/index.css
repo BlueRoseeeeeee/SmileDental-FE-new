@@ -1,7 +1,7 @@
-/* Import Ant Design styles */
+/*
+* @author: HoTram
+*/
 @import 'antd/dist/reset.css';
-
-/* Removed Tailwind CSS - Using only Ant Design + inline styles */
 
 /* Global Styles */
 * {
@@ -315,9 +315,71 @@ html, body {
   max-height: none !important;
 }
 
-/* Typography Customization */
 .ant-typography {
   color: var(--text-primary) !important;
+}
+
+.ant-table {
+  font-size: 13px !important;
+}
+
+.ant-table-thead > tr > th {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 12px 8px !important;
+}
+
+.ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 8px !important;
+  line-height: 1.4 !important;
+}
+
+
+.ant-table-tbody .ant-typography {
+  font-size: 12px !important;
+  margin: 0 !important;
+}
+
+/* Avatar size trong table */
+.ant-table .ant-avatar {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 12px !important;
+}
+
+/* Tag/Badge size trong table */
+.ant-table .ant-tag {
+  font-size: 11px !important;
+  padding: 2px 8px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+}
+
+/* Action buttons trong table */
+.ant-table .ant-btn {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  height: 28px !important;
+}
+
+.ant-table .ant-btn-icon-only {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+}
+
+/* Pagination font */
+.ant-pagination {
+  font-size: 12px !important;
+}
+
+.ant-pagination .ant-pagination-item {
+  font-size: 12px !important;
+}
+
+.ant-pagination .ant-pagination-total-text {
+  font-size: 12px !important;
 }
 
 .ant-typography.ant-typography-secondary {
