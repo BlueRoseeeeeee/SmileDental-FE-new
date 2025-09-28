@@ -80,6 +80,7 @@ const UserManagement = () => {
   const [otpMessage, setOtpMessage] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
   const [formData, setFormData] = useState({}); // Lưu dữ liệu từ các steps
+  const [certificates, setCertificates] = useState([]);
 
   // Helper function để tạo info item dạng list
   const createInfoItem = (label, value, copyable = false, icon = null) => (
@@ -162,9 +163,37 @@ const UserManagement = () => {
     navigate(`/users/edit/${user._id}`);
   };
 
-  const handleView = (user) => {
+  const handleView = async (user) => {
     setSelectedUser(user);
     setViewModalVisible(true);
+    
+    // Reset certificates trước
+    setCertificates([]);
+    
+    // Chỉ load certificates nếu là dentist
+    if (user.role === 'dentist') {
+      try {
+        // Sử dụng API xem chi tiết user để lấy certificates
+        const response = await fetch(`http://localhost:3001/api/user/${user._id}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('User detail API Response:', result);
+          setCertificates(result.user?.certificates || []);
+        } else {
+          console.error('Failed to load certificates');
+          setCertificates([]);
+        }
+      } catch (error) {
+        console.error('Error loading certificates:', error);
+        setCertificates([]);
+      }
+    }
   };
 
   const handleDelete = async (userId) => {
@@ -181,8 +210,10 @@ const UserManagement = () => {
     try {
       if (selectedUser) {
         // CHỈNH SỬA USER - Không cần OTP, chỉ cần thông tin từ form
+        // Loại bỏ certificates khỏi dữ liệu update vì certificates được quản lý riêng
+        const { certificates, ...formData } = values;
         const updateData = {
-          ...values,
+          ...formData,
           dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
         };
         
@@ -1052,36 +1083,35 @@ const UserManagement = () => {
           </div>
         }
       >
-        {selectedUser && (
-          <div style={{ 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '12px',
-            overflow: 'hidden'
-          }}>
-            {/* Header với gradient */}
-            <div style={{ 
-              padding: '32px 32px 24px 32px',
-              textAlign: 'center',
-              background: 'rgba(255,255,255,0.1)',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <Avatar 
-                size={100} 
-                src={selectedUser.avatar} 
-                icon={<UserOutlined />}
-                style={{ 
-                  border: '4px solid rgba(255,255,255,0.3)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
-                }}
-              />
-              <div style={{ marginTop: '20px' }}>
-                <Title level={3} style={{ 
-                  color: 'white', 
-                  margin: 0,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                }}>
-                  {selectedUser.fullName}
-                </Title>
+         {selectedUser && (
+           <div style={{ 
+             background: '#f8f9fa',
+             borderRadius: '12px',
+             overflow: 'hidden'
+           }}>
+             {/* Header */}
+             <div style={{ 
+               padding: '32px 32px 24px 32px',
+               textAlign: 'center',
+               background: '#2596be',
+               color: 'white'
+             }}>
+               <Avatar 
+                 size={100} 
+                 src={selectedUser.avatar} 
+                 icon={<UserOutlined />}
+                 style={{ 
+                   border: '4px solid white',
+                   boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                 }}
+               />
+               <div style={{ marginTop: '20px' }}>
+                 <Title level={3} style={{ 
+                   color: 'white', 
+                   margin: 0
+                 }}>
+                   {selectedUser.fullName}
+                 </Title>
                 <div style={{ marginTop: '8px' }}>
                   {getRoleTag(selectedUser.role)}
                 </div>
@@ -1157,12 +1187,12 @@ const UserManagement = () => {
                         </div>
                       </div>
                     )
-                  },
-                  // Chỉ hiển thị tab chứng chỉ cho dentist
-                  ...(selectedUser?.role === 'dentist' ? [{
-                    key: 'certificates',
-                    label: 'Chứng chỉ & Bằng cấp',
-                    children: (
+                   },
+                   // Chỉ hiển thị tab chứng chỉ cho dentist
+                   ...(selectedUser?.role === 'dentist' ? [{
+                     key: 'certificates',
+                     label: 'Chứng chỉ & Bằng cấp',
+                     children: (
                       <div style={{ padding: '20px' }}>
                         <div style={{
                           background: 'white',
@@ -1177,27 +1207,12 @@ const UserManagement = () => {
                             marginBottom: '16px'
                           }}>
                             <h4 style={{ margin: 0, color: '#333' }}>Chứng chỉ & Bằng cấp</h4>
-                            <Button 
-                              type="primary" 
-                              icon={<PlusOutlined />}
-                              size="small"
-                              style={{
-                                borderRadius: '6px',
-                                background: '#2596be',
-                                border: 'none'
-                              }}
-                              onClick={() => {
-                                toast.info('Chức năng upload chứng chỉ đang được phát triển');
-                              }}
-                            >
-                              Thêm chứng chỉ
-                            </Button>
                           </div>
                           
                           {/* Danh sách chứng chỉ cho dentist */}
-                          {selectedUser?.certificates && selectedUser.certificates.length > 0 ? (
+                          {certificates && certificates.length > 0 ? (
                             <div>
-                              {selectedUser.certificates.map((cert, index) => (
+                              {certificates.map((cert, index) => (
                                 <div key={cert._id || index} style={{
                                   border: '1px solid #e8e8e8',
                                   borderRadius: '8px',
@@ -1230,7 +1245,9 @@ const UserManagement = () => {
                                         icon={<EyeOutlined />}
                                         size="small"
                                         style={{ color: '#2596be' }}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
                                           // Mở ảnh trong tab mới
                                           window.open(cert.imageUrl, '_blank');
                                         }}
@@ -1242,7 +1259,9 @@ const UserManagement = () => {
                                         danger
                                         icon={<DeleteOutlined />}
                                         size="small"
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
                                           // Logic xóa chứng chỉ
                                           console.log('Xóa chứng chỉ:', cert._id);
                                         }}
