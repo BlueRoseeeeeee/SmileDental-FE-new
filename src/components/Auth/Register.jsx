@@ -56,6 +56,46 @@ const RegisterRHF = () => {
     return emailRegex.test(email);
   };
 
+  // Validation số điện thoại Việt Nam
+  const isValidPhone = (phone) => {
+    const phoneRegex = /^0[0-9]{9}$/;
+    return phoneRegex.test(phone);
+  };
+
+  // Validation tuổi (1-100 tuổi)
+  const isValidAge = (dateOfBirth) => {
+    if (!dateOfBirth) return { valid: false, message: 'Vui lòng chọn ngày sinh!' };
+    
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    
+    // Kiểm tra ngày sinh trong tương lai
+    if (birthDate > today) {
+      return { valid: false, message: 'Ngày sinh không được ở tương lai!' };
+    }
+    
+    // Tính tuổi chính xác
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+    
+    // Điều chỉnh tuổi nếu chưa đến sinh nhật
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      age = age - 1;
+    }
+    
+    // Kiểm tra tuổi
+    if (age < 1) {
+      return { valid: false, message: 'Tuổi phải từ 1 tuổi trở lên!' };
+    }
+    
+    if (age > 100) {
+      return { valid: false, message: 'Tuổi không được quá 100 tuổi!' };
+    }
+    
+    return { valid: true, message: '' };
+  };
+
   // Steps configuration
   const steps = [
     {
@@ -115,8 +155,22 @@ const RegisterRHF = () => {
       clearError();
       // Kiểm tra validation cơ bản
       if (!data.fullName || !data.phone || !data.dateOfBirth || !data.gender) {
-        return; // Không chuyển bước nếu thiếu thông tin
+        return; // Không chuyển bước nếu thiếu thông tin (validation sẽ hiển thị chữ đỏ)
       }
+      
+      // Kiểm tra giới tính
+      if (!data.gender) {
+        toast.error('Vui lòng chọn giới tính!');
+        return;
+      }
+      
+      // Kiểm tra tuổi với thông báo cụ thể
+      const ageValidation = isValidAge(data.dateOfBirth);
+      if (!ageValidation.valid) {
+        toast.error(ageValidation.message);
+        return;
+      }
+      
       // Lưu dữ liệu vào form state
       setValue('fullName', data.fullName);
       setValue('phone', data.phone);
@@ -257,16 +311,22 @@ const RegisterRHF = () => {
                 color: '#666', 
                 fontSize: '1.1rem', 
                 lineHeight: '1.6',
-                maxWidth: '300px',
                 margin: '0 auto'
               }}>
                 Nụ cười khỏe mạnh là nụ cười đẹp nhất. 
-                Hãy để chúng tôi chăm sóc răng miệng của bạn.
               </p>
+              <p
+              style={{ 
+                color: '#666', 
+                fontSize: '1.1rem', 
+                lineHeight: '1.6',
+                margin: '0 auto'
+              }}
+              >Hãy để chúng tôi chăm sóc răng miệng của bạn.</p>
             </div>
             
             {/* Hình ảnh */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
               <img 
                 src={registerImage} 
                 alt="Register" 
@@ -307,27 +367,35 @@ const RegisterRHF = () => {
               style={{ marginBottom: '40px' }}
             />
 
-            {/* Success Alerts - Ưu tiên thông báo từ BE */}
+            {/* Success Messages - Sử dụng toast thay vì Alert */}
           {otpSent && step === 1 && (
-            <Alert
-                message={otpMessage || "OTP đăng ký đã được gửi đến email!"}
-              type="success"
-              showIcon
-              icon={<CheckCircleOutlined />}
-              style={{ marginBottom: '24px' }}
-            />
+            <div style={{ 
+              marginBottom: '24px',
+              padding: '12px 16px',
+              background: '#f6ffed',
+              border: '1px solid #b7eb8f',
+              borderRadius: '6px',
+              color: '#52c41a',
+              fontSize: '14px'
+            }}>
+              <CheckCircleOutlined style={{ marginRight: '8px' }} />
+              {otpMessage || "OTP đăng ký đã được gửi đến email!"}
+            </div>
           )}
 
-          {/* Error Alert */}
+          {/* Error Messages - Sử dụng toast thay vì Alert */}
           {error && (
-            <Alert
-              message={error}
-              type="error"
-              showIcon
-              style={{ marginBottom: '24px' }}
-              closable
-              onClose={clearError}
-            />
+            <div style={{ 
+              marginBottom: '24px',
+              padding: '12px 16px',
+              background: '#fff2f0',
+              border: '1px solid #ffccc7',
+              borderRadius: '6px',
+              color: '#ff4d4f',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
           )}
 
             {/* Step 1: Email Verification Form */}
@@ -443,7 +511,19 @@ const RegisterRHF = () => {
                     Họ và tên <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('fullName', { required: 'Vui lòng nhập họ và tên!' })}
+                    {...register('fullName', { 
+                      required: 'Vui lòng nhập họ và tên!',
+                      minLength: {
+                        value: 2,
+                        message: 'Họ và tên phải có ít nhất 2 ký tự!'
+                      },
+                      validate: (value) => {
+                        if (!value) return 'Vui lòng nhập họ và tên!';
+                        const words = value.trim().split(/\s+/);
+                        if (words.length < 2) return 'Họ và tên phải có ít nhất 2 từ!';
+                        return true;
+                      }
+                    })}
                     className="form-input"
                     placeholder="Nhập họ và tên đầy đủ (VD: Nguyễn Văn A)"
                     onBlur={handleFullNameBlur}
@@ -460,7 +540,13 @@ const RegisterRHF = () => {
                     Số điện thoại <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('phone', { required: 'Vui lòng nhập số điện thoại!' })}
+                    {...register('phone', { 
+                      required: 'Vui lòng nhập số điện thoại!',
+                      pattern: {
+                        value: /^0[0-9]{9}$/,
+                        message: 'Số điện thoại phải có 10 số và bắt đầu bằng số 0!'
+                      }
+                    })}
                     className="form-input"
                     placeholder="Nhập số điện thoại (VD: 0123456789)"
                     tabIndex={2}
@@ -476,7 +562,15 @@ const RegisterRHF = () => {
                     Ngày sinh <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('dateOfBirth', { required: 'Vui lòng chọn ngày sinh!' })}
+                    {...register('dateOfBirth', { 
+                      required: 'Vui lòng chọn ngày sinh!',
+                      validate: (value) => {
+                        if (!value) return 'Vui lòng chọn ngày sinh!';
+                        const ageValidation = isValidAge(value);
+                        if (!ageValidation.valid) return ageValidation.message;
+                        return true;
+                      }
+                    })}
                   type="date"
                     className="form-input"
                     placeholder="dd/mm/yyyy"
@@ -496,8 +590,6 @@ const RegisterRHF = () => {
                     value={watch('gender')}
                     onChange={(e) => {
                       setValue('gender', e.target.value, { shouldValidate: true });
-                      // Trigger validation
-                      form.trigger('gender');
                     }}
                   >
                     <Space direction="horizontal" size="large">
@@ -508,6 +600,9 @@ const RegisterRHF = () => {
                 </Radio.Group>
                   {errors.gender && (
                     <div className="form-error">{errors.gender.message}</div>
+                  )}
+                  {!watch('gender') && (
+                    <div className="form-error">Vui lòng chọn giới tính!</div>
                   )}
                 </div>
 
@@ -581,16 +676,11 @@ const RegisterRHF = () => {
                   <input
                     {...register('confirmPassword', {
                       required: 'Vui lòng xác nhận mật khẩu!',
-                      minLength: {
-                        value: 8,
-                        message: 'Mật khẩu phải có ít nhất 8 ký tự!'
-                      },
-                      maxLength: {
-                        value: 16,
-                        message: 'Mật khẩu không được quá 16 ký tự!'
-                      },
-                      validate: (value) =>
-                        value === watch('password') || 'Mật khẩu xác nhận không khớp! Vui lòng nhập lại.'
+                      validate: (value) => {
+                        if (!value) return 'Vui lòng xác nhận mật khẩu!';
+                        if (value !== watch('password')) return 'Mật khẩu xác nhận không khớp! Vui lòng nhập lại.';
+                        return true;
+                      }
                     })}
                     type="password"
                     className="form-input"
