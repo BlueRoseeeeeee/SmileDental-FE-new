@@ -369,6 +369,79 @@ html, body {
   font-size: 12px !important;
 }
 
+/* Modern Toolbar Styling */
+.ant-card {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important;
+  border: 1px solid #f0f0f0 !important;
+}
+
+.ant-card-body {
+  padding: 20px 24px !important;
+}
+
+/* Search Input Improvements */
+.ant-input-search .ant-input {
+  border-radius: 8px !important;
+  border: 1px solid #d9d9d9 !important;
+  font-size: 14px !important;
+  padding: 8px 12px !important;
+}
+
+.ant-input-search .ant-input:focus {
+  border-color: #2596be !important;
+  box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
+}
+
+.ant-input-search .ant-input-search-button {
+  border-radius: 0 8px 8px 0 !important;
+  border-left: none !important;
+}
+
+/* Select Improvements */
+.ant-select {
+  border-radius: 8px !important;
+}
+
+.ant-select .ant-select-selector {
+  border-radius: 8px !important;
+  border: 1px solid #d9d9d9 !important;
+  font-size: 14px !important;
+  padding: 8px 12px !important;
+}
+
+.ant-select .ant-select-selector:hover {
+  border-color: #2596be !important;
+}
+
+.ant-select-focused .ant-select-selector {
+  border-color: #2596be !important;
+  box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
+}
+
+/* Button Improvements */
+.ant-btn {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, #2596be 0%, #40a9ff 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(37, 150, 190, 0.3) !important;
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #1e7a9e 0%, #2d8ce6 100%) !important;
+  box-shadow: 0 6px 16px rgba(37, 150, 190, 0.4) !important;
+}
+
 .ant-typography.ant-typography-secondary {
   color: var(--text-secondary) !important;
 }

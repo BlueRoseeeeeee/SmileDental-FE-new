@@ -396,54 +396,144 @@ const UserManagement = () => {
         </Title>
       </div>
 
-      {/* Filters */}
-      <Card style={{ marginBottom: '24px' }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={8}>
-            <Search
-              placeholder="Tìm kiếm theo tên, email, số điện thoại..."
-              onSearch={handleSearch}
-              style={{ width: '100%' }}
-              allowClear
-            />
+      {/* Modern Filters Toolbar */}
+      <Card 
+        style={{ 
+          marginBottom: '24px',
+          borderRadius: '12px',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+          border: '1px solid #f0f0f0'
+        }}
+        bodyStyle={{ padding: '20px 24px' }}
+      >
+        <Row gutter={[20, 16]} align="middle">
+          {/* Search Input - Thống nhất với filter khác */}
+          <Col xs={24} sm={12} lg={8}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ 
+                fontSize: '12px', 
+                color: '#666', 
+                marginBottom: '4px',
+                fontWeight: '500',
+                height: '16px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <div style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    zIndex: 1,
+                    color: '#2596be',
+                    fontSize: '16px'
+                  }}>
+                    <SearchOutlined />
+                  </div>
+                  <Input
+                    placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+                    onPressEnter={(e) => handleSearch(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value === '') {
+                        handleSearch('');
+                      }
+                    }}
+                    style={{ 
+                      width: '100%',
+                      borderRadius: '8px',
+                      paddingLeft: '40px',
+                      height: '40px',
+                      border: '2px solid #e8e8e8',
+                      fontSize: '14px'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#2596be';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e8e8e8';
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
           </Col>
-          <Col xs={12} sm={4}>
-            <Select
-              placeholder="Vai trò"
-              style={{ width: '100%' }}
-              value={filters.role}
-              onChange={(value) => handleFilterChange('role', value)}
-              allowClear
-            >
-              <Option value="admin">Quản trị viên</Option>
-              <Option value="manager">Quản lý</Option>
-              <Option value="dentist">Nha sĩ</Option>
-              <Option value="nurse">Y tá</Option>
-              <Option value="receptionist">Lễ tân</Option>
-              <Option value="patient">Bệnh nhân</Option>
-            </Select>
+          
+          {/* Role Filter - Căn chỉnh đồng đều */}
+          <Col xs={12} sm={6} lg={4}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ 
+                fontSize: '12px', 
+                color: '#666', 
+                marginBottom: '4px',
+                fontWeight: '500',
+                height: '16px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                Lọc theo vai trò
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <Select
+                  style={{ 
+                    width: '100%',
+                    borderRadius: '8px'
+                  }}
+                  value={filters.role}
+                  onChange={(value) => handleFilterChange('role', value)}
+                  allowClear
+                  size="large"
+                  suffixIcon={<FilterOutlined style={{ color: '#2596be' }} />}
+                >
+                  <Option value="admin">Quản trị viên</Option>
+                  <Option value="manager">Quản lý</Option>
+                  <Option value="dentist">Nha sĩ</Option>
+                  <Option value="nurse">Y tá</Option>
+                  <Option value="receptionist">Lễ tân</Option>
+                </Select>
+              </div>
+            </div>
           </Col>
-          <Col xs={12} sm={4}>
-            <Select
-              placeholder="Trạng thái"
-              style={{ width: '100%' }}
-              value={filters.isActive}
-              onChange={(value) => handleFilterChange('isActive', value)}
-              allowClear
-            >
-              <Option value="true">Hoạt động</Option>
-              <Option value="false">Không hoạt động</Option>
-            </Select>
+          
+          {/* Status Filter - Căn chỉnh đồng đều */}
+          <Col xs={12} sm={6} lg={4}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ 
+                fontSize: '12px', 
+                color: '#666', 
+                marginBottom: '4px',
+                fontWeight: '500',
+                height: '16px',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                Lọc theo trạng thái
+              </div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <Select
+                  style={{ 
+                    width: '100%',
+                    borderRadius: '8px'
+                  }}
+                  value={filters.isActive}
+                  onChange={(value) => handleFilterChange('isActive', value)}
+                  allowClear
+                  size="large"
+                  suffixIcon={<FilterOutlined style={{ color: '#2596be' }} />}
+                >
+                  <Option value="true">Hoạt động</Option>
+                  <Option value="false">Không hoạt động</Option>
+                </Select>
+              </div>
+            </div>
           </Col>
-          <Col xs={24} sm={8} style={{ textAlign: 'right' }}>
-            <Space>
-              <Button 
-                icon={<ReloadOutlined />}
-                onClick={loadUsers}
-                loading={loading}
-              >
-                Làm mới
-              </Button>
+          
+          {/* Action Buttons - Loại bỏ nút refresh */}
+          <Col xs={24} sm={24} lg={8} style={{ textAlign: 'right' }}>
+            <Space size="middle" wrap>
               <Button 
                 type="primary" 
                 icon={<PlusOutlined />}
@@ -452,8 +542,16 @@ const UserManagement = () => {
                   form.resetFields();
                   setModalVisible(true);
                 }}
+                size="large"
+                style={{
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
+                  fontWeight: '600'
+                }}
               >
-                Thêm mới
+                Thêm nhân viên
               </Button>
             </Space>
           </Col>
