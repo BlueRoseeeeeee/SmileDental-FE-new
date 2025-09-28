@@ -77,7 +77,7 @@ const DashboardLayout = () => {
         {
           key: '/users',
           icon: <UserSwitchOutlined />,
-          label: 'Quản lý người dùng',
+          label: 'Quản lý nhân viên',
         }
       );
     }

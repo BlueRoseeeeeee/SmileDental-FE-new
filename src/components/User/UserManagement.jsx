@@ -392,11 +392,8 @@ const UserManagement = () => {
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
       <div style={{ marginBottom: '24px' }}>
         <Title level={2} style={{ marginBottom: '8px' }}>
-          Quản lý người dùng
+          Quản lý nhân viên
         </Title>
-        <Text type="secondary">
-          Quản lý thông tin nhân viên và bệnh nhân trong hệ thống
-        </Text>
       </div>
 
       {/* Filters */}
