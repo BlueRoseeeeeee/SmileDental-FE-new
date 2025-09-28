@@ -375,21 +375,6 @@ const UserManagement = () => {
     }
   ];
 
-  const getStats = () => {
-    const total = users.length;
-    const active = users.filter(u => u.isActive).length;
-    const inactive = total - active;
-    
-    const roleStats = users.reduce((acc, user) => {
-      acc[user.role] = (acc[user.role] || 0) + 1;
-      return acc;
-    }, {});
-
-    return { total, active, inactive, roleStats };
-  };
-
-  const stats = getStats();
-
   if (!['admin', 'manager'].includes(currentUser?.role)) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -413,46 +398,6 @@ const UserManagement = () => {
           Quản lý thông tin nhân viên và bệnh nhân trong hệ thống
         </Text>
       </div>
-
-      {/* Stats Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={12} sm={6}>
-          <Card>
-            <Statistic 
-              title="Tổng số" 
-              value={stats.total} 
-              prefix={<UserOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card>
-            <Statistic 
-              title="Hoạt động" 
-              value={stats.active} 
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card>
-            <Statistic 
-              title="Không hoạt động" 
-              value={stats.inactive} 
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card>
-            <Statistic 
-              title="Nha sĩ" 
-              value={stats.roleStats.dentist || 0} 
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-      </Row>
 
       {/* Filters */}
       <Card style={{ marginBottom: '24px' }}>
