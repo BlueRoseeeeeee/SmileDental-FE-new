@@ -133,6 +133,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Send OTP for reset password
+  const sendOtpResetPassword = async (email) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { authService } = await import('../services/authService.js');
+      const response = await authService.sendOtpResetPassword(email);
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Gửi OTP thất bại');
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (resetData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { authService } = await import('../services/authService.js');
+      const response = await authService.resetPassword(resetData);
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Reset mật khẩu thất bại');
+      setLoading(false);
+      throw error;
+    }
+  };
+
   const value = {
     isAuthenticated,
     user,
@@ -143,7 +175,9 @@ export const AuthProvider = ({ children }) => {
     clearError,
     sendOtpRegister,
     verifyOtp,
-    register
+    register,
+    sendOtpResetPassword,
+    resetPassword
   };
 
   return (

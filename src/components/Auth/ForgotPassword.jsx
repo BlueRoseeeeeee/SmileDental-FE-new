@@ -143,15 +143,6 @@ const ForgotPassword = () => {
                 }}>
                   SmileDental
                 </h1>
-                <p style={{ 
-                  color: '#666', 
-                  fontSize: '1.1rem', 
-                  lineHeight: '1.6',
-                  maxWidth: '300px',
-                  margin: '0 auto'
-                }}>
-                  Mật khẩu của bạn đã được cập nhật thành công. Bạn có thể đăng nhập với mật khẩu mới.
-                </p>
               </div>
               
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -159,8 +150,8 @@ const ForgotPassword = () => {
                   src={registerImage} 
                   alt="Success" 
                   style={{ 
-                    maxWidth: '100%', 
-                    maxHeight: '100%', 
+                    maxWidth: '80%', 
+                    maxHeight: '80%', 
                     objectFit: 'contain',
                     filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
                   }} 
@@ -194,7 +185,7 @@ const ForgotPassword = () => {
                 </div>
                 <Title level={2} style={{ 
                   color: '#2596be',
-                  fontSize: '2.5rem',
+                  fontSize: '2rem',
                   fontWeight: 'bold',
                   marginBottom: '16px'
                 }}>
@@ -264,54 +255,21 @@ const ForgotPassword = () => {
               position: 'relative'
             }}>
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{ 
-                color: '#2596be', 
-                fontSize: '2rem', 
-                fontWeight: 'bold',
-                marginBottom: '16px',
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                {step === 0 ? 'Quên mật khẩu' : 'Đặt lại mật khẩu'}
-              </h2>
               <h1 style={{ 
                 color: '#2596be', 
                 fontSize: '2.5rem', 
                 fontWeight: 'bold',
-                marginBottom: '20px',
                 textShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}>
                 SmileDental
               </h1>
-              <p style={{ 
-                color: '#666', 
-                fontSize: '1.1rem', 
-                lineHeight: '1.6',
-                maxWidth: '300px',
-                margin: '0 auto'
-              }}>
-                {step === 0
-                  ? 'Nhập email để nhận mã xác thực đặt lại mật khẩu'
-                  : `Nhập mã OTP đã gửi đến ${email} và mật khẩu mới`
-                }
-              </p>
             </div>
-            
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img 
-                src={registerImage} 
-                alt="Forgot Password" 
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '100%', 
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
-                }} 
-              />
-            </div>
-            
-            {/* Thông tin bổ sung */}
-            <div style={{ 
-              marginTop: '20px',
+              {/* Thông tin bổ sung */}
+              <div style={{ 
+              background: 'rgba(255,255,255,0.8)',
+              borderRadius: '12px',
+              backdropFilter: 'blur(10px)',
+              padding: '20px',
               textAlign: 'center',
               color: '#666',
               fontSize: '0.9rem'
@@ -344,9 +302,24 @@ const ForgotPassword = () => {
                 gap: '6px'
               }}>
                 <TeamOutlined style={{ fontSize: '14px' }} />
-                Đội ngũ bác sĩ giàu kinh nghiệm
+                Đội ngũ nha sĩ giàu kinh nghiệm
               </p>
             </div>
+            
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img 
+                src={registerImage} 
+                alt="Forgot Password" 
+                style={{ 
+                  maxWidth: '80%', 
+                  maxHeight: '80%', 
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
+                }} 
+              />
+            </div>
+            
+          
           </div>
 
           {/* Form bên phải - 50% */}
