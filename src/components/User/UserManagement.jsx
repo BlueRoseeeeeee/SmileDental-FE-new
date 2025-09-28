@@ -278,7 +278,7 @@ const UserManagement = () => {
 
   const columns = [
     {
-      title: 'Avatar',
+      title: '',
       dataIndex: 'avatar',
       key: 'avatar',
       width: 80,
