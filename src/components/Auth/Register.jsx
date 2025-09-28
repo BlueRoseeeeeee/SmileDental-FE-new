@@ -217,14 +217,14 @@ const RegisterRHF = () => {
             background: 'white',
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
             overflow: 'hidden',
-            minHeight: 'calc(100vh - 40px)'
+            minHeight: 'calc(100vh - 50px)'
           }}>
 
           {/* Hình ảnh bên trái - 40% */}
           <div 
             className="register-image"
             style={{ 
-              flex: '0 0 40%', // Chiếm 40% width
+              flex: '0 0 32%', // Chiếm 40% width
               display: 'flex', 
               flexDirection: 'column',
               alignItems: 'center', 
@@ -339,9 +339,9 @@ const RegisterRHF = () => {
             }}>
             <Title level={2} style={{ 
               textAlign: 'center', 
-              marginBottom: '100px', 
-              color: '#2596be', // Màu xanh chủ đạo
-              fontSize: '3.5rem',
+              marginBottom: '35px', 
+              color: '#2596be', 
+              fontSize: '2.5rem',
               fontWeight: 'bold'
             }}>
               ĐĂNG KÝ

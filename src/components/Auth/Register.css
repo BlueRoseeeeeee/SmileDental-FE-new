@@ -82,7 +82,7 @@
 
 /* Custom form styling */
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 16px; /* Giảm từ 24px xuống 16px */
   position: relative;
 }
 
@@ -94,11 +94,11 @@
 
 .form-input {
   width: 100%;
-  height: 56px;
-  padding: 12px 16px;
-  font-size: 16px;
+  height: 40px; 
+  padding: 8px 12px; 
+  font-size: 14px; 
   border: 1px solid #d9d9d9;
-  border-radius: 8px;
+  border-radius: 6px; 
   transition: border-color 0.3s;
   position: relative;
   z-index: 1;
@@ -162,3 +162,54 @@ input[type="date"]::-webkit-datetime-edit-day-field { order: 1; }
 input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
 input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
 input[type="date"]::-webkit-datetime-edit-text { order: 4; }
+
+/* Custom button styling - làm nhỏ button */
+.ant-btn {
+  height: 36px !important; /* Giảm chiều cao button */
+  padding: 4px 16px !important; /* Giảm padding */
+  font-size: 14px !important; /* Giảm font size */
+  border-radius: 6px !important; /* Giảm border radius */
+}
+
+/* Custom button primary styling */
+.ant-btn-primary {
+  height: 36px !important;
+  padding: 4px 16px !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+}
+
+/* Custom form group spacing */
+.form-group {
+  margin-bottom: 16px; /* Giảm margin từ 24px xuống 16px */
+}
+
+/* Custom label styling */
+.form-label {
+  font-size: 14px; /* Giảm font size label */
+  margin-bottom: 6px; /* Giảm margin */
+}
+
+/* Custom Steps styling - làm nhỏ steps */
+.register-steps .ant-steps-item {
+  margin-right: 30px !important; /* Giảm margin */
+  min-width: 140px !important; /* Giảm min-width */
+}
+
+.register-steps .ant-steps-item-title {
+  font-size: 12px !important; /* Giảm font size */
+  font-weight: 600 !important;
+}
+
+.register-steps .ant-steps-item-description {
+  font-size: 10px !important; /* Giảm font size */
+  margin-top: 2px !important; /* Giảm margin */
+  line-height: 1.2 !important;
+}
+
+/* Custom Alert styling */
+.ant-alert {
+  margin-bottom: 16px !important; /* Giảm margin */
+  padding: 8px 12px !important; /* Giảm padding */
+  font-size: 13px !important; /* Giảm font size */
+}
