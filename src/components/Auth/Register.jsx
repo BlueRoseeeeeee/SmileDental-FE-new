@@ -155,10 +155,10 @@ const RegisterRHF = () => {
         dateOfBirth: allData.dateOfBirth,
         gender: allData.gender,
         password: allData.password,
-        confirmPassword: allData.confirmPassword, // Backend yêu cầu confirmPassword
-        email: allData.email || email, // Ưu tiên email từ form state
+        confirmPassword: allData.confirmPassword, 
+        email: allData.email || email, 
         role: 'patient', // CỐ ĐỊNH: Form đăng ký này chỉ dành cho bệnh nhân
-        type: 'fullTime' // Type mặc định cho bệnh nhân
+        // type: 'fullTime' 
       };
       
   
@@ -224,7 +224,7 @@ const RegisterRHF = () => {
           <div 
             className="register-image"
             style={{ 
-              flex: '0 0 32%', // Chiếm 40% width
+              flex: '0 0 40%', // Chiếm 40% width
               display: 'flex', 
               flexDirection: 'column',
               alignItems: 'center', 
@@ -271,60 +271,13 @@ const RegisterRHF = () => {
                 src={registerImage} 
                 alt="Register" 
           style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '100%', 
+                  maxWidth: '85%', 
+                  maxHeight: '85%', 
                   objectFit: 'contain',
                   filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
                 }} 
               />
             </div>
-            
-            {/* Thông tin bổ sung */}
-            <div style={{ 
-              textAlign: 'center', 
-              marginTop: '20px',
-              padding: '20px',
-              background: 'rgba(255,255,255,0.8)',
-              borderRadius: '12px',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <div style={{ 
-                color: '#2596be', 
-                fontSize: '1rem', 
-                fontWeight: 'bold',
-                marginBottom: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '12px',
-                flexWrap: 'wrap'
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <SafetyOutlined style={{ fontSize: '16px' }} />
-                  Chuyên nghiệp
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <StarOutlined style={{ fontSize: '16px' }} />
-                  Uy tín
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <HeartOutlined style={{ fontSize: '16px' }} />
-                  Tận tâm
-                </span>
-              </div>
-              <p style={{ 
-                color: '#666', 
-                fontSize: '0.9rem',
-                margin: 0,
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                gap: '6px'
-              }}>
-                <TeamOutlined style={{ fontSize: '14px' }} />
-                Đội ngũ bác sĩ giàu kinh nghiệm
-              </p>
-              </div>
             </div>
 
           {/* Form đăng ký bên phải - 60% */}
