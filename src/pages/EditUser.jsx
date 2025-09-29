@@ -474,6 +474,24 @@ const EditUser = () => {
 
                       <Divider />
 
+                      <Title level={4}>Thông tin bổ sung</Title>
+                      <Row gutter={[16, 16]}>
+                        <Col xs={24}>
+                          <Form.Item
+                            name="description"
+                            label="Mô tả thêm"
+                          >
+                            <TextArea
+                              rows={6}
+                              placeholder="Nhập mô tả về kinh nghiệm, thành tích hoặc thông tin bổ sung..."
+                              className="custom-textarea"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+
+                      <Divider />
+
                       <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
                         <Button 
                           onClick={() => navigate('/users')}

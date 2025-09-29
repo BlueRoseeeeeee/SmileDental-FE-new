@@ -531,3 +531,14 @@ html, body {
     padding: 0 16px !important;
   }
 }
+
+/* Custom TextArea height */
+.custom-textarea {
+  min-height: 120px !important;
+  height: 120px !important;
+}
+
+.custom-textarea .ant-input {
+  min-height: 120px !important;
+  height: 120px !important;
+}
