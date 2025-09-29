@@ -96,7 +96,7 @@ const EditUser = () => {
       const { certificates, employeeCode, ...updateData } = values;
       updateData.dateOfBirth = values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null;
 
-      const response = await fetch(`http://localhost:3001/api/user/update/${id}`, {
+      const response = await fetch(`http://localhost:3001/api/user/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -366,6 +366,7 @@ const EditUser = () => {
                               prefix={<MailOutlined />}
                               placeholder="Nhập email"
                               style={{ borderRadius: '8px' }}
+                              disabled
                             />
                           </Form.Item>
                         </Col>
@@ -374,15 +375,12 @@ const EditUser = () => {
                           <Form.Item
                             name="phone"
                             label="Số điện thoại"
-                            rules={[
-                              { required: true, message: 'Vui lòng nhập số điện thoại!' },
-                              { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại phải có 10-11 chữ số!' }
-                            ]}
                           >
                             <Input 
                               prefix={<PhoneOutlined />}
                               placeholder="Nhập số điện thoại"
                               style={{ borderRadius: '8px' }}
+                              disabled
                             />
                           </Form.Item>
                         </Col>
@@ -391,7 +389,33 @@ const EditUser = () => {
                           <Form.Item
                             name="dateOfBirth"
                             label="Ngày sinh"
-                            rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}
+                            rules={[
+                              { required: true, message: 'Vui lòng chọn ngày sinh!' },
+                              {
+                                validator: (_, value) => {
+                                  if (!value) return Promise.resolve();
+                                  
+                                  const today = new Date();
+                                  const birthDate = new Date(value);
+                                  let age = today.getFullYear() - birthDate.getFullYear();
+                                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                                  
+                                  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                                    age--;
+                                  }
+                                  
+                                  if (age < 18) {
+                                    return Promise.reject(new Error('Nhân viên phải từ 18 tuổi trở lên!'));
+                                  }
+                                  
+                                  if (birthDate > today) {
+                                    return Promise.reject(new Error('Ngày sinh không được ở tương lai!'));
+                                  }
+                                  
+                                  return Promise.resolve();
+                                }
+                              }
+                            ]}
                           >
                             <DatePicker 
                               style={{ width: '100%', borderRadius: '8px' }}
@@ -424,26 +448,12 @@ const EditUser = () => {
                             label="Vai trò"
                             rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
                           >
-                            <Select placeholder="Chọn vai trò" style={{ borderRadius: '8px' }}>
+                            <Select placeholder="Chọn vai trò" style={{ borderRadius: '8px' }} disabled>
                               <Option value="admin">Quản trị viên</Option>
                               <Option value="manager">Quản lý</Option>
                               <Option value="dentist">Nha sĩ</Option>
                               <Option value="nurse">Y tá</Option>
                               <Option value="receptionist">Lễ tân</Option>
-                              <Option value="patient">Bệnh nhân</Option>
-                            </Select>
-                          </Form.Item>
-                        </Col>
-
-                        <Col xs={24} sm={12}>
-                          <Form.Item
-                            name="type"
-                            label="Loại công việc"
-                            rules={[{ required: true, message: 'Vui lòng chọn loại công việc!' }]}
-                          >
-                            <Select placeholder="Chọn loại công việc" style={{ borderRadius: '8px' }}>
-                              <Option value="fullTime">Toàn thời gian</Option>
-                              <Option value="partTime">Bán thời gian</Option>
                             </Select>
                           </Form.Item>
                         </Col>
