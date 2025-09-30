@@ -50,6 +50,13 @@ import {
 } from '@ant-design/icons';
 import { userService } from '../../services/userService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import SearchBar from '../Common/SearchBar.jsx';
+import { 
+  searchAndFilter, 
+  createRoleFilter, 
+  createStatusFilter,
+  debounce 
+} from '../../utils/searchUtils.js';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -60,17 +67,15 @@ const UserManagement = () => {
   const navigate = useNavigate();
   const { user: currentUser, sendOtpRegister, verifyOtp, error: authError, clearError } = useAuth();
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0
   });
-  const [filters, setFilters] = useState({
-    role: '',
-    search: '',
-    isActive: ''
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
@@ -89,7 +94,16 @@ const UserManagement = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [pagination.current, pagination.pageSize, filters]);
+  }, [pagination.current, pagination.pageSize]);
+
+  // Debounced search effect
+  useEffect(() => {
+    const debouncedSearch = debounce(() => {
+      applySearchAndFilter();
+    }, 300);
+    
+    debouncedSearch();
+  }, [searchTerm, filters, users]);
 
   const loadUsers = async () => {
     try {
@@ -111,14 +125,25 @@ const UserManagement = () => {
     }
   };
 
-  const handleSearch = (value) => {
-    setFilters(prev => ({ ...prev, search: value }));
-    setPagination(prev => ({ ...prev, current: 1 }));
+  const applySearchAndFilter = () => {
+    const searchFields = ['fullName', 'email', 'phone', 'employeeCode'];
+    const filtered = searchAndFilter(users, searchTerm, searchFields, filters);
+    setFilteredUsers(filtered);
+    
+    // Update pagination total
+    setPagination(prev => ({
+      ...prev,
+      total: filtered.length,
+      current: 1 // Reset to first page when filtering
+    }));
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-    setPagination(prev => ({ ...prev, current: 1 }));
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+  };
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
   };
 
   const handleEdit = (user) => {
@@ -356,179 +381,51 @@ const UserManagement = () => {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={2} style={{ marginBottom: '8px' }}>
-          Quản lý nhân viên
-        </Title>
-      </div>
-
-      {/* Modern Filters Toolbar */}
-      <Card 
-        style={{ 
-          marginBottom: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-          border: '1px solid #f0f0f0'
+      {/* Search and Filter Toolbar */}
+      <SearchBar
+        onSearch={handleSearch}
+        onFilterChange={handleFilterChange}
+        placeholder="Tìm kiếm theo tên, email, số điện thoại, mã nhân viên..."
+        filters={[
+          createRoleFilter(),
+          createStatusFilter()
+        ]}
+        searchValue={searchTerm}
+        filterValues={filters}
+        loading={loading}
+        cardStyle={{
+          marginBottom: '24px'
         }}
-        bodyStyle={{ padding: '20px 24px' }}
-      >
-        <Row gutter={[20, 16]} align="middle">
-          {/* Search Input - Thống nhất với filter khác */}
-          <Col xs={24} sm={12} lg={8}>
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#666', 
-                marginBottom: '4px',
-                fontWeight: '500',
-                height: '16px',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                
-              </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                <div style={{ position: 'relative', width: '100%' }}>
-                  <div style={{
-                    position: 'absolute',
-                    left: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 1,
-                    color: '#2596be',
-                    fontSize: '16px'
-                  }}>
-                    <SearchOutlined />
-                  </div>
-                  <Input
-                    placeholder="Tìm kiếm theo tên, email, số điện thoại..."
-                    onPressEnter={(e) => handleSearch(e.target.value)}
-                    onChange={(e) => {
-                      if (e.target.value === '') {
-                        handleSearch('');
-                      }
-                    }}
-                    style={{ 
-                      width: '100%',
-                      borderRadius: '8px',
-                      paddingLeft: '40px',
-                      height: '40px',
-                      border: '2px solid #e8e8e8',
-                      fontSize: '14px'
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#2596be';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#e8e8e8';
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </Col>
-          
-          {/* Role Filter - Căn chỉnh đồng đều */}
-          <Col xs={12} sm={6} lg={4}>
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#666', 
-                marginBottom: '4px',
-                fontWeight: '500',
-                height: '16px',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                Lọc theo vai trò
-              </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                <Select
-                  style={{ 
-                    width: '100%',
-                    borderRadius: '8px'
-                  }}
-                  value={filters.role}
-                  onChange={(value) => handleFilterChange('role', value)}
-                  allowClear
-                  size="large"
-                  suffixIcon={<FilterOutlined style={{ color: '#2596be' }} />}
-                >
-                  <Option value="admin">Quản trị viên</Option>
-                  <Option value="manager">Quản lý</Option>
-                  <Option value="dentist">Nha sĩ</Option>
-                  <Option value="nurse">Y tá</Option>
-                  <Option value="receptionist">Lễ tân</Option>
-                </Select>
-              </div>
-            </div>
-          </Col>
-          
-          {/* Status Filter - Căn chỉnh đồng đều */}
-          <Col xs={12} sm={6} lg={4}>
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#666', 
-                marginBottom: '4px',
-                fontWeight: '500',
-                height: '16px',
-                display: 'flex',
-                alignItems: 'center'
-              }}>
-                Lọc theo trạng thái
-              </div>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                <Select
-                  style={{ 
-                    width: '100%',
-                    borderRadius: '8px'
-                  }}
-                  value={filters.isActive}
-                  onChange={(value) => handleFilterChange('isActive', value)}
-                  allowClear
-                  size="large"
-                  suffixIcon={<FilterOutlined style={{ color: '#2596be' }} />}
-                >
-                  <Option value="true">Hoạt động</Option>
-                  <Option value="false">Không hoạt động</Option>
-                </Select>
-              </div>
-            </div>
-          </Col>
-          
-          {/* Action Buttons - Loại bỏ nút refresh */}
-          <Col xs={24} sm={24} lg={8} style={{ textAlign: 'right' }}>
-            <Space size="middle" wrap>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  setSelectedUser(null);
-                  form.resetFields();
-                  setModalVisible(true);
-                }}
-                size="large"
-                style={{
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
-                  fontWeight: '600'
-                }}
-              >
-                Thêm nhân viên
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
+      />
+
+      {/* Action Buttons */}
+      <div style={{ marginBottom: '24px', textAlign: 'right' }}>
+        <Button 
+          type="primary" 
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setSelectedUser(null);
+            form.resetFields();
+            setModalVisible(true);
+          }}
+          size="large"
+          style={{
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
+            border: 'none',
+            boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
+            fontWeight: '600'
+          }}
+        >
+          Thêm nhân viên
+        </Button>
+      </div>
 
       {/* Users Table */}
       <Card>
         <Table
           columns={columns}
-          dataSource={users}
+          dataSource={filteredUsers}
           rowKey="_id"
           loading={loading}
           pagination={{
