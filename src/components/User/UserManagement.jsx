@@ -381,11 +381,10 @@ const UserManagement = () => {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Search and Filter Toolbar */}
       <SearchBar
         onSearch={handleSearch}
         onFilterChange={handleFilterChange}
-        placeholder="Tìm kiếm theo tên, email, số điện thoại, mã nhân viên..."
+        placeholder="       Tìm kiếm theo tên, email, số điện thoại, mã nhân viên..."
         filters={[
           createRoleFilter(),
           createStatusFilter()

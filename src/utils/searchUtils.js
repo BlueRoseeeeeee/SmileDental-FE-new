@@ -136,7 +136,6 @@ export const createRoleFilter = () => {
       { value: 'dentist', label: 'Nha sĩ' },
       { value: 'nurse', label: 'Y tá' },
       { value: 'receptionist', label: 'Lễ tân' },
-      { value: 'patient', label: 'Bệnh nhân' }
     ],
     'Chọn vai trò'
   );
