@@ -15,6 +15,12 @@ import {
 } from '@ant-design/icons';
 import { useFormPersistence } from '../../hooks/useFormPersistence';
 import { useAuth } from '../../contexts/AuthContext';
+import { 
+  validatePatientAge,
+  isValidEmail,
+  handleFullNameFormat,
+  getReactHookFormRules
+} from '../../utils/validationUtils';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 import './Register.css';
 
@@ -50,51 +56,7 @@ const RegisterRHF = () => {
   // Watch email để kiểm tra validation
   const emailValue = watch('email');
   
-  // Validation email
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // Validation số điện thoại Việt Nam
-  const isValidPhone = (phone) => {
-    const phoneRegex = /^0[0-9]{9}$/;
-    return phoneRegex.test(phone);
-  };
-
-  // Validation tuổi (1-100 tuổi)
-  const isValidAge = (dateOfBirth) => {
-    if (!dateOfBirth) return { valid: false, message: 'Vui lòng chọn ngày sinh!' };
-    
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    
-    // Kiểm tra ngày sinh trong tương lai
-    if (birthDate > today) {
-      return { valid: false, message: 'Ngày sinh không được ở tương lai!' };
-    }
-    
-    // Tính tuổi chính xác
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    const dayDiff = today.getDate() - birthDate.getDate();
-    
-    // Điều chỉnh tuổi nếu chưa đến sinh nhật
-    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-      age = age - 1;
-    }
-    
-    // Kiểm tra tuổi
-    if (age < 1) {
-      return { valid: false, message: 'Tuổi phải từ 1 tuổi trở lên!' };
-    }
-    
-    if (age > 100) {
-      return { valid: false, message: 'Tuổi không được quá 100 tuổi!' };
-    }
-    
-    return { valid: true, message: '' };
-  };
+  // Sử dụng validation functions từ utils
 
   // Steps configuration
   const steps = [
@@ -165,8 +127,9 @@ const RegisterRHF = () => {
       }
       
       // Kiểm tra tuổi với thông báo cụ thể
-      const ageValidation = isValidAge(data.dateOfBirth);
-      if (!ageValidation.valid) {
+      const ageValidation = validatePatientAge(data.dateOfBirth);
+      
+      if (!ageValidation.isValid) {
         toast.error(ageValidation.message);
         return;
       }
@@ -218,16 +181,11 @@ const RegisterRHF = () => {
   
 
       const response = await registerUser(userData);
-      
-      // Hiển thị toast thành công (ưu tiên thông báo từ BE)
       const successMessage = response?.message || 'Đăng ký thành công! Vui lòng đăng nhập.';
-      
       // Hiển thị toast thành công
       toast.success(successMessage, 3000);
-      
       // Xóa dữ liệu đã lưu sau khi đăng ký thành công
       clearStoredData();
-      
       // Chuyển trang sau khi hiển thị thông báo
       setTimeout(() => {
       navigate('/login', {
@@ -241,22 +199,14 @@ const RegisterRHF = () => {
 
   // Auto-capitalize full name
   const handleFullNameBlur = (e) => {
-    const value = e.target.value;
-    if (value) {
-      const formattedName = value
-        .toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      form.setValue('fullName', formattedName);
-    }
+    handleFullNameFormat(e, form.setValue);
   };
 
   return (
     <>
     <div style={{ 
       minHeight: '100vh', 
-        background: '#e8f5e8', // Màu xanh nhạt cho nha khoa
+        background: '#e8f5e8', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
@@ -406,13 +356,7 @@ const RegisterRHF = () => {
                     Email <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('email', { 
-                      required: 'Vui lòng nhập email!',
-                      pattern: {
-                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                        message: 'Email không đúng định dạng! (VD: example@gmail.com)'
-                      }
-                    })}
+                    {...register('email', getReactHookFormRules.email())}
                     type="email"
                     className="form-input"
                     placeholder="Nhập email của bạn (VD: example@gmail.com)"
@@ -451,7 +395,7 @@ const RegisterRHF = () => {
                     Mã OTP <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('otp', { required: 'Vui lòng nhập mã OTP!' })}
+                    {...register('otp', getReactHookFormRules.otp())}
                     maxLength={6}
                     className="form-input"
                     placeholder="Nhập 6 chữ số OTP (VD: 123456)"
@@ -511,19 +455,7 @@ const RegisterRHF = () => {
                     Họ và tên <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('fullName', { 
-                      required: 'Vui lòng nhập họ và tên!',
-                      minLength: {
-                        value: 2,
-                        message: 'Họ và tên phải có ít nhất 2 ký tự!'
-                      },
-                      validate: (value) => {
-                        if (!value) return 'Vui lòng nhập họ và tên!';
-                        const words = value.trim().split(/\s+/);
-                        if (words.length < 2) return 'Họ và tên phải có ít nhất 2 từ!';
-                        return true;
-                      }
-                    })}
+                    {...register('fullName', getReactHookFormRules.fullName())}
                     className="form-input"
                     placeholder="Nhập họ và tên đầy đủ (VD: Nguyễn Văn A)"
                     onBlur={handleFullNameBlur}
@@ -540,13 +472,7 @@ const RegisterRHF = () => {
                     Số điện thoại <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('phone', { 
-                      required: 'Vui lòng nhập số điện thoại!',
-                      pattern: {
-                        value: /^0[0-9]{9}$/,
-                        message: 'Số điện thoại phải có 10 số và bắt đầu bằng số 0!'
-                      }
-                    })}
+                    {...register('phone', getReactHookFormRules.phone())}
                     className="form-input"
                     placeholder="Nhập số điện thoại (VD: 0123456789)"
                     tabIndex={2}
@@ -566,8 +492,8 @@ const RegisterRHF = () => {
                       required: 'Vui lòng chọn ngày sinh!',
                       validate: (value) => {
                         if (!value) return 'Vui lòng chọn ngày sinh!';
-                        const ageValidation = isValidAge(value);
-                        if (!ageValidation.valid) return ageValidation.message;
+                        const ageValidation = validatePatientAge(value);
+                        if (!ageValidation.isValid) return ageValidation.message;
                         return true;
                       }
                     })}
@@ -649,17 +575,7 @@ const RegisterRHF = () => {
                     Mật khẩu <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('password', { 
-                      required: 'Vui lòng nhập mật khẩu!',
-                      minLength: {
-                        value: 8,
-                        message: 'Mật khẩu phải có ít nhất 8 ký tự!'
-                      },
-                      maxLength: {
-                        value: 16,
-                        message: 'Mật khẩu không được quá 16 ký tự!'
-                      }
-                    })}
+                    {...register('password', getReactHookFormRules.password())}
                     type="password"
                     className="form-input"
                   placeholder="Nhập mật khẩu (8-16 ký tự)"
@@ -675,9 +591,10 @@ const RegisterRHF = () => {
                   </label>
                   <input
                     {...register('confirmPassword', {
-                      required: 'Vui lòng xác nhận mật khẩu!',
+                      ...getReactHookFormRules.confirmPassword(),
                       validate: (value) => {
-                        if (!value) return 'Vui lòng xác nhận mật khẩu!';
+                        const baseValidation = getReactHookFormRules.confirmPassword().validate(value);
+                        if (baseValidation !== true) return baseValidation;
                         if (value !== watch('password')) return 'Mật khẩu xác nhận không khớp! Vui lòng nhập lại.';
                         return true;
                       }

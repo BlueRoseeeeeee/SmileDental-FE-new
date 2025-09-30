@@ -57,6 +57,11 @@ import {
   createStatusFilter,
   debounce 
 } from '../../utils/searchUtils.js';
+import { 
+  validateEmployeeAge,
+  handleFullNameFormat,
+  getAntDesignFormRules
+} from '../../utils/validationUtils.js';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -531,10 +536,7 @@ const UserManagement = () => {
                     <Form.Item
                       name="email"
                       label="Email"
-                      rules={[
-                        { required: true, message: 'Vui lòng nhập email!' },
-                        { type: 'email', message: 'Email không hợp lệ!' }
-                      ]}
+                      rules={getAntDesignFormRules.email()}
                     >
                       <Input placeholder="Nhập email của nhân viên" />
                     </Form.Item>
@@ -597,7 +599,7 @@ const UserManagement = () => {
                     <Form.Item
                       name="otp"
                       label="Mã OTP"
-                      rules={[{ required: true, message: 'Vui lòng nhập mã OTP!' }]}
+                      rules={getAntDesignFormRules.otp()}
                     >
                       <Input 
                         placeholder="Nhập 6 chữ số OTP"
@@ -676,19 +678,19 @@ const UserManagement = () => {
                         <Form.Item
                           name="fullName"
                           label="Họ và tên"
-                          rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
+                          rules={getAntDesignFormRules.fullName()}
                         >
-                          <Input placeholder="Nhập họ và tên" />
+                          <Input 
+                            placeholder="Nhập họ và tên" 
+                            onBlur={(e) => handleFullNameFormat(e, (field, value) => form.setFieldsValue({ [field]: value }))}
+                          />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12}>
                         <Form.Item
                           name="phone"
                           label="Số điện thoại"
-                          rules={[
-                            { required: true, message: 'Vui lòng nhập số điện thoại!' },
-                            { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại không hợp lệ!' }
-                          ]}
+                          rules={getAntDesignFormRules.phone()}
                         >
                           <Input placeholder="Nhập số điện thoại" />
                         </Form.Item>
@@ -697,7 +699,7 @@ const UserManagement = () => {
                         <Form.Item
                           name="dateOfBirth"
                           label="Ngày sinh"
-                          rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}
+                          rules={getAntDesignFormRules.dateOfBirthEmployee()}
                         >
                           <DatePicker 
                             style={{ width: '100%' }}
@@ -768,7 +770,7 @@ const UserManagement = () => {
                         <Form.Item
                           name="role"
                           label="Vai trò"
-                          rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
+                          rules={getAntDesignFormRules.role()}
                         >
                           <Select placeholder="Chọn vai trò">
                             <Option value="admin">Quản trị viên</Option>
@@ -799,11 +801,7 @@ const UserManagement = () => {
                         <Form.Item
                           name="password"
                           label="Mật khẩu"
-                          rules={[
-                            { required: true, message: 'Vui lòng nhập mật khẩu!' },
-                            { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự!' },
-                            { max: 16, message: 'Mật khẩu không được quá 16 ký tự!' }
-                          ]}
+                          rules={getAntDesignFormRules.password()}
                         >
                           <Input.Password placeholder="Nhập mật khẩu (8-16 ký tự)" />
                         </Form.Item>
@@ -814,7 +812,7 @@ const UserManagement = () => {
                           label="Xác nhận mật khẩu"
                           dependencies={['password']}
                           rules={[
-                            { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+                            ...getAntDesignFormRules.confirmPassword(),
                             ({ getFieldValue }) => ({
                               validator(_, value) {
                                 if (!value || getFieldValue('password') === value) {
@@ -835,6 +833,7 @@ const UserManagement = () => {
                         <Form.Item
                           name="description"
                           label="Mô tả"
+                          rules={getAntDesignFormRules.description()}
                         >
                           <Input.TextArea rows={3} placeholder="Nhập mô tả..." />
                         </Form.Item>
