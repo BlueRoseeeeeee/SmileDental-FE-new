@@ -23,6 +23,7 @@ import {
   HeartOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import logo from '../../assets/image/smile-dental-logo.png';
@@ -78,6 +79,11 @@ const DashboardLayout = () => {
           key: '/users',
           icon: <UserSwitchOutlined />,
           label: 'Quản lý nhân viên',
+        },
+        {
+          key: '/rooms',
+          icon: <EnvironmentOutlined />,
+          label: 'Quản lý phòng khám',
         }
       );
     }
