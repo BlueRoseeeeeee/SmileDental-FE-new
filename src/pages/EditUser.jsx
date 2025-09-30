@@ -51,7 +51,12 @@ const EditUser = () => {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [certificates, setCertificates] = useState([]);
   const [certificateModalVisible, setCertificateModalVisible] = useState(false);
-  const [newCertificate, setNewCertificate] = useState({ notes: '', file: null, previewUrl: null });
+  const [newCertificate, setNewCertificate] = useState({ 
+    notes: '', 
+    files: [], 
+    previewUrls: [] 
+  });
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -148,15 +153,24 @@ const EditUser = () => {
   };
 
   const handleAddCertificate = async () => {
-    if (!newCertificate.file) {
-      toast.error('Vui lòng chọn file chứng chỉ');
+    if (newCertificate.files.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một file ảnh cho chứng chỉ');
       return;
     }
 
+    setUploading(true);
+
     try {
+      // Upload tất cả file ảnh cho 1 chứng chỉ
       const formData = new FormData();
-      formData.append('certificate', newCertificate.file);
+      
+      // Thêm tất cả file ảnh
+      newCertificate.files.forEach((file, index) => {
+        formData.append(`certificate_${index}`, file);
+      });
+      
       formData.append('notes', newCertificate.notes);
+      formData.append('fileCount', newCertificate.files.length.toString());
 
       const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
         method: 'POST',
@@ -170,7 +184,7 @@ const EditUser = () => {
         const data = await response.json();
         setCertificates(data.user.certificates);
         setCertificateModalVisible(false);
-        setNewCertificate({ notes: '', file: null, previewUrl: null });
+        setNewCertificate({ notes: '', files: [], previewUrls: [] });
         toast.success('Thêm chứng chỉ thành công');
       } else {
         const error = await response.json();
@@ -178,6 +192,8 @@ const EditUser = () => {
       }
     } catch (error) {
       toast.error('Lỗi khi thêm chứng chỉ');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -204,17 +220,44 @@ const EditUser = () => {
 
   const handleFileSelect = (file) => {
     const previewUrl = URL.createObjectURL(file);
-    setNewCertificate(prev => ({ 
-      ...prev, 
-      file, 
-      previewUrl 
+    setNewCertificate(prev => ({
+      ...prev,
+      files: [...prev.files, file],
+      previewUrls: [...prev.previewUrls, previewUrl]
     }));
     return false; // Prevent default upload
   };
 
+  const handleRemoveFile = (index) => {
+    setNewCertificate(prev => {
+      const newFiles = [...prev.files];
+      const newPreviewUrls = [...prev.previewUrls];
+      
+      // Clean up URL
+      URL.revokeObjectURL(newPreviewUrls[index]);
+      
+      newFiles.splice(index, 1);
+      newPreviewUrls.splice(index, 1);
+      
+      return {
+        ...prev,
+        files: newFiles,
+        previewUrls: newPreviewUrls
+      };
+    });
+  };
+
+  const handleUpdateNotes = (notes) => {
+    setNewCertificate(prev => ({ ...prev, notes }));
+  };
+
   const handleCertificateModalClose = () => {
+    // Clean up object URLs
+    newCertificate.previewUrls.forEach(url => {
+      URL.revokeObjectURL(url);
+    });
     setCertificateModalVisible(false);
-    setNewCertificate({ notes: '', file: null, previewUrl: null });
+    setNewCertificate({ notes: '', files: [], previewUrls: [] });
   };
 
   if (loading && !user) {
@@ -615,65 +658,155 @@ const EditUser = () => {
         open={certificateModalVisible}
         onOk={handleAddCertificate}
         onCancel={handleCertificateModalClose}
-        okText="Thêm chứng chỉ"
+        okText={uploading ? "Đang tải lên..." : "Thêm chứng chỉ"}
         cancelText="Hủy"
-        width={600}
+        width={800}
+        okButtonProps={{ 
+          disabled: newCertificate.files.length === 0 || uploading,
+          loading: uploading 
+        }}
       >
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-            Chọn file chứng chỉ:
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', fontSize: '14px' }}>
+            Chọn ảnh cho chứng chỉ (có thể chọn nhiều ảnh cho 1 chứng chỉ):
           </label>
           <Upload
             beforeUpload={handleFileSelect}
             showUploadList={false}
             accept="image/*"
+            multiple
           >
-            <Button icon={<UploadOutlined />} style={{ width: '100%' }}>
-              Chọn file ảnh
+            <Button 
+              icon={<UploadOutlined />} 
+              style={{ 
+                width: '100%', 
+                height: '50px',
+                borderRadius: '8px',
+                fontSize: '16px'
+              }}
+            >
+              📁 Chọn ảnh (có thể chọn nhiều ảnh)
             </Button>
           </Upload>
-          
-          {newCertificate.previewUrl && (
-            <div style={{ marginTop: '16px', textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: '14px', 
-                color: '#666', 
-                marginBottom: '8px' 
-              }}>
-                Preview:
-              </div>
-              <img 
-                src={newCertificate.previewUrl} 
-                alt="Preview" 
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '300px', 
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '8px'
-                }}
-              />
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#999', 
-                marginTop: '8px' 
-              }}>
-                File: {newCertificate.file?.name} ({(newCertificate.file?.size / 1024 / 1024).toFixed(2)} MB)
-              </div>
-            </div>
-          )}
         </div>
-        
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-            Ghi chú:
+
+        {/* File Preview List */}
+        {newCertificate.files.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ 
+              fontSize: '14px', 
+              fontWeight: '500', 
+              marginBottom: '12px',
+              color: '#333'
+            }}>
+              📋 Ảnh đã chọn cho chứng chỉ này ({newCertificate.files.length} ảnh):
+            </div>
+            
+            <div style={{ 
+              maxHeight: '400px', 
+              overflowY: 'auto',
+              border: '1px solid #e8e8e8',
+              borderRadius: '8px',
+              padding: '12px'
+            }}>
+              {newCertificate.files.map((file, index) => (
+                <div key={index} style={{
+                  border: '1px solid #f0f0f0',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  marginBottom: '12px',
+                  background: '#fafafa'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'flex-start',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '500', 
+                        color: '#333',
+                        marginBottom: '4px'
+                      }}>
+                        📄 Ảnh {index + 1}: {file.name}
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#666' 
+                      }}>
+                        Kích thước: {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                    <Button 
+                      type="text" 
+                      danger 
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={() => handleRemoveFile(index)}
+                      style={{ marginLeft: '8px' }}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
+
+                  {/* Image Preview */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <img 
+                      src={newCertificate.previewUrls[index]} 
+                      alt={`Preview ${index + 1}`}
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '6px',
+                        background: 'white'
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notes for the certificate */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontWeight: '500',
+            fontSize: '14px',
+            color: '#333'
+          }}>
+            Ghi chú cho chứng chỉ:
           </label>
           <TextArea
             value={newCertificate.notes}
-            onChange={(e) => setNewCertificate(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Nhập ghi chú về chứng chỉ..."
+            onChange={(e) => handleUpdateNotes(e.target.value)}
+            placeholder="Nhập ghi chú cho chứng chỉ này..."
             rows={3}
+            style={{ fontSize: '13px' }}
           />
         </div>
+
+        {/* Summary */}
+        {newCertificate.files.length > 0 && (
+          <div style={{
+            background: '#f0f9ff',
+            border: '1px solid #bae6fd',
+            borderRadius: '8px',
+            padding: '12px',
+            marginBottom: '16px'
+          }}>
+            <div style={{ fontSize: '13px', color: '#0369a1' }}>
+              <strong>📊 Tóm tắt:</strong> Bạn đã chọn {newCertificate.files.length} ảnh cho 1 chứng chỉ. 
+              Tất cả ảnh sẽ được gộp thành 1 chứng chỉ duy nhất.
+            </div>
+          </div>
+        )}
       </Modal>
 
     </div>

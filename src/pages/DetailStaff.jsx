@@ -14,23 +14,16 @@ import {
   Space,
   Tabs,
   List,
-  Modal,
-  Upload,
-  message,
-  Input
+  message
 } from 'antd';
 import {
   UserOutlined,
   EyeOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  UploadOutlined,
-  ArrowLeftOutlined
+  DeleteOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 
 const DetailStaff = () => {
   const { id } = useParams();
@@ -38,8 +31,6 @@ const DetailStaff = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [certificates, setCertificates] = useState([]);
-  const [certificateModalVisible, setCertificateModalVisible] = useState(false);
-  const [newCertificate, setNewCertificate] = useState({ notes: '', file: null, previewUrl: null });
 
   useEffect(() => {
     loadUser();
@@ -70,39 +61,6 @@ const DetailStaff = () => {
     }
   };
 
-  const handleAddCertificate = async () => {
-    if (!newCertificate.file) {
-      message.error('Vui lòng chọn file chứng chỉ');
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('certificate', newCertificate.file);
-      formData.append('notes', newCertificate.notes);
-
-      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: formData
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCertificates(data.user.certificates);
-        setCertificateModalVisible(false);
-        setNewCertificate({ notes: '', file: null, previewUrl: null });
-        message.success('Thêm chứng chỉ thành công');
-      } else {
-        const error = await response.json();
-        message.error(error.message || 'Thêm chứng chỉ thất bại');
-      }
-    } catch (error) {
-      message.error('Lỗi khi thêm chứng chỉ');
-    }
-  };
 
   const handleDeleteCertificate = async (certificateId) => {
     try {
@@ -125,20 +83,6 @@ const DetailStaff = () => {
     }
   };
 
-  const handleFileSelect = (file) => {
-    const previewUrl = URL.createObjectURL(file);
-    setNewCertificate(prev => ({ 
-      ...prev, 
-      file, 
-      previewUrl 
-    }));
-    return false; // Prevent default upload
-  };
-
-  const handleCertificateModalClose = () => {
-    setCertificateModalVisible(false);
-    setNewCertificate({ notes: '', file: null, previewUrl: null });
-  };
 
   const getRoleTag = (role) => {
     const roleConfig = {
@@ -384,14 +328,6 @@ const DetailStaff = () => {
                               marginBottom: '16px'
                             }}>
                               <h4 style={{ margin: 0, color: '#333' }}>Chứng chỉ & Bằng cấp</h4>
-                              <Button 
-                                type="primary" 
-                                icon={<PlusOutlined />}
-                                onClick={() => setCertificateModalVisible(true)}
-                                style={{ borderRadius: '8px' }}
-                              >
-                                Thêm chứng chỉ
-                              </Button>
                             </div>
                             
                             {/* Danh sách chứng chỉ cho dentist */}
@@ -491,7 +427,7 @@ const DetailStaff = () => {
                                   fontSize: '12px', 
                                   color: '#ccc'
                                 }}>
-                                  Nhấn "Thêm chứng chỉ" để upload ảnh
+                                  Chưa có chứng chỉ nào được upload
                                 </div>
                               </div>
                             )}
@@ -508,72 +444,6 @@ const DetailStaff = () => {
         </Col>
       </Row>
 
-      {/* Certificate Modal */}
-      <Modal
-        title="Thêm chứng chỉ mới"
-        open={certificateModalVisible}
-        onOk={handleAddCertificate}
-        onCancel={handleCertificateModalClose}
-        okText="Thêm chứng chỉ"
-        cancelText="Hủy"
-        width={600}
-      >
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-            Chọn file chứng chỉ:
-          </label>
-          <Upload
-            beforeUpload={handleFileSelect}
-            showUploadList={false}
-            accept="image/*"
-          >
-            <Button icon={<UploadOutlined />} style={{ width: '100%' }}>
-              Chọn file ảnh
-            </Button>
-          </Upload>
-          
-          {newCertificate.previewUrl && (
-            <div style={{ marginTop: '16px', textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: '14px', 
-                color: '#666', 
-                marginBottom: '8px' 
-              }}>
-                Preview:
-              </div>
-              <img 
-                src={newCertificate.previewUrl} 
-                alt="Preview" 
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '300px', 
-                  border: '1px solid #d9d9d9',
-                  borderRadius: '8px'
-                }}
-              />
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#999', 
-                marginTop: '8px' 
-              }}>
-                File: {newCertificate.file?.name} ({(newCertificate.file?.size / 1024 / 1024).toFixed(2)} MB)
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-            Ghi chú:
-          </label>
-          <TextArea
-            value={newCertificate.notes}
-            onChange={(e) => setNewCertificate(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Nhập ghi chú về chứng chỉ..."
-            rows={3}
-          />
-        </div>
-      </Modal>
     </div>
   );
 };

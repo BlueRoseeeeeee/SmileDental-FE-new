@@ -26,7 +26,8 @@ import {
   Steps,
   Radio,
   Alert,
-  Tabs
+  Tabs,
+  DatePicker
 } from 'antd';
 import { 
   HeartOutlined,
@@ -181,7 +182,7 @@ const UserManagement = () => {
           ...step4Data, // Dữ liệu từ step 4
           email: email, // Email từ step 1
           role: step4Data.role || 'patient',
-          dateOfBirth: step4Data.dateOfBirth ? step4Data.dateOfBirth.format('YYYY-MM-DD') : null
+          dateOfBirth: step4Data.dateOfBirth ? step4Data.dateOfBirth.format('YYYY-MM-DD') : formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null
         };
         
         console.log('UserManagement: Adding new user');
@@ -802,7 +803,11 @@ const UserManagement = () => {
                           label="Ngày sinh"
                           rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}
                         >
-                          <Input type="date" />
+                          <DatePicker 
+                            style={{ width: '100%' }}
+                            placeholder="Chọn ngày sinh"
+                            format="DD/MM/YYYY"
+                          />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12}>
@@ -828,6 +833,7 @@ const UserManagement = () => {
                         onClick={() => {
                           // Lưu dữ liệu step 3 trước khi chuyển
                           const step3Data = form.getFieldsValue(['fullName', 'phone', 'dateOfBirth', 'gender']);
+                          console.log('UserManagement: Step 3 data before save:', step3Data);
                           setFormData(prev => ({ ...prev, ...step3Data }));
                           setCurrentStep(3);
                         }}
@@ -874,19 +880,6 @@ const UserManagement = () => {
                             <Option value="dentist">Nha sĩ</Option>
                             <Option value="nurse">Y tá</Option>
                             <Option value="receptionist">Lễ tân</Option>
-                            <Option value="patient">Bệnh nhân</Option>
-                          </Select>
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="type"
-                          label="Loại công việc"
-                          initialValue="fullTime"
-                        >
-                          <Select placeholder="Chọn loại công việc">
-                            <Option value="fullTime">Toàn thời gian</Option>
-                            <Option value="partTime">Bán thời gian</Option>
                           </Select>
                         </Form.Item>
                       </Col>
