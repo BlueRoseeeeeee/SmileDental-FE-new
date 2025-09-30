@@ -1,16 +1,14 @@
 /*
 * @author: HoTram
 */
-import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Upload, Avatar, Typography, Row, Col, Radio, DatePicker, message, Space, Divider, Tag } from 'antd';
+import React, { useState } from 'react';
+import { Card, Button, Upload, Avatar, Typography, Row, Col, message, Divider, Tag } from 'antd';
 import { 
   CameraOutlined, 
-  SaveOutlined, 
   UserOutlined, 
   MailOutlined, 
   PhoneOutlined, 
-  CalendarOutlined,
-  EditOutlined
+  CalendarOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { userService } from '../services/userService.js';
@@ -21,39 +19,6 @@ const { Title, Text } = Typography;
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
-
-  // Load user data on mount
-  useEffect(() => {
-    if (user) {
-      form.setFieldsValue({
-        fullName: user.fullName || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        dateOfBirth: user.dateOfBirth ? dayjs(user.dateOfBirth) : null,
-        gender: user.gender || '',
-        description: user.description || '',
-      });
-    }
-  }, [user, form]);
-
-  const onFinish = async (values) => {
-    setLoading(true);
-    
-    try {
-      const data = {
-        ...values,
-        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null,
-      };
-      const response = await userService.updateProfile(data);
-      updateUser(response.user);
-      message.success('Cập nhật thông tin thành công!');
-    } catch (error) {
-      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật thông tin');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAvatarUpload = async (file) => {
     setLoading(true);
@@ -96,18 +61,6 @@ const Profile = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Page Header */}
-      <Card style={{ borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-        <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <Title level={1} style={{ marginBottom: '8px', color: '#262626' }}>
-            Hồ sơ cá nhân
-          </Title>
-          <Text style={{ fontSize: '18px', color: '#8c8c8c' }}>
-            Quản lý thông tin cá nhân và cài đặt tài khoản
-          </Text>
-        </div>
-      </Card>
-
       <Row gutter={[24, 24]}>
         {/* Avatar Section */}
         <Col xs={24} lg={8}>
@@ -168,135 +121,218 @@ const Profile = () => {
           </Card>
         </Col>
 
-        {/* Profile Form */}
+        {/* Profile Information Display */}
         <Col xs={24} lg={16}>
           <Card 
             title="Thông tin cá nhân" 
             style={{ borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-            extra={<EditOutlined style={{ color: '#8c8c8c' }} />}
           >
-            <Form
-              form={form}
-              name="profile"
-              onFinish={onFinish}
-              layout="vertical"
-              size="large"
-            >
-              <Row gutter={[16, 16]}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="fullName"
-                    label="Họ và tên"
-                    rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
-                  >
-                    <Input
-                      prefix={<UserOutlined />}
-                      placeholder="Nhập họ và tên"
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="email"
-                    label="Email"
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập email!' },
-                      { type: 'email', message: 'Email không hợp lệ!' }
-                    ]}
-                  >
-                    <Input
-                      prefix={<MailOutlined />}
-                      placeholder="Nhập email"
-                      disabled
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="phone"
-                    label="Số điện thoại"
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập số điện thoại!' },
-                      { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại không hợp lệ!' }
-                    ]}
-                  >
-                    <Input
-                      prefix={<PhoneOutlined />}
-                      placeholder="Nhập số điện thoại"
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="dateOfBirth"
-                    label="Ngày sinh"
-                    rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}
-                  >
-                    <DatePicker
-                      style={{ width: '100%' }}
-                      placeholder="Chọn ngày sinh"
-                      format="DD/MM/YYYY"
-                    />
-                  </Form.Item>
-                </Col>
-
+            <div style={{ padding: '8px 0' }}>
+              <Row gutter={[24, 24]}>
+                {/* Thông tin cơ bản */}
                 <Col xs={24}>
-                  <Form.Item
-                    name="gender"
-                    label="Giới tính"
-                    rules={[{ required: true, message: 'Vui lòng chọn giới tính!' }]}
-                  >
-                    <Radio.Group>
-                      <Space direction="horizontal">
-                        <Radio value="male">Nam</Radio>
-                        <Radio value="female">Nữ</Radio>
-                        <Radio value="other">Khác</Radio>
-                      </Space>
-                    </Radio.Group>
-                  </Form.Item>
+                  <Title level={5} style={{ color: '#1890ff', marginBottom: '16px', textDecoration: 'underline' }}>
+                    Thông tin cơ bản:
+                  </Title>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                          <UserOutlined style={{ marginRight: '8px' }} />
+                          Họ và tên:
+                        </Text>
+                        <br />
+                        <Text style={{ fontSize: '16px', color: '#262626' }}>
+                          {user?.fullName || 'Chưa cập nhật'}
+                        </Text>
+                      </div>
+                    </Col>
+
+                    <Col xs={24} sm={12}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                          <MailOutlined style={{ marginRight: '8px' }} />
+                          Email:
+                        </Text>
+                        <br />
+                        <Text style={{ fontSize: '16px', color: '#262626' }}>
+                          {user?.email || 'Chưa cập nhật'}
+                        </Text>
+                      </div>
+                    </Col>
+
+                    <Col xs={24} sm={12}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                          <PhoneOutlined style={{ marginRight: '8px' }} />
+                          Số điện thoại:
+                        </Text>
+                        <br />
+                        <Text style={{ fontSize: '16px', color: '#262626' }}>
+                          {user?.phone || 'Chưa cập nhật'}
+                        </Text>
+                      </div>
+                    </Col>
+
+                    <Col xs={24} sm={12}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                          <CalendarOutlined style={{ marginRight: '8px' }} />
+                          Ngày sinh:
+                        </Text>
+                        <br />
+                        <Text style={{ fontSize: '16px', color: '#262626' }}>
+                          {user?.dateOfBirth ? dayjs(user.dateOfBirth).format('DD/MM/YYYY') : 'Chưa cập nhật'}
+                        </Text>
+                      </div>
+                    </Col>
+
+                    <Col xs={24} sm={12}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                          Giới tính:
+                        </Text>
+                        <br />
+                        <Text style={{ fontSize: '16px', color: '#262626' }}>
+                          {user?.gender === 'male' ? 'Nam' : 
+                           user?.gender === 'female' ? 'Nữ' : 
+                           user?.gender === 'other' ? 'Khác' : 'Chưa cập nhật'}
+                        </Text>
+                      </div>
+                    </Col>
+
+                    <Col xs={24} sm={12}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                          Trạng thái:
+                        </Text>
+                        <br />
+                        <Tag color={user?.isActive ? 'green' : 'red'} style={{ fontSize: '14px' }}>
+                          {user?.isActive ? 'Hoạt động' : 'Tạm dừng'}
+                        </Tag>
+                      </div>
+                    </Col>
+                  </Row>
                 </Col>
 
-                {user?.role === 'dentist' && (
+                {/* Thông tin công việc */}
+                {user?.role !== 'patient' && (
                   <Col xs={24}>
-                    <Form.Item
-                      name="description"
-                      label="Mô tả chuyên môn"
-                    >
-                      <Input.TextArea
-                        rows={4}
-                        placeholder="Mô tả về kinh nghiệm và chuyên môn của bạn..."
-                        style={{ borderRadius: '8px' }}
-                      />
-                    </Form.Item>
+                    <Divider />
+                    <Title level={5} style={{ color: '#1890ff', marginBottom: '16px', textDecoration: 'underline' }}>
+                      Thông tin công việc:
+                    </Title>
+                    <Row gutter={[16, 16]}>
+                      {user?.employeeCode && (
+                        <Col xs={24} sm={12}>
+                          <div style={{ marginBottom: '16px' }}>
+                            <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                              Mã nhân viên:
+                            </Text>
+                            <br />
+                            <Text style={{ fontSize: '16px', color: '#262626' }}>
+                              {user.employeeCode}
+                            </Text>
+                          </div>
+                        </Col>
+                      )}
+
+                      <Col xs={24} sm={12}>
+                        <div style={{ marginBottom: '16px' }}>
+                          <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                            Chức vụ:
+                          </Text>
+                          <br />
+                          <Tag color={getRoleColor(user?.role)} style={{ fontSize: '14px' }}>
+                            {getRoleDisplayName(user?.role)}
+                          </Tag>
+                        </div>
+                      </Col>
+
+                      {user?.department && (
+                        <Col xs={24} sm={12}>
+                          <div style={{ marginBottom: '16px' }}>
+                            <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                              Phòng ban:
+                            </Text>
+                            <br />
+                            <Text style={{ fontSize: '16px', color: '#262626' }}>
+                              {user.department}
+                            </Text>
+                          </div>
+                        </Col>
+                      )}
+
+                      {user?.startDate && (
+                        <Col xs={24} sm={12}>
+                          <div style={{ marginBottom: '16px' }}>
+                            <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                              Ngày vào làm:
+                            </Text>
+                            <br />
+                            <Text style={{ fontSize: '16px', color: '#262626' }}>
+                              {dayjs(user.startDate).format('DD/MM/YYYY')}
+                            </Text>
+                          </div>
+                        </Col>
+                      )}
+                    </Row>
                   </Col>
                 )}
+
+                {/* Mô tả chuyên môn cho nha sĩ */}
+                {user?.role === 'dentist' && user?.description && (
+                  <Col xs={24}>
+                    <Divider />
+                    <Title level={5} style={{ color: '#1890ff', marginBottom: '16px' }}>
+                      Thông tin chuyên môn
+                    </Title>
+                    <div style={{ marginBottom: '16px' }}>
+                      <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                        Mô tả chuyên môn:
+                      </Text>
+                      <br />
+                      <Text style={{ fontSize: '16px', color: '#262626', lineHeight: '1.6' }}>
+                        {user.description}
+                      </Text>
+                    </div>
+                  </Col>
+                )}
+
+                {/* Thông tin hệ thống */}
+                <Col xs={24}>
+                  <Divider />
+                  <Title level={5} style={{ color: '#1890ff', marginBottom: '16px',textDecoration: 'underline'}}>
+                    Thông tin hệ thống:
+                  </Title>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                          Ngày tạo tài khoản:
+                        </Text>
+                        <br />
+                        <Text style={{ fontSize: '16px', color: '#262626' }}>
+                          {user?.createdAt ? dayjs(user.createdAt).format('DD/MM/YYYY HH:mm') : 'Chưa xác định'}
+                        </Text>
+                      </div>
+                    </Col>
+
+                    <Col xs={24} sm={12}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <Text strong style={{ color: '#595959', fontSize: '14px' }}>
+                          Cập nhật lần cuối:
+                        </Text>
+                        <br />
+                        <Text style={{ fontSize: '16px', color: '#262626' }}>
+                          {user?.updatedAt ? dayjs(user.updatedAt).format('DD/MM/YYYY HH:mm') : 'Chưa cập nhật'}
+                        </Text>
+                      </div>
+                    </Col>
+                  </Row>
+                </Col>
               </Row>
-
-              <Divider />
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  icon={<SaveOutlined />}
-                  size="large"
-                  style={{
-                    paddingLeft: '32px',
-                    paddingRight: '32px',
-                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 15px rgba(24, 144, 255, 0.3)'
-                  }}
-                >
-                  {loading ? 'Đang lưu...' : 'Lưu thay đổi'}
-                </Button>
-              </div>
-            </Form>
+            </div>
           </Card>
         </Col>
       </Row>

@@ -163,12 +163,12 @@ input[type="date"]::-webkit-datetime-edit-month-field { order: 2; }
 input[type="date"]::-webkit-datetime-edit-year-field { order: 3; }
 input[type="date"]::-webkit-datetime-edit-text { order: 4; }
 
-/* Custom button styling - làm nhỏ button */
+
 .ant-btn {
-  height: 36px !important; /* Giảm chiều cao button */
-  padding: 4px 16px !important; /* Giảm padding */
-  font-size: 14px !important; /* Giảm font size */
-  border-radius: 6px !important; /* Giảm border radius */
+  height: 36px !important;
+  padding: 4px 16px !important; 
+  font-size: 14px !important; 
+  border-radius: 6px !important; 
 }
 
 /* Custom button primary styling */
