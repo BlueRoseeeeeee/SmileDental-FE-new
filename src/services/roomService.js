@@ -65,6 +65,11 @@ const roomService = {
     const response = await roomApi.delete(`/room/${roomId}/subrooms/${subRoomId}`);
     return response.data;
   },
+    // Thêm subrooms cho phòng có subrooms
+  addSubRooms: async (roomId, count) => {
+    const response = await roomApi.post(`/room/${roomId}/subrooms`, { count });
+    return response.data;
+  },
 
 };
 export default roomService;
