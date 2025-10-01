@@ -22,6 +22,8 @@ import EditUser from './pages/EditUser.jsx';
 import DetailStaff from './pages/DetailStaff.jsx';
 import CertificateManagement from './components/User/CertificateManagement.jsx';
 import ChangePassword from './components/Auth/ChangePassword.jsx';
+import RoomList from './pages/RoomList.jsx';
+import RoomManagement from './pages/RoomManagement.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -111,6 +113,18 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="users/edit/:id" element={<EditUser />} />
             <Route path="users/detail/:id" element={<DetailStaff />} />
+            
+            {/* Room Management (Admin/Manager only) */}
+            <Route path="rooms" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <RoomList />
+              </ProtectedRoute>
+            } />
+            <Route path="rooms/:roomId" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <RoomManagement />
+              </ProtectedRoute>
+            } />
             
             {/* Certificate Management (Dentist only) */}
             <Route path="certificates" element={
