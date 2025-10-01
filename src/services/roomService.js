@@ -55,11 +55,17 @@ const roomService = {
     const response = await roomApi.patch(`/room/${roomId}/toggle`);
     return response.data;
   },
-    // Xóa phòng khám
+    // Xóa phòng khám chính
   deleteRoom: async (roomId) => {
     const response = await roomApi.delete(`/room/${roomId}`);
     return response.data;
   },
+    // Xóa subroom (buồng)
+  deleteSubRoom: async (roomId, subRoomId) => {
+    const response = await roomApi.delete(`/room/${roomId}/subrooms/${subRoomId}`);
+    return response.data;
+  },
+
 };
 export default roomService;
 
