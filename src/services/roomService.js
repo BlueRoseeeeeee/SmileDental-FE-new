@@ -40,6 +40,11 @@ const roomService = {
     const response = await roomApi.get(`/room/${roomId}`);
     return response.data;
   },
+    // Cập nhật thông tin phòng khám
+  updateRoom: async (roomId, roomData) => {
+    const response = await roomApi.put(`/room/${roomId}`, roomData);
+    return response.data;
+  },
 };
 export default roomService;
 
