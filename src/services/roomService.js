@@ -30,6 +30,11 @@ const roomService = {
     const response = await roomApi.get(`/room?page=${page}&limit=${limit}`);
     return response.data;
   },
+    // Tạo phòng khám mới
+  createRoom: async (roomData) => {
+    const response = await roomApi.post('/room', roomData);
+    return response.data;
+  },
 };
 export default roomService;
 
