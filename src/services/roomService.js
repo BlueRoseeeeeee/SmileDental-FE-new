@@ -24,3 +24,12 @@ roomApi.interceptors.request.use((config) => {
   return config;
 });
 
+const roomService = {
+  // Lấy danh sách phòng khám
+  getRooms: async (page = 1, limit = 10) => {
+    const response = await roomApi.get(`/room?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+};
+export default roomService;
+
