@@ -45,6 +45,12 @@ const roomService = {
     const response = await roomApi.put(`/room/${roomId}`, roomData);
     return response.data;
   },
+    // Bật/tắt trạng thái subroom
+  toggleSubRoomStatus: async (roomId, subRoomId) => {
+    const response = await roomApi.patch(`/room/${roomId}/subrooms/${subRoomId}/toggle`);
+    return response.data;
+  },
+
 };
 export default roomService;
 
