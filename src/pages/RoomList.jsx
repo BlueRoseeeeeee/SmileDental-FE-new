@@ -286,75 +286,60 @@ const RoomList = () => {
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      {/* Header */}
-      <Card style={{ marginBottom: 24 }}>
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              <EnvironmentOutlined style={{ marginRight: 8 }} />
-              Quản lý phòng khám
-            </Title>
-            <Text type="secondary">Quản lý danh sách phòng khám trong hệ thống</Text>
-          </Col>
-          <Col>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreateRoom}
-              size="large"
-            >
-              Thêm phòng mới
-            </Button>
-          </Col>
-        </Row>
-      </Card>
-
       {/* Search & Filter */}
-      <Card style={{ marginBottom: 24 }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={8} md={6}>
-            <Input
-              placeholder="Tìm kiếm phòng..."
-              prefix={<SearchOutlined />}
-              allowClear
-              onChange={(e) => debouncedSearch(e.target.value)}
-            />
+      <Card style={{ marginBottom: 16 }}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={8}>
+            <div>
+              <Text style={{ display: 'block', marginBottom: 8 , fontSize:12}}>Tìm kiếm</Text>
+              <Input
+                placeholder="Tìm kiếm theo tên phòng, mô tả..."
+                prefix={<SearchOutlined />}
+                allowClear
+                onChange={(e) => debouncedSearch(e.target.value)}
+              />
+            </div>
           </Col>
-          <Col xs={24} sm={8} md={4}>
-            <Select
-              placeholder="Trạng thái"
-              allowClear
-              value={statusFilter}
-              onChange={(value) => {
-                setStatusFilter(value || '');
-                if (!value) {
-                  setPagination(prev => ({ ...prev, current: 1 }));
-                }
-              }}
-              style={{ width: '100%' }}
-            >
-              <Select.Option value="true">Hoạt động</Select.Option>
-              <Select.Option value="false">Không hoạt động</Select.Option>
-            </Select>
+          <Col xs={24} md={8}>
+            <div>
+              <Text style={{ display: 'block', marginBottom: 8 ,fontSize:12}}>Lọc theo trạng thái</Text>
+              <Select
+                placeholder="Chọn trạng thái"
+                allowClear
+                value={statusFilter}
+                onChange={(value) => {
+                  setStatusFilter(value || '');
+                  if (!value) {
+                    setPagination(prev => ({ ...prev, current: 1 }));
+                  }
+                }}
+                style={{ width: '100%' }}
+              >
+                <Select.Option value="true">Hoạt động</Select.Option>
+                <Select.Option value="false">Không hoạt động</Select.Option>
+              </Select>
+            </div>
           </Col>
-          <Col xs={24} sm={8} md={4}>
-            <Select
-              placeholder="Loại phòng"
-              allowClear
-              value={typeFilter}
-              onChange={(value) => {
-                setTypeFilter(value || '');
-                if (!value) {
-                  setPagination(prev => ({ ...prev, current: 1 }));
-                }
-              }}
-              style={{ width: '100%' }}
-            >
-              <Select.Option value="true">Có phòng con</Select.Option>
-              <Select.Option value="false">Phòng đơn</Select.Option>
-            </Select>
+          <Col xs={24} md={8}>
+            <div>
+              <Text style={{ display: 'block', marginBottom: 8, fontSize:12 }}>Lọc theo loại phòng</Text>
+              <Select
+                placeholder="Chọn loại phòng"
+                allowClear
+                value={typeFilter}
+                onChange={(value) => {
+                  setTypeFilter(value || '');
+                  if (!value) {
+                    setPagination(prev => ({ ...prev, current: 1 }));
+                  }
+                }}
+                style={{ width: '100%' }}
+              >
+                <Select.Option value="true">Có phòng con</Select.Option>
+                <Select.Option value="false">Phòng đơn</Select.Option>
+              </Select>
+            </div>
           </Col>
-
         </Row>
         {(searchTerm || statusFilter || typeFilter) && (
           <div style={{ marginTop: 16, padding: '8px 12px', backgroundColor: '#f6f8fa', borderRadius: 6 }}>
@@ -367,6 +352,17 @@ const RoomList = () => {
           </div>
         )}
       </Card>
+
+      {/* Button Add */}
+      <div style={{ marginBottom: 24, textAlign: 'right' }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleCreateRoom}
+        >
+          Thêm phòng mới
+        </Button>
+      </div>
 
       {/* Bảng danh sách */}
       <Card title="Danh sách phòng khám">
