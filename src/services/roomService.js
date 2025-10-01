@@ -35,6 +35,11 @@ const roomService = {
     const response = await roomApi.post('/room', roomData);
     return response.data;
   },
+   // Lấy thông tin chi tiết phòng khám
+  getRoomById: async (roomId) => {
+    const response = await roomApi.get(`/room/${roomId}`);
+    return response.data;
+  },
 };
 export default roomService;
 
