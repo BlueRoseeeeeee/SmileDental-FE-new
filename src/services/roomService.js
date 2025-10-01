@@ -50,7 +50,11 @@ const roomService = {
     const response = await roomApi.patch(`/room/${roomId}/subrooms/${subRoomId}/toggle`);
     return response.data;
   },
-
+    // Bật/tắt trạng thái phòng chính
+  toggleRoomStatus: async (roomId) => {
+    const response = await roomApi.patch(`/room/${roomId}/toggle`);
+    return response.data;
+  },
 };
 export default roomService;
 
