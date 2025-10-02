@@ -9,7 +9,6 @@ import {
   Col, 
   Tag,
   Popconfirm,
-  Modal,
   Tooltip,
   Switch,
   Input,
@@ -82,7 +81,7 @@ const RoomList = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [pagination.current, pagination.pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pagination.current, pagination.pageSize]); // Chỉ chạy khi trang hoặc kích thước trang thay đổi
 
 
   const fetchRooms = async () => {
