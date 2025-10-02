@@ -1,34 +1,34 @@
 /*
 * @author: HoTram
 */
-import api from './api.js';
+import { authApi } from './apiFactory.js';
 
-// Auth Service - Updated to match backend API
+// Authentication Service
 export const authService = {
-  // Gửi OTP cho đăng ký
+  // Send OTP for registration
   sendOtpRegister: async (email) => {
-    const response = await api.post('/auth/send-otp-register', { email });
+    const response = await authApi.post('/auth/send-otp-register', { email });
     return response.data;
   },
 
-  // Gửi OTP cho reset password
+  // Send OTP for password reset
   sendOtpResetPassword: async (email) => {
-    const response = await api.post('/auth/send-otp-reset-password', { email });
+    const response = await authApi.post('/auth/send-otp-reset-password', { email });
     return response.data;
   },
 
-  // Đăng ký với OTP verification
+  // Register user with OTP verification
   register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
+    const response = await authApi.post('/auth/register', userData);
     return response.data;
   },
 
-  // Đăng nhập (hỗ trợ email hoặc employeeCode)
+  // Login user (supports email or employeeCode)
   login: async (credentials) => {
-    const response = await api.post('/auth/login', credentials);
+    const response = await authApi.post('/auth/login', credentials);
     const { accessToken, refreshToken, user } = response.data;
     
-    // Lưu tokens và user info vào localStorage
+    // Save tokens and user info to localStorage
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
@@ -36,18 +36,18 @@ export const authService = {
     return response.data;
   },
 
-  // Đăng xuất với refresh token
+  // Logout user with refresh token
   logout: async () => {
     const refreshToken = localStorage.getItem('refreshToken');
     if (refreshToken) {
       try {
-        await api.post('/auth/logout', { refreshToken });
+        await authApi.post('/auth/logout', { refreshToken });
       } catch {
         // Silently handle logout API errors
       }
     }
     
-    // Xóa tokens khỏi localStorage
+    // Clear tokens from localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('authToken'); // Remove authToken if exists
     localStorage.removeItem('refreshToken');
@@ -57,7 +57,7 @@ export const authService = {
 
   // Refresh access token
   refreshToken: async (refreshToken) => {
-    const response = await api.post('/auth/refresh', { refreshToken });
+    const response = await authApi.post('/auth/refresh', { refreshToken });
     const { accessToken } = response.data;
     
     // Update access token in localStorage
@@ -66,21 +66,21 @@ export const authService = {
     return response.data;
   },
 
-  // Đổi mật khẩu (yêu cầu mật khẩu hiện tại)
+  // Change password (requires current password)
   changePassword: async (passwordData) => {
-    const response = await api.post('/auth/change-password', passwordData);
+    const response = await authApi.post('/auth/change-password', passwordData);
     return response.data;
   },
 
-  // Reset mật khẩu với OTP
+  // Reset password with OTP
   resetPassword: async (resetData) => {
-    const response = await api.post('/auth/reset-password', resetData);
+    const response = await authApi.post('/auth/reset-password', resetData);
     return response.data;
   },
 
   // Verify OTP for registration
   verifyOtp: async (otp, email) => {
-    const response = await api.post('/auth/verify-otp-register', { email, otp });
+    const response = await authApi.post('/auth/verify-otp-register', { email, otp });
     return response.data;
   },
 
@@ -90,9 +90,10 @@ export const authService = {
     if (!refreshToken) return false;
 
     try {
+      // Reuse existing refreshToken method for consistency
       const response = await authService.refreshToken(refreshToken);
       return response.accessToken;
-    } catch (error) {
+    } catch {
       // If refresh fails, logout user
       await authService.logout();
       return false;
