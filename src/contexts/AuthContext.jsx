@@ -1,6 +1,6 @@
 /*
 * @author: HoTram
-* Simple Authentication Context - 100% Working
+* 
 */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
