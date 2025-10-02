@@ -14,16 +14,15 @@ import {
   SearchOutlined,
   CalendarOutlined,
   FileTextOutlined,
-  BarChartOutlined,
   SafetyOutlined,
   TeamOutlined,
   UserSwitchOutlined,
-  MedicineBoxOutlined,
   ClockCircleOutlined,
   HeartOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   EnvironmentOutlined,
+  MedicineBoxOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import logo from '../../assets/image/smile-dental-logo.png';
@@ -84,6 +83,11 @@ const DashboardLayout = () => {
           key: '/rooms',
           icon: <EnvironmentOutlined />,
           label: 'Quản lý phòng khám',
+        },
+        {
+          key: '/services',
+          icon: <MedicineBoxOutlined />,
+          label: 'Quản lý dịch vụ',
         }
       );
     }
