@@ -1,3 +1,6 @@
+/*
+* @author: HoTram
+*/
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
@@ -16,13 +19,10 @@ import { toast } from '../../services/toastService';
 import {
   EnvironmentOutlined,
   HomeOutlined,
-  SettingOutlined,
-  UserOutlined,
-  TeamOutlined
 } from '@ant-design/icons';
 import roomService from '../../services/roomService';
 
-const { Title, Text } = Typography;
+const {Text } = Typography;
 
 const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
   const [form] = Form.useForm();
