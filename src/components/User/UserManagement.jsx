@@ -14,39 +14,28 @@ import {
   Tag, 
   Modal, 
   Form, 
-  // message, // Replaced with toast service 
+ 
   Popconfirm,
   Avatar,
   Row,
   Col,
-  Statistic,
-  Divider,
   Tooltip,
-  Badge,
   Steps,
   Radio,
   Alert,
-  Tabs,
   DatePicker
 } from 'antd';
 import { 
-  HeartOutlined,
-  StarOutlined,
-  TeamOutlined,
-  SafetyOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { toast } from '../../services/toastService';
 import { 
-  SearchOutlined, 
   PlusOutlined, 
   EditOutlined, 
   DeleteOutlined, 
   UserOutlined,
   EyeOutlined,
-  ReloadOutlined,
-  FilterOutlined
 } from '@ant-design/icons';
 import { userService } from '../../services/userService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -58,7 +47,6 @@ import {
   debounce 
 } from '../../utils/searchUtils.js';
 import { 
-  validateEmployeeAge,
   handleFullNameFormat,
   getAntDesignFormRules
 } from '../../utils/validationUtils.js';
@@ -70,7 +58,7 @@ const { Search } = Input;
 
 const UserManagement = () => {
   const navigate = useNavigate();
-  const { user: currentUser, sendOtpRegister, verifyOtp, error: authError, clearError } = useAuth();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -92,10 +80,7 @@ const UserManagement = () => {
   const [formData, setFormData] = useState({}); // Lưu dữ liệu từ các steps
 
 
-  // Debug step changes
-  React.useEffect(() => {
-    console.log('UserManagement: Current step changed to:', currentStep);
-  }, [currentStep]);
+
 
   useEffect(() => {
     loadUsers();
@@ -123,7 +108,7 @@ const UserManagement = () => {
         ...prev,
         total: response.total || 0
       }));
-    } catch (error) {
+    } catch {
       toast.error('Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
@@ -174,18 +159,15 @@ const UserManagement = () => {
   const handleUpdate = async (values) => {
     try {
       if (selectedUser) {
-        // CHỈNH SỬA USER - Không cần OTP, chỉ cần thông tin từ form
-        // Loại bỏ certificates khỏi dữ liệu update vì certificates được quản lý riêng
+        // Edit user - update profile information
         const {...formData } = values;
         const updateData = {
           ...formData,
           dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
         };
         
-        console.log('UserManagement: Editing user:', selectedUser._id);
-        console.log('UserManagement: Update data:', updateData);
-        
-        // Sử dụng API update profile của backend
+
+
         const response = await fetch(`http://localhost:3001/api/user/update/${selectedUser._id}`, {
           method: 'PUT',
           headers: {
@@ -203,10 +185,9 @@ const UserManagement = () => {
           return;
         }
       } else {
-        // THÊM USER MỚI - Cần OTP verification
+        // Add new user - requires OTP verification
         const step4Data = form.getFieldsValue();
-        
-        // Kết hợp dữ liệu từ tất cả các steps
+        // Combine data from all steps
         const registerData = {
           ...formData, // Dữ liệu từ step 3 đã lưu
           ...step4Data, // Dữ liệu từ step 4
@@ -215,11 +196,7 @@ const UserManagement = () => {
           dateOfBirth: step4Data.dateOfBirth ? step4Data.dateOfBirth.format('YYYY-MM-DD') : formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null
         };
         
-        console.log('UserManagement: Adding new user');
-        console.log('UserManagement: Step 3 data (formData):', formData);
-        console.log('UserManagement: Step 4 data (step4Data):', step4Data);
-        console.log('UserManagement: Email from step 1:', email);
-        console.log('UserManagement: Final registerData:', registerData);
+
         
         const response = await fetch('http://localhost:3001/api/auth/register', {
           method: 'POST',
@@ -278,7 +255,7 @@ const UserManagement = () => {
       dataIndex: 'avatar',
       key: 'avatar',
       width: 80,
-      render: (avatar, record) => (
+      render: (avatar) => (
         <Avatar 
           src={avatar} 
           icon={<UserOutlined />}
@@ -483,7 +460,7 @@ const UserManagement = () => {
               <Steps 
                 current={currentStep} 
                 items={selectedUser ? [
-                  // EDIT MODE - Chỉ có 2 steps
+
                   {
                     title: 'Thông tin cá nhân',
                     description: 'Nhập thông tin cơ bản',
@@ -493,7 +470,7 @@ const UserManagement = () => {
                     description: 'Vai trò, Loại công việc, Trạng thái',
                   }
                 ] : [
-                  // ADD MODE - Có 4 steps với OTP
+
                   {
                     title: 'Xác thực Email',
                     description: 'Nhập email để nhận mã OTP',
@@ -530,7 +507,7 @@ const UserManagement = () => {
                 layout="vertical"
                 onFinish={handleUpdate}
               >
-                {/* Step 1: Email Verification - Chỉ hiển thị khi thêm mới */}
+                {/* Step 1: Email Verification */}
                 {!selectedUser && currentStep === 0 && (
                   <div>
                     <Form.Item
@@ -547,7 +524,7 @@ const UserManagement = () => {
                         const emailValue = form.getFieldValue('email');
                         if (emailValue) {
                           try {
-                            console.log('UserManagement: Starting send OTP for email:', emailValue);
+
                             setLocalLoading(true);
                             // Sử dụng fetch trực tiếp để tránh global loading
                             const response = await fetch('http://localhost:3001/api/auth/send-otp-register', {
@@ -560,13 +537,11 @@ const UserManagement = () => {
                             
                             if (response.ok) {
                               const data = await response.json();
-                              console.log('UserManagement: OTP response:', data);
+
                               setEmail(emailValue);
                               setOtpMessage(data.message || 'OTP đã được gửi đến email!');
                               setOtpSent(true);
-                              console.log('UserManagement: About to setCurrentStep(1)');
                               setCurrentStep(1);
-                              console.log('UserManagement: setCurrentStep(1) called');
                             } else {
                               const error = await response.json();
                               toast.error(error.message || 'Gửi OTP thất bại!');
@@ -593,7 +568,7 @@ const UserManagement = () => {
                   </div>
                 )}
 
-                {/* Step 2: OTP Verification - Chỉ hiển thị khi thêm mới */}
+                {/* Step 2: OTP Verification */}
                 {!selectedUser && currentStep === 1 && (
                   <div>
                     <Form.Item
@@ -670,7 +645,7 @@ const UserManagement = () => {
                   </div>
                 )}
 
-                {/* Step 3: Personal Information - Hiển thị cho cả edit và add */}
+                {/* Step 3: Personal Information */}
                 {currentStep === 2 && (
                   <div>
                     <Row gutter={[16, 16]}>
@@ -729,9 +704,8 @@ const UserManagement = () => {
                       <Button
                         type="primary"
                         onClick={() => {
-                          // Lưu dữ liệu step 3 trước khi chuyển
+                          // Save step 3 data before proceeding
                           const step3Data = form.getFieldsValue(['fullName', 'phone', 'dateOfBirth', 'gender']);
-                          console.log('UserManagement: Step 3 data before save:', step3Data);
                           setFormData(prev => ({ ...prev, ...step3Data }));
                           setCurrentStep(3);
                         }}
@@ -762,7 +736,7 @@ const UserManagement = () => {
                   </div>
                 )}
 
-                {/* Step 4: Work Information - Hiển thị cho cả edit và add */}
+                {/* Step 4: Work Information */}
                 {currentStep === 3 && (
                   <div>
                     <Row gutter={[16, 16]}>
@@ -795,7 +769,7 @@ const UserManagement = () => {
                       </Col>
                     </Row>
 
-                    {/* Password Row - Riêng biệt để đảm bảo nằm ngang hàng */}
+                    {/* Password Fields */}
                     <Row gutter={[16, 16]}>
                       <Col xs={24} sm={12}>
                         <Form.Item
