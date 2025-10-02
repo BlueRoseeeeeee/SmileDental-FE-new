@@ -1,3 +1,6 @@
+/*
+* @author: HoTram
+*/
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -8,7 +11,6 @@ import {
   DatePicker,
   Radio,
   Upload,
-  message,
   Card,
   Row,
   Col,
@@ -25,9 +27,6 @@ import {
   UserOutlined,
   MailOutlined,
   PhoneOutlined,
-  CalendarOutlined,
-  ManOutlined,
-  WomanOutlined,
   UploadOutlined,
   SaveOutlined,
   EyeOutlined,
