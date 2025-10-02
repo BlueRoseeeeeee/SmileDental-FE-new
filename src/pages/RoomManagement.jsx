@@ -1,3 +1,6 @@
+/*
+* @author: HoTram
+*/
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -6,26 +9,20 @@ import {
   Space,
   Tag,
   Popconfirm,
-  Tooltip,
-  Badge,
   Row,
   Col,
   Statistic,
   Typography,
   Divider,
-  Input,
   InputNumber,
   Switch
 } from 'antd';
 import { toast } from '../services/toastService';
 import {
   PlusOutlined,
-  EditOutlined,
   DeleteOutlined,
-  EyeOutlined,
   EnvironmentOutlined,
   HomeOutlined,
-  SettingOutlined,
   ReloadOutlined,
   ArrowLeftOutlined,
   CheckCircleOutlined,
