@@ -353,9 +353,9 @@ const AddService = () => {
                         }}>
                           {index + 1}
                         </div>
-                        <Text strong style={{ fontSize: '16px' }}>
+                        {/* <Text strong style={{ fontSize: '16px' }}>
                           Tùy chọn {index + 1}
-                        </Text>
+                        </Text> */}
                       </div>
                     </div>
 
@@ -444,16 +444,15 @@ const AddService = () => {
                }}>
               <div style={{ 
                 display: 'flex', 
-                justifyContent: 'center',
+                justifyContent: 'flex-end',
                 alignItems: 'center',
                 gap: '16px'
               }}>
                 <Button 
-                  icon={<ArrowLeftOutlined />} 
                   onClick={() => navigate('/services')}
                   size="large"
                   style={{
-                    height: '48px',
+                    height: '60px',
                     borderRadius: '8px',
                     fontWeight: '500',
                     minWidth: '120px'
@@ -466,7 +465,7 @@ const AddService = () => {
                   icon={<SaveOutlined />}
                   loading={submitLoading}
                   onClick={handleSubmit}
-                  size="large"
+                  size="small"
                   style={{
                     height: '48px',
                     borderRadius: '8px',
@@ -479,14 +478,6 @@ const AddService = () => {
                 >
                   Lưu dịch vụ
                 </Button>
-              </div>
-              <div style={{ 
-                textAlign: 'center', 
-                marginTop: '12px' 
-              }}>
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  Nhấn "Lưu dịch vụ" để tạo dịch vụ mới trong hệ thống
-                </Text>
               </div>
              </div>
            </Card>
