@@ -319,7 +319,7 @@ const RoomManagement = () => {
           >
             <Row gutter={12} align="middle">
               <Col flex="auto">
-                <Text>Số lượng buồng:</Text>
+                <Text>Nhập số lượng buồng bạn muốn thêm:</Text>
                 <InputNumber
                   min={1}
                   max={10}

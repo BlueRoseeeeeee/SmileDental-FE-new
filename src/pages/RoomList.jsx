@@ -58,6 +58,11 @@ const RoomList = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
 
+  // Delete confirmation modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedRoomForDelete, setSelectedRoomForDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   // Filtered data using searchUtils
   const filteredRooms = useMemo(() => {
     const searchFields = ['name', 'description'];
@@ -126,18 +131,37 @@ const RoomList = () => {
     navigate(`/rooms/${room._id}`);
   };
 
-  const handleDeleteRoom = async (roomId) => {
+  // Handle show delete confirmation modal
+  const handleDeleteRoom = (room) => {
+    setSelectedRoomForDelete(room);
+    setShowDeleteModal(true);
+  };
+
+  // Handle confirm delete room
+  const handleConfirmDelete = async () => {
+    if (!selectedRoomForDelete) return;
+    
     try {
-      
-      const response = await roomService.deleteRoom(roomId);
-      toast.success(response.message || 'Xóa phòng khám thành công');
+      setDeleteLoading(true);
+      const response = await roomService.deleteRoom(selectedRoomForDelete._id);
+      toast.success(response.message || `Đã xóa phòng "${selectedRoomForDelete.name}" thành công`);
       
       // Refresh danh sách phòng để cập nhật UI và thống kê
       fetchRooms();
     } catch (error) {
       console.error(' Delete room error:', error);
       toast.error('Lỗi khi xóa phòng khám: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+      setSelectedRoomForDelete(null);
     }
+  };
+
+  // Handle cancel delete confirmation
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setSelectedRoomForDelete(null);
   };
 
   // Handle show confirmation modal
@@ -281,28 +305,14 @@ const RoomList = () => {
             />
           </Tooltip>
           
-          <Popconfirm
-            title={`Xóa phòng "${record.name}"?`}
-            description={
-              record.hasBeenUsed 
-                ? "Phòng đã được sử dụng. Việc xóa có thể ảnh hưởng đến dữ liệu lịch sử. Bạn có chắc chắn?" 
-                : record.hasSubRooms 
-                  ? ` Phòng này có ${record.subRooms?.length || 0} buồng con. Tất cả sẽ bị xóa và không thể hoàn tác.`
-                  : " Hành động này không thể hoàn tác. Bạn có chắc chắn?"
-            }
-            onConfirm={() => handleDeleteRoom(record._id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okType="danger"
-          >
-            <Tooltip title="Xóa">
-              <Button
-                type="text"
-                danger
-                icon={<DeleteOutlined />}
-              />
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title="Xóa phòng">
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteRoom(record)}
+            />
+          </Tooltip>
         </Space>
       )
     }
@@ -453,6 +463,51 @@ const RoomList = () => {
                  Phòng sẽ được kích hoạt và sẵn sàng phục vụ bệnh nhân.
               </p>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title=" Xác nhận xóa phòng khám"
+        open={showDeleteModal}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        okText="Xóa phòng"
+        cancelText="Hủy"
+        okType="danger"
+        confirmLoading={deleteLoading}
+      >
+        {selectedRoomForDelete && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: '#ff4d4f' }}>XÓA</strong>
+              {' '}phòng khám{' '}
+              <strong>"{selectedRoomForDelete.name}"</strong>?
+            </p>
+            
+            <div style={{ backgroundColor: '#fff2f0', padding: 12, borderRadius: 6, border: '1px solid #ffccc7', marginTop: 16 }}>
+              {selectedRoomForDelete.hasBeenUsed && (
+                <p style={{ color: '#ff4d4f', fontSize: 12, margin: '0 0 8px 0' }}>
+                   <strong>Phòng đã được sử dụng:</strong> Việc xóa có thể ảnh hưởng đến dữ liệu lịch sử và báo cáo.
+                </p>
+              )}
+              
+              {selectedRoomForDelete.hasSubRooms && (
+                <p style={{ color: '#ff4d4f', fontSize: 12, margin: '0 0 8px 0' }}>
+                   <strong>Phòng có {selectedRoomForDelete.subRooms?.length || 0} buồng con:</strong> Tất cả buồng con sẽ bị xóa cùng.
+                </p>
+              )}
+              
+              <p style={{ color: '#ff4d4f', fontSize: 12, margin: 0 }}>
+                 <strong>Hành động này không thể hoàn tác!</strong>
+              </p>
+            </div>
+
+            <p style={{ marginTop: 16, fontSize: 13, color: '#666' }}>
+              Nếu bạn chỉ muốn tạm thời ngưng sử dụng phòng, hãy <strong>TẮT</strong> thay vì xóa.
+            </p>
           </div>
         )}
       </Modal>
