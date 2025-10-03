@@ -279,9 +279,9 @@ const AddService = () => {
                      <Title level={4} style={{ margin: 0, color: '#262626' }}>
                        Tùy chọn dịch vụ
                      </Title>
-                     <Text type="secondary" style={{ fontSize: '12px' }}>
+                     {/* <Text type="secondary" style={{ fontSize: '12px' }}>
                        ({serviceAddOns.length} tùy chọn)
-                     </Text>
+                     </Text> */}
                    </div>
                    <Button 
                      type="primary"
