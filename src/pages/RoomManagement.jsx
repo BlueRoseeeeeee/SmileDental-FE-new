@@ -291,7 +291,7 @@ const RoomManagement = () => {
         </Button>
 
       {/* Thông tin phòng */}
-      <Card size="small" style={{ marginBottom: 16 }}>
+      <Card size="small" style={{ marginBottom: 16 , display:'flex', justifyContent: 'flex-start' }}>
         <Row gutter={16}>
           <Col span={12}>
             <Text strong>
@@ -320,7 +320,7 @@ const RoomManagement = () => {
                 <Text>Nhập số lượng buồng bạn muốn thêm:</Text>
                 <InputNumber
                   min={1}
-                  max={10}
+                  // max={10}
                   value={addSubRoomCount}
                   onChange={setAddSubRoomCount}
                   style={{ width: 100, marginLeft: 8 }}
@@ -338,6 +338,20 @@ const RoomManagement = () => {
                 </Button>
               </Col>
             </Row>
+            <div style={{ 
+                marginTop: 8, 
+                padding: '6px 8px', 
+                borderRadius: '4px',
+                fontSize: '11px',
+                display: 'inline',
+                padding: '10px 0px',
+                color: '#666'
+              }}>
+                <Text type="secondary">
+                  <span style={{ color: '#ff4d4f', padiding:'0px 0px 0px 10px', marginRight: '4px' }}>*</span>
+                  Buồng mới sẽ được đặt tên tự động
+                </Text>
+              </div>
           </Card>
 
           {/* Bảng danh sách buồng */}
@@ -345,16 +359,13 @@ const RoomManagement = () => {
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Danh sách buồng</span>
-                <Text type="secondary">
-                  Hiển thị {filteredSubRooms.length} / {subRooms.length} buồng
-                </Text>
               </div>
             } 
             size="small"
           >
             {/* Filter và Search */}
-            <Card size="small" style={{ marginBottom: 16, backgroundColor: '#fafafa' }}>
-              <Row gutter={[16, 16]} align="middle">
+            
+              <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
                 <Col xs={24} sm={12} md={8}>
                   <Input
                     placeholder="Tìm kiếm theo tên buồng..."
@@ -378,7 +389,6 @@ const RoomManagement = () => {
                   </Select>
                 </Col>
               </Row>
-            </Card>
 
             <Table
               columns={columns}
