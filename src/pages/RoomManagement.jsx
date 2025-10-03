@@ -17,7 +17,10 @@ import {
   InputNumber,
   Switch,
   Modal,
-  Tooltip
+  Tooltip,
+  Input,
+  Select,
+  Form
 } from 'antd';
 import { toast } from '../services/toastService';
 import {
@@ -28,10 +31,14 @@ import {
   ReloadOutlined,
   ArrowLeftOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import roomService from '../services/roomService';
+import { searchAndFilter, debounce } from '../utils/searchUtils';
 
 const { Title, Text } = Typography;
 
@@ -45,6 +52,14 @@ const RoomManagement = () => {
   const [isAddingSubRooms, setIsAddingSubRooms] = useState(false);
   const [toggleLoadingMap, setToggleLoadingMap] = useState({});
   const [deleteLoadingMap, setDeleteLoadingMap] = useState({});
+
+  // Filter and search states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    isActive: null,
+    hasBeenUsed: null
+  });
+  const [filteredSubRooms, setFilteredSubRooms] = useState([]);
 
   // Toggle confirmation modal states
   const [showToggleModal, setShowToggleModal] = useState(false);
@@ -60,6 +75,13 @@ const RoomManagement = () => {
       fetchRoomDetails();
     }
   }, [roomId]);
+
+  // Effect để filter dữ liệu khi searchTerm hoặc filters thay đổi
+  useEffect(() => {
+    const searchFields = ['name'];
+    const filtered = searchAndFilter(subRooms, searchTerm, searchFields, filters);
+    setFilteredSubRooms(filtered);
+  }, [subRooms, searchTerm, filters]);
 
   const fetchRoomDetails = async () => {
     setLoading(true);
@@ -173,7 +195,31 @@ const RoomManagement = () => {
     setSelectedSubRoomForDelete(null);
   };
 
+  // Filter handlers
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  // Debounced search function
+  const debouncedSearch = debounce((value) => {
+    setSearchTerm(value);
+  }, 300);
+
   const columns = [
+    {
+      title: 'STT',
+      dataIndex: 'index',
+      key: 'index',
+      render: (text, record, index) => index + 1,
+      width: 60
+    },
     {
       title: 'Tên buồng',
       dataIndex: 'name',
@@ -295,10 +341,48 @@ const RoomManagement = () => {
           </Card>
 
           {/* Bảng danh sách buồng */}
-          <Card title="Danh sách buồng" size="small">
+          <Card 
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Danh sách buồng</span>
+                <Text type="secondary">
+                  Hiển thị {filteredSubRooms.length} / {subRooms.length} buồng
+                </Text>
+              </div>
+            } 
+            size="small"
+          >
+            {/* Filter và Search */}
+            <Card size="small" style={{ marginBottom: 16, backgroundColor: '#fafafa' }}>
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} sm={12} md={8}>
+                  <Input
+                    placeholder="Tìm kiếm theo tên buồng..."
+                    prefix={<SearchOutlined />}
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    allowClear
+                  />
+                </Col>
+                
+                <Col xs={12} sm={6} md={4}>
+                  <Select
+                    placeholder="Trạng thái"
+                    value={filters.isActive}
+                    onChange={(value) => handleFilterChange('isActive', value)}
+                    allowClear
+                    style={{ width: '100%' }}
+                  >
+                    <Select.Option value={true}>Hoạt động</Select.Option>
+                    <Select.Option value={false}>Không hoạt động</Select.Option>
+                  </Select>
+                </Col>
+              </Row>
+            </Card>
+
             <Table
               columns={columns}
-              dataSource={subRooms}
+              dataSource={filteredSubRooms}
               rowKey="_id"
               loading={loading}
               pagination={{
