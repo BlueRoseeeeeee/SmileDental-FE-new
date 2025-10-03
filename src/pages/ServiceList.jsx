@@ -113,23 +113,11 @@ const ServiceList = () => {
       title: 'Tên dịch vụ',
       dataIndex: 'name',
       key: 'name',
+      width: 150,
       render: (text) => (
         <Text strong style={{ color: '#1890ff' }}>
           {text}
         </Text>
-      ),
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (text) => (
-        <Tooltip placement="topLeft" title={text}>
-          {text}
-        </Tooltip>
       ),
     },
     {
