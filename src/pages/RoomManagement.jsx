@@ -8,7 +8,6 @@ import {
   Button,
   Space,
   Tag,
-  Popconfirm,
   Row,
   Col,
   Statistic,
@@ -20,7 +19,6 @@ import {
   Tooltip,
   Input,
   Select,
-  Form
 } from 'antd';
 import { toast } from '../services/toastService';
 import {
@@ -51,7 +49,6 @@ const RoomManagement = () => {
   const [addSubRoomCount, setAddSubRoomCount] = useState(1);
   const [isAddingSubRooms, setIsAddingSubRooms] = useState(false);
   const [toggleLoadingMap, setToggleLoadingMap] = useState({});
-  const [deleteLoadingMap, setDeleteLoadingMap] = useState({});
 
   // Filter and search states
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,10 +204,6 @@ const RoomManagement = () => {
     }));
   };
 
-  // Debounced search function
-  const debouncedSearch = debounce((value) => {
-    setSearchTerm(value);
-  }, 300);
 
   const columns = [
     {
@@ -340,7 +333,6 @@ const RoomManagement = () => {
             </Row>
             <div style={{ 
                 marginTop: 8, 
-                padding: '6px 8px', 
                 borderRadius: '4px',
                 fontSize: '11px',
                 display: 'inline',
