@@ -18,7 +18,8 @@ import {
   Statistic,
   Badge,
   Switch,
-  Select
+  Select,
+  Modal
 } from 'antd';
 import {
   SearchOutlined,
@@ -47,6 +48,10 @@ const ServiceList = () => {
   // Search & Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  // Toggle confirmation modal states
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
 
   // Filtered data using searchUtils
   const filteredServices = useMemo(() => {
@@ -100,12 +105,21 @@ const ServiceList = () => {
     debouncedSearch(value);
   };
 
-  // Handle toggle service status
-  const handleToggleStatus = async (serviceId) => {
+  // Handle show confirmation modal
+  const handleToggleStatus = (record) => {
+    setSelectedService(record);
+    setShowConfirmModal(true);
+  };
+
+  // Handle confirm toggle service status
+  const handleConfirmToggle = async () => {
+    if (!selectedService) return;
+    
     try {
       setLoading(true);
-      await servicesService.toggleServiceStatus(serviceId);
-      toastService.success('Cập nhật trạng thái thành công!');
+      await servicesService.toggleServiceStatus(selectedService._id);
+      const newStatus = selectedService.isActive ? 'tắt' : 'bật';
+      toastService.success(`Đã ${newStatus} dịch vụ "${selectedService.name}" thành công!`);
       
       // Reload data để cập nhật UI
       loadServices(pagination.current, pagination.pageSize);
@@ -114,7 +128,15 @@ const ServiceList = () => {
       toastService.error('Lỗi khi cập nhật trạng thái!');
     } finally {
       setLoading(false);
+      setShowConfirmModal(false);
+      setSelectedService(null);
     }
+  };
+
+  // Handle cancel confirmation
+  const handleCancelToggle = () => {
+    setShowConfirmModal(false);
+    setSelectedService(null);
   };
 
   // Dịch loại dịch vụ sang tiếng Việt
@@ -245,7 +267,7 @@ const ServiceList = () => {
         >
           <Switch
             checked={record.isActive}
-            onChange={() => handleToggleStatus(record._id)}
+            onChange={() => handleToggleStatus(record)}
             checkedChildren="Bật"
             unCheckedChildren="Tắt"
             size="default"
@@ -343,6 +365,40 @@ const ServiceList = () => {
         />
       </Card>
 
+      {/* Confirmation Modal */}
+      <Modal
+        title="Xác nhận thay đổi trạng thái"
+        open={showConfirmModal}
+        onOk={handleConfirmToggle}
+        onCancel={handleCancelToggle}
+        okText={selectedService?.isActive ? 'Tắt dịch vụ' : 'Bật dịch vụ'}
+        cancelText="Hủy"
+        okType={selectedService?.isActive ? 'danger' : 'primary'}
+        confirmLoading={loading}
+      >
+        {selectedService && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: selectedService.isActive ? '#ff4d4f' : '#52c41a' }}>
+                {selectedService.isActive ? 'TẮT' : 'BẬT'}
+              </strong>
+              {' '}dịch vụ{' '}
+              <strong>"{selectedService.name}"</strong>?
+            </p>
+            {selectedService.isActive && (
+              <p style={{ color: '#faad14', fontSize: 12 }}>
+                 Dịch vụ sẽ không còn hiển thị cho bệnh nhân đặt lịch.
+              </p>
+            )}
+            {!selectedService.isActive && (
+              <p style={{ color: '#52c41a', fontSize: 12 }}>
+                 Dịch vụ sẽ được kích hoạt và hiển thị cho bệnh nhân.
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
 
     </div>
   );

@@ -15,7 +15,8 @@ import {
   Tooltip,
   Switch,
   Input,
-  Select
+  Select,
+  Modal
 } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../services/toastService';
@@ -52,6 +53,10 @@ const RoomList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+
+  // Toggle confirmation modal states
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
 
   // Filtered data using searchUtils
   const filteredRooms = useMemo(() => {
@@ -135,18 +140,27 @@ const RoomList = () => {
     }
   };
 
-  const handleToggleStatus = async (room) => {
+  // Handle show confirmation modal
+  const handleToggleStatus = (room) => {
+    setSelectedRoom(room);
+    setShowConfirmModal(true);
+  };
+
+  // Handle confirm toggle room status
+  const handleConfirmToggle = async () => {
+    if (!selectedRoom) return;
+    
     try {
-      console.log(' Toggle room status:', { roomId: room._id, currentStatus: room.isActive });
+      console.log(' Toggle room status:', { roomId: selectedRoom._id, currentStatus: selectedRoom.isActive });
       
       // Set loading cho room cụ thể
-      setToggleLoadingMap(prev => ({ ...prev, [room._id]: true }));
+      setToggleLoadingMap(prev => ({ ...prev, [selectedRoom._id]: true }));
       
-      const updatedRoom = await roomService.toggleRoomStatus(room._id);
+      const updatedRoom = await roomService.toggleRoomStatus(selectedRoom._id);
       console.log('Room toggle response:', updatedRoom);
       
       const newStatus = updatedRoom.isActive ? 'kích hoạt' : 'vô hiệu hóa';
-      toast.success(`Đã ${newStatus} phòng khám "${room.name}"`);
+      toast.success(`Đã ${newStatus} phòng khám "${selectedRoom.name}" thành công!`);
       
       // Refresh danh sách phòng để cập nhật UI
       fetchRooms();
@@ -155,8 +169,16 @@ const RoomList = () => {
       toast.error('Lỗi khi cập nhật trạng thái: ' + (error.response?.data?.message || error.message));
     } finally {
       // Clear loading cho room cụ thể
-      setToggleLoadingMap(prev => ({ ...prev, [room._id]: false }));
+      setToggleLoadingMap(prev => ({ ...prev, [selectedRoom._id]: false }));
+      setShowConfirmModal(false);
+      setSelectedRoom(null);
     }
+  };
+
+  // Handle cancel confirmation
+  const handleCancelToggle = () => {
+    setShowConfirmModal(false);
+    setSelectedRoom(null);
   };
 
   const handleModalClose = () => {
@@ -392,6 +414,48 @@ const RoomList = () => {
         onSuccess={handleSuccess}
         room={editingRoom}
       />
+
+      {/* Confirmation Modal */}
+      <Modal
+        title="Xác nhận thay đổi trạng thái phòng"
+        open={showConfirmModal}
+        onOk={handleConfirmToggle}
+        onCancel={handleCancelToggle}
+        okText={selectedRoom?.isActive ? 'Tắt phòng' : 'Bật phòng'}
+        cancelText="Hủy"
+        okType={selectedRoom?.isActive ? 'danger' : 'primary'}
+        confirmLoading={selectedRoom ? toggleLoadingMap[selectedRoom._id] : false}
+      >
+        {selectedRoom && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: selectedRoom.isActive ? '#ff4d4f' : '#52c41a' }}>
+                {selectedRoom.isActive ? 'TẮT' : 'BẬT'}
+              </strong>
+              {' '}phòng khám{' '}
+              <strong>"{selectedRoom.name}"</strong>?
+            </p>
+            {selectedRoom.isActive && (
+              <div>
+                <p style={{ color: '#faad14', fontSize: 12 }}>
+                   Phòng sẽ không còn khả dụng cho việc đặt lịch và sắp xếp bệnh nhân.
+                </p>
+                {selectedRoom.hasSubRooms && (
+                  <p style={{ color: '#ff4d4f', fontSize: 12 }}>
+                     Phòng này có {selectedRoom.subRooms?.length || 0} buồng con sẽ bị ảnh hưởng.
+                  </p>
+                )}
+              </div>
+            )}
+            {!selectedRoom.isActive && (
+              <p style={{ color: '#52c41a', fontSize: 12 }}>
+                 Phòng sẽ được kích hoạt và sẵn sàng phục vụ bệnh nhân.
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
 
     </div>
   );
