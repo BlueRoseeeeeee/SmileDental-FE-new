@@ -364,9 +364,9 @@ const UserManagement = () => {
       render: (isActive) => getStatusTag(isActive)
     },
     {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      title: 'Ngày cập nhật',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
