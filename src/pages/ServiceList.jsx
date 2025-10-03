@@ -12,20 +12,26 @@ import {
   Typography,
   Row,
   Col,
-  Tooltip
+  Tooltip,
+  Button,
+  Space,
+  Statistic,
+  Badge
 } from 'antd';
 import {
   SearchOutlined,
   MedicineBoxOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
 
 const { Title, Text } = Typography;
 
 const ServiceList = () => {
+  const navigate = useNavigate();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -64,9 +70,10 @@ const ServiceList = () => {
     loadServices(pagination.current, pagination.pageSize);
   };
 
-  // Handle search
+  // Handle search (placeholder for future implementation)
   const handleSearch = (value) => {
-    setSearchText(value);
+    // TODO: Implement search when API supports it
+    console.log('Search:', value);
   };
 
   // Dịch loại dịch vụ sang tiếng Việt
@@ -233,10 +240,20 @@ const ServiceList = () => {
 
       {/* Services Table */}
       <Card>
-        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Title level={4} style={{ margin: 0, fontSize:16 }}>
-            Danh sách dịch vụ nha khoa
-          </Title>
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <MedicineBoxOutlined style={{ fontSize: 18, color: '#1890ff' }} />
+            <Title level={4} style={{ margin: 0, fontSize: 16 }}>
+              Danh sách dịch vụ nha khoa
+            </Title>
+          </div>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/services/add')}
+          >
+            Thêm dịch vụ
+          </Button>
         </div>
         <Table
           columns={columns}
@@ -256,7 +273,7 @@ const ServiceList = () => {
         />
       </Card>
 
-      {/* Chờ API từ backend để thêm các chức năng thêm/sửa/xóa */}
+
     </div>
   );
 };

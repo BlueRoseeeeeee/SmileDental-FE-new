@@ -25,6 +25,7 @@ import ChangePassword from './components/Auth/ChangePassword.jsx';
 import RoomList from './pages/RoomList.jsx';
 import RoomManagement from './pages/RoomManagement.jsx';
 import ServiceList from './pages/ServiceList.jsx';
+import AddService from './pages/AddService.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -130,6 +131,13 @@ function App() {
             <Route path="services" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <ServiceList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Add Service (Admin/Manager only) */}
+            <Route path="services/add" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AddService />
               </ProtectedRoute>
             } />
             
