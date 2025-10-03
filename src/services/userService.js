@@ -32,6 +32,12 @@ export const userService = {
     return response.data;
   },
 
+  // Thay đổi trạng thái của người dùng
+  toggleUserStatus: async (userId) => {
+    const response = await userApi.patch(`/user/${userId}/toggle-status`);
+    return response.data;
+  },
+
   // Avatar upload -  Used in Profile.jsx
   uploadAvatar: async (userId, file) => {
     const formData = new FormData();
