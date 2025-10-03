@@ -199,7 +199,17 @@ const ServiceList = () => {
         </Tag>
       ),
     },
-
+    {
+      title: 'Trạng thái',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      width: 120,
+      render: (isActive) => (
+        <Tag color={isActive ? 'green' : 'red'}>
+          {isActive ? 'Hoạt động' : 'Ngưng hoạt động'}
+        </Tag>
+      ),
+    },
     {
       title: 'Tùy chọn',
       dataIndex: 'serviceAddOns',
