@@ -16,7 +16,8 @@ import {
   Button,
   Space,
   Statistic,
-  Badge
+  Badge,
+  Switch
 } from 'antd';
 import {
   SearchOutlined,
@@ -74,6 +75,23 @@ const ServiceList = () => {
   const handleSearch = (value) => {
     // TODO: Implement search when API supports it
     console.log('Search:', value);
+  };
+
+  // Handle toggle service status
+  const handleToggleStatus = async (serviceId) => {
+    try {
+      setLoading(true);
+      await servicesService.toggleServiceStatus(serviceId);
+      toastService.success('Cập nhật trạng thái thành công!');
+      
+      // Reload data để cập nhật UI
+      loadServices(pagination.current, pagination.pageSize);
+    } catch (error) {
+      console.error('Error toggling service status:', error);
+      toastService.error('Lỗi khi cập nhật trạng thái!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Dịch loại dịch vụ sang tiếng Việt
@@ -158,17 +176,7 @@ const ServiceList = () => {
         </Tag>
       ),
     },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 100,
-      render: (isActive) => (
-        <Tag color={isActive ? 'green' : 'red'}>
-          {isActive ? 'Hoạt động' : 'Ngưng hoạt động'}
-        </Tag>
-      ),
-    },
+
     {
       title: 'Tùy chọn',
       dataIndex: 'serviceAddOns',
@@ -191,6 +199,26 @@ const ServiceList = () => {
           </div>
         );
       },
+    },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      width: 120,
+      align: 'center',
+      render: (_, record) => (
+        <Tooltip 
+          title={record.isActive ? 'Nhấn để tắt dịch vụ' : 'Nhấn để bật dịch vụ'}
+          placement="top"
+        >
+          <Switch
+            checked={record.isActive}
+            onChange={() => handleToggleStatus(record._id)}
+            checkedChildren="Bật"
+            unCheckedChildren="Tắt"
+            size="default"
+          />
+        </Tooltip>
+      ),
     },
   ];
 

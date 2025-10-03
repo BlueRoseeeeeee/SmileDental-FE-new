@@ -14,5 +14,11 @@ export const servicesService = {
   async createService(serviceData) {
     const response = await serviceApi.post('/service', serviceData);
     return response.data;
+  },
+
+  // Bật/tắt trạng thái dịch vụ
+  async toggleServiceStatus(serviceId) {
+    const response = await serviceApi.patch(`/service/${serviceId}/toggle`);
+    return response.data;
   }
 };

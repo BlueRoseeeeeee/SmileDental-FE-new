@@ -254,8 +254,8 @@ const RoomList = () => {
               checked={record.isActive}
               loading={toggleLoadingMap[record._id]}
               onChange={() => handleToggleStatus(record)}
-              checkedChildren="ON"
-              unCheckedChildren="OFF"
+              checkedChildren="Bật"
+              unCheckedChildren="Tắt"
             />
           </Tooltip>
           
