@@ -29,6 +29,11 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
   const [loading, setLoading] = useState(false);
   const [hasSubRooms, setHasSubRooms] = useState(false);
 
+  // Toggle confirmation modal states
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [pendingToggleValue, setPendingToggleValue] = useState(null);
+  const [toggleField, setToggleField] = useState(null);
+
   useEffect(() => {
     if (visible) {
       if (room) {
@@ -97,6 +102,33 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
     onClose();
   };
 
+  // Handle toggle confirmation
+  const handleToggleConfirmation = (field, value) => {
+    setToggleField(field);
+    setPendingToggleValue(value);
+    setShowToggleModal(true);
+  };
+
+  // Handle confirm toggle
+  const handleConfirmToggle = () => {
+    if (toggleField === 'hasSubRooms') {
+      setHasSubRooms(pendingToggleValue);
+      form.setFieldsValue({ hasSubRooms: pendingToggleValue });
+    } else if (toggleField === 'isActive') {
+      form.setFieldsValue({ isActive: pendingToggleValue });
+    }
+    setShowToggleModal(false);
+    setPendingToggleValue(null);
+    setToggleField(null);
+  };
+
+  // Handle cancel toggle
+  const handleCancelToggle = () => {
+    setShowToggleModal(false);
+    setPendingToggleValue(null);
+    setToggleField(null);
+  };
+
   return (
     <Modal
       title={
@@ -151,15 +183,14 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
               <Switch
                 checkedChildren="Có buồng con"
                 unCheckedChildren="Phòng đơn"
-                onChange={setHasSubRooms}
+                onChange={(value) => {
+                  if (!room) { // Chỉ show confirm khi tạo mới
+                    handleToggleConfirmation('hasSubRooms', value);
+                  }
+                }}
                 disabled={!!room} // Không thể thay đổi loại phòng khi edit
               />
             </Form.Item>
-            {room && (
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                Không thể thay đổi loại phòng sau khi tạo
-              </Text>
-            )}
           </Col>
           <Col span={12}>
             <Form.Item
@@ -170,6 +201,7 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
               <Switch
                 checkedChildren="Hoạt động"
                 unCheckedChildren="Không hoạt động"
+                onChange={(value) => handleToggleConfirmation('isActive', value)}
               />
             </Form.Item>
           </Col>
@@ -257,6 +289,101 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
           </Space>
         </Form.Item>
       </Form>
+
+      {/* Toggle Confirmation Modal */}
+      <Modal
+        title="Xác nhận thay đổi"
+        open={showToggleModal}
+        onOk={handleConfirmToggle}
+        onCancel={handleCancelToggle}
+        okText="Xác nhận"
+        cancelText="Hủy bỏ"
+        centered
+        width={480}
+      >
+        {toggleField && (
+          <div>
+            {toggleField === 'hasSubRooms' && (
+              <div>
+                <p>
+                  Bạn có chắc chắn muốn thay đổi loại phòng thành{' '}
+                  <strong style={{ color: pendingToggleValue ? '#1890ff' : '#52c41a' }}>
+                    {pendingToggleValue ? 'Có buồng con' : 'Phòng đơn'}
+                  </strong>?
+                </p>
+                
+                {pendingToggleValue && (
+                  <div style={{ 
+                    padding: '12px', 
+                    backgroundColor: '#e6f7ff', 
+                    borderLeft: '4px solid #1890ff',
+                    borderRadius: '4px',
+                    marginTop: '12px'
+                  }}>
+                    <p style={{ margin: 0, color: '#096dd9', fontSize: '12px' }}>
+                       Phòng có buồng con sẽ được tạo với số lượng buồng bạn chỉ định.
+                    </p>
+                  </div>
+                )}
+                
+                {!pendingToggleValue && (
+                  <div style={{ 
+                    padding: '12px', 
+                    backgroundColor: '#f6ffed', 
+                    borderLeft: '4px solid #52c41a',
+                    borderRadius: '4px',
+                    marginTop: '12px'
+                  }}>
+                    <p style={{ margin: 0, color: '#389e0d', fontSize: '12px' }}>
+                       Phòng đơn sẽ có thông số về số lượng bác sĩ và y tá tối đa.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {toggleField === 'isActive' && (
+              <div>
+                <p>
+                  Bạn có chắc chắn muốn{' '}
+                  <strong style={{ color: pendingToggleValue ? '#52c41a' : '#ff4d4f' }}>
+                    {pendingToggleValue ? 'KÍCH HOẠT' : 'TẮT'}
+                  </strong>
+                  {' '}phòng khám này?
+                </p>
+                
+                {pendingToggleValue && (
+                  <div style={{ 
+                    padding: '12px', 
+                    backgroundColor: '#f6ffed', 
+                    borderLeft: '4px solid #52c41a',
+                    borderRadius: '4px',
+                    marginTop: '12px'
+                  }}>
+                    <p style={{ margin: 0, color: '#389e0d', fontSize: '12px' }}>
+                       Phòng sẽ được kích hoạt và sẵn sàng phục vụ bệnh nhân.
+                    </p>
+                  </div>
+                )}
+                
+                {!pendingToggleValue && (
+                  <div style={{ 
+                    padding: '12px', 
+                    backgroundColor: '#fff2e8', 
+                    borderLeft: '4px solid #ff7a00',
+                    borderRadius: '4px',
+                    marginTop: '12px'
+                  }}>
+                    <p style={{ margin: 0, color: '#d46b08', fontSize: '12px' }}>
+                       Phòng sẽ không còn khả dụng cho việc đặt lịch và sắp xếp bệnh nhân.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </Modal>
   );
 };
