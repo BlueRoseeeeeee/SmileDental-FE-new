@@ -396,22 +396,20 @@ const AddService = () => {
                       </Col>
                     </Row>
 
-                    <Row style={{ marginTop: '16px' }}>
-                      <Col span={24}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Mô tả chi tiết</Text>
-                        </div>
-                         <Input
-                           placeholder="Mô tả chi tiết về tùy chọn này..."
-                           value={addon.description}
-                           onChange={(e) => updateServiceAddOn(index, 'description', e.target.value)}
-                           size="large"
-                           style={{
-                             borderRadius: '8px'
-                           }}
-                         />
-                      </Col>
-                    </Row>
+                    <Row gutter={[16, 16]}>
+                        <Col xs={24}>
+                          <div style={{ marginBottom: '8px' }}>
+                            <Text strong style={{ color: '#262626' }}>Mô tả chi tiết</Text>
+                          </div>
+                          <TextArea
+                            rows={6}
+                            placeholder="Mô tả chi tiết về tùy chọn này..."
+                            value={addon.description}
+                            onChange={(e) => updateServiceAddOn(index, 'description', e.target.value)}
+                            className="custom-textarea"
+                          />
+                        </Col>
+                      </Row>
 
                   </Card>
                 ))}
