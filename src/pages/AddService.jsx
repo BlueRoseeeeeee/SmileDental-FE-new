@@ -47,19 +47,26 @@ const AddService = () => {
       const values = await form.validateFields();
       setSubmitLoading(true);
 
-      // Chuẩn bị data theo đúng format API
+      // Filter valid add-ons (có ít nhất name và price)
+      const validAddOns = serviceAddOns.filter(addon => 
+        addon.name && addon.name.trim() && addon.price > 0
+      );
+      
+      if (validAddOns.length === 0) {
+        toastService.error('Vui lòng thêm ít nhất 1 tùy chọn dịch vụ!');
+        return;
+      }
+
       const serviceData = {
         name: values.name,
         durationMinutes: values.durationMinutes,
         type: values.type,
         description: values.description,
         requireExamFirst: values.requireExamFirst || false,
-        serviceAddOns: serviceAddOns.filter(addon => 
-          addon.name && addon.price && addon.description
-        ).map(addon => ({
-          name: addon.name,
+        serviceAddOns: validAddOns.map(addon => ({
+          name: addon.name.trim(),
           price: addon.price,
-          description: addon.description,
+          description: addon.description || '', // Cho phép description rỗng
           isActive: addon.isActive !== false
         }))
       };
@@ -71,10 +78,22 @@ const AddService = () => {
       navigate('/services');
     } catch (error) {
       if (error.errorFields) {
-        // Validation errors
+        toastService.error('Vui lòng kiểm tra lại thông tin form!');
         return;
       }
-      console.error('Error creating service:', error);
+      
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        toastService.error('Không thể kết nối đến server. Vui lòng thử lại sau!');
+        return;
+      }
+      
+      if (error.response) {
+        const errorMessage = error.response.data?.message || error.response.data?.error || 'Lỗi từ server';
+        toastService.error(`Lỗi: ${errorMessage}`);
+        return;
+      }
+      
+      // Generic error
       toastService.error('Lỗi khi thêm dịch vụ!');
     } finally {
       setSubmitLoading(false);
@@ -198,8 +217,6 @@ const AddService = () => {
                       }}
                       size="large"
                       min={1}
-                      max={480}
-                      placeholder="45"
                       addonAfter="phút"
                     />
                   </Form.Item>
