@@ -33,7 +33,7 @@ import {
 import roomService from '../services/roomService';
 import RoomFormModal from '../components/Room/RoomFormModal';
 import { searchAndFilter, debounce } from '../utils/searchUtils';
-
+import dayjs from 'dayjs';
 const { Title, Text } = Typography;
 
 const RoomList = () => {
@@ -218,6 +218,13 @@ const RoomList = () => {
 
   const columns = [
     {
+      title: 'STT',
+      dataIndex: 'index',
+      key: 'index',
+      render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
+      width: 60
+    },
+    {
       title: 'Tên phòng',
       dataIndex: 'name',
       key: 'name',
@@ -267,10 +274,10 @@ const RoomList = () => {
       )
     },
     {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date) => new Date(date).toLocaleDateString('vi-VN')
+      title: 'Ngày cập nhật',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+      render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       title: 'Thao tác',
