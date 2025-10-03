@@ -149,7 +149,6 @@ const AddService = () => {
                     ]}
                   >
                     <Input 
-                      placeholder="VD: Cạo vôi răng, Trám răng..."
                       size="large"
                     />
                   </Form.Item>
@@ -166,7 +165,6 @@ const AddService = () => {
                     <InputNumber
                       style={{ width: '100%' }}
                       size="large"
-                      placeholder="45"
                       min={1}
                       max={480}
                     />
@@ -184,34 +182,29 @@ const AddService = () => {
                     ]}
                   >
                     <Select 
-                      placeholder="Chọn loại dịch vụ"
                       size="large"
                     >
                       <Option value="treatment">Điều trị</Option>
-                      <Option value="exam">Khám bệnh</Option>
+                      <Option value="exam">Khám</Option>
                     </Select>
                   </Form.Item>
                 </Col>
               </Row>
 
-              <Row>
-                <Col span={24}>
-                  <Form.Item
-                    name="description"
-                    label="Mô tả dịch vụ"
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập mô tả!' }
-                    ]}
-                  >
-                    <TextArea 
-                      rows={6}
-                      placeholder="Mô tả chi tiết về dịch vụ..."
-                      showCount
-                      maxLength={500}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+              <Row gutter={[16, 16]}>
+                        <Col xs={24}>
+                          <Form.Item
+                            name="description"
+                            label="Mô tả thêm"
+                          >
+                            <TextArea
+                              rows={6}
+                              placeholder="Nhập mô tả về dịch vụ"
+                              className="custom-textarea"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
             </Card>
 
             {/* Service Add-ons */}
