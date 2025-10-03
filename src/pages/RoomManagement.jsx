@@ -15,7 +15,9 @@ import {
   Typography,
   Divider,
   InputNumber,
-  Switch
+  Switch,
+  Modal,
+  Tooltip
 } from 'antd';
 import { toast } from '../services/toastService';
 import {
@@ -43,6 +45,15 @@ const RoomManagement = () => {
   const [isAddingSubRooms, setIsAddingSubRooms] = useState(false);
   const [toggleLoadingMap, setToggleLoadingMap] = useState({});
   const [deleteLoadingMap, setDeleteLoadingMap] = useState({});
+
+  // Toggle confirmation modal states
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [selectedSubRoom, setSelectedSubRoom] = useState(null);
+
+  // Delete confirmation modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedSubRoomForDelete, setSelectedSubRoomForDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     if (roomId) {
@@ -86,54 +97,80 @@ const RoomManagement = () => {
     }
   };
 
-  const handleToggleSubRoomStatus = async (subRoomId, currentStatus) => {
-    console.log('Toggle clicked:', { subRoomId, currentStatus, roomId: room._id });
-    
-    // Debug: Check if token exists
-    const token = localStorage.getItem('accessToken');
-    console.log('Auth token:', token ? 'EXISTS' : 'MISSING');
+  // Handle show toggle confirmation modal
+  const handleToggleSubRoomStatus = (subRoom) => {
+    setSelectedSubRoom(subRoom);
+    setShowToggleModal(true);
+  };
+
+  // Handle confirm toggle subroom status
+  const handleConfirmToggle = async () => {
+    if (!selectedSubRoom) return;
     
     try {
       // Set loading cho button cụ thể
-      setToggleLoadingMap(prev => ({ ...prev, [subRoomId]: true }));
+      setToggleLoadingMap(prev => ({ ...prev, [selectedSubRoom._id]: true }));
       
-      console.log('Making API call...');
-      const updatedRoom = await roomService.toggleSubRoomStatus(room._id, subRoomId);
-      console.log('API response:', updatedRoom);
+      const updatedRoom = await roomService.toggleSubRoomStatus(room._id, selectedSubRoom._id);
       
       // Update local state với dữ liệu mới từ server
       setRoom(updatedRoom);
       setSubRooms(updatedRoom.subRooms || []);
       
-      const newStatus = !currentStatus ? 'kích hoạt' : 'tắt';
-      toast.success(`Đã ${newStatus} buồng thành công`);
+      const newStatus = selectedSubRoom.isActive ? 'tắt' : 'kích hoạt';
+      toast.success(`Đã ${newStatus} buồng "${selectedSubRoom.name}" thành công!`);
+      
     } catch (error) {
       toast.error('Lỗi khi thay đổi trạng thái buồng: ' + (error.response?.data?.message || error.message));
     } finally {
       // Clear loading cho button cụ thể
-      setToggleLoadingMap(prev => ({ ...prev, [subRoomId]: false }));
+      setToggleLoadingMap(prev => ({ ...prev, [selectedSubRoom._id]: false }));
+      setShowToggleModal(false);
+      setSelectedSubRoom(null);
     }
   };
 
-  const handleDeleteSubRoom = async (subRoomId) => {
+  // Handle cancel toggle confirmation
+  const handleCancelToggle = () => {
+    setShowToggleModal(false);
+    setSelectedSubRoom(null);
+  };
+
+  // Handle show delete confirmation modal
+  const handleDeleteSubRoom = (subRoom) => {
+    setSelectedSubRoomForDelete(subRoom);
+    setShowDeleteModal(true);
+  };
+
+  // Handle confirm delete subroom
+  const handleConfirmDelete = async () => {
+    if (!selectedSubRoomForDelete) return;
+    
     try {
-      // Set loading cho button cụ thể
-      setDeleteLoadingMap(prev => ({ ...prev, [subRoomId]: true }));
-      const response = await roomService.deleteSubRoom(room._id, subRoomId);
+      setDeleteLoading(true);
+      const response = await roomService.deleteSubRoom(room._id, selectedSubRoomForDelete._id);
+      
       // Update local state với room data mới từ server
       if (response.room) {
         setRoom(response.room);
         setSubRooms(response.room.subRooms || []);
       }
       
-      toast.success(response.message || 'Đã xóa buồng thành công');
+      toast.success(`Đã xóa buồng "${selectedSubRoomForDelete.name}" thành công!`);
     } catch (error) {
       console.error('Delete error:', error);
       toast.error('Lỗi khi xóa buồng: ' + (error.response?.data?.message || error.message));
     } finally {
-      // Clear loading cho button cụ thể
-      setDeleteLoadingMap(prev => ({ ...prev, [subRoomId]: false }));
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+      setSelectedSubRoomForDelete(null);
     }
+  };
+
+  // Handle cancel delete confirmation
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setSelectedSubRoomForDelete(null);
   };
 
   const columns = [
@@ -166,51 +203,31 @@ const RoomManagement = () => {
         key: 'actions',
         render: (_, record) => (
           <Space>
-            <Switch
-              size="small"
-              checked={record.isActive}
-              loading={toggleLoadingMap[record._id]}
-              onChange={() => handleToggleSubRoomStatus(record._id, record.isActive)}
-              checkedChildren="ON"
-              unCheckedChildren="OFF"
-            />
+            <Tooltip title={record.isActive ? 'Tắt buồng' : 'Bật buồng'}>
+              <Switch
+                size="small"
+                checked={record.isActive}
+                loading={toggleLoadingMap[record._id]}
+                onChange={() => handleToggleSubRoomStatus(record)}
+                checkedChildren="Bật"
+                unCheckedChildren="Tắt"
+              />
+            </Tooltip>
             
-            <Popconfirm
-              title={`Xóa "${record.name}"?`}
-              description={
-                record.hasBeenUsed 
-                  ? " Buồng đã được sử dụng, không thể xóa" 
-                  : " Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa buồng này?"
-              }
-              onConfirm={() => handleDeleteSubRoom(record._id)}
-              disabled={record.hasBeenUsed || deleteLoadingMap[record._id]}
-              okText="Xóa"
-              cancelText="Hủy"
-              okType="danger"
-              okButtonProps={{
-                loading: deleteLoadingMap[record._id]
-              }}
-            >
+            <Tooltip title={record.hasBeenUsed ? 'Không thể xóa buồng đã sử dụng' : 'Xóa buồng'}>
               <Button
                 type="text"
                 danger
                 size="small"
                 icon={<DeleteOutlined />}
-                loading={deleteLoadingMap[record._id]}
                 disabled={record.hasBeenUsed}
+                onClick={() => handleDeleteSubRoom(record)}
               />
-            </Popconfirm>
+            </Tooltip>
           </Space>
         )
       }
   ];
-
-  const stats = {
-    total: subRooms.length,
-    active: subRooms.filter(sr => sr.isActive).length,
-    inactive: subRooms.filter(sr => !sr.isActive).length,
-    used: subRooms.filter(sr => sr.hasBeenUsed).length
-  };
 
   if (!room) {
     return <div>Loading...</div>;
@@ -218,8 +235,7 @@ const RoomManagement = () => {
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      {/* Header */}
-      <Card style={{ marginBottom: 24 }}>
+     
         <Button 
           icon={<ArrowLeftOutlined />} 
           onClick={() => navigate('/rooms')}
@@ -227,35 +243,13 @@ const RoomManagement = () => {
         >
           Quay lại danh sách
         </Button>
-        
-        <Row justify="space-between" align="middle">
-          <Col>
-            <Title level={2} style={{ margin: 0 }}>
-              <HomeOutlined style={{ marginRight: 8 }} />
-              {room.name}
-            </Title>
-            <Text type="secondary">
-              {room.hasSubRooms ? `Quản lý ${subRooms.length} buồng` : 'Phòng đơn'}
-            </Text>
-          </Col>
-          <Col>
-            <Button 
-              onClick={fetchRoomDetails}
-              loading={loading}
-              icon={<ReloadOutlined />}
-            >
-              Làm mới
-            </Button>
-          </Col>
-        </Row>
-      </Card>
 
       {/* Thông tin phòng */}
       <Card size="small" style={{ marginBottom: 16 }}>
         <Row gutter={16}>
           <Col span={12}>
             <Text strong>
-              <EnvironmentOutlined /> {room.name}
+              <EnvironmentOutlined /> {room.name} ({room.hasSubRooms ? `${subRooms.length} buồng` : 'Phòng đơn'})
             </Text>
           </Col>
           <Col span={12} style={{ textAlign: 'right' }}>
@@ -269,48 +263,6 @@ const RoomManagement = () => {
       {/* Hiển thị thông tin phù hợp với loại phòng */}
       {room.hasSubRooms ? (
         <>
-          {/* Thống kê cho phòng có buồng con */}
-          <Row gutter={16} style={{ marginBottom: 16 }}>
-            <Col span={6}>
-              <Card size="small">
-                <Statistic
-                  title="Tổng buồng"
-                  value={stats.total}
-                  prefix={<HomeOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card size="small">
-                <Statistic
-                  title="Hoạt động"
-                  value={stats.active}
-                  valueStyle={{ color: '#3f8600' }}
-                  prefix={<CheckCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card size="small">
-                <Statistic
-                  title="Không hoạt động"
-                  value={stats.inactive}
-                  valueStyle={{ color: '#cf1322' }}
-                  prefix={<CloseCircleOutlined />}
-                />
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card size="small">
-                <Statistic
-                  title="Đã sử dụng"
-                  value={stats.used}
-                  valueStyle={{ color: '#fa8c16' }}
-                />
-              </Card>
-            </Col>
-          </Row>
-
           {/* Thêm buồng mới */}
           <Card 
             title="Thêm buồng mới"
@@ -409,6 +361,104 @@ const RoomManagement = () => {
           </Row>
         </Card>
       )}
+
+      {/* Toggle Status Modal */}
+      <Modal
+        title="Xác nhận thay đổi trạng thái buồng"
+        open={showToggleModal}
+        onOk={handleConfirmToggle}
+        onCancel={handleCancelToggle}
+        okText={selectedSubRoom?.isActive ? 'Tắt buồng' : 'Bật buồng'}
+        cancelText="Hủy"
+        okType={selectedSubRoom?.isActive ? 'danger' : 'primary'}
+        confirmLoading={selectedSubRoom ? toggleLoadingMap[selectedSubRoom._id] : false}
+        centered
+      >
+        {selectedSubRoom && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: selectedSubRoom.isActive ? '#ff4d4f' : '#52c41a' }}>
+                {selectedSubRoom.isActive ? 'TẮT' : 'BẬT'}
+              </strong>
+              {' '}buồng{' '}
+              <strong>"{selectedSubRoom.name}"</strong>?
+            </p>
+            {selectedSubRoom.isActive && (
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#fff2e8', 
+                borderLeft: '4px solid #ff7a00',
+                borderRadius: '4px',
+                marginTop: '12px'
+              }}>
+                <p style={{ margin: 0, color: '#d46b08', fontSize: '12px' }}>
+                   Buồng sẽ không còn khả dụng cho việc đặt lịch và sắp xếp bệnh nhân.
+                </p>
+              </div>
+            )}
+            {!selectedSubRoom.isActive && (
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#f6ffed', 
+                borderLeft: '4px solid #52c41a',
+                borderRadius: '4px',
+                marginTop: '12px'
+              }}>
+                <p style={{ margin: 0, color: '#389e0d', fontSize: '12px' }}>
+                   Buồng sẽ được kích hoạt và sẵn sàng phục vụ bệnh nhân.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Xác nhận xóa buồng"
+        open={showDeleteModal}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        okText="Xóa buồng"
+        cancelText="Hủy"
+        okType="danger"
+        confirmLoading={deleteLoading}
+        centered
+      >
+        {selectedSubRoomForDelete && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: '#ff4d4f' }}>XÓA</strong>
+              {' '}buồng{' '}
+              <strong>"{selectedSubRoomForDelete.name}"</strong>?
+            </p>
+            
+            <div style={{ 
+              backgroundColor: '#fff2f0', 
+              padding: '12px', 
+              borderRadius: '6px', 
+              border: '1px solid #ffccc7', 
+              marginTop: '16px' 
+            }}>
+              {selectedSubRoomForDelete.hasBeenUsed && (
+                <p style={{ color: '#ff4d4f', fontSize: '12px', margin: '0 0 8px 0' }}>
+                   <strong>Buồng đã được sử dụng</strong> 
+                </p>
+              )}
+              
+              <p style={{ color: '#ff4d4f', fontSize: '12px', margin: 0 }}>
+                 <strong>Hành động này không thể hoàn tác!</strong>
+              </p>
+            </div>
+
+            <p style={{ marginTop: '16px', fontSize: '13px', color: '#666' }}>
+              Nếu bạn chỉ muốn tạm thời ngưng sử dụng buồng, hãy <strong>TẮT</strong> thay vì xóa.
+            </p>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
