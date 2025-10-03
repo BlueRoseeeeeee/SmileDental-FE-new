@@ -28,6 +28,18 @@ export const authService = {
     const response = await authApi.post('/auth/login', credentials);
     const { accessToken, refreshToken, user } = response.data;
     
+    // Kiểm tra trạng thái tài khoản
+    if (!user.isActive) {
+      // Import và hiển thị toast ngay lập tức
+      const { toast } = await import('./toastService.js');
+      toast.error('Tài khoản đã bị tạm khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+      
+      // Throw error đặc biệt để AuthContext biết không cần hiển thị Alert
+      const error = new Error('ACCOUNT_DISABLED');
+      error.isAccountDisabled = true;
+      throw error;
+    }
+    
     // Save tokens and user info to localStorage
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);

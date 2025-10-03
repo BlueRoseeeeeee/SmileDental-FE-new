@@ -120,7 +120,7 @@ const Login = () => {
       }
       
       navigate('/dashboard');
-    } catch (err) {
+    } catch {
       // Error is handled by AuthContext
     }
   };
@@ -265,6 +265,8 @@ const Login = () => {
                 onClose={clearError}
               />
             )}
+
+
 
             {/* Login Form */}
             <Form

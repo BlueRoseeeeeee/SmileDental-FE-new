@@ -45,6 +45,21 @@ const ProtectedRoute = ({ children, roles = [] }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Check if user account is active
+  if (!user.isActive) {
+    // Clear auth data and show toast notification
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    
+    // Import toast service and show notification
+    import('../../services/toastService.js').then(({ toast }) => {
+      toast.error('Tài khoản đã bị tạm khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+    });
+    
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
   // Check if user has required role
   if (roles.length > 0 && !roles.includes(user.role)) {
     return <Navigate to="/unauthorized" replace />;

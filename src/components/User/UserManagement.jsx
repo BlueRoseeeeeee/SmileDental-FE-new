@@ -14,7 +14,7 @@ import {
   Tag, 
   Modal, 
   Form, 
- 
+  Switch,
   Popconfirm,
   Avatar,
   Row,
@@ -79,8 +79,10 @@ const UserManagement = () => {
   const [localLoading, setLocalLoading] = useState(false);
   const [formData, setFormData] = useState({}); // Lưu dữ liệu từ các steps
 
-
-
+  // Toggle confirmation modal states
+  const [showToggleModal, setShowToggleModal] = useState(false);
+  const [selectedUserForToggle, setSelectedUserForToggle] = useState(null);
+  const [toggleLoading, setToggleLoading] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -154,6 +156,40 @@ const UserManagement = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Xóa người dùng thất bại');
     }
+  };
+
+  // Handle show toggle confirmation modal
+  const handleToggleStatus = (user) => {
+    setSelectedUserForToggle(user);
+    setShowToggleModal(true);
+  };
+
+  // Handle confirm toggle user status
+  const handleConfirmToggle = async () => {
+    if (!selectedUserForToggle) return;
+    
+    try {
+      setToggleLoading(true);
+      await userService.toggleUserStatus(selectedUserForToggle._id);
+      const newStatus = selectedUserForToggle.isActive ? 'khóa tài khoản' : 'mở khóa tài khoản';
+      toast.success(`Đã ${newStatus} nhân viên "${selectedUserForToggle.fullName}" thành công!`);
+      
+      // Reload users để cập nhật UI
+      loadUsers();
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      toast.error('Lỗi khi thay đổi trạng thái nhân viên!');
+    } finally {
+      setToggleLoading(false);
+      setShowToggleModal(false);
+      setSelectedUserForToggle(null);
+    }
+  };
+
+  // Handle cancel toggle confirmation
+  const handleCancelToggle = () => {
+    setShowToggleModal(false);
+    setSelectedUserForToggle(null);
   };
 
   const handleUpdate = async (values) => {
@@ -243,9 +279,9 @@ const UserManagement = () => {
 
   const getStatusTag = (isActive) => {
     return isActive ? (
-      <Tag color="green" style={{ fontSize: '16px' }}>Hoạt động</Tag>
+      <Tag color="green" style={{ fontSize: '16px' }}>Đang làm việc</Tag>
     ) : (
-      <Tag color="red" style={{ fontSize: '16px' }}>Không hoạt động</Tag>
+      <Tag color="red" style={{ fontSize: '16px' }}>Đã nghỉ việc</Tag>
     );
   };
 
@@ -326,6 +362,15 @@ const UserManagement = () => {
               type="text" 
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
+            />
+          </Tooltip>
+          <Tooltip title={record.isActive ? 'Nhân viên nghỉ việc (Khóa tài khoản)' : 'Mở khóa tài khoản'}>
+            <Switch
+              size="small"
+              checked={record.isActive}
+              onChange={() => handleToggleStatus(record)}
+              checkedChildren="Bật"
+              unCheckedChildren="Tắt"
             />
           </Tooltip>
           <Popconfirm
@@ -846,6 +891,73 @@ const UserManagement = () => {
                 )}
               </Form>
         </div>
+      </Modal>
+
+      {/* Toggle Status Modal */}
+      <Modal
+        title={`${selectedUserForToggle?.isActive ? 'Khóa tài khoản nhân viên' : 'Mở khóa tài khoản nhân viên'}`}
+        visible={showToggleModal}
+        onOk={handleConfirmToggle}
+        onCancel={handleCancelToggle}
+        confirmLoading={toggleLoading}
+        okText="Xác nhận"
+        cancelText="Hủy bỏ"
+        okType={selectedUserForToggle?.isActive ? 'danger' : 'primary'}
+        centered
+        width={520}
+      >
+        <p style={{ fontSize: '16px', lineHeight: '1.6' }}>
+          {selectedUserForToggle?.isActive ? (
+            <>
+              Bạn có chắc chắn muốn <strong style={{ color: '#ff4d4f' }}>khóa tài khoản</strong> của nhân viên{' '}
+              <strong>{selectedUserForToggle?.employeeCode}| {selectedUserForToggle?.fullName}</strong> ?
+            </>
+          ) : (
+            <>
+              Bạn có chắc chắn muốn <strong style={{ color: '#52c41a' }}>mở khóa tài khoản</strong> của nhân viên{' '}
+              <strong>{selectedUserForToggle?.employeeCode}| {selectedUserForToggle?.fullName}</strong>
+              ?
+            </>
+          )}
+        </p>
+        
+        {selectedUserForToggle?.isActive && (
+          <div style={{ 
+            padding: '16px', 
+            backgroundColor: '#fff2e8', 
+            borderLeft: '4px solid #ff7a00',
+            borderRadius: '6px',
+            marginTop: '16px'
+          }}>
+            <p style={{ margin: 0, color: '#d46b08', fontWeight: '500' }}>
+             <strong>Lưu ý:</strong> Nhân viên này sẽ:
+            </p>
+            <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#d46b08' }}>
+              <li>Không thể đăng nhập vào hệ thống</li>
+              <li>Mất quyền truy cập tất cả chức năng</li>
+              <li>Trạng thái chuyển thành "Đã nghỉ việc"</li>
+            </ul>
+          </div>
+        )}
+        
+        {!selectedUserForToggle?.isActive && (
+          <div style={{ 
+            padding: '16px', 
+            backgroundColor: '#f6ffed', 
+            borderLeft: '4px solid #52c41a',
+            borderRadius: '6px',
+            marginTop: '16px'
+          }}>
+            <p style={{ margin: 0, color: '#389e0d', fontWeight: '500' }}>
+              <strong>Nhân viên này sẽ:</strong>
+            </p>
+            <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#389e0d' }}>
+              <li>Có thể đăng nhập vào hệ thống</li>
+              <li>Được khôi phục quyền truy cập đầy đủ</li>
+              <li>Trạng thái chuyển thành "Đang làm việc"</li>
+            </ul>
+          </div>
+        )}
       </Modal>
 
     </div>

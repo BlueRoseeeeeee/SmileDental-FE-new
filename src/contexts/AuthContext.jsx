@@ -59,7 +59,10 @@ export const AuthProvider = ({ children }) => {
       
       return response;
     } catch (error) {
-      setError(error.response?.data?.message || 'Đăng nhập thất bại');
+      // Không hiển thị Alert nếu là lỗi tài khoản bị khóa (đã có toast)
+      if (!error.isAccountDisabled) {
+        setError(error.response?.data?.message || error.message || 'Đăng nhập thất bại');
+      }
       setLoading(false);
       throw error;
     }
