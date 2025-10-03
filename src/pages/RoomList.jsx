@@ -263,10 +263,10 @@ const RoomList = () => {
             title={`Xóa phòng "${record.name}"?`}
             description={
               record.hasBeenUsed 
-                ? "⚠️ Phòng đã được sử dụng. Việc xóa có thể ảnh hưởng đến dữ liệu lịch sử. Bạn có chắc chắn?" 
+                ? "Phòng đã được sử dụng. Việc xóa có thể ảnh hưởng đến dữ liệu lịch sử. Bạn có chắc chắn?" 
                 : record.hasSubRooms 
-                  ? `🗑️ Phòng này có ${record.subRooms?.length || 0} buồng con. Tất cả sẽ bị xóa và không thể hoàn tác.`
-                  : "🗑️ Hành động này không thể hoàn tác. Bạn có chắc chắn?"
+                  ? ` Phòng này có ${record.subRooms?.length || 0} buồng con. Tất cả sẽ bị xóa và không thể hoàn tác.`
+                  : " Hành động này không thể hoàn tác. Bạn có chắc chắn?"
             }
             onConfirm={() => handleDeleteRoom(record._id)}
             okText="Xóa"
@@ -343,16 +343,6 @@ const RoomList = () => {
             </div>
           </Col>
         </Row>
-        {(searchTerm || statusFilter || typeFilter) && (
-          <div style={{ marginTop: 16, padding: '8px 12px', backgroundColor: '#f6f8fa', borderRadius: 6 }}>
-            <Text type="secondary">
-              Hiển thị {filteredRooms.length} / {rooms.length} phòng
-              {searchTerm && ` • Tìm kiếm: "${searchTerm}"`}
-              {statusFilter && ` • Trạng thái: ${statusFilter === 'true' ? 'Hoạt động' : 'Không hoạt động'}`}
-              {typeFilter && ` • Loại: ${typeFilter === 'true' ? 'Có phòng con' : 'Phòng đơn'}`}
-            </Text>
-          </div>
-        )}
       </Card>
 
       {/* Button Add */}

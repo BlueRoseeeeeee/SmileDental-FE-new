@@ -3,7 +3,7 @@
  * Giao diện quản lý dịch vụ nha khoa
  * @author: HoTram  
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Table, 
   Card, 
@@ -17,7 +17,8 @@ import {
   Space,
   Statistic,
   Badge,
-  Switch
+  Switch,
+  Select
 } from 'antd';
 import {
   SearchOutlined,
@@ -26,6 +27,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
+import { searchAndFilter, debounce } from '../utils/searchUtils';
 
 const { Title, Text } = Typography;
 
@@ -41,6 +43,33 @@ const ServiceList = () => {
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
   });
+
+  // Search & Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  // Filtered data using searchUtils
+  const filteredServices = useMemo(() => {
+    const searchFields = ['name', 'description'];
+    const filters = {};
+
+    if (statusFilter !== '') {
+      filters.isActive = statusFilter === 'true';
+    }
+
+    return searchAndFilter(services, searchTerm, searchFields, filters);
+  }, [services, searchTerm, statusFilter]);
+
+  // Debounced search function
+  const debouncedSearch = useMemo(
+    () => debounce((term) => {
+      setSearchTerm(term);
+      if (!term) {
+        setPagination(prev => ({ ...prev, current: 1 }));
+      }
+    }, 300),
+    []
+  );
 
   // Load services data
   const loadServices = async (page = 1, limit = 10) => {
@@ -66,15 +95,9 @@ const ServiceList = () => {
     loadServices();
   }, []);
 
-  // Handle table pagination change
-  const handleTableChange = (pagination) => {
-    loadServices(pagination.current, pagination.pageSize);
-  };
-
-  // Handle search (placeholder for future implementation)
+  // Handle search 
   const handleSearch = (value) => {
-    // TODO: Implement search when API supports it
-    console.log('Search:', value);
+    debouncedSearch(value);
   };
 
   // Handle toggle service status
@@ -242,12 +265,22 @@ const ServiceList = () => {
           </Col>
           <Col xs={24} md={8}>
             <div>
-              <Text style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Trạng thái</Text>
-              <Input
-                placeholder="Lọc theo trạng thái..."
+              <Text style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Lọc theo trạng thái</Text>
+              <Select
+                placeholder="Chọn trạng thái"
                 allowClear
-                disabled
-              />
+                value={statusFilter}
+                onChange={(value) => {
+                  setStatusFilter(value || '');
+                  if (!value) {
+                    setPagination(prev => ({ ...prev, current: 1 }));
+                  }
+                }}
+                style={{ width: '100%' }}
+              >
+                <Select.Option value="true">Hoạt động</Select.Option>
+                <Select.Option value="false">Ngưng hoạt động</Select.Option>
+              </Select>
             </div>
           </Col>
         </Row>
@@ -273,17 +306,28 @@ const ServiceList = () => {
         </div>
         <Table
           columns={columns}
-          dataSource={services}
+          dataSource={filteredServices}
           rowKey="_id"
           loading={loading}
-          pagination={{
-            ...pagination,
-            onChange: handleTableChange,
-            onShowSizeChange: handleTableChange,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
-          }}
+          pagination={
+            (searchTerm || statusFilter) 
+              ? false 
+              : {
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
+                  onChange: (page, pageSize) => {
+                    setPagination(prev => ({
+                      ...prev,
+                      current: page,
+                      pageSize: pageSize || 10
+                    }));
+                  }
+                }
+          }
           scroll={{ x: 1000 }}
           size="middle"
         />
