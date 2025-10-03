@@ -84,6 +84,11 @@ const UserManagement = () => {
   const [selectedUserForToggle, setSelectedUserForToggle] = useState(null);
   const [toggleLoading, setToggleLoading] = useState(false);
 
+  // Delete confirmation modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedUserForDelete, setSelectedUserForDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   useEffect(() => {
     loadUsers();
   }, [pagination.current, pagination.pageSize]);
@@ -148,14 +153,34 @@ const UserManagement = () => {
     navigate(`/users/detail/${user._id}`);
   };
 
-  const handleDelete = async (userId) => {
+  // Handle show delete confirmation modal
+  const handleDelete = (user) => {
+    setSelectedUserForDelete(user);
+    setShowDeleteModal(true);
+  };
+
+  // Handle confirm delete user
+  const handleConfirmDelete = async () => {
+    if (!selectedUserForDelete) return;
+    
     try {
-      await userService.deleteUser(userId);
-      toast.success('Xóa người dùng thành công');
+      setDeleteLoading(true);
+      await userService.deleteUser(selectedUserForDelete._id);
+      toast.success(`Đã xóa nhân viên "${selectedUserForDelete.fullName}" thành công!`);
       loadUsers();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Xóa người dùng thất bại');
+      toast.error(error.response?.data?.message || 'Xóa nhân viên thất bại');
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+      setSelectedUserForDelete(null);
     }
+  };
+
+  // Handle cancel delete confirmation
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setSelectedUserForDelete(null);
   };
 
   // Handle show toggle confirmation modal
@@ -369,25 +394,18 @@ const UserManagement = () => {
               size="small"
               checked={record.isActive}
               onChange={() => handleToggleStatus(record)}
-              checkedChildren="Bật"
-              unCheckedChildren="Tắt"
+              checkedChildren="Mở"
+              unCheckedChildren="Khóa"
             />
           </Tooltip>
-          <Popconfirm
-            title="Xóa người dùng"
-            description="Bạn có chắc chắn muốn xóa người dùng này?"
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Tooltip title="Xóa">
-              <Button 
-                type="text" 
-                danger 
-                icon={<DeleteOutlined />}
-              />
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title="Xóa nhân viên">
+            <Button 
+              type="text" 
+              danger 
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record)}
+            />
+          </Tooltip>
         </Space>
       )
     }
@@ -956,6 +974,57 @@ const UserManagement = () => {
               <li>Được khôi phục quyền truy cập đầy đủ</li>
               <li>Trạng thái chuyển thành "Đang làm việc"</li>
             </ul>
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Xác nhận xóa nhân viên"
+        visible={showDeleteModal}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        confirmLoading={deleteLoading}
+        okText="Xóa nhân viên"
+        cancelText="Hủy bỏ"
+        okType="danger"
+        centered
+        width={520}
+      >
+        {selectedUserForDelete && (
+          <div>
+            <p style={{ fontSize: '16px', lineHeight: '1.6' }}>
+              Bạn có chắc chắn muốn <strong style={{ color: '#ff4d4f' }}>xóa nhân viên</strong>{' '}
+              <strong>{selectedUserForDelete.employeeCode} | {selectedUserForDelete.fullName}</strong>
+              ?
+            </p>
+            
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: '#fff2f0', 
+              borderLeft: '4px solid #ff4d4f',
+              borderRadius: '6px',
+              marginTop: '16px'
+            }}>
+              <p style={{ margin: 0, color: '#cf1322', fontWeight: '500' }}>
+                 <strong>Cảnh báo:</strong> Hành động này không thể hoàn tác!
+              </p>
+              <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#cf1322' }}>
+                <li>Tất cả dữ liệu của nhân viên sẽ bị xóa vĩnh viễn</li>
+              </ul>
+            </div>
+            
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: '#f6ffed', 
+              borderLeft: '4px solid #52c41a',
+              borderRadius: '6px',
+              marginTop: '12px'
+            }}>
+              <p style={{ margin: 0, color: '#389e0d', fontSize: '14px' }}>
+                 <strong>Gợi ý:</strong> Nếu chỉ muốn tạm ngưng làm việc, hãy sử dụng chức năng "Khóa tài khoản" thay vì xóa.
+              </p>
+            </div>
           </div>
         )}
       </Modal>
