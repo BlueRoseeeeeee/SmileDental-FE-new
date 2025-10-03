@@ -24,6 +24,7 @@ import CertificateManagement from './components/User/CertificateManagement.jsx';
 import ChangePassword from './components/Auth/ChangePassword.jsx';
 import RoomList from './pages/RoomList.jsx';
 import RoomManagement from './pages/RoomManagement.jsx';
+import ServiceList from './pages/ServiceList.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -31,7 +32,6 @@ import {
   LockOutlined, 
   SettingOutlined,
   CalendarOutlined,
-  FileTextOutlined,
   HeartOutlined,
   ClockCircleOutlined,
   TeamOutlined
@@ -123,6 +123,13 @@ function App() {
             <Route path="rooms/:roomId" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <RoomManagement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Service Management (Admin/Manager only) */}
+            <Route path="services" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ServiceList />
               </ProtectedRoute>
             } />
             
