@@ -446,7 +446,7 @@ const UserManagement = () => {
       <Card>
       <div style={{marginBottom:16, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
       <div style={{display:'flex', gap:10}}>
-        <UserSwitchOutlined/>
+        <UserSwitchOutlined style={{fontSize: 18, color: '#1890ff'}}/>
         <Title level={4} style={{margin:0, fontSize:16}}>Danh sách nhân viên</Title>
       </div>  
         <Button 
