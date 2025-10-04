@@ -28,7 +28,7 @@ import {
   SearchOutlined,
   EnvironmentOutlined,
   HomeOutlined,
-  SettingOutlined
+  SettingOutlined,
 } from '@ant-design/icons';
 import roomService from '../services/roomService';
 import RoomFormModal from '../components/Room/RoomFormModal';
@@ -386,6 +386,22 @@ const RoomList = () => {
 
       {/* Button Add */}
       <div style={{ marginBottom: 24, textAlign: 'right' }}>
+        {/* <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleCreateRoom}
+        >
+          Thêm phòng mới
+        </Button> */}
+      </div>
+
+      {/* Bảng danh sách */}
+      <Card >
+      <div style={{marginBottom:16, display:'flex', alignItems:'center', gap:12, justifyContent:'space-between'}}>
+      <div style={{display:'flex', alignItems:'center', gap:7}}>
+      <EnvironmentOutlined style={{fontSize:18, color:'#1890ff'}} />
+        <Title level={4} style={{fontSize:16, margin:0}}>Danh sách phòng</Title>
+      </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -393,10 +409,8 @@ const RoomList = () => {
         >
           Thêm phòng mới
         </Button>
-      </div>
 
-      {/* Bảng danh sách */}
-      <Card title="Danh sách phòng khám">
+      </div>
         <Table
           columns={columns}
           dataSource={filteredRooms}
