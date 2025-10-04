@@ -21,6 +21,10 @@ const MICROSERVICES_CONFIG = {
   user: {
     baseURL: import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api',
     timeout: 12000, // 12s - User data + file upload
+  },
+  schedule: {
+    baseURL: import.meta.env.VITE_SCHEDULE_API_URL || 'http://localhost:3005/api',
+    timeout: 10000, 
   }
 };
 
@@ -113,6 +117,7 @@ export const authApi = getApiInstance('auth');
 export const roomApi = getApiInstance('room');
 export const serviceApi = getApiInstance('service');
 export const userApi = getApiInstance('user');
+export const scheduleApi = getApiInstance('schedule');
 
 export default {
   getApiInstance,
@@ -120,4 +125,5 @@ export default {
   roomApi,
   serviceApi,
   userApi,
+  scheduleApi,
 };
