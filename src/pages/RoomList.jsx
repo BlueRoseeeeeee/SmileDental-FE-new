@@ -384,17 +384,6 @@ const RoomList = () => {
         </Row>
       </Card>
 
-      {/* Button Add */}
-      <div style={{ marginBottom: 24, textAlign: 'right' }}>
-        {/* <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleCreateRoom}
-        >
-          Thêm phòng mới
-        </Button> */}
-      </div>
-
       {/* Bảng danh sách */}
       <Card >
       <div style={{marginBottom:16, display:'flex', alignItems:'center', gap:12, justifyContent:'space-between'}}>

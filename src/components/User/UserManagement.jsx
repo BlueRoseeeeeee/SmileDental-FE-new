@@ -15,7 +15,6 @@ import {
   Modal, 
   Form, 
   Switch,
-  Popconfirm,
   Avatar,
   Row,
   Col,
@@ -26,6 +25,7 @@ import {
   DatePicker
 } from 'antd';
 import { 
+  UserSwitchOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined
 } from '@ant-design/icons';
@@ -442,8 +442,13 @@ const UserManagement = () => {
         }}
       />
 
-      {/* Action Buttons */}
-      <div style={{ marginBottom: '24px', textAlign: 'right' }}>
+      {/* Users Table */}
+      <Card>
+      <div style={{marginBottom:16, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+      <div style={{display:'flex', gap:10}}>
+        <UserSwitchOutlined/>
+        <Title level={4} style={{margin:0, fontSize:16}}>Danh sách nhân viên</Title>
+      </div>  
         <Button 
           type="primary" 
           icon={<PlusOutlined />}
@@ -464,9 +469,6 @@ const UserManagement = () => {
           Thêm nhân viên
         </Button>
       </div>
-
-      {/* Users Table */}
-      <Card>
         <Table
           columns={columns}
           dataSource={filteredUsers}
