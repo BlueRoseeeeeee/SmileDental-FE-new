@@ -128,6 +128,28 @@ const DashboardLayout = () => {
           key: '/schedules',
           icon: <ClockCircleOutlined />,
           label: 'Quản lý lịch làm việc',
+          children: [
+            {
+              key: '/schedules',
+              label: 'Cấu hình hệ thống',
+            },
+            {
+              key: '/schedules/management',
+              label: 'Quản lý lịch chính',
+            },
+            {
+              key: '/schedules/staff',
+              label: 'Phân công nhân viên',
+            },
+            {
+              key: '/schedules/holidays',
+              label: 'Quản lý ngày nghỉ lễ',
+            },
+            {
+              key: '/schedules/auto',
+              label: 'Tự động tạo lịch',
+            }
+          ]
         }
       );
     }
