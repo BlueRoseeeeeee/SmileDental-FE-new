@@ -37,10 +37,13 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
         ...config,
         morningStartTime: config.morningShift?.startTime ? dayjs(config.morningShift.startTime, 'HH:mm') : null,
         morningEndTime: config.morningShift?.endTime ? dayjs(config.morningShift.endTime, 'HH:mm') : null,
+        morningActive: config.morningShift?.isActive || false,
         afternoonStartTime: config.afternoonShift?.startTime ? dayjs(config.afternoonShift.startTime, 'HH:mm') : null,
         afternoonEndTime: config.afternoonShift?.endTime ? dayjs(config.afternoonShift.endTime, 'HH:mm') : null,
+        afternoonActive: config.afternoonShift?.isActive || false,
         eveningStartTime: config.eveningShift?.startTime ? dayjs(config.eveningShift.startTime, 'HH:mm') : null,
         eveningEndTime: config.eveningShift?.endTime ? dayjs(config.eveningShift.endTime, 'HH:mm') : null,
+        eveningActive: config.eveningShift?.isActive || false,
       };
       form.setFieldsValue(formData);
     }
@@ -56,19 +59,19 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
           name: "Ca Sáng",
           startTime: values.morningStartTime?.format('HH:mm') || '07:00',
           endTime: values.morningEndTime?.format('HH:mm') || '12:00',
-          isActive: values.morningActive !== false
+          isActive: values.morningActive === true
         },
         afternoonShift: {
           name: "Ca Chiều", 
           startTime: values.afternoonStartTime?.format('HH:mm') || '13:00',
           endTime: values.afternoonEndTime?.format('HH:mm') || '17:00',
-          isActive: values.afternoonActive !== false
+          isActive: values.afternoonActive === true
         },
         eveningShift: {
           name: "Ca Tối",
           startTime: values.eveningStartTime?.format('HH:mm') || '18:00', 
           endTime: values.eveningEndTime?.format('HH:mm') || '22:00',
-          isActive: values.eveningActive !== false
+          isActive: values.eveningActive === true
         },
         unitDuration: values.unitDuration || 15,
         maxBookingDays: values.maxBookingDays || 30
@@ -88,10 +91,13 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
         ...config,
         morningStartTime: config.morningShift?.startTime ? dayjs(config.morningShift.startTime, 'HH:mm') : null,
         morningEndTime: config.morningShift?.endTime ? dayjs(config.morningShift.endTime, 'HH:mm') : null,
+        morningActive: config.morningShift?.isActive || false,
         afternoonStartTime: config.afternoonShift?.startTime ? dayjs(config.afternoonShift.startTime, 'HH:mm') : null,
         afternoonEndTime: config.afternoonShift?.endTime ? dayjs(config.afternoonShift.endTime, 'HH:mm') : null,
+        afternoonActive: config.afternoonShift?.isActive || false,
         eveningStartTime: config.eveningShift?.startTime ? dayjs(config.eveningShift.startTime, 'HH:mm') : null,
         eveningEndTime: config.eveningShift?.endTime ? dayjs(config.eveningShift.endTime, 'HH:mm') : null,
+        eveningActive: config.eveningShift?.isActive || false,
       };
       form.setFieldsValue(formData);
     }
@@ -126,7 +132,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
             <Col span={4}>
               <Text strong>Ca Sáng</Text>
             </Col>
-            <Col span={6}>
+            <Col span={7}>
               <Form.Item 
                 name="morningStartTime" 
                 label="Giờ bắt đầu"
@@ -139,7 +145,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={7}>
               <Form.Item 
                 name="morningEndTime" 
                 label="Giờ kết thúc"
@@ -152,13 +158,14 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 />
               </Form.Item>
             </Col>
-            <Col span={4}>
-              <Form.Item name="morningActive" valuePropName="checked">
+            <Col span={6}>
+              <Form.Item 
+                name="morningActive" 
+                label="Trạng thái"
+                valuePropName="checked"
+              >
                 <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
               </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Text type="secondary">Trạng thái</Text>
             </Col>
           </Row>
         </Card>
@@ -169,7 +176,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
             <Col span={4}>
               <Text strong>Ca Chiều</Text>
             </Col>
-            <Col span={6}>
+            <Col span={7}>
               <Form.Item 
                 name="afternoonStartTime" 
                 label="Giờ bắt đầu"
@@ -182,7 +189,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={7}>
               <Form.Item 
                 name="afternoonEndTime" 
                 label="Giờ kết thúc"
@@ -195,13 +202,14 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 />
               </Form.Item>
             </Col>
-            <Col span={4}>
-              <Form.Item name="afternoonActive" valuePropName="checked">
+            <Col span={6}>
+              <Form.Item 
+                name="afternoonActive" 
+                label="Trạng thái"
+                valuePropName="checked"
+              >
                 <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
               </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Text type="secondary">Trạng thái</Text>
             </Col>
           </Row>
         </Card>
@@ -212,7 +220,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
             <Col span={4}>
               <Text strong>Ca Tối</Text>
             </Col>
-            <Col span={6}>
+            <Col span={7}>
               <Form.Item 
                 name="eveningStartTime" 
                 label="Giờ bắt đầu"
@@ -225,7 +233,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={7}>
               <Form.Item 
                 name="eveningEndTime" 
                 label="Giờ kết thúc"
@@ -238,13 +246,14 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 />
               </Form.Item>
             </Col>
-            <Col span={4}>
-              <Form.Item name="eveningActive" valuePropName="checked">
+            <Col span={6}>
+              <Form.Item 
+                name="eveningActive" 
+                label="Trạng thái"
+                valuePropName="checked"
+              >
                 <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
               </Form.Item>
-            </Col>
-            <Col span={4}>
-              <Text type="secondary">Trạng thái</Text>
             </Col>
           </Row>
         </Card>
@@ -310,7 +319,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
             onClick={handleReset}
             size="large"
           >
-            Khôi phục
+            Hủy bỏ
           </Button>
         </Space>
       </Form>
