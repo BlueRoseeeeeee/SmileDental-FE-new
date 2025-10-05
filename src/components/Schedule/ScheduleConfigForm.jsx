@@ -16,7 +16,8 @@ import {
   Divider,
   Space,
   Typography,
-  Alert
+  Alert,
+  Popconfirm
 } from 'antd';
 import { 
   ClockCircleOutlined, 
@@ -30,6 +31,11 @@ const { Title, Text } = Typography;
 const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [switchStates, setSwitchStates] = useState({
+    morningActive: true,
+    afternoonActive: true,
+    eveningActive: true
+  });
 
   useEffect(() => {
     if (config) {
@@ -46,6 +52,13 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
         eveningActive: config.eveningShift?.isActive || false,
       };
       form.setFieldsValue(formData);
+      
+      // Sync switch states
+      setSwitchStates({
+        morningActive: config.morningShift?.isActive || false,
+        afternoonActive: config.afternoonShift?.isActive || false,
+        eveningActive: config.eveningShift?.isActive || false,
+      });
     }
   }, [config, form]);
 
@@ -100,7 +113,23 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
         eveningActive: config.eveningShift?.isActive || false,
       };
       form.setFieldsValue(formData);
+      
+      // Reset switch states
+      setSwitchStates({
+        morningActive: config.morningShift?.isActive || false,
+        afternoonActive: config.afternoonShift?.isActive || false,
+        eveningActive: config.eveningShift?.isActive || false,
+      });
     }
+  };
+
+  const handleSwitchChange = (shiftName, checked) => {
+    const newStates = { ...switchStates };
+    newStates[shiftName] = checked;
+    setSwitchStates(newStates);
+    
+    // Update form value
+    form.setFieldValue(shiftName, checked);
   };
 
   return (
@@ -164,7 +193,22 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 label="Trạng thái"
                 valuePropName="checked"
               >
-                <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                <Popconfirm
+                  title={switchStates.morningActive ? "Tắt ca sáng" : "Bật ca sáng"}
+                  description={switchStates.morningActive 
+                    ? "Bạn có chắc chắn muốn tắt ca sáng? Điều này sẽ ảnh hưởng đến lịch làm việc."
+                    : "Bạn có chắc chắn muốn bật ca sáng?"
+                  }
+                  onConfirm={() => handleSwitchChange('morningActive', !switchStates.morningActive)}
+                  okText="Xác nhận"
+                  cancelText="Hủy"
+                >
+                  <Switch 
+                    checked={switchStates.morningActive}
+                    checkedChildren="Bật" 
+                    unCheckedChildren="Tắt" 
+                  />
+                </Popconfirm>
               </Form.Item>
             </Col>
           </Row>
@@ -208,7 +252,22 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 label="Trạng thái"
                 valuePropName="checked"
               >
-                <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                <Popconfirm
+                  title={switchStates.afternoonActive ? "Tắt ca chiều" : "Bật ca chiều"}
+                  description={switchStates.afternoonActive 
+                    ? "Bạn có chắc chắn muốn tắt ca chiều? Điều này sẽ ảnh hưởng đến lịch làm việc."
+                    : "Bạn có chắc chắn muốn bật ca chiều?"
+                  }
+                  onConfirm={() => handleSwitchChange('afternoonActive', !switchStates.afternoonActive)}
+                  okText="Xác nhận"
+                  cancelText="Hủy"
+                >
+                  <Switch 
+                    checked={switchStates.afternoonActive}
+                    checkedChildren="Bật" 
+                    unCheckedChildren="Tắt" 
+                  />
+                </Popconfirm>
               </Form.Item>
             </Col>
           </Row>
@@ -252,7 +311,22 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 label="Trạng thái"
                 valuePropName="checked"
               >
-                <Switch checkedChildren="Bật" unCheckedChildren="Tắt" />
+                <Popconfirm
+                  title={switchStates.eveningActive ? "Tắt ca tối" : "Bật ca tối"}
+                  description={switchStates.eveningActive 
+                    ? "Bạn có chắc chắn muốn tắt ca tối? Điều này sẽ ảnh hưởng đến lịch làm việc."
+                    : "Bạn có chắc chắn muốn bật ca tối?"
+                  }
+                  onConfirm={() => handleSwitchChange('eveningActive', !switchStates.eveningActive)}
+                  okText="Xác nhận"
+                  cancelText="Hủy"
+                >
+                  <Switch 
+                    checked={switchStates.eveningActive}
+                    checkedChildren="Bật" 
+                    unCheckedChildren="Tắt" 
+                  />
+                </Popconfirm>
               </Form.Item>
             </Col>
           </Row>
