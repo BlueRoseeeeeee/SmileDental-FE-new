@@ -7,8 +7,15 @@ import { scheduleApi } from './apiFactory.js';
 const scheduleService = {
   // Tạo lịch quý cho tất cả phòng (chỉ manager/admin)
   generateQuarterSchedule: async (quarter, year) => {
-    const response = await scheduleApi.post('/schedule/quarter', { quarter, year });
-    return response.data;
+    try {
+      const response = await scheduleApi.post('/schedule/quarter', { quarter, year });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   },
 
   // Lấy danh sách quý có thể tạo lịch
