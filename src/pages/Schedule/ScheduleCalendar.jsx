@@ -13,6 +13,9 @@ import {
   LeftOutlined, RightOutlined, ReloadOutlined, EyeOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+
+dayjs.extend(isoWeek);
 import { scheduleService } from '../../services';
 import { roomService } from '../../services';
 import { userService } from '../../services';
@@ -34,8 +37,8 @@ const ScheduleCalendar = () => {
   const [selectedSubRoom, setSelectedSubRoom] = useState(null);
   const [selectedDentist, setSelectedDentist] = useState(null);
   
-  // Calendar state
-  const [currentWeek, setCurrentWeek] = useState(dayjs().startOf('week'));
+  // Calendar state - Tuần bắt đầu từ Thứ 2 (ISO Week)
+  const [currentWeek, setCurrentWeek] = useState(dayjs().startOf('isoWeek'));
   const [schedules, setSchedules] = useState([]);
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -128,11 +131,12 @@ const ScheduleCalendar = () => {
     loadScheduleData();
   }, [loadScheduleData]);
 
-  // Generate week days
+  // Tạo lịch hiển thị từ t2->cn - Thứ 2 đến Chủ Nhật (ISO Week)
   const weekDays = useMemo(() => {
     const days = [];
+    const startOfWeek = currentWeek.startOf('isoWeek'); // ISO Week bắt đầu từ thứ 2
     for (let i = 0; i < 7; i++) {
-      days.push(currentWeek.add(i, 'day'));
+      days.push(startOfWeek.add(i, 'day'));
     }
     return days;
   }, [currentWeek]);
@@ -187,7 +191,7 @@ const ScheduleCalendar = () => {
     setSlotDetailsVisible(true);
   };
 
-  // Navigation handlers
+  // Navigation handlers - ISO Week (Thứ 2 đến Chủ Nhật)
   const goToPreviousWeek = () => {
     setCurrentWeek(prev => prev.subtract(1, 'week'));
   };
@@ -197,7 +201,7 @@ const ScheduleCalendar = () => {
   };
 
   const goToCurrentWeek = () => {
-    setCurrentWeek(dayjs().startOf('week'));
+    setCurrentWeek(dayjs().startOf('isoWeek'));
   };
 
   // Render room/subroom selector
