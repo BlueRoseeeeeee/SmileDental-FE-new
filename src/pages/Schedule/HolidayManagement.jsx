@@ -20,8 +20,7 @@ import {
   Alert,
   Row,
   Col,
-  Select,
-  InputNumber
+  Select
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -29,8 +28,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   ClockCircleOutlined,
-  SearchOutlined,
-  FilterOutlined
+  SearchOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { scheduleConfigService } from '../../services/index.js';
@@ -53,8 +51,6 @@ const HolidayManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterYear, setFilterYear] = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
-  const [filterDuration, setFilterDuration] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
 
   // Load holidays từ API
   const loadHolidays = async () => {
@@ -106,27 +102,6 @@ const HolidayManagement = () => {
       });
     }
     
-    // Filter theo độ dài ngày nghỉ
-    if (filterDuration && filterDuration !== 'all') {
-      filtered = filtered.filter(holiday => {
-        const start = dayjs(holiday.startDate);
-        const end = dayjs(holiday.endDate);
-        const duration = end.diff(start, 'day') + 1;
-        
-        switch (filterDuration) {
-          case '1':
-            return duration === 1;
-          case '2-3':
-            return duration >= 2 && duration <= 3;
-          case '4-7':
-            return duration >= 4 && duration <= 7;
-          case '8+':
-            return duration >= 8;
-          default:
-            return true;
-        }
-      });
-    }
     
     return filtered;
   };
@@ -341,98 +316,76 @@ const HolidayManagement = () => {
       <Card>
         {/* Search và Filter */}
         <div style={{ marginBottom: '16px' }}>
-          <Row gutter={[16, 16]} align="middle">
+          {/* Row 1: Bộ lọc */}
+          <Row gutter={[16, 16]} align="middle" style={{ marginBottom: '16px' }}>
             <Col xs={24} sm={12} md={8}>
-              <Input
-                placeholder="Tìm kiếm theo tên hoặc ghi chú..."
-                prefix={<SearchOutlined />}
-                value={searchTerm}
-                onChange={(e) => debouncedSearch(e.target.value)}
-                allowClear
-              />
-            </Col>
-            <Col xs={24} sm={12} md={4}>
-              <Button
-                icon={<FilterOutlined />}
-                onClick={() => setShowFilters(!showFilters)}
-                type={showFilters ? 'primary' : 'default'}
-              >
-                Bộ lọc
-              </Button>
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: '4px' }}>Tìm kiếm:</Text>
+                <Input
+                  placeholder="Tìm kiếm theo tên hoặc ghi chú..."
+                  prefix={<SearchOutlined />}
+                  value={searchTerm}
+                  onChange={(e) => debouncedSearch(e.target.value)}
+                  allowClear
+                />
+              </div>
             </Col>
             <Col xs={24} sm={12} md={8}>
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: '4px' }}>Lọc theo năm:</Text>
+                <Select
+                  style={{ width: '100%' }}
+                  value={filterYear}
+                  onChange={setFilterYear}
+                  placeholder="Chọn năm"
+                  allowClear
+                >
+                  <Select.Option value="all">Tất cả năm</Select.Option>
+                  {getAvailableYears().map(year => (
+                    <Select.Option key={year} value={year}>{year}</Select.Option>
+                  ))}
+                </Select>
+              </div>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <div>
+                <Text strong style={{ display: 'block', marginBottom: '4px' }}>Lọc theo tháng:</Text>
+                <Select
+                  style={{ width: '100%' }}
+                  value={filterMonth}
+                  onChange={setFilterMonth}
+                  placeholder="Chọn tháng"
+                  allowClear
+                >
+                  <Select.Option value="all">Tất cả tháng</Select.Option>
+                  {getAvailableMonths().map(month => (
+                    <Select.Option key={month} value={month}>
+                      Tháng {month}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </div>
+            </Col>
+          </Row>
+
+          {/* Row 2: Button và kết quả */}
+          <Row gutter={[16, 16]} align="middle" justify="space-between">
+            <Col>
               <Button 
                 type="primary" 
                 icon={<PlusOutlined />}
                 onClick={handleAddHoliday}
                 size="large"
-                style={{ width: '100%' }}
               >
                 Thêm ngày nghỉ lễ
               </Button>
             </Col>
+            <Col>
+              <Text type="secondary">
+                {getFilteredHolidays().length} kết quả
+              </Text>
+            </Col>
           </Row>
-
-          {/* Advanced Filters */}
-          {showFilters && (
-            <Card size="small" style={{ marginTop: '16px' }}>
-              <Row gutter={[16, 16]} align="middle">
-                <Col xs={24} sm={8} md={6}>
-                  <Text strong>Năm:</Text>
-                  <Select
-                    style={{ width: '100%', marginTop: '4px' }}
-                    value={filterYear}
-                    onChange={setFilterYear}
-                    placeholder="Chọn năm"
-                    allowClear
-                  >
-                    <Select.Option value="all">Tất cả năm</Select.Option>
-                    {getAvailableYears().map(year => (
-                      <Select.Option key={year} value={year}>{year}</Select.Option>
-                    ))}
-                  </Select>
-                </Col>
-                <Col xs={24} sm={8} md={6}>
-                  <Text strong>Tháng:</Text>
-                  <Select
-                    style={{ width: '100%', marginTop: '4px' }}
-                    value={filterMonth}
-                    onChange={setFilterMonth}
-                    placeholder="Chọn tháng"
-                    allowClear
-                  >
-                    <Select.Option value="all">Tất cả tháng</Select.Option>
-                    {getAvailableMonths().map(month => (
-                      <Select.Option key={month} value={month}>
-                        Tháng {month}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Col>
-                <Col xs={24} sm={8} md={6}>
-                  <Text strong>Độ dài:</Text>
-                  <Select
-                    style={{ width: '100%', marginTop: '4px' }}
-                    value={filterDuration}
-                    onChange={setFilterDuration}
-                    placeholder="Chọn độ dài"
-                    allowClear
-                  >
-                    <Select.Option value="all">Tất cả</Select.Option>
-                    <Select.Option value="1">1 ngày</Select.Option>
-                    <Select.Option value="2-3">2-3 ngày</Select.Option>
-                    <Select.Option value="4-7">4-7 ngày</Select.Option>
-                    <Select.Option value="8+">8+ ngày</Select.Option>
-                  </Select>
-                </Col>
-                <Col xs={24} sm={24} md={6}>
-                  <Text type="secondary">
-                    {getFilteredHolidays().length} kết quả
-                  </Text>
-                </Col>
-              </Row>
-            </Card>
-          )}
         </div>
 
         {getFilteredHolidays().length === 0 ? (
