@@ -22,7 +22,8 @@ import {
 import { 
   ClockCircleOutlined, 
   SaveOutlined, 
-  ReloadOutlined 
+  ReloadOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -31,6 +32,7 @@ const { Title, Text } = Typography;
 const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
   const [form] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [switchStates, setSwitchStates] = useState({
     morningActive: true,
     afternoonActive: true,
@@ -91,6 +93,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
       };
 
       await onUpdate(configData);
+      setIsEditing(false);
     } catch (error) {
       console.error('Error saving config:', error);
     } finally {
@@ -127,9 +130,16 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
     const newStates = { ...switchStates };
     newStates[shiftName] = checked;
     setSwitchStates(newStates);
-    
-    // Update form value
     form.setFieldValue(shiftName, checked);
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    handleReset();
   };
 
   return (
@@ -146,14 +156,27 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
           maxBookingDays: 30
         }}
       >
-        <Title level={4}>
-          <ClockCircleOutlined style={{ marginRight: '8px' }} />
-          Cấu hình Ca làm việc
-        </Title>
-        
-        <Text type="secondary" style={{ display: 'block', marginBottom: '24px' }}>
-          Thiết lập thời gian và cấu hình cho các ca làm việc trong hệ thống
-        </Text>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <Title level={4} style={{ margin: 0 }}>
+              <ClockCircleOutlined style={{ marginRight: '8px' }} />
+              Cấu hình Ca làm việc
+            </Title>
+            <Text type="secondary" style={{ display: 'block', marginTop: '8px' }}>
+              Thiết lập thời gian và cấu hình cho các ca làm việc trong hệ thống
+            </Text>
+          </div>
+          {!isEditing && (
+            <Button 
+              type="primary" 
+              icon={<EditOutlined />}
+              onClick={handleEdit}
+              size="large"
+            >
+              Chỉnh sửa
+            </Button>
+          )}
+        </div>
 
         {/* Ca Sáng */}
         <Card size="small" style={{ marginBottom: '16px' }}>
@@ -171,6 +194,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   format="HH:mm" 
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
+                  disabled={!isEditing}
                 />
               </Form.Item>
             </Col>
@@ -184,6 +208,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   format="HH:mm" 
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
+                  disabled={!isEditing}
                 />
               </Form.Item>
             </Col>
@@ -206,7 +231,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   <Switch 
                     checked={switchStates.morningActive}
                     checkedChildren="Bật" 
-                    unCheckedChildren="Tắt" 
+                    unCheckedChildren="Tắt"
+                    disabled={!isEditing}
                   />
                 </Popconfirm>
               </Form.Item>
@@ -230,6 +256,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   format="HH:mm" 
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
+                  disabled={!isEditing}
                 />
               </Form.Item>
             </Col>
@@ -243,6 +270,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   format="HH:mm" 
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
+                  disabled={!isEditing}
                 />
               </Form.Item>
             </Col>
@@ -265,7 +293,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   <Switch 
                     checked={switchStates.afternoonActive}
                     checkedChildren="Bật" 
-                    unCheckedChildren="Tắt" 
+                    unCheckedChildren="Tắt"
+                    disabled={!isEditing}
                   />
                 </Popconfirm>
               </Form.Item>
@@ -289,6 +318,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   format="HH:mm" 
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
+                  disabled={!isEditing}
                 />
               </Form.Item>
             </Col>
@@ -302,6 +332,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   format="HH:mm" 
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
+                  disabled={!isEditing}
                 />
               </Form.Item>
             </Col>
@@ -324,7 +355,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   <Switch 
                     checked={switchStates.eveningActive}
                     checkedChildren="Bật" 
-                    unCheckedChildren="Tắt" 
+                    unCheckedChildren="Tắt"
+                    disabled={!isEditing}
                   />
                 </Popconfirm>
               </Form.Item>
@@ -353,6 +385,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 style={{ width: '100%' }}
                 placeholder="Nhập số phút"
                 addonAfter="phút"
+                disabled={!isEditing}
               />
             </Form.Item>
           </Col>
@@ -371,6 +404,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 style={{ width: '100%' }}
                 placeholder="Nhập số ngày"
                 addonAfter="ngày"
+                disabled={!isEditing}
               />
             </Form.Item>
           </Col>
@@ -378,24 +412,26 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
 
         <Divider />
 
-        <Space>
-          <Button 
-            type="primary" 
-            htmlType="submit"
-            icon={<SaveOutlined />}
-            loading={saving}
-            size="large"
-          >
-            Lưu cấu hình
-          </Button>
-          <Button 
-            icon={<ReloadOutlined />}
-            onClick={handleReset}
-            size="large"
-          >
-            Hủy bỏ
-          </Button>
-        </Space>
+        {isEditing && (
+          <Space>
+            <Button 
+              type="primary" 
+              htmlType="submit"
+              icon={<SaveOutlined />}
+              loading={saving}
+              size="large"
+            >
+              Lưu cấu hình
+            </Button>
+            <Button 
+              icon={<ReloadOutlined />}
+              onClick={handleCancel}
+              size="large"
+            >
+              Hủy bỏ
+            </Button>
+          </Space>
+        )}
       </Form>
     </Card>
   );
