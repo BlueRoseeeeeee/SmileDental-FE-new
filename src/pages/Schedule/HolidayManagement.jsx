@@ -1,6 +1,6 @@
 /**
  * @author: HoTram
- * Holiday Management - Trang quản lý ngày nghỉ lễ
+ * Holiday Management - Trang quản lý ngày nghỉ 
  */
 import React, { useState } from 'react';
 import { 
@@ -65,7 +65,7 @@ const HolidayManagement = () => {
       setHolidays(response.data?.holidays || []);
     } catch (error) {
       console.error('Error loading holidays:', error);
-      toast.error('Không thể tải danh sách ngày nghỉ lễ');
+      toast.error('Không thể tải danh sách ngày nghỉ');
       setHolidays([]);
     } finally {
       setLoading(false);
@@ -156,10 +156,10 @@ const HolidayManagement = () => {
       
       // Cập nhật local state
       setHolidays(holidays.filter(h => h._id !== holidayId));
-      toast.success('Xóa ngày nghỉ lễ thành công!');
+      toast.success('Xóa ngày nghỉ thành công!');
     } catch (error) {
       console.error('Error deleting holiday:', error);
-      toast.error('Không thể xóa ngày nghỉ lễ');
+      toast.error('Không thể xóa ngày nghỉ');
     }
   };
 
@@ -182,7 +182,7 @@ const HolidayManagement = () => {
         
         // Reload holidays để lấy data mới nhất
         await loadHolidays();
-        toast.success('Cập nhật ngày nghỉ lễ thành công!');
+        toast.success('Cập nhật ngày nghỉ thành công!');
       } else {
         // Add new holiday
         const response = await scheduleConfigService.addHoliday(holidayData);
@@ -190,14 +190,14 @@ const HolidayManagement = () => {
         
         // Reload holidays để lấy data mới nhất
         await loadHolidays();
-        toast.success('Thêm ngày nghỉ lễ thành công!');
+        toast.success('Thêm ngày nghỉ thành công!');
       }
 
       setModalVisible(false);
       form.resetFields();
     } catch (error) {
       console.error('Error saving holiday:', error);
-      toast.error('Không thể lưu ngày nghỉ lễ');
+      toast.error('Không thể lưu ngày nghỉ');
     }
   };
 
@@ -211,7 +211,7 @@ const HolidayManagement = () => {
       width: 60
     },
     {
-      title: 'Tên ngày nghỉ lễ',
+      title: 'Tên ngày nghỉ',
       dataIndex: 'name',
       key: 'name',
       render: (text, record) => (
@@ -269,7 +269,7 @@ const HolidayManagement = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Tooltip title="Sửa ngày nghỉ lễ">
+          <Tooltip title="Sửa ngày nghỉ">
             <Button 
               type="primary" 
               size="small"
@@ -278,14 +278,14 @@ const HolidayManagement = () => {
             />
           </Tooltip>
           <Popconfirm
-            title="Xóa ngày nghỉ lễ"
-            description="Bạn có chắc chắn muốn xóa ngày nghỉ lễ này?"
+            title="Xóa ngày nghỉ "
+            description="Bạn có chắc chắn muốn xóa ngày nghỉ  này?"
             onConfirm={() => handleDeleteHoliday(record._id)}
             okText="Xóa"
             cancelText="Hủy"
             okType="danger"
           >
-            <Tooltip title="Xóa ngày nghỉ lễ">
+            <Tooltip title="Xóa ngày nghỉ ">
               <Button 
                 danger 
                 size="small"
@@ -309,7 +309,7 @@ const HolidayManagement = () => {
       <div style={{ marginBottom: '24px' }}>
         <Title level={4}>
           <CalendarOutlined style={{ marginRight: '8px' }} />
-          Quản lý Ngày nghỉ lễ
+          Quản lý Ngày nghỉ 
         </Title>
       </div>
 
@@ -376,7 +376,7 @@ const HolidayManagement = () => {
                 onClick={handleAddHoliday}
                 size="large"
               >
-                Thêm ngày nghỉ lễ
+                Thêm ngày nghỉ 
               </Button>
             </Col>
           </Row>
@@ -387,9 +387,9 @@ const HolidayManagement = () => {
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               <div>
-                <Title level={4} type="secondary">Chưa có ngày nghỉ lễ</Title>
+                <Title level={4} type="secondary">Chưa có ngày nghỉ </Title>
                 <Text type="secondary">
-                  Hãy thêm ngày nghỉ lễ để hệ thống không tạo lịch vào những ngày này
+                  Hãy thêm ngày nghỉ  để hệ thống không tạo lịch vào những ngày này
                 </Text>
               </div>
             }
@@ -405,7 +405,7 @@ const HolidayManagement = () => {
               showSizeChanger: true,
               showQuickJumper: true,
               showTotal: (total, range) => 
-                `${range[0]}-${range[1]} của ${total} ngày nghỉ lễ`,
+                `${range[0]}-${range[1]} của ${total} ngày nghỉ`,
             }}
             scroll={{ x: 800 }}
             size="middle"
@@ -415,7 +415,7 @@ const HolidayManagement = () => {
 
       {/* Modal thêm/sửa ngày nghỉ lễ */}
       <Modal
-        title={editingHoliday ? 'Sửa ngày nghỉ lễ' : 'Thêm ngày nghỉ lễ'}
+        title={editingHoliday ? 'Sửa ngày nghỉ' : 'Thêm ngày nghỉ'}
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
@@ -431,13 +431,13 @@ const HolidayManagement = () => {
         >
           <Form.Item
             name="name"
-            label="Tên ngày nghỉ lễ"
+            label="Tên ngày nghỉ"
             rules={[
-              { required: true, message: 'Vui lòng nhập tên ngày nghỉ lễ' },
+              { required: true, message: 'Vui lòng nhập tên ngày nghỉ' },
               { max: 100, message: 'Tên không được quá 100 ký tự' }
             ]}
           >
-            <Input placeholder="Ví dụ: Tết Nguyên Đán, Giỗ Tổ Hùng Vương" />
+            <Input />
           </Form.Item>
 
           <Form.Item
@@ -469,9 +469,10 @@ const HolidayManagement = () => {
             label="Ghi chú"
           >
             <TextArea 
-              rows={3}
-              placeholder="Ghi chú thêm về ngày nghỉ lễ..."
+              rows={6}
+              placeholder="Ghi chú thêm về ngày nghỉ..."
               maxLength={200}
+              className="custom-textarea"
             />
           </Form.Item>
 
