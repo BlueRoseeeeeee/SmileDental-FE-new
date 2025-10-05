@@ -425,12 +425,13 @@ const ScheduleCalendar = () => {
                   ))}
                 </div>
 
-                {/* Shift Rows */}
+                {/* Shift Rows- cột hiển thị tên ca-thời gian */}
                 {workShifts.length > 0 ? workShifts.map(shift => (
                   <div key={shift.name} className="calendar-row">
                     <div className="time-column">
                       <div className="shift-info">
                         <Text strong>{shift.name}</Text>
+                        <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           {shift.startTime} - {shift.endTime}
                         </Text>
