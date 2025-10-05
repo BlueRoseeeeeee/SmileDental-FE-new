@@ -1,0 +1,197 @@
+/* ScheduleManagement.css */
+
+.schedule-management-container {
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 64px);
+}
+
+.schedule-header {
+  margin-bottom: 24px;
+  background-color: #fff;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-header h2 {
+  margin: 0;
+  color: #1890ff;
+}
+
+.schedule-header .ant-typography {
+  font-size: 16px;
+}
+
+.statistics-card {
+  text-align: center;
+}
+
+.statistics-card .ant-statistic-title {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.quick-action-button {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.quarter-summary-card {
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.quarter-summary-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.quarter-summary-card h4 {
+  margin: 0 0 8px 0;
+  color: #1890ff;
+}
+
+.schedule-table .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.schedule-table .ant-tag {
+  margin: 2px;
+}
+
+.loading-container {
+  text-align: center;
+  padding: 60px 0;
+}
+
+.loading-container .ant-spin {
+  margin-bottom: 16px;
+}
+
+.empty-container {
+  padding: 60px 0;
+  text-align: center;
+}
+
+.modal-result-section {
+  margin-top: 24px;
+}
+
+.modal-result-section .ant-divider {
+  margin: 16px 0;
+}
+
+.status-info-card {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.status-info-card .ant-typography {
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .schedule-management-container {
+    padding: 16px;
+  }
+  
+  .schedule-header {
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .statistics-card {
+    margin-bottom: 16px;
+  }
+  
+  .quick-action-button {
+    margin-bottom: 8px;
+  }
+  
+  .quarter-summary-card {
+    margin-bottom: 16px;
+  }
+  
+  .schedule-header h2 {
+    font-size: 20px;
+  }
+  
+  .schedule-header .ant-typography {
+    font-size: 14px;
+  }
+}
+
+/* Custom Ant Design overrides */
+.ant-tabs-card > .ant-tabs-content {
+  margin-top: 0;
+}
+
+.ant-tabs-card > .ant-tabs-content > .ant-tabs-tabpane {
+  background: transparent;
+}
+
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-progress-line {
+  margin-top: 8px;
+}
+
+.ant-statistic-content {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.ant-badge-status-text {
+  margin-left: 8px;
+}
+
+.ant-empty-description {
+  color: #8c8c8c;
+}
+
+/* Animation Classes */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
