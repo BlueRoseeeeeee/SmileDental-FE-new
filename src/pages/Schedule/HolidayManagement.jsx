@@ -17,16 +17,26 @@ import {
   Popconfirm,
   Tooltip,
   Empty,
-  Alert
+  Alert,
+  Row,
+  Col,
+  Select,
+  InputNumber
 } from 'antd';
 import { 
   PlusOutlined, 
   CalendarOutlined,
   EditOutlined,
   DeleteOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { scheduleConfigService } from '../../services/index.js';
+import { toast } from '../../services/toastService.js';
+import {  debounce } from '../../utils/searchUtils.js';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -34,51 +44,123 @@ const { TextArea } = Input;
 const HolidayManagement = () => {
   console.log('HolidayManagement rendered');
   
-  const [holidays, setHolidays] = useState([
-    {
-      _id: '1',
-      name: 'Tết Nguyên Đán',
-      startDate: '2024-02-10',
-      endDate: '2024-02-16',
-      note: 'Nghỉ Tết Nguyên Đán 2024',
-      isActive: true
-    },
-    {
-      _id: '2',
-      name: 'Giỗ Tổ Hùng Vương',
-      startDate: '2024-04-18',
-      endDate: '2024-04-18',
-      note: 'Ngày giỗ Tổ Hùng Vương',
-      isActive: true
-    },
-    {
-      _id: '3',
-      name: 'Ngày Giải phóng miền Nam',
-      startDate: '2024-04-30',
-      endDate: '2024-04-30',
-      note: 'Ngày 30/4 - Giải phóng miền Nam',
-      isActive: true
-    },
-    {
-      _id: '4',
-      name: 'Ngày Quốc tế Lao động',
-      startDate: '2024-05-01',
-      endDate: '2024-05-01',
-      note: 'Ngày 1/5 - Quốc tế Lao động',
-      isActive: true
-    },
-    {
-      _id: '5',
-      name: 'Ngày Quốc khánh',
-      startDate: '2024-09-02',
-      endDate: '2024-09-02',
-      note: 'Ngày 2/9 - Quốc khánh Việt Nam',
-      isActive: true
-    }
-  ]);
+  const [holidays, setHolidays] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState(null);
   const [form] = Form.useForm();
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterYear, setFilterYear] = useState('all');
+  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterDuration, setFilterDuration] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Load holidays từ API
+  const loadHolidays = async () => {
+    try {
+      setLoading(true);
+      console.log('Loading holidays...');
+      
+      const response = await scheduleConfigService.getHolidays();
+      console.log('Holidays response:', response);
+      
+      // API trả về data.holidays array
+      setHolidays(response.data?.holidays || []);
+    } catch (error) {
+      console.error('Error loading holidays:', error);
+      toast.error('Không thể tải danh sách ngày nghỉ lễ');
+      setHolidays([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter và search data
+  const getFilteredHolidays = () => {
+    let filtered = holidays;
+    
+    // Search trong tên và ghi chú
+    if (searchTerm) {
+      filtered = filtered.filter(holiday => {
+        const name = holiday.name?.toLowerCase() || '';
+        const note = holiday.note?.toLowerCase() || '';
+        const term = searchTerm.toLowerCase();
+        return name.includes(term) || note.includes(term);
+      });
+    }
+    
+    // Filter theo năm
+    if (filterYear !== 'all') {
+      filtered = filtered.filter(holiday => {
+        const year = dayjs(holiday.startDate).year();
+        return year === parseInt(filterYear);
+      });
+    }
+    
+    // Filter theo tháng
+    if (filterMonth !== 'all') {
+      filtered = filtered.filter(holiday => {
+        const month = dayjs(holiday.startDate).month() + 1;
+        return month === parseInt(filterMonth);
+      });
+    }
+    
+    // Filter theo độ dài ngày nghỉ
+    if (filterDuration !== 'all') {
+      filtered = filtered.filter(holiday => {
+        const start = dayjs(holiday.startDate);
+        const end = dayjs(holiday.endDate);
+        const duration = end.diff(start, 'day') + 1;
+        
+        switch (filterDuration) {
+          case '1':
+            return duration === 1;
+          case '2-3':
+            return duration >= 2 && duration <= 3;
+          case '4-7':
+            return duration >= 4 && duration <= 7;
+          case '8+':
+            return duration >= 8;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    return filtered;
+  };
+
+  // Debounced search function
+  const debouncedSearch = debounce((value) => {
+    setSearchTerm(value);
+  }, 300);
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterYear('all');
+    setFilterMonth('all');
+    setFilterDuration('all');
+  };
+
+  // Get years from holidays data
+  const getAvailableYears = () => {
+    // Hiển thị năm từ năm hiện tại +1 đến năm hiện tại -5
+    const currentYear = dayjs().year();
+    const years = [];
+    for (let i = currentYear + 1; i >= currentYear - 5; i--) {
+      years.push(i);
+    }
+    return years;
+  };
+
+  // Get months from holidays data
+  const getAvailableMonths = () => {
+    // Hiển thị tất cả tháng từ 1-12
+    return Array.from({ length: 12 }, (_, i) => i + 1);
+  };
 
   // Thêm ngày nghỉ lễ
   const handleAddHoliday = () => {
@@ -100,32 +182,56 @@ const HolidayManagement = () => {
   };
 
   // Xóa ngày nghỉ lễ
-  const handleDeleteHoliday = (holidayId) => {
-    setHolidays(holidays.filter(h => h._id !== holidayId));
-    alert('Xóa ngày nghỉ lễ thành công!');
+  const handleDeleteHoliday = async (holidayId) => {
+    try {
+      console.log('Deleting holiday:', holidayId);
+      await scheduleConfigService.removeHoliday(holidayId);
+      
+      // Cập nhật local state
+      setHolidays(holidays.filter(h => h._id !== holidayId));
+      toast.success('Xóa ngày nghỉ lễ thành công!');
+    } catch (error) {
+      console.error('Error deleting holiday:', error);
+      toast.error('Không thể xóa ngày nghỉ lễ');
+    }
   };
 
   // Lưu ngày nghỉ lễ
-  const handleSaveHoliday = (values) => {
-    const holidayData = {
-      _id: editingHoliday ? editingHoliday._id : Date.now().toString(),
-      name: values.name,
-      startDate: values.startDate.format('YYYY-MM-DD'),
-      endDate: values.endDate.format('YYYY-MM-DD'),
-      note: values.note || '',
-      isActive: true
-    };
+  const handleSaveHoliday = async (values) => {
+    try {
+      const holidayData = {
+        name: values.name,
+        startDate: values.startDate.format('YYYY-MM-DD'),
+        endDate: values.endDate.format('YYYY-MM-DD'),
+        note: values.note || ''
+      };
 
-    if (editingHoliday) {
-      setHolidays(holidays.map(h => h._id === editingHoliday._id ? holidayData : h));
-      alert('Cập nhật ngày nghỉ lễ thành công!');
-    } else {
-      setHolidays([...holidays, holidayData]);
-      alert('Thêm ngày nghỉ lễ thành công!');
+      console.log('Saving holiday:', holidayData);
+
+      if (editingHoliday) {
+        // Update existing holiday
+        const response = await scheduleConfigService.updateHoliday(editingHoliday._id, holidayData);
+        console.log('Update holiday response:', response);
+        
+        // Reload holidays để lấy data mới nhất
+        await loadHolidays();
+        toast.success('Cập nhật ngày nghỉ lễ thành công!');
+      } else {
+        // Add new holiday
+        const response = await scheduleConfigService.addHoliday(holidayData);
+        console.log('Add holiday response:', response);
+        
+        // Reload holidays để lấy data mới nhất
+        await loadHolidays();
+        toast.success('Thêm ngày nghỉ lễ thành công!');
+      }
+
+      setModalVisible(false);
+      form.resetFields();
+    } catch (error) {
+      console.error('Error saving holiday:', error);
+      toast.error('Không thể lưu ngày nghỉ lễ');
     }
-
-    setModalVisible(false);
-    form.resetFields();
   };
 
   // Định nghĩa columns cho Table
@@ -192,16 +298,6 @@ const HolidayManagement = () => {
       },
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      render: (isActive) => (
-        <Tag color={isActive ? 'green' : 'red'}>
-          {isActive ? 'Hoạt động' : 'Tạm dừng'}
-        </Tag>
-      ),
-    },
-    {
       title: 'Thao tác',
       key: 'actions',
       render: (_, record) => (
@@ -235,6 +331,11 @@ const HolidayManagement = () => {
     },
   ];
 
+  // Load holidays khi component mount
+  React.useEffect(() => {
+    loadHolidays();
+  }, []);
+
   return (
     <div>
 
@@ -246,18 +347,114 @@ const HolidayManagement = () => {
       </div>
 
       <Card>
+        {/* Search và Filter */}
         <div style={{ marginBottom: '16px' }}>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={handleAddHoliday}
-            size="large"
-          >
-            Thêm ngày nghỉ lễ
-          </Button>
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} sm={12} md={8}>
+              <Input
+                placeholder="Tìm kiếm theo tên hoặc ghi chú..."
+                prefix={<SearchOutlined />}
+                value={searchTerm}
+                onChange={(e) => debouncedSearch(e.target.value)}
+                allowClear
+              />
+            </Col>
+            <Col xs={24} sm={12} md={4}>
+              <Button
+                icon={<FilterOutlined />}
+                onClick={() => setShowFilters(!showFilters)}
+                type={showFilters ? 'primary' : 'default'}
+              >
+                Bộ lọc
+              </Button>
+            </Col>
+            <Col xs={24} sm={12} md={4}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={loadHolidays}
+                loading={loading}
+              >
+                Làm mới
+              </Button>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />}
+                onClick={handleAddHoliday}
+                size="large"
+                style={{ width: '100%' }}
+              >
+                Thêm ngày nghỉ lễ
+              </Button>
+            </Col>
+          </Row>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <Card size="small" style={{ marginTop: '16px' }}>
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} sm={8} md={6}>
+                  <Text strong>Năm:</Text>
+                  <Select
+                    style={{ width: '100%', marginTop: '4px' }}
+                    value={filterYear}
+                    onChange={setFilterYear}
+                    placeholder="Chọn năm"
+                  >
+                    <Select.Option value="all">Tất cả năm</Select.Option>
+                    {getAvailableYears().map(year => (
+                      <Select.Option key={year} value={year}>{year}</Select.Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} sm={8} md={6}>
+                  <Text strong>Tháng:</Text>
+                  <Select
+                    style={{ width: '100%', marginTop: '4px' }}
+                    value={filterMonth}
+                    onChange={setFilterMonth}
+                    placeholder="Chọn tháng"
+                  >
+                    <Select.Option value="all">Tất cả tháng</Select.Option>
+                    {getAvailableMonths().map(month => (
+                      <Select.Option key={month} value={month}>
+                        Tháng {month}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} sm={8} md={6}>
+                  <Text strong>Độ dài:</Text>
+                  <Select
+                    style={{ width: '100%', marginTop: '4px' }}
+                    value={filterDuration}
+                    onChange={setFilterDuration}
+                    placeholder="Chọn độ dài"
+                  >
+                    <Select.Option value="all">Tất cả</Select.Option>
+                    <Select.Option value="1">1 ngày</Select.Option>
+                    <Select.Option value="2-3">2-3 ngày</Select.Option>
+                    <Select.Option value="4-7">4-7 ngày</Select.Option>
+                    <Select.Option value="8+">8+ ngày</Select.Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={24} md={6}>
+                  <Space>
+                    <Button onClick={clearFilters}>
+                      Xóa bộ lọc
+                    </Button>
+                    <Text type="secondary">
+                      {getFilteredHolidays().length} kết quả
+                    </Text>
+                  </Space>
+                </Col>
+              </Row>
+            </Card>
+          )}
         </div>
 
-        {holidays.length === 0 ? (
+        {getFilteredHolidays().length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
@@ -272,8 +469,9 @@ const HolidayManagement = () => {
         ) : (
           <Table
             columns={columns}
-            dataSource={holidays}
+            dataSource={getFilteredHolidays()}
             rowKey="_id"
+            loading={loading}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
