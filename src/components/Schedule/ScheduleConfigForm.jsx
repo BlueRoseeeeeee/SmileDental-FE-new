@@ -276,7 +276,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
           <Col span={12}>
             <Form.Item 
               name="maxBookingDays" 
-              label="Số ngày đặt trước tối đa"
+              label="Số ngày tối đa để hiển thị lịch cho khách hàng đặt"
               rules={[
                 { required: true, message: 'Vui lòng nhập số ngày' },
                 { type: 'number', min: 1, max: 365, message: 'Số ngày phải từ 1-365' }
