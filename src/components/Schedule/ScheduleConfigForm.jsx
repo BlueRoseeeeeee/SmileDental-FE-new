@@ -144,6 +144,37 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
 
   return (
     <Card>
+      <style>
+        {`
+          .ant-input:disabled,
+          .ant-picker:disabled,
+          .ant-input-number:disabled {
+            background-color: #fafafa !important;
+            color: #262626 !important;
+            border-color: #d9d9d9 !important;
+          }
+          .ant-picker-input > input:disabled {
+            background-color: #fafafa !important;
+            color: #262626 !important;
+          }
+          .ant-switch:disabled {
+            background-color: #f0f0f0 !important;
+            opacity: 1 !important;
+          }
+          .ant-switch:disabled .ant-switch-handle {
+            background-color: #d9d9d9 !important;
+          }
+          .ant-switch:disabled .ant-switch-inner {
+            color: #262626 !important;
+            font-weight: 600 !important;
+          }
+          .ant-switch:disabled .ant-switch-inner .ant-switch-inner-checked,
+          .ant-switch:disabled .ant-switch-inner .ant-switch-inner-unchecked {
+            color: #262626 !important;
+            font-weight: 600 !important;
+          }
+        `}
+      </style>
       <Form
         form={form}
         layout="vertical"
