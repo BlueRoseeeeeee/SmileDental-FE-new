@@ -131,6 +131,7 @@ const DashboardLayout = () => {
           children: [
             { key: '/schedules', label: 'Cấu hình hệ thống' },
             { key: '/schedules/management', label: 'Quản lý lịch chính' },
+            { key: '/schedules/calendar', label: 'Lịch làm việc' },
           ]
         }
       );
