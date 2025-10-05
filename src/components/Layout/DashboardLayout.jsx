@@ -133,18 +133,6 @@ const DashboardLayout = () => {
               key: '/schedules',
               label: 'Cấu hình hệ thống',
             },
-            {
-              key: '/schedules/management',
-              label: 'Quản lý lịch chính',
-            },
-            {
-              key: '/schedules/staff',
-              label: 'Phân công nhân viên',
-            },
-            {
-              key: '/schedules/auto',
-              label: 'Tự động tạo lịch',
-            }
           ]
         }
       );

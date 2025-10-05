@@ -27,6 +27,10 @@ import RoomManagement from './pages/RoomManagement.jsx';
 import ServiceList from './pages/ServiceList.jsx';
 import AddService from './pages/AddService.jsx';
 
+// Schedule Management
+import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
+import HolidayManagement from './pages/Schedule/HolidayManagement.jsx';
+
 import { Result, Button } from 'antd';
 import { 
   HomeOutlined, 
@@ -179,17 +183,15 @@ function App() {
               </ProtectedRoute>
             } />
             
+            {/* Schedule Management (Admin/Manager only) */}
             <Route path="schedules" element={
               <ProtectedRoute roles={['admin', 'manager']}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <ClockCircleOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Quản lý lịch làm việc</h1>
-                  </div>
-                  <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                  </div>
-                </div>
+                <ScheduleConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/holidays" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <HolidayManagement />
               </ProtectedRoute>
             } />
             
