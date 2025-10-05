@@ -142,10 +142,6 @@ const DashboardLayout = () => {
               label: 'Phân công nhân viên',
             },
             {
-              key: '/schedules/holidays',
-              label: 'Quản lý ngày nghỉ lễ',
-            },
-            {
               key: '/schedules/auto',
               label: 'Tự động tạo lịch',
             }
