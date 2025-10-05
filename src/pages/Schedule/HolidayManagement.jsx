@@ -30,8 +30,7 @@ import {
   DeleteOutlined,
   ClockCircleOutlined,
   SearchOutlined,
-  FilterOutlined,
-  ReloadOutlined
+  FilterOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { scheduleConfigService } from '../../services/index.js';
@@ -92,7 +91,7 @@ const HolidayManagement = () => {
     }
     
     // Filter theo năm
-    if (filterYear !== 'all') {
+    if (filterYear && filterYear !== 'all') {
       filtered = filtered.filter(holiday => {
         const year = dayjs(holiday.startDate).year();
         return year === parseInt(filterYear);
@@ -100,7 +99,7 @@ const HolidayManagement = () => {
     }
     
     // Filter theo tháng
-    if (filterMonth !== 'all') {
+    if (filterMonth && filterMonth !== 'all') {
       filtered = filtered.filter(holiday => {
         const month = dayjs(holiday.startDate).month() + 1;
         return month === parseInt(filterMonth);
@@ -108,7 +107,7 @@ const HolidayManagement = () => {
     }
     
     // Filter theo độ dài ngày nghỉ
-    if (filterDuration !== 'all') {
+    if (filterDuration && filterDuration !== 'all') {
       filtered = filtered.filter(holiday => {
         const start = dayjs(holiday.startDate);
         const end = dayjs(holiday.endDate);
@@ -137,13 +136,6 @@ const HolidayManagement = () => {
     setSearchTerm(value);
   }, 300);
 
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchTerm('');
-    setFilterYear('all');
-    setFilterMonth('all');
-    setFilterDuration('all');
-  };
 
   // Get years from holidays data
   const getAvailableYears = () => {
@@ -368,15 +360,6 @@ const HolidayManagement = () => {
                 Bộ lọc
               </Button>
             </Col>
-            <Col xs={24} sm={12} md={4}>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={loadHolidays}
-                loading={loading}
-              >
-                Làm mới
-              </Button>
-            </Col>
             <Col xs={24} sm={12} md={8}>
               <Button 
                 type="primary" 
@@ -401,6 +384,7 @@ const HolidayManagement = () => {
                     value={filterYear}
                     onChange={setFilterYear}
                     placeholder="Chọn năm"
+                    allowClear
                   >
                     <Select.Option value="all">Tất cả năm</Select.Option>
                     {getAvailableYears().map(year => (
@@ -415,6 +399,7 @@ const HolidayManagement = () => {
                     value={filterMonth}
                     onChange={setFilterMonth}
                     placeholder="Chọn tháng"
+                    allowClear
                   >
                     <Select.Option value="all">Tất cả tháng</Select.Option>
                     {getAvailableMonths().map(month => (
@@ -431,6 +416,7 @@ const HolidayManagement = () => {
                     value={filterDuration}
                     onChange={setFilterDuration}
                     placeholder="Chọn độ dài"
+                    allowClear
                   >
                     <Select.Option value="all">Tất cả</Select.Option>
                     <Select.Option value="1">1 ngày</Select.Option>
@@ -440,14 +426,9 @@ const HolidayManagement = () => {
                   </Select>
                 </Col>
                 <Col xs={24} sm={24} md={6}>
-                  <Space>
-                    <Button onClick={clearFilters}>
-                      Xóa bộ lọc
-                    </Button>
-                    <Text type="secondary">
-                      {getFilteredHolidays().length} kết quả
-                    </Text>
-                  </Space>
+                  <Text type="secondary">
+                    {getFilteredHolidays().length} kết quả
+                  </Text>
                 </Col>
               </Row>
             </Card>
