@@ -24,8 +24,10 @@ const scheduleService = {
   },
 
   // Lấy trạng thái quý
-  getQuarterStatus: async () => {
-    const response = await scheduleApi.get('/schedule/quarter/status');
+  getQuarterStatus: async ({ quarter, year }) => {
+    const response = await scheduleApi.get('/schedule/quarter/status', {
+      params: { quarter, year }
+    });
     return response.data;
   },
 
