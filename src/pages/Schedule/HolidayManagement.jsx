@@ -368,8 +368,7 @@ const HolidayManagement = () => {
             </Col>
           </Row>
 
-          {/* Row 2: Button và kết quả */}
-          <Row gutter={[16, 16]} align="middle" justify="space-between">
+          <Row justify="end">
             <Col>
               <Button 
                 type="primary" 
@@ -379,11 +378,6 @@ const HolidayManagement = () => {
               >
                 Thêm ngày nghỉ lễ
               </Button>
-            </Col>
-            <Col>
-              <Text type="secondary">
-                {getFilteredHolidays().length} kết quả
-              </Text>
             </Col>
           </Row>
         </div>
