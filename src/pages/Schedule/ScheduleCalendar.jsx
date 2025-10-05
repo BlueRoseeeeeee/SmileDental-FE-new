@@ -16,6 +16,7 @@ import dayjs from 'dayjs';
 import { scheduleService } from '../../services';
 import { roomService } from '../../services';
 import { userService } from '../../services';
+import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { toast } from '../../services/toastService.js';
 import './ScheduleCalendar.css';
 
@@ -39,6 +40,9 @@ const ScheduleCalendar = () => {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   
+  // Work shifts from config API
+  const [workShifts, setWorkShifts] = useState([]);
+  
   // Selected slot details
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [slotDetailsVisible, setSlotDetailsVisible] = useState(false);
@@ -47,6 +51,7 @@ const ScheduleCalendar = () => {
   useEffect(() => {
     loadRooms();
     loadDentists();
+    loadWorkShifts();
   }, []);
 
   const loadRooms = async () => {
@@ -63,10 +68,8 @@ const ScheduleCalendar = () => {
 
   const loadDentists = async () => {
     try {
-      // Assuming we have API to get staff by role
       const res = await userService.getAllStaff(1, 100);
       if (res?.success) {
-        // Filter dentists only
         const dentistList = res.data?.users?.filter(user => 
           user.role === 'dentist' || user.role === 'doctor'
         ) || [];
@@ -78,7 +81,6 @@ const ScheduleCalendar = () => {
     }
   };
 
-  // Load schedules/slots based on current selection
   const loadScheduleData = useCallback(async () => {
     if (viewMode === 'room' && !selectedRoom) return;
     if (viewMode === 'dentist' && !selectedDentist) return;
@@ -135,12 +137,34 @@ const ScheduleCalendar = () => {
     return days;
   }, [currentWeek]);
 
-  // Work shifts (based on your API response)
-  const workShifts = [
-    { name: 'Ca Sáng', startTime: '07:30', endTime: '11:30' },
-    { name: 'Ca Chiều', startTime: '13:30', endTime: '17:30' },
-    { name: 'Ca Tối', startTime: '18:30', endTime: '21:30' }
-  ];
+  // Lấy work shifts từ config API
+  const loadWorkShifts = async () => {
+    try {
+      const response = await scheduleConfigService.getConfig();
+      const configData = response.data || response;
+      const shifts = [
+        configData.morningShift && { 
+          name: 'Ca Sáng', 
+          startTime: configData.morningShift.startTime, 
+          endTime: configData.morningShift.endTime 
+        },
+        configData.afternoonShift && { 
+          name: 'Ca Chiều', 
+          startTime: configData.afternoonShift.startTime, 
+          endTime: configData.afternoonShift.endTime 
+        },
+        configData.eveningShift && { 
+          name: 'Ca Tối', 
+          startTime: configData.eveningShift.startTime, 
+          endTime: configData.eveningShift.endTime 
+        }
+      ].filter(Boolean); // Remove null/undefined shifts
+      
+      setWorkShifts(shifts);
+    } catch (error) {
+      console.error('Error loading work shifts:', error);
+    }
+  };
 
   // Get schedule for specific date
   const getScheduleForDate = (date) => {
@@ -402,7 +426,7 @@ const ScheduleCalendar = () => {
                 </div>
 
                 {/* Shift Rows */}
-                {workShifts.map(shift => (
+                {workShifts.length > 0 ? workShifts.map(shift => (
                   <div key={shift.name} className="calendar-row">
                     <div className="time-column">
                       <div className="shift-info">
@@ -418,7 +442,13 @@ const ScheduleCalendar = () => {
                       </div>
                     ))}
                   </div>
-                ))}
+                )) : (
+                  <div className="calendar-row">
+                    <div style={{ padding: 20, textAlign: 'center', gridColumn: '1 / -1' }}>
+                      <Text type="secondary">Đang tải ca làm việc...</Text>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </Card>
