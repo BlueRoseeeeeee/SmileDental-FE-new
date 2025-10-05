@@ -30,6 +30,7 @@ import AddService from './pages/AddService.jsx';
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
 import HolidayManagement from './pages/Schedule/HolidayManagement.jsx';
+import ScheduleManagement from './pages/Schedule/ScheduleManagement.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -38,7 +39,6 @@ import {
   SettingOutlined,
   CalendarOutlined,
   HeartOutlined,
-  ClockCircleOutlined,
   TeamOutlined
 } from '@ant-design/icons';
 
@@ -187,6 +187,11 @@ function App() {
             <Route path="schedules" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <ScheduleConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/management" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ScheduleManagement />
               </ProtectedRoute>
             } />
             <Route path="schedules/holidays" element={
