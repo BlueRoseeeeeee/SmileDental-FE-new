@@ -426,7 +426,6 @@ const ScheduleManagement = () => {
         }}
         title={
           <Space>
-            <ThunderboltOutlined />
             <span>Tạo lịch làm việc theo quý</span>
           </Space>
         }
@@ -441,7 +440,7 @@ const ScheduleManagement = () => {
           type="info"
           showIcon
           message="Thông tin"
-          description="Hệ thống sẽ tự động tạo lịch làm việc cho tất cả phòng trong quý được chọn. Quá trình này có thể mất vài phút."
+          description="Hệ thống sẽ tự động tạo lịch làm việc cho tất cả phòng trong quý được chọn. Vui lòng chờ trong giây lát."
           style={{ marginBottom: 16 }}
         />
         
@@ -487,7 +486,9 @@ const ScheduleManagement = () => {
               message={`Tạo lịch Q${generateResult.quarter}/${generateResult.year} thành công`}
               description={
                 <Space direction="vertical" size={4}>
-                  <Text>Thời gian: {generateResult.startDateVN} đến {generateResult.endDateVN}</Text>
+                  <Text>
+                      {`Thời gian: ${dayjs(generateResult.startDateVN).format('DD/MM/YYYY')} đến ${dayjs(generateResult.endDateVN).format('DD/MM/YYYY')}`}
+                  </Text>
                   <Text>Tổng phòng: {generateResult.totalRooms} | Tạo thành công: {generateResult.successCount}</Text>
                 </Space>
               }
