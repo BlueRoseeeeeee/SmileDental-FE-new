@@ -32,10 +32,17 @@ const scheduleService = {
 
   // Lấy trạng thái quý
   getQuarterStatus: async ({ quarter, year }) => {
-    const response = await scheduleApi.get('/schedule/quarter/status', {
-      params: { quarter, year }
-    });
-    return response.data;
+    try {
+      const response = await scheduleApi.get('/schedule/quarter/status', {
+        params: { quarter, year }
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   },
 
   // Lấy lịch theo phòng
