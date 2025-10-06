@@ -63,15 +63,17 @@ const StaffAssignment = () => {
 
   const loadStaff = async () => {
     try {
-      const staffRes = await userService.getAllStaff(1, 100);
+      // Load tất cả staff giống như UserManagement để đảm bảo lấy hết tất cả dentists
+      const staffRes = await userService.getAllStaff(1, 1000);
       console.log(' Staff response:', staffRes);
       
       if (staffRes?.success) {
         const allStaff = staffRes.users || []; // Lấy users trực tiếp, không qua data
         console.log(' All staff:', allStaff);
+        console.log(' Total staff loaded:', allStaff.length);
         
         const dentistList = allStaff.filter(user => {
-          console.log('User role:', user.role);
+          console.log(`User ${user._id} - Role: ${user.role}, Name: ${user.fullName}`);
           return user.role === 'dentist' || user.role === 'doctor';
         });
         
@@ -85,6 +87,10 @@ const StaffAssignment = () => {
         console.log('Staff loaded - Dentists:', dentistList.length, 'Nurses:', nurseList.length);
         console.log('Dentist list:', dentistList);
         console.log('Nurse list:', nurseList);
+        
+        // Debug: check if the specific dentist is in the list
+        const specificDentist = allStaff.find(user => user._id === '68e3468f2f0f4d523fa6acff');
+        console.log('Specific dentist 68e3468f2f0f4d523fa6acff found:', specificDentist);
         
         if (dentistList.length > 0) {
           console.log('dentist fields:', Object.keys(dentistList[0]));
@@ -136,8 +142,9 @@ const StaffAssignment = () => {
         quarter: values.quarter,
         year: values.year,
         shifts: values.shifts,
-        dentistIds: values.dentistIds,
-        nurseIds: values.nurseIds
+        // Đảm bảo dentistIds và nurseIds luôn là array
+        dentistIds: Array.isArray(values.dentistIds) ? values.dentistIds : [values.dentistIds].filter(Boolean),
+        nurseIds: Array.isArray(values.nurseIds) ? values.nurseIds : [values.nurseIds].filter(Boolean)
       };
 
       // Thêm subRoomId nếu room has subrooms
@@ -145,27 +152,60 @@ const StaffAssignment = () => {
         requestData.subRoomId = values.subRoomId;
       }
 
+      console.log('🚀 Final request data:', JSON.stringify(requestData, null, 2));
+      console.log('🔍 Raw form values:', values);
+
       const response = await slotService.assignStaffToSlots(requestData);
 
+      console.log('✅ Success response:', response);
+      console.log('✅ Response.success:', response.success);
+      console.log('✅ Response.data:', response.data);
+
       if (response.success) {
+        console.log('🎉 Showing success notification');
+        
+        // Force notification hiển thị  
+        notification.destroy(); // Clear existing notifications
         notification.success({
           message: 'Phân công nhân sự thành công!',
-          description: response.data.message,
+          description: response.data?.message || 'Phân công nhân sự đã được thực hiện thành công',
+          duration: 5,
+          placement: 'topRight',
           icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />
         });
+
+        // Backup toast service
+        toast.success(response.data?.message || 'Phân công nhân sự thành công!');
         
         // Reset form
         form.resetFields();
         setSelectedRoom(null);
         setAvailableSubRooms([]);
+      } else {
+        console.log('❌ Response success is false:', response);
       }
     } catch (error) {
       console.error('Error assigning staff:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      const errorMessage = error.response?.data?.message || error.message;
+      console.log('Showing notification with message:', errorMessage);
+      console.log('🔍 Request config:', error.config);
+      console.log('🔍 Request data sent:', error.config?.data);
+      
+      // Force notification hiển thị
+      notification.destroy(); // Clear existing notifications first
       notification.error({
         message: 'Lỗi phân công nhân sự',
-        description: error.response?.data?.message || 'Có lỗi xảy ra khi phân công nhân sự',
+        description: errorMessage || 'Có lỗi xảy ra khi phân công nhân sự',
+        duration: 6,
+        placement: 'topRight',
         icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
       });
+
+      // Backup toast service nếu notification không hoạt động
+      toast.error(errorMessage || 'Có lỗi xảy ra khi phân công nhân sự');
     } finally {
       setSubmitting(false);
     }
