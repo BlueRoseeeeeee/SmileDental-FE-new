@@ -286,11 +286,11 @@ const ScheduleCalendar = () => {
           <div className="cell-staff">
             {hasDentist ? (
               <Tag color="blue" size="small">
-                BS: {shiftData.staffStats.mostFrequentDentist.slotCount} slot
+                NS: {shiftData.staffStats.mostFrequentDentist.slotCount} slot
               </Tag>
             ) : (
               <Tag color="orange" size="small">
-                BS: Chưa phân công
+                NS: Chưa phân công
               </Tag>
             )}
           </div>
@@ -352,7 +352,7 @@ const ScheduleCalendar = () => {
                     <Tag color="blue">Có phòng con</Tag>
                   )}
                   {calendarData.roomInfo.maxDoctors && (
-                    <Tag color="green">Tối đa {calendarData.roomInfo.maxDoctors} BS</Tag>
+                    <Tag color="green">Tối đa {calendarData.roomInfo.maxDoctors} NS</Tag>
                   )}
                   {calendarData.roomInfo.maxNurses && (
                     <Tag color="cyan">Tối đa {calendarData.roomInfo.maxNurses} YT</Tag>
@@ -399,6 +399,7 @@ const ScheduleCalendar = () => {
                     Vui lòng chọn {viewMode === 'room' ? 'phòng' : 'nha sĩ'} để xem lịch
                   </Text>
                 )}
+                
               </Space>
             </div>
 
