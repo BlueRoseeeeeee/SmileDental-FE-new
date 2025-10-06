@@ -424,7 +424,7 @@ const StaffAssignment = () => {
             {/* Dentist Selection */}
             <Col span={12}>
               <Form.Item
-                label={`Nha sĩ ${selectedRoom?.hasSubRooms ? '(Chọn 1)' : '(Có thể chọn nhiều)'}`}
+                label={`Nha sĩ ${selectedRoom?.hasSubRooms}`}
                 name="dentistIds"
                 rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 bác sĩ' }]}
               >
@@ -448,7 +448,7 @@ const StaffAssignment = () => {
             {/* Nurse Selection */}
             <Col span={12}>
               <Form.Item
-                label={`Y tá ${selectedRoom?.hasSubRooms ? '(Chọn 1)' : '(Có thể chọn nhiều)'}`}
+                label={`Y tá ${selectedRoom?.hasSubRooms}`}
                 name="nurseIds"
                 rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 y tá' }]}
               >
@@ -500,7 +500,7 @@ const StaffAssignment = () => {
                 }}
                 size="large"
               >
-                Đặt lại
+                Reset
               </Button>
             </Space>
           </Form.Item>
