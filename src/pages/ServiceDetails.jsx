@@ -167,30 +167,24 @@ const ServiceDetails = () => {
           Quay lại danh sách
         </Button>
         
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <MedicineBoxOutlined style={{ fontSize: 24, color: '#1890ff' }} />
-            <Title level={2} style={{ margin: 0 }}>
-              {service.name}
-            </Title>
-            <Tag color={service.isActive ? 'green' : 'red'} style={{ fontSize: 14 }}>
-              {service.isActive ? 'Hoạt động' : 'Ngưng hoạt động'}
-            </Tag>
-          </div>
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={handleUpdateService}
-          >
-            Chỉnh sửa
-          </Button>
-        </div>
       </div>
 
       <Row gutter={[24, 24]}>
         {/* Thông tin cơ bản */}
         <Col span={24}>
-          <Card title="Thông tin cơ bản" size="small">
+          <Card 
+            title="Thông tin dịch vụ" 
+            size="small"
+            extra={
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={handleUpdateService}
+              >
+                Chỉnh sửa
+              </Button>
+            }
+          >
             <Row gutter={[24, 16]}>
               <Col span={12}>
                 <div>
@@ -238,11 +232,37 @@ const ServiceDetails = () => {
                   </div>
                 </div>
               </Col>
+              <Col span={12}>
+                <div>
+                  <Text type="secondary">Trạng thái:</Text>
+                  <div style={{ marginTop: 4 }}>
+                    <Tag style={{ fontSize: 14 }}>
+                    {service.isActive ? 'Hoạt động' : 'Ngưng hoạt động'}
+                    </Tag>
+                  </div>
+                </div>
+              </Col>
               <Col span={24}>
                 <div>
                   <Text type="secondary">Mô tả:</Text>
                   <div style={{ marginTop: 4 }}>
                     <Text>{service.description}</Text>
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Text type="secondary">Ngày tạo:</Text>
+                  <div style={{ marginTop: 4 }}>
+                    <Text>{new Date(service.createdAt).toLocaleDateString('vi-VN')}</Text>
+                  </div>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div>
+                  <Text type="secondary">Cập nhật lần cuối:</Text>
+                  <div style={{ marginTop: 4 }}>
+                    <Text>{new Date(service.updatedAt).toLocaleDateString('vi-VN')}</Text>
                   </div>
                 </div>
               </Col>
@@ -326,29 +346,6 @@ const ServiceDetails = () => {
           </Card>
         </Col>
 
-        {/* Thông tin bổ sung */}
-        <Col span={24}>
-          <Card title="Thông tin bổ sung" size="small">
-            <Row gutter={[24, 16]}>
-              <Col span={12}>
-                <div>
-                  <Text type="secondary">Ngày tạo:</Text>
-                  <div style={{ marginTop: 4 }}>
-                    <Text>{new Date(service.createdAt).toLocaleDateString('vi-VN')}</Text>
-                  </div>
-                </div>
-              </Col>
-              <Col span={12}>
-                <div>
-                  <Text type="secondary">Cập nhật lần cuối:</Text>
-                  <div style={{ marginTop: 4 }}>
-                    <Text>{new Date(service.updatedAt).toLocaleDateString('vi-VN')}</Text>
-                  </div>
-                </div>
-              </Col>
-            </Row>
-          </Card>
-        </Col>
       </Row>
 
       {/* Update Service Modal */}
