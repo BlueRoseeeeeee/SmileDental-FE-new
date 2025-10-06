@@ -91,7 +91,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [pagination.current, pagination.pageSize]);
+  }, []); // Chỉ load một lần khi component mount
 
   // Debounced search effect
   useEffect(() => {
@@ -105,17 +105,19 @@ const UserManagement = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await userService.getAllStaff(
-        pagination.current, 
-        pagination.pageSize
-      );
+      // Load tất cả users để có thể search linh hoạt
+      const response = await userService.getAllStaff(1, 1000); // Load max 1000 users
       
-      setUsers(response.users || []);
+      const allUsers = response.users || [];
+      setUsers(allUsers);
+      
+      // Cập nhật pagination với tổng số users
       setPagination(prev => ({
         ...prev,
-        total: response.total || 0
+        total: allUsers.length
       }));
-    } catch {
+    } catch (error) {
+      console.error('Error loading users:', error);
       toast.error('Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
@@ -127,12 +129,13 @@ const UserManagement = () => {
     const filtered = searchAndFilter(users, searchTerm, searchFields, filters);
     setFilteredUsers(filtered);
     
-    // Update pagination total
-    setPagination(prev => ({
-      ...prev,
-      total: filtered.length,
-      current: 1 // Reset to first page when filtering
-    }));
+    // Reset về page 1 khi có search/filter mới để user thấy kết quả
+    if (searchTerm || Object.keys(filters).length > 0) {
+      setPagination(prev => ({
+        ...prev,
+        current: 1
+      }));
+    }
   };
 
   const handleSearch = (value) => {
@@ -269,6 +272,9 @@ const UserManagement = () => {
         
         if (response.ok) {
           toast.success('Thêm nhân viên thành công');
+          
+          // Load lại tất cả users để có user mới
+          loadUsers();
         } else {
           const error = await response.json();
           toast.error(error.message || 'Thêm nhân viên thất bại');
@@ -282,7 +288,6 @@ const UserManagement = () => {
       setEmail('');
       setOtpSent(false);
       setOtpMessage('');
-      loadUsers();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Thao tác thất bại');
     }
@@ -475,7 +480,9 @@ const UserManagement = () => {
           rowKey="_id"
           loading={loading}
           pagination={{
-            ...pagination,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: filteredUsers.length, // Sử dụng tổng số filteredUsers thay vì backend total
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => 
