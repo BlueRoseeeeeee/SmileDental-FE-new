@@ -42,7 +42,7 @@ const ScheduleCalendar = () => {
   
   
   // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Load initial data
   useEffect(() => {
@@ -132,15 +132,20 @@ const ScheduleCalendar = () => {
     loadScheduleData();
   }, [loadScheduleData]);
 
-  // Tạo lịch hiển thị từ dữ liệu API hoặc fallback về current week
+  // Tạo lịch hiển thị cố định từ T2->CN (ISO Week)
   const weekDays = useMemo(() => {
-    if (calendarData?.periods?.[0]?.days) {
-      // Sử dụng ngày từ API
-      return calendarData.periods[0].days.map(day => dayjs(day.date));
+    const days = [];
+    let startOfWeek;
+    
+    // Nếu có API data, dùng startDate từ API để đảm bảo đồng bộ
+    if (calendarData?.periods?.[0]?.startDate) {
+      startOfWeek = dayjs(calendarData.periods[0].startDate).startOf('isoWeek');
+    } else {
+      // Fallback về current week
+      startOfWeek = currentWeek.startOf('isoWeek');
     }
     
-    const days = [];
-    const startOfWeek = currentWeek.startOf('isoWeek');
+    // Luôn tạo đủ 7 ngày từ T2->CN
     for (let i = 0; i < 7; i++) {
       days.push(startOfWeek.add(i, 'day'));
     }
@@ -256,7 +261,7 @@ const ScheduleCalendar = () => {
     if (!isShiftActive) {
       return (
         <div className="calendar-cell empty">
-          <Text type="secondary">Không hoạt động</Text>
+          <Text type="secondary">Ngừng hoạt động</Text>
         </div>
       );
     }
@@ -264,7 +269,7 @@ const ScheduleCalendar = () => {
     if (!shiftData) {
       return (
         <div className="calendar-cell empty">
-          <Text type="secondary">Không có dữ liệu</Text>
+          <Text type="secondary"></Text>
         </div>
       );
     }
@@ -399,7 +404,7 @@ const ScheduleCalendar = () => {
                     Vui lòng chọn {viewMode === 'room' ? 'phòng' : 'nha sĩ'} để xem lịch
                   </Text>
                 )}
-                
+
               </Space>
             </div>
 
@@ -412,11 +417,11 @@ const ScheduleCalendar = () => {
               </div>
             ) : (
               <div className="calendar-grid">
-                {/* Header Row */}
+                {/* Header Row - Always 7 days T2->CN */}
                 <div className="calendar-header-row">
                   <div className="time-column">Ca làm việc</div>
-                  {weekDays.map(day => (
-                    <div key={day.format('YYYY-MM-DD')} className="day-column">
+                  {weekDays.map((day, index) => (
+                    <div key={`${day.format('YYYY-MM-DD')}-${index}`} className="day-column">
                       <div className="day-header">
                         <div className="day-name">{day.format('ddd')}</div>
                         <div className="day-date">{day.format('DD/MM')}</div>
@@ -441,8 +446,8 @@ const ScheduleCalendar = () => {
                         </Text>
                       </div>
                     </div>
-                    {weekDays.map(day => (
-                      <div key={day.format('YYYY-MM-DD')} className="day-column">
+                    {weekDays.map((day, index) => (
+                      <div key={`${day.format('YYYY-MM-DD')}-${shift.name}-${index}`} className="day-column">
                         <CalendarCell date={day} shift={shift} />
                       </div>
                     ))}
