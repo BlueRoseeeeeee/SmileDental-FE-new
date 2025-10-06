@@ -34,8 +34,6 @@ const slotService = {
   // Lấy lịch phòng với số lượng cuộc hẹn (xem theo ngày/tuần/tháng)
   getRoomCalendar: async (roomId, params = {}) => {
     const queryParams = new URLSearchParams();
-    
-    // Add parameters
     if (params.subRoomId) queryParams.append('subRoomId', params.subRoomId);
     if (params.viewType) queryParams.append('viewType', params.viewType);
     if (params.startDate) queryParams.append('startDate', params.startDate);
