@@ -10,9 +10,21 @@ export const servicesService = {
     return response.data;
   },
 
+  // Lấy chi tiết service theo ID
+  async getServiceById(serviceId) {
+    const response = await serviceApi.get(`/service/${serviceId}`);
+    return response.data;
+  },
+
   // Tạo service mới
   async createService(serviceData) {
     const response = await serviceApi.post('/service', serviceData);
+    return response.data;
+  },
+
+  // Cập nhật service
+  async updateService(serviceId, serviceData) {
+    const response = await serviceApi.put(`/service/${serviceId}`, serviceData);
     return response.data;
   },
 

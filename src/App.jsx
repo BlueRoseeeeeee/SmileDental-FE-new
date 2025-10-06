@@ -25,6 +25,7 @@ import ChangePassword from './components/Auth/ChangePassword.jsx';
 import RoomList from './pages/RoomList.jsx';
 import RoomManagement from './pages/RoomManagement.jsx';
 import ServiceList from './pages/ServiceList.jsx';
+import ServiceDetails from './pages/ServiceDetails.jsx';
 import AddService from './pages/AddService.jsx';
 
 // Schedule Management
@@ -137,6 +138,11 @@ function App() {
             <Route path="services" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <ServiceList />
+              </ProtectedRoute>
+            } />
+            <Route path="services/:serviceId" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ServiceDetails />
               </ProtectedRoute>
             } />
             

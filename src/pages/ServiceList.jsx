@@ -24,7 +24,9 @@ import {
 import {
   SearchOutlined,
   MedicineBoxOutlined,
-  PlusOutlined
+  PlusOutlined,
+  EyeOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
@@ -52,6 +54,7 @@ const ServiceList = () => {
   // Toggle confirmation modal states
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
+
 
   // Filtered data using searchUtils
   const filteredServices = useMemo(() => {
@@ -89,7 +92,6 @@ const ServiceList = () => {
         pageSize: response.limit || limit
       }));
     } catch (error) {
-      console.error('Error loading services:', error);
       toastService.error('Không thể tải danh sách dịch vụ');
     } finally {
       setLoading(false);
@@ -124,7 +126,6 @@ const ServiceList = () => {
       // Reload data để cập nhật UI
       loadServices(pagination.current, pagination.pageSize);
     } catch (error) {
-      console.error('Error toggling service status:', error);
       toastService.error('Lỗi khi cập nhật trạng thái!');
     } finally {
       setLoading(false);
@@ -137,6 +138,16 @@ const ServiceList = () => {
   const handleCancelToggle = () => {
     setShowConfirmModal(false);
     setSelectedService(null);
+  };
+
+  // Handle view service details
+  const handleViewDetails = (serviceId) => {
+    navigate(`/services/${serviceId}`);
+  };
+
+  // Handle edit service
+  const handleEditService = (serviceId) => {
+    navigate(`/services/${serviceId}`);
   };
 
   // Dịch loại dịch vụ sang tiếng Việt
@@ -258,21 +269,37 @@ const ServiceList = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
+      width: 220,
       align: 'center',
       render: (_, record) => (
-        <Tooltip 
-          title={record.isActive ? 'Nhấn để tắt dịch vụ' : 'Nhấn để bật dịch vụ'}
-          placement="top"
-        >
-          <Switch
-            checked={record.isActive}
-            onChange={() => handleToggleStatus(record)}
-            checkedChildren="Bật"
-            unCheckedChildren="Tắt"
-            size="default"
-          />
-        </Tooltip>
+        <Space>
+          <Tooltip title="Xem chi tiết dịch vụ" placement="top">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetails(record._id)}
+            />
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa dịch vụ" placement="top">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              onClick={() => handleEditService(record._id)}
+            />
+          </Tooltip>
+          <Tooltip 
+            title={record.isActive ? 'Nhấn để tắt dịch vụ' : 'Nhấn để bật dịch vụ'}
+            placement="top"
+          >
+            <Switch
+              checked={record.isActive}
+              onChange={() => handleToggleStatus(record)}
+              checkedChildren="Bật"
+              unCheckedChildren="Tắt"
+              size="default"
+            />
+          </Tooltip>
+        </Space>
       ),
     },
   ];
@@ -399,6 +426,7 @@ const ServiceList = () => {
           </div>
         )}
       </Modal>
+
 
     </div>
   );
