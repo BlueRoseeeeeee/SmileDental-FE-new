@@ -115,21 +115,26 @@ const RegisterRHF = () => {
   const handlePersonalInfo = async (data) => {
     try {
       clearError();
-      // Kiểm tra validation cơ bản
-      if (!data.fullName || !data.phone || !data.dateOfBirth || !data.gender) {
-        return; // Không chuyển bước nếu thiếu thông tin (validation sẽ hiển thị chữ đỏ)
-      }
       
-      // Kiểm tra giới tính
-      if (!data.gender) {
-        toast.error('Vui lòng chọn giới tính!');
+      // Trigger validation cho tất cả fields trước khi submit
+      const isValid = await form.trigger(['fullName', 'phone', 'dateOfBirth', 'gender']);
+      
+      if (!isValid) {
+        // Nếu có lỗi validation, không chuyển bước và để React Hook Form hiển thị lỗi
+        toast.error('Vui lòng kiểm tra lại thông tin đã nhập!');
         return;
       }
       
-      // Kiểm tra tuổi với thông báo cụ thể
+      // Kiểm tra validation cơ bản
+      if (!data.fullName || !data.phone || !data.dateOfBirth || !data.gender) {
+        toast.error('Vui lòng nhập đầy đủ thông tin!');
+        return; // Không chuyển bước nếu thiếu thông tin
+      }
+      
+      // Kiểm tra tuổi với thông báo cụ thể (backup validation)
       const ageValidation = validatePatientAge(data.dateOfBirth);
       
-      if (!ageValidation.isValid) {
+      if (!ageValidation.valid) {
         toast.error(ageValidation.message);
         return;
       }
@@ -140,19 +145,30 @@ const RegisterRHF = () => {
       setValue('dateOfBirth', data.dateOfBirth);
       setValue('gender', data.gender);
       setStep(3);
-    } catch (err) {
+    } catch {
       // Error is handled by AuthContext
     }
   };
 
-  // Step 4: Create Password & Complete Registration
+    // Step 4: Create Password & Complete Registration
   const handleCreatePassword = async (data) => {
     try {
       clearError();
+      
+      // Trigger validation cho password fields trước khi submit
+      const isValid = await form.trigger(['password', 'confirmPassword']);
+      
+      if (!isValid) {
+        toast.error('Vui lòng kiểm tra lại mật khẩu!');
+        return;
+      }
+      
       // Kiểm tra validation cơ bản
       if (!data.password || !data.confirmPassword || data.password !== data.confirmPassword) {
+        toast.error('Mật khẩu xác nhận không khớp!');
         return; // Không chuyển bước nếu thiếu thông tin
       }
+      
       // Lưu dữ liệu vào form state
       setValue('password', data.password);
       setValue('confirmPassword', data.confirmPassword);
@@ -165,7 +181,6 @@ const RegisterRHF = () => {
         return; // Không gửi nếu thiếu dữ liệu
       }
       
-      
       const userData = {
         fullName: allData.fullName,
         phone: allData.phone,
@@ -177,8 +192,6 @@ const RegisterRHF = () => {
         role: 'patient', // CỐ ĐỊNH: Form đăng ký này chỉ dành cho bệnh nhân
         // type: 'fullTime' 
       };
-      
-  
 
       const response = await registerUser(userData);
       const successMessage = response?.message || 'Đăng ký thành công! Vui lòng đăng nhập.';
@@ -192,7 +205,7 @@ const RegisterRHF = () => {
           state: { message: successMessage },
       });
       }, 2000); // Đợi 2 giây để user đọc thông báo
-    } catch (err) {
+    } catch {
       // Error is handled by AuthContext
     }
   };
@@ -488,20 +501,21 @@ const RegisterRHF = () => {
                     Ngày sinh <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('dateOfBirth', { 
-                      required: 'Vui lòng chọn ngày sinh!',
-                      validate: (value) => {
-                        if (!value) return 'Vui lòng chọn ngày sinh!';
-                        const ageValidation = validatePatientAge(value);
-                        if (!ageValidation.isValid) return ageValidation.message;
-                        return true;
-                      }
-                    })}
-                  type="date"
+                    {...register('dateOfBirth', getReactHookFormRules.dateOfBirthPatient())}
+                    type="date"
                     className="form-input"
                     placeholder="dd/mm/yyyy"
                     tabIndex={3}
                     autoComplete="bday"
+                    max={new Date().toISOString().split('T')[0]} // Không cho chọn ngày tương lai
+                    onChange={() => {
+                      // Trigger validation ngay khi thay đổi
+                      form.trigger('dateOfBirth');
+                    }}
+                    onBlur={() => {
+                      // Trigger validation khi blur
+                      form.trigger('dateOfBirth');
+                    }}
                   />
                   {errors.dateOfBirth && (
                     <div className="form-error">{errors.dateOfBirth.message}</div>
@@ -578,8 +592,14 @@ const RegisterRHF = () => {
                     {...register('password', getReactHookFormRules.password())}
                     type="password"
                     className="form-input"
-                  placeholder="Nhập mật khẩu (8-16 ký tự)"
-                />
+                    placeholder="Nhập mật khẩu (8-16 ký tự)"
+                    onChange={() => {
+                      // Trigger validation cho cả password và confirmPassword khi password thay đổi
+                      setTimeout(() => {
+                        form.trigger(['password', 'confirmPassword']);
+                      }, 100);
+                    }}
+                  />
                   {errors.password && (
                     <div className="form-error">{errors.password.message}</div>
                   )}
@@ -590,18 +610,16 @@ const RegisterRHF = () => {
                     Xác nhận mật khẩu <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('confirmPassword', {
-                      ...getReactHookFormRules.confirmPassword(),
-                      validate: (value) => {
-                        const baseValidation = getReactHookFormRules.confirmPassword().validate(value);
-                        if (baseValidation !== true) return baseValidation;
-                        if (value !== watch('password')) return 'Mật khẩu xác nhận không khớp! Vui lòng nhập lại.';
-                        return true;
-                      }
-                    })}
+                    {...register('confirmPassword', getReactHookFormRules.confirmPassword(() => watch('password')))}
                     type="password"
                     className="form-input"
                     placeholder="Nhập lại mật khẩu để xác nhận"
+                    onChange={() => {
+                      // Trigger validation khi thay đổi
+                      setTimeout(() => {
+                        form.trigger('confirmPassword');
+                      }, 100);
+                    }}
                   />
                   {errors.confirmPassword && (
                     <div className="form-error">{errors.confirmPassword.message}</div>
