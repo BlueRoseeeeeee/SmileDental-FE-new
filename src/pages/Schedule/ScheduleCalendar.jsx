@@ -9,7 +9,7 @@ import {
 } from 'antd';
 import { 
   CalendarOutlined, UserOutlined, HomeOutlined,
-  LeftOutlined, RightOutlined, ReloadOutlined
+  LeftOutlined, RightOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -185,7 +185,7 @@ const ScheduleCalendar = () => {
   const RoomSelector = () => (
     <Space wrap>
       <Select
-        style={{ width: 200 }}
+        style={{ width: 300 }}
         placeholder={rooms.length > 0 ? "Chọn phòng" : "Đang tải phòng..."}
         value={selectedRoom?.id}
         loading={rooms.length === 0}
@@ -206,7 +206,7 @@ const ScheduleCalendar = () => {
 
       {selectedRoom && selectedRoom.hasSubRooms && selectedRoom.subRooms?.length > 0 && (
         <Select
-          style={{ width: 200 }}
+          style={{ width: 250 }}
           placeholder="Chọn phòng con (tuỳ chọn)"
           value={selectedSubRoom?.id}
           allowClear
@@ -238,7 +238,7 @@ const ScheduleCalendar = () => {
   // Render dentist selector
   const DentistSelector = () => (
     <Select
-      style={{ width: 200 }}
+      style={{ width: 300 }}
       placeholder="Chọn nha sĩ"
       value={selectedDentist?.id}
       onChange={(dentistId) => {
@@ -394,7 +394,6 @@ const ScheduleCalendar = () => {
                         : 'Đang tải...'
                       }
                     </Text>
-                    <Button icon={<ReloadOutlined />} onClick={loadScheduleData} loading={loading} />
                   </>
                 ) : (
                   <Text type="secondary" style={{ marginLeft: 16 }}>
