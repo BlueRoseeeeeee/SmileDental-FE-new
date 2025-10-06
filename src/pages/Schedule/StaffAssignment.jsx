@@ -419,7 +419,20 @@ const StaffAssignment = () => {
           </Row>
 
           <Divider />
-
+          <Row >
+          <Col span={24}>
+          <Alert
+            message="Lưu ý phân công nhân sự"
+            description={
+              selectedRoom?.hasSubRooms 
+                ? "Phòng có buồng: Mỗi buồng chỉ được phân công 1 bác sĩ và 1 y tá. Hệ thống sẽ tự động phân bổ vào các slot còn trống."
+                : "Phòng đơn: Có thể phân công nhiều bác sĩ và y tá cùng lúc theo cấu hình tối đa của phòng. Các slot đã được phân công sẽ không bị ghi đè."
+            }
+            type="info"
+            showIcon
+          />
+          </Col>
+          </Row>
           <Row gutter={24}>
             {/* Dentist Selection */}
             <Col span={12}>
@@ -470,17 +483,6 @@ const StaffAssignment = () => {
             </Col>
           </Row>
 
-          <Alert
-            message="Lưu ý phân công nhân sự"
-            description={
-              selectedRoom?.hasSubRooms 
-                ? "Phòng có sub-room: Mỗi sub-room chỉ được phân công 1 bác sĩ và 1 y tá. Hệ thống sẽ tự động phân bổ vào các slot còn trống."
-                : "Phòng đơn: Có thể phân công nhiều bác sĩ và y tá cùng lúc theo cấu hình tối đa của phòng. Các slot đã được phân công sẽ không bị ghi đè."
-            }
-            type="info"
-            showIcon
-            style={{ marginBottom: 24 }}
-          />
           <Form.Item>
             <Space>
               <Button
