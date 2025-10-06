@@ -4,22 +4,20 @@
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
-  Card, Row, Col, Typography, Button, Space, Select, DatePicker, 
-  Table, Tag, Spin, Empty, Divider, Badge, List, Avatar, Tooltip,
-  Switch, Tabs
+  Card, Row, Col, Typography, Button, Space, Select, Tag, Spin, Empty, Divider, Badge,
+  Switch,
 } from 'antd';
 import { 
-  CalendarOutlined, UserOutlined, HomeOutlined, ClockCircleOutlined,
-  LeftOutlined, RightOutlined, ReloadOutlined, EyeOutlined
+  CalendarOutlined, UserOutlined, HomeOutlined,
+  LeftOutlined, RightOutlined, ReloadOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 
 dayjs.extend(isoWeek);
-import { scheduleService } from '../../services';
 import { roomService } from '../../services';
 import { userService } from '../../services';
-import scheduleConfigService from '../../services/scheduleConfigService.js';
+import slotService from '../../services/slotService.js';
 import { toast } from '../../services/toastService.js';
 import './ScheduleCalendar.css';
 
@@ -39,168 +37,139 @@ const ScheduleCalendar = () => {
   
   // Calendar state - Tuần bắt đầu từ Thứ 2 (ISO Week)
   const [currentWeek, setCurrentWeek] = useState(dayjs().startOf('isoWeek'));
-  const [schedules, setSchedules] = useState([]);
-  const [slots, setSlots] = useState([]);
+  const [calendarData, setCalendarData] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  // Work shifts from config API
-  const [workShifts, setWorkShifts] = useState([]);
   
-  // Selected slot details
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [slotDetailsVisible, setSlotDetailsVisible] = useState(false);
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Load initial data
   useEffect(() => {
     loadRooms();
     loadDentists();
-    loadWorkShifts();
   }, []);
 
   const loadRooms = async () => {
     try {
       const res = await roomService.getRooms(1, 100);
-      if (res?.success) {
-        setRooms(res.data?.rooms || []);
+      
+      // Room API không có field success, chỉ cần check có data giống StaffAssignment
+      if (res?.rooms && Array.isArray(res.rooms)) {
+        setRooms(res.rooms);
+      } else {
+        toast.error('Dữ liệu phòng không hợp lệ');
       }
     } catch (error) {
-      console.error('Error loading rooms:', error);
-      toast.error('Không thể tải danh sách phòng');
+      toast.error(`Lỗi tải phòng: ${error.response?.status || error.message}`);
     }
   };
 
   const loadDentists = async () => {
     try {
       const res = await userService.getAllStaff(1, 100);
+      
       if (res?.success) {
-        const dentistList = res.data?.users?.filter(user => 
+        const allStaff = res.users || []; // Giống StaffAssignment
+        const dentistList = allStaff.filter(user => 
           user.role === 'dentist' || user.role === 'doctor'
-        ) || [];
+        );
         setDentists(dentistList);
+      } else {
+        toast.error('API nhân viên trả về không thành công');
       }
     } catch (error) {
-      console.error('Error loading dentists:', error);
-      toast.error('Không thể tải danh sách nha sĩ');
+      toast.error(`Lỗi tải nha sĩ: ${error.response?.status || error.message}`);
     }
   };
 
   const loadScheduleData = useCallback(async () => {
-    if (viewMode === 'room' && !selectedRoom) return;
-    if (viewMode === 'dentist' && !selectedDentist) return;
+    if (viewMode === 'room' && !selectedRoom) {
+      return;
+    }
+    if (viewMode === 'dentist' && !selectedDentist) {
+      return;
+    }
 
     setLoading(true);
     try {
-      const startDate = currentWeek.format('YYYY-MM-DD');
-      const endDate = currentWeek.add(6, 'day').format('YYYY-MM-DD');
-
       if (viewMode === 'room') {
-        // Load schedules for room
-        const scheduleRes = await scheduleService.getSchedulesByRoomWithParams(
-          selectedRoom.id, startDate, endDate
-        );
-        if (scheduleRes?.success) {
-          setSchedules(scheduleRes.data || []);
+        const params = {
+          viewType: 'week',
+          page: currentPage,
+          startDate: currentWeek.format('YYYY-MM-DD')
+        };
+        
+        // Add subroom if selected
+        if (selectedSubRoom) {
+          params.subRoomId = selectedSubRoom.id;
         }
 
-        // Load slots for room/subroom
-        const slotsRes = await scheduleService.getSlotsByRoom(
-          selectedRoom.id, selectedSubRoom?.id, startDate, endDate
-        );
-        if (slotsRes?.success) {
-          setSlots(slotsRes.data || []);
+        const response = await slotService.getRoomCalendar(selectedRoom.id, params);
+        
+        if (response?.success) {
+          setCalendarData(response.data);
+        } else {
+          console.error('API returned error:', response);
+          toast.error('API trả về lỗi');
+          setCalendarData(null);
         }
       } else if (viewMode === 'dentist') {
-        // Load slots for dentist
-        const slotsRes = await scheduleService.getSlotsByDentist(
-          selectedDentist.id, startDate, endDate
-        );
-        if (slotsRes?.success) {
-          setSlots(slotsRes.data || []);
-        }
+        // TODO: Implement dentist calendar API call
+        console.log('Dentist calendar not implemented yet');
       }
     } catch (error) {
       console.error('Error loading schedule data:', error);
-      toast.error('Không thể tải dữ liệu lịch');
+      toast.error(`Không thể tải dữ liệu lịch: ${error.message}`);
+      setCalendarData(null);
     } finally {
       setLoading(false);
     }
-  }, [viewMode, selectedRoom, selectedSubRoom, selectedDentist, currentWeek]);
+  }, [viewMode, selectedRoom, selectedSubRoom, selectedDentist, currentWeek, currentPage]);
 
   // Reload when selection or week changes
   useEffect(() => {
     loadScheduleData();
   }, [loadScheduleData]);
 
-  // Tạo lịch hiển thị từ t2->cn - Thứ 2 đến Chủ Nhật (ISO Week)
+  // Tạo lịch hiển thị từ dữ liệu API hoặc fallback về current week
   const weekDays = useMemo(() => {
+    if (calendarData?.periods?.[0]?.days) {
+      // Sử dụng ngày từ API
+      return calendarData.periods[0].days.map(day => dayjs(day.date));
+    }
+    
     const days = [];
-    const startOfWeek = currentWeek.startOf('isoWeek'); // ISO Week bắt đầu từ thứ 2
+    const startOfWeek = currentWeek.startOf('isoWeek');
     for (let i = 0; i < 7; i++) {
       days.push(startOfWeek.add(i, 'day'));
     }
     return days;
-  }, [currentWeek]);
+  }, [currentWeek, calendarData]);
 
-  // Lấy work shifts từ config API
-  const loadWorkShifts = async () => {
-    try {
-      const response = await scheduleConfigService.getConfig();
-      const configData = response.data || response;
-      const shifts = [
-        configData.morningShift && { 
-          name: 'Ca Sáng', 
-          startTime: configData.morningShift.startTime, 
-          endTime: configData.morningShift.endTime 
-        },
-        configData.afternoonShift && { 
-          name: 'Ca Chiều', 
-          startTime: configData.afternoonShift.startTime, 
-          endTime: configData.afternoonShift.endTime 
-        },
-        configData.eveningShift && { 
-          name: 'Ca Tối', 
-          startTime: configData.eveningShift.startTime, 
-          endTime: configData.eveningShift.endTime 
-        }
-      ].filter(Boolean); // Remove null/undefined shifts
-      
-      setWorkShifts(shifts);
-    } catch (error) {
-      console.error('Error loading work shifts:', error);
-    }
-  };
-
-  // Get schedule for specific date
-  const getScheduleForDate = (date) => {
+  const getDayData = (date) => {
+    if (!calendarData?.periods?.[0]?.days) return null;
     const dateStr = date.format('YYYY-MM-DD');
-    return schedules.find(s => s.dateVNStr === dateStr);
+    return calendarData.periods[0].days.find(day => day.date === dateStr);
   };
 
-  // Get slots for specific date and shift
-  const getSlotsForDateShift = (date, shift) => {
-    const dateStr = date.format('YYYY-MM-DD');
-    return slots.filter(slot => 
-      slot.date === dateStr && 
-      slot.shiftName === shift.name
-    );
-  };
-
-  // Handle slot click
-  const handleSlotClick = (slot) => {
-    setSelectedSlot(slot);
-    setSlotDetailsVisible(true);
+  // Get shift data for specific date and shift
+  const getShiftData = (date, shift) => {
+    const dayData = getDayData(date);
+    return dayData?.shifts?.[shift.name] || null;
   };
 
   // Navigation handlers - ISO Week (Thứ 2 đến Chủ Nhật)
   const goToPreviousWeek = () => {
-    setCurrentWeek(prev => prev.subtract(1, 'week'));
+    setCurrentPage(prev => prev + 1); // Trang tăng = về quá khứ
   };
 
   const goToNextWeek = () => {
-    setCurrentWeek(prev => prev.add(1, 'week'));
+    setCurrentPage(prev => Math.max(1, prev - 1)); // Trang giảm = về tương lai
   };
 
   const goToCurrentWeek = () => {
+    setCurrentPage(1);
     setCurrentWeek(dayjs().startOf('isoWeek'));
   };
 
@@ -209,8 +178,10 @@ const ScheduleCalendar = () => {
     <Space wrap>
       <Select
         style={{ width: 200 }}
-        placeholder="Chọn phòng"
+        placeholder={rooms.length > 0 ? "Chọn phòng" : "Đang tải phòng..."}
         value={selectedRoom?.id}
+        loading={rooms.length === 0}
+        disabled={rooms.length === 0}
         onChange={(roomId) => {
           const room = rooms.find(r => r._id === roomId);
           setSelectedRoom({ id: roomId, ...room });
@@ -228,11 +199,16 @@ const ScheduleCalendar = () => {
       {selectedRoom && selectedRoom.hasSubRooms && selectedRoom.subRooms?.length > 0 && (
         <Select
           style={{ width: 200 }}
-          placeholder="Chọn phòng con"
+          placeholder="Chọn phòng con (tuỳ chọn)"
           value={selectedSubRoom?.id}
+          allowClear
           onChange={(subRoomId) => {
-            const subRoom = selectedRoom.subRooms.find(sr => sr._id === subRoomId);
-            setSelectedSubRoom({ id: subRoomId, ...subRoom });
+            if (subRoomId) {
+              const subRoom = selectedRoom.subRooms.find(sr => sr._id === subRoomId);
+              setSelectedSubRoom({ id: subRoomId, ...subRoom });
+            } else {
+              setSelectedSubRoom(null);
+            }
           }}
         >
           {selectedRoom.subRooms.map(subRoom => (
@@ -241,6 +217,12 @@ const ScheduleCalendar = () => {
             </Option>
           ))}
         </Select>
+      )}
+      
+      {selectedRoom && !selectedRoom.hasSubRooms && (
+        <Text type="secondary" style={{ fontSize: '12px' }}>
+          Phòng đơn - không có phòng con
+        </Text>
       )}
     </Space>
   );
@@ -265,104 +247,74 @@ const ScheduleCalendar = () => {
     </Select>
   );
 
-  // Render slot details sidebar
-  const SlotDetailsSidebar = () => (
-    <Card 
-      title="Chi tiết slot"
-      size="small"
-      style={{ height: '100%' }}
-      extra={
-        <Button 
-          size="small" 
-          onClick={() => setSlotDetailsVisible(false)}
-        >
-          Đóng
-        </Button>
-      }
-    >
-      {selectedSlot ? (
-        <List
-          size="small"
-          dataSource={[
-            { label: 'Ngày', value: selectedSlot.date },
-            { label: 'Ca làm việc', value: selectedSlot.shiftName },
-            { label: 'Thời gian', value: `${selectedSlot.startTime} - ${selectedSlot.endTime}` },
-            { label: 'Phòng', value: selectedSlot.roomName },
-            { label: 'Nha sĩ', value: selectedSlot.dentistName || 'Chưa phân công' },
-            { label: 'Y tá', value: selectedSlot.nurseName || 'Chưa phân công' },
-            { label: 'Bệnh nhân', value: selectedSlot.patientName || 'Trống' },
-            { label: 'Trạng thái', value: selectedSlot.status || 'Available' }
-          ]}
-          renderItem={(item) => (
-            <List.Item>
-              <Text strong>{item.label}:</Text>
-              <Text style={{ marginLeft: 8 }}>{item.value}</Text>
-            </List.Item>
-          )}
-        />
-      ) : (
-        <Empty description="Chọn một slot để xem chi tiết" />
-      )}
-    </Card>
-  );
 
   // Render calendar cell
   const CalendarCell = ({ date, shift }) => {
-    const schedule = getScheduleForDate(date);
-    const daySlots = getSlotsForDateShift(date, shift);
-    const hasSchedule = schedule && schedule.workShifts.some(ws => 
-      ws.name === shift.name && ws.isActive
-    );
+    const shiftData = getShiftData(date, shift);
+    const isShiftActive = shift.isActive;
 
-    if (!hasSchedule) {
+    if (!isShiftActive) {
       return (
         <div className="calendar-cell empty">
-          <Text type="secondary">Không có lịch</Text>
+          <Text type="secondary">Không hoạt động</Text>
         </div>
       );
     }
+
+    if (!shiftData) {
+      return (
+        <div className="calendar-cell empty">
+          <Text type="secondary">Không có dữ liệu</Text>
+        </div>
+      );
+    }
+
+    const hasDentist = shiftData.staffStats?.mostFrequentDentist;
+    const hasNurse = shiftData.staffStats?.mostFrequentNurse;
+    const hasStaff = hasDentist || hasNurse;
 
     return (
       <div className="calendar-cell">
         <div className="cell-header">
           <Text strong>{shift.name}</Text>
-          <Badge count={daySlots.length} />
+          <Badge 
+            count={shiftData.totalSlots} 
+            showZero
+            style={{ backgroundColor: shiftData.appointmentCount > 0 ? '#52c41a' : '#d9d9d9' }}
+          />
         </div>
         <div className="cell-content">
-          {daySlots.length > 0 ? (
-            daySlots.slice(0, 3).map((slot, index) => (
-              <div
-                key={index}
-                className="slot-item"
-                onClick={() => handleSlotClick(slot)}
-              >
-                <div className="slot-time">
-                  {slot.startTime} - {slot.endTime}
-                </div>
-                <div className="slot-info">
-                  {slot.dentistName && (
-                    <Tag color="blue" size="small">
-                      {slot.dentistName}
-                    </Tag>
-                  )}
-                  {slot.patientName && (
-                    <Tag color="green" size="small">
-                      {slot.patientName}
-                    </Tag>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="slot-empty">
-              <Text type="secondary">Chưa có slot</Text>
-            </div>
-          )}
-          {daySlots.length > 3 && (
-            <div className="slot-more">
-              <Text type="secondary">+{daySlots.length - 3} slot khác</Text>
-            </div>
-          )}
+          <div className="cell-stats">
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              Cuộc hẹn: {shiftData.appointmentCount}/{shiftData.totalSlots}
+            </Text>
+          </div>
+          
+          {/* Staff Assignment Status */}
+          <div className="cell-staff">
+            {hasDentist ? (
+              <Tag color="blue" size="small">
+                BS: {shiftData.staffStats.mostFrequentDentist.slotCount} slot
+              </Tag>
+            ) : (
+              <Tag color="orange" size="small">
+                BS: Chưa phân công
+              </Tag>
+            )}
+          </div>
+          
+          <div className="cell-staff">
+            {hasNurse ? (
+              <Tag color="green" size="small">
+                YT: {shiftData.staffStats.mostFrequentNurse.slotCount} slot
+              </Tag>
+            ) : (
+              <Tag color="orange" size="small">
+                YT: Chưa phân công
+              </Tag>
+            )}
+          </div>
+
         </div>
       </div>
     );
@@ -390,23 +342,74 @@ const ScheduleCalendar = () => {
 
       <Row gutter={16}>
         {/* Main Calendar */}
-        <Col span={slotDetailsVisible ? 18 : 24}>
+        <Col span={24}>
           <Card>
+            {/* Room Info */}
+            {calendarData?.roomInfo && (
+              <div style={{ marginBottom: 16, padding: 12, background: '#f5f5f5', borderRadius: 8 }}>
+                <Space>
+                  <HomeOutlined />
+                  <Text strong>{calendarData.roomInfo.name}</Text>
+                  {calendarData.roomInfo.subRoom && (
+                    <>
+                      <Text type="secondary">&gt;</Text>
+                      <Text>{calendarData.roomInfo.subRoom.name}</Text>
+                    </>
+                  )}
+                  {calendarData.roomInfo.hasSubRooms && !calendarData.roomInfo.subRoom && (
+                    <Tag color="blue">Có phòng con</Tag>
+                  )}
+                  {calendarData.roomInfo.maxDoctors && (
+                    <Tag color="green">Tối đa {calendarData.roomInfo.maxDoctors} BS</Tag>
+                  )}
+                  {calendarData.roomInfo.maxNurses && (
+                    <Tag color="cyan">Tối đa {calendarData.roomInfo.maxNurses} YT</Tag>
+                  )}
+                </Space>
+              </div>
+            )}
+
             {/* Controls */}
             <div className="calendar-controls">
-              <Space>
+              <Space wrap>
                 {viewMode === 'room' ? <RoomSelector /> : <DentistSelector />}
-                <Divider type="vertical" />
-                <Button icon={<LeftOutlined />} onClick={goToPreviousWeek} />
-                <Button onClick={goToCurrentWeek}>Tuần hiện tại</Button>
-                <Button icon={<RightOutlined />} onClick={goToNextWeek} />
-                <Divider type="vertical" />
-                <Text strong>
-                  {currentWeek.format('DD/MM')} - {currentWeek.add(6, 'day').format('DD/MM/YYYY')}
-                </Text>
-                <Button icon={<ReloadOutlined />} onClick={loadScheduleData} loading={loading} />
+                
+                {/* Show navigation only when room is selected */}
+                {(viewMode === 'room' && selectedRoom) || (viewMode === 'dentist' && selectedDentist) ? (
+                  <>
+                    <Divider type="vertical" />
+                    <Button 
+                      icon={<LeftOutlined />} 
+                      onClick={goToPreviousWeek}
+                      disabled={!calendarData?.pagination?.hasPrev}
+                    >
+                      Tuần trước
+                    </Button>
+                    <Button onClick={goToCurrentWeek}>Tuần hiện tại</Button>
+                    <Button 
+                      icon={<RightOutlined />} 
+                      onClick={goToNextWeek}
+                      disabled={!calendarData?.pagination?.hasNext}
+                    >
+                      Tuần sau
+                    </Button>
+                    <Divider type="vertical" />
+                    <Text strong>
+                      {calendarData?.periods?.[0] 
+                        ? `${dayjs(calendarData.periods[0].startDate).format('DD/MM')} - ${dayjs(calendarData.periods[0].endDate).format('DD/MM/YYYY')}`
+                        : 'Đang tải...'
+                      }
+                    </Text>
+                    <Button icon={<ReloadOutlined />} onClick={loadScheduleData} loading={loading} />
+                  </>
+                ) : (
+                  <Text type="secondary" style={{ marginLeft: 16 }}>
+                    Vui lòng chọn {viewMode === 'room' ? 'phòng' : 'nha sĩ'} để xem lịch
+                  </Text>
+                )}
               </Space>
             </div>
+
 
             {/* Calendar Grid */}
             {loading ? (
@@ -429,8 +432,8 @@ const ScheduleCalendar = () => {
                   ))}
                 </div>
 
-                {/* Shift Rows- cột hiển thị tên ca-thời gian */}
-                {workShifts.length > 0 ? workShifts.map(shift => (
+                {/* Shift Rows - cột hiển thị tên ca-thời gian */}
+                {calendarData?.shiftOverview ? Object.values(calendarData.shiftOverview).map(shift => (
                   <div key={shift.name} className="calendar-row">
                     <div className="time-column">
                       <div className="shift-info">
@@ -438,6 +441,10 @@ const ScheduleCalendar = () => {
                         <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           {shift.startTime} - {shift.endTime}
+                        </Text>
+                        <br />
+                        <Text type={shift.isActive ? 'success' : 'secondary'} style={{ fontSize: 10 }}>
+                          {shift.isActive ? 'Hoạt động' : 'Tạm dừng'}
                         </Text>
                       </div>
                     </div>
@@ -450,7 +457,27 @@ const ScheduleCalendar = () => {
                 )) : (
                   <div className="calendar-row">
                     <div style={{ padding: 20, textAlign: 'center', gridColumn: '1 / -1' }}>
-                      <Text type="secondary">Đang tải ca làm việc...</Text>
+                      {loading ? (
+                        <Text type="secondary">Đang tải ca làm việc...</Text>
+                      ) : selectedRoom ? (
+                        <div>
+                          <Text type="warning">Không thể tải dữ liệu lịch</Text>
+                          <br />
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Kiểm tra kết nối backend hoặc thử lại
+                          </Text>
+                          <br />
+                          <Button 
+                            size="small" 
+                            onClick={loadScheduleData}
+                            style={{ marginTop: 8 }}
+                          >
+                            Thử lại
+                          </Button>
+                        </div>
+                      ) : (
+                        <Text type="secondary">Chọn phòng để xem lịch</Text>
+                      )}
                     </div>
                   </div>
                 )}
@@ -459,12 +486,6 @@ const ScheduleCalendar = () => {
           </Card>
         </Col>
 
-        {/* Slot Details Sidebar */}
-        {slotDetailsVisible && (
-          <Col span={6}>
-            <SlotDetailsSidebar />
-          </Col>
-        )}
       </Row>
     </div>
   );
