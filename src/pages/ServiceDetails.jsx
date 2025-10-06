@@ -31,7 +31,9 @@ import {
   DollarOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  EditOutlined
+  EditOutlined,
+  PlusOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
@@ -48,6 +50,20 @@ const ServiceDetails = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [form] = Form.useForm();
+
+  // Add-on management states
+  const [showAddOnModal, setShowAddOnModal] = useState(false);
+  const [showEditAddOnModal, setShowEditAddOnModal] = useState(false);
+  const [editingAddOn, setEditingAddOn] = useState(null);
+  const [addOnForm] = Form.useForm();
+  const [addOnLoading, setAddOnLoading] = useState(false);
+
+  // Add-on confirmation states
+  const [showToggleConfirmModal, setShowToggleConfirmModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [selectedAddOn, setSelectedAddOn] = useState(null);
+  const [toggleLoading, setToggleLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     if (serviceId) {
@@ -123,6 +139,122 @@ const ServiceDetails = () => {
   const handleCancelUpdate = () => {
     setShowUpdateModal(false);
     form.resetFields();
+  };
+
+  // === QL service ADD-ON  FUNCTIONS =====================================
+  
+  // Thêm add-on mới
+  const handleAddAddOn = () => {
+    setEditingAddOn(null);
+    addOnForm.resetFields();
+    setShowAddOnModal(true);
+  };
+
+  // Chỉnh sửa add-on
+  const handleEditAddOn = (addOn) => {
+    setEditingAddOn(addOn);
+    addOnForm.setFieldsValue({
+      name: addOn.name,
+      price: addOn.price,
+      description: addOn.description
+    });
+    setShowEditAddOnModal(true);
+  };
+
+  // Xác nhận thêm/sửa add-on
+  const handleConfirmAddOn = async () => {
+    try {
+      setAddOnLoading(true);
+      const values = await addOnForm.validateFields();
+      
+      if (editingAddOn) {
+        // Cập nhật add-on
+        await servicesService.updateServiceAddOn(serviceId, editingAddOn._id, values);
+        toastService.success('Cập nhật cấp độ dịch vụ thành công!');
+      } else {
+        // Thêm add-on mới
+        await servicesService.addServiceAddOn(serviceId, values);
+        toastService.success('Thêm cấp độ dịch vụ thành công!');
+      }
+      
+      // Reload service details
+      await fetchServiceDetails();
+      setShowAddOnModal(false);
+      setShowEditAddOnModal(false);
+      addOnForm.resetFields();
+    } catch (error) {
+      toastService.error('Lỗi: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setAddOnLoading(false);
+    }
+  };
+
+  // Hủy thêm/sửa add-on
+  const handleCancelAddOn = () => {
+    setShowAddOnModal(false);
+    setShowEditAddOnModal(false);
+    setEditingAddOn(null);
+    addOnForm.resetFields();
+  };
+
+  // Show toggle confirmation modal
+  const handleToggleAddOn = (addOn) => {
+    setSelectedAddOn(addOn);
+    setShowToggleConfirmModal(true);
+  };
+
+  // Confirm toggle add-on
+  const handleConfirmToggleAddOn = async () => {
+    if (!selectedAddOn) return;
+    
+    try {
+      setToggleLoading(true);
+      await servicesService.toggleServiceAddOn(serviceId, selectedAddOn._id);
+      toastService.success(`Đã ${selectedAddOn.isActive ? 'tắt' : 'bật'} cấp độ dịch vụ!`);
+      await fetchServiceDetails();
+    } catch (error) {
+      toastService.error('Lỗi: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setToggleLoading(false);
+      setShowToggleConfirmModal(false);
+      setSelectedAddOn(null);
+    }
+  };
+
+  // Cancel toggle confirmation
+  const handleCancelToggleAddOn = () => {
+    setShowToggleConfirmModal(false);
+    setSelectedAddOn(null);
+  };
+
+  // Show delete confirmation modal
+  const handleDeleteAddOn = (addOn) => {
+    setSelectedAddOn(addOn);
+    setShowDeleteConfirmModal(true);
+  };
+
+  // Confirm delete add-on
+  const handleConfirmDeleteAddOn = async () => {
+    if (!selectedAddOn) return;
+    
+    try {
+      setDeleteLoading(true);
+      await servicesService.deleteServiceAddOn(serviceId, selectedAddOn._id);
+      toastService.success('Xóa cấp độ dịch vụ thành công!');
+      await fetchServiceDetails();
+    } catch (error) {
+      toastService.error('Lỗi: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteConfirmModal(false);
+      setSelectedAddOn(null);
+    }
+  };
+
+  // Cancel delete confirmation
+  const handleCancelDeleteAddOn = () => {
+    setShowDeleteConfirmModal(false);
+    setSelectedAddOn(null);
   };
 
   if (loading) {
@@ -208,7 +340,7 @@ const ServiceDetails = () => {
               </Col>
               <Col span={12}>
                 <div>
-                  <Text type="secondary">Thời gian thực hiện:</Text>
+                  <Text type="secondary">Thời gian thực hiện ước tính:</Text>
                   <div style={{ marginTop: 4 }}>
                     <Tag color="green" style={{ fontSize: 14 }}>
                       <ClockCircleOutlined /> {service.durationMinutes} phút
@@ -273,7 +405,20 @@ const ServiceDetails = () => {
 
         {/* Các cấp độ dịch vụ */}
         <Col span={24}>
-          <Card title="Các cấp độ dịch vụ" size="small">
+          <Card 
+            title="Các cấp độ dịch vụ" 
+            size="small"
+            extra={
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddAddOn}
+                size="small"
+              >
+                Thêm cấp độ
+              </Button>
+            }
+          >
             {service.serviceAddOns && service.serviceAddOns.length > 0 ? (
               <Table
                 dataSource={service.serviceAddOns}
@@ -294,11 +439,6 @@ const ServiceDetails = () => {
                     render: (text, record) => (
                       <div>
                         <Text strong>{text}</Text>
-                        {!record.isActive && (
-                          <Tag color="red" size="small" style={{ marginLeft: 8 }}>
-                            Tạm ngưng
-                          </Tag>
-                        )}
                       </div>
                     ),
                   },
@@ -328,12 +468,30 @@ const ServiceDetails = () => {
                     ),
                   },
                   {
-                    title: 'Sử dụng',
-                    key: 'usage',
+                    title: 'Thao tác',
+                    key: 'actions',
+                    width: 180,
                     render: (_, record) => (
-                      <Tag color={record.hasBeenUsed ? 'orange' : 'blue'}>
-                        {record.hasBeenUsed ? 'Đã sử dụng' : 'Chưa sử dụng'}
-                      </Tag>
+                      <Space>
+                        <Button
+                          type="text"
+                          icon={<EditOutlined />}
+                          onClick={() => handleEditAddOn(record)}
+                          size="small"
+                        />
+                        <Switch
+                          size="small"
+                          checked={record.isActive}
+                          onChange={() => handleToggleAddOn(record)}
+                        />
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => handleDeleteAddOn(record)}
+                          size="small"
+                        />
+                      </Space>
                     ),
                   },
                 ]}
@@ -341,6 +499,15 @@ const ServiceDetails = () => {
             ) : (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <Text type="secondary">Chưa có cấp độ dịch vụ</Text>
+                <br />
+                <Button 
+                  type="dashed" 
+                  icon={<PlusOutlined />}
+                  onClick={handleAddAddOn}
+                  style={{ marginTop: 8 }}
+                >
+                  Thêm cấp độ đầu tiên
+                </Button>
               </div>
             )}
           </Card>
@@ -394,7 +561,7 @@ const ServiceDetails = () => {
 
           <Form.Item
             name="duration"
-            label="Thời gian thực hiện (phút)"
+            label="Thời gian thực hiện ước tính (phút)"
             rules={[
               { required: true, message: 'Vui lòng nhập thời gian' },
               { type: 'number', min: 1, message: 'Thời gian phải lớn hơn 0' }
@@ -428,6 +595,146 @@ const ServiceDetails = () => {
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Add/Edit Add-On Modal */}
+      <Modal
+        title={editingAddOn ? "Chỉnh sửa cấp độ dịch vụ" : "Thêm cấp độ dịch vụ"}
+        open={showAddOnModal || showEditAddOnModal}
+        onOk={handleConfirmAddOn}
+        onCancel={handleCancelAddOn}
+        okText={editingAddOn ? "Cập nhật" : "Thêm"}
+        cancelText="Hủy"
+        confirmLoading={addOnLoading}
+        width={600}
+      >
+        <Form
+          form={addOnForm}
+          layout="vertical"
+          initialValues={{
+            name: '',
+            price: 0,
+            description: ''
+          }}
+        >
+          <Form.Item
+            name="name"
+            label="Tên cấp độ"
+            rules={[
+              { required: true, message: 'Vui lòng nhập tên cấp độ' },
+              { min: 3, message: 'Tên cấp độ phải có ít nhất 3 ký tự' }
+            ]}
+          >
+            <Input placeholder="Nhập tên cấp độ dịch vụ" />
+          </Form.Item>
+
+          <Form.Item
+            name="price"
+            label="Giá (VNĐ)"
+            rules={[
+              { required: true, message: 'Vui lòng nhập giá' },
+              { type: 'number', min: 0, message: 'Giá phải lớn hơn hoặc bằng 0' }
+            ]}
+          >
+            <InputNumber
+              placeholder="Nhập giá dịch vụ"
+              style={{ width: '100%' }}
+              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={value => value.replace(/\$\s?|(,*)/g, '')}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="description"
+            label="Mô tả"
+          >
+            <Input.TextArea
+            placeholder="Nhập mô tả cấp độ dịch vụ (tùy chọn)"
+            rows={3}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Toggle Add-On Confirmation Modal */}
+      <Modal
+        title="Xác nhận thay đổi trạng thái cấp độ dịch vụ"
+        open={showToggleConfirmModal}
+        onOk={handleConfirmToggleAddOn}
+        onCancel={handleCancelToggleAddOn}
+        okText={selectedAddOn?.isActive ? 'Tắt cấp độ' : 'Bật cấp độ'}
+        cancelText="Hủy"
+        okType={selectedAddOn?.isActive ? 'danger' : 'primary'}
+        confirmLoading={toggleLoading}
+      >
+        {selectedAddOn && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: selectedAddOn.isActive ? '#ff4d4f' : '#52c41a' }}>
+        {selectedAddOn.isActive ? 'TẮT' : 'BẬT'}
+          </strong>
+              {' '}cấp độ dịch vụ{' '}
+         <strong>"{selectedAddOn.name}"</strong>?
+            </p>
+            {selectedAddOn.isActive && (
+              <div>
+                <p style={{ color: '#faad14', fontSize: 12 }}>
+                   Cấp độ dịch vụ sẽ không còn khả dụng cho bệnh nhân đặt lịch.
+                </p>
+                {selectedAddOn.hasBeenUsed && (
+                  <p style={{ color: '#ff4d4f', fontSize: 12 }}>
+                     Cấp độ này đã được sử dụng trong quá khứ.
+                  </p>
+                )}
+              </div>
+            )}
+            {!selectedAddOn.isActive && (
+              <p style={{ color: '#52c41a', fontSize: 12 }}>
+                 Cấp độ dịch vụ sẽ được kích hoạt và sẵn sàng phục vụ bệnh nhân.
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Add-On Confirmation Modal */}
+      <Modal
+        title="Xác nhận xóa cấp độ dịch vụ"
+        open={showDeleteConfirmModal}
+        onOk={handleConfirmDeleteAddOn}
+        onCancel={handleCancelDeleteAddOn}
+        okText="Xóa cấp độ"
+        cancelText="Hủy"
+        okType="danger"
+        confirmLoading={deleteLoading}
+      >
+        {selectedAddOn && (
+          <div>
+            <p>
+        Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: '#ff4d4f' }}>XÓA</strong>
+              {' '}cấp độ dịch vụ{' '}
+              <strong>"{selectedAddOn.name}"</strong>?
+            </p>
+            
+            <div style={{ backgroundColor: '#fff2f0', padding: 12, borderRadius: 6, border: '1px solid #ffccc7', marginTop: 16 }}>
+              {selectedAddOn.hasBeenUsed && (
+                <p style={{ color: '#ff4d4f', fontSize: 12, margin: '0 0 8px 0' }}>
+                   <strong>Cấp độ đã được sử dụng:</strong> Việc xóa có thể ảnh hưởng đến dữ liệu lịch sử và báo cáo.
+                </p>
+              )}
+              
+              <p style={{ color: '#ff4d4f', fontSize: 12, margin: 0 }}>
+                 <strong>Hành động này không thể hoàn tác!</strong>
+              </p>
+            </div>
+
+            <p style={{ marginTop: 16, fontSize: 13, color: '#666' }}>
+              Nếu bạn chỉ muốn tạm thời ngưng sử dụng cấp độ, hãy <strong>TẮT</strong> thay vì xóa.
+            </p>
+          </div>
+        )}
       </Modal>
     </div>
   );
