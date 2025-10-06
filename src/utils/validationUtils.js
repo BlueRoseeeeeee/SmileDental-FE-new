@@ -276,10 +276,11 @@ export const getReactHookFormRules = {
     }
   }),
 
-  confirmPassword: (watchPassword) => ({
+  confirmPassword: (passwordField) => ({
     required: 'Vui lòng xác nhận mật khẩu!',
-    validate: (value) => {
-      const validation = validateConfirmPassword(watchPassword(), value);
+    validate: (value, formValues) => {
+      const passwordValue = formValues[passwordField];
+      const validation = validateConfirmPassword(passwordValue, value);
       return validation.valid || validation.message;
     }
   }),

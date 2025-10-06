@@ -601,18 +601,6 @@ const RegisterRHF = () => {
                     type="password"
                     className="form-input"
                     placeholder="Nhập mật khẩu (8-16 ký tự)"
-                    onChange={() => {
-                      // Trigger validation cho cả password và confirmPassword khi password thay đổi
-                      setTimeout(() => {
-                        form.trigger(['password', 'confirmPassword']);
-                      }, 100);
-                    }}
-                    onBlur={() => {
-                      // Trigger validation khi rời khỏi field
-                      setTimeout(() => {
-                        form.trigger(['password', 'confirmPassword']);
-                      }, 100);
-                    }}
                   />
                   {errors.password && (
                     <div className="form-error">{errors.password.message}</div>
@@ -624,22 +612,10 @@ const RegisterRHF = () => {
                     Xác nhận mật khẩu <span style={{ color: 'red' }}>*</span>
                   </label>
                   <input
-                    {...register('confirmPassword', getReactHookFormRules.confirmPassword(() => watch('password')))}
+                    {...register('confirmPassword', getReactHookFormRules.confirmPassword('password'))}
                     type="password"
                     className="form-input"
                     placeholder="Nhập lại mật khẩu để xác nhận"
-                    onChange={() => {
-                      // Trigger validation khi thay đổi
-                      setTimeout(() => {
-                        form.trigger('confirmPassword');
-                      }, 100);
-                    }}
-                    onBlur={() => {
-                      // Trigger validation khi rời khỏi field
-                      setTimeout(() => {
-                        form.trigger('confirmPassword');
-                      }, 100);
-                    }}
                   />
                   {errors.confirmPassword && (
                     <div className="form-error">{errors.confirmPassword.message}</div>
