@@ -275,14 +275,6 @@ const ScheduleCalendar = () => {
 
     return (
       <div className="calendar-cell">
-        <div className="cell-header">
-          <Text strong>{shift.name}</Text>
-          <Badge 
-            count={shiftData.totalSlots} 
-            showZero
-            style={{ backgroundColor: shiftData.appointmentCount > 0 ? '#52c41a' : '#d9d9d9' }}
-          />
-        </div>
         <div className="cell-content">
           <div className="cell-stats">
             <Text type="secondary" style={{ fontSize: '12px' }}>
