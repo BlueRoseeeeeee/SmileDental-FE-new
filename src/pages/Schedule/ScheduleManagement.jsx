@@ -421,17 +421,21 @@ const ScheduleManagement = () => {
       {/* Generate Quarter Modal */}
       <Modal
         open={generateModalOpen}
-        onCancel={() => {
+        onCancel={generateResult ? null : () => {
           setGenerateModalOpen(false);
           setGenerateResult(null);
         }}
-        title="Xác nhận tạo lịch làm việc"
-        okText="Tạo lịch"
-        cancelText="Hủy bỏ"
-        onOk={handleGenerateQuarter}
+        title={generateResult ? "Kết quả tạo lịch" : "Xác nhận tạo lịch làm việc"}
+        okText={generateResult ? "Hoàn tất" : "Xác nhận"}
+        cancelButtonProps={generateResult ? { style: { display: 'none' } } : undefined}
+        onOk={generateResult ? (() => {
+          setGenerateModalOpen(false);
+          setGenerateResult(null);
+        }) : handleGenerateQuarter}
         confirmLoading={generating}
         width={800}
         destroyOnClose
+        closable={!generateResult}
       >
         <Alert
           type="warning"
