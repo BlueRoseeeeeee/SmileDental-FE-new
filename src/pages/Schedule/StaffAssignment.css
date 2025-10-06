@@ -1,0 +1,118 @@
+/**
+ * @author: HoTram
+ * Staff Assignment Styles
+ */
+
+.staff-assignment {
+  padding: 24px;
+}
+
+.staff-assignment .ant-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.staff-assignment .ant-form-item-label > label {
+  font-weight: 600;
+  color: #262626;
+}
+
+.staff-assignment .ant-select,
+.staff-assignment .ant-input-number {
+  border-radius: 8px;
+}
+
+.staff-assignment .ant-select:hover,
+.staff-assignment .ant-input-number:hover {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.staff-assignment .ant-btn-primary {
+  height: 44px;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+}
+
+.staff-assignment .ant-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.3);
+}
+
+.staff-assignment .ant-alert {
+  border-radius: 8px;
+  border: none;
+}
+
+.staff-assignment .ant-divider {
+  margin: 32px 0;
+  border-color: #f0f0f0;
+}
+
+/* Loading state */
+.staff-assignment .loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  color: #8c8c8c;
+}
+
+.staff-assignment .loading-container .ant-spin {
+  margin-bottom: 16px;
+}
+
+/* Success notification customization */
+.staff-assignment-success .ant-notification-notice-message {
+  color: #52c41a;
+  font-weight: 600;
+}
+
+.staff-assignment-error .ant-notification-notice-message {
+  color: #ff4d4f;
+  font-weight: 600;
+}
+
+/* Room selector highlight */
+.staff-assignment .room-selector .ant-select-selection-item {
+  font-weight: 500;
+}
+
+/* Staff selector styling */
+.staff-assignment .staff-selector .ant-select-selection-item {
+  background: linear-gradient(45deg, #1890ff, #36cfc9);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .staff-assignment {
+    padding: 16px;
+  }
+  
+  .staff-assignment .ant-col {
+    margin-bottom: 16px;
+  }
+  
+  .staff-assignment .ant-btn-primary {
+    width: 100%;
+  }
+}
+
+/* Animation for form sections */
+.staff-assignment .ant-row {
+  transition: all 0.3s ease;
+}
+
+.staff-assignment .ant-form-item {
+  transition: all 0.2s ease;
+}
+
+.staff-assignment .ant-form-item:hover {
+  transform: translateY(-1px);
+}

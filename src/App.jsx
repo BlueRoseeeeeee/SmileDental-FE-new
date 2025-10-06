@@ -32,6 +32,7 @@ import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
 import HolidayManagement from './pages/Schedule/HolidayManagement.jsx';
 import ScheduleManagement from './pages/Schedule/ScheduleManagement.jsx';
 import ScheduleCalendar from './pages/Schedule/ScheduleCalendar.jsx';
+import StaffAssignment from './pages/Schedule/StaffAssignment.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -203,6 +204,11 @@ function App() {
             <Route path="schedules/holidays" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <HolidayManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffAssignment />
               </ProtectedRoute>
             } />
             
