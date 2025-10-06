@@ -63,7 +63,6 @@ const StaffAssignment = () => {
 
   const loadStaff = async () => {
     try {
-      console.log('Loading staff...');
       const staffRes = await userService.getAllStaff(1, 100);
       console.log(' Staff response:', staffRes);
       
@@ -86,6 +85,13 @@ const StaffAssignment = () => {
         console.log('Staff loaded - Dentists:', dentistList.length, 'Nurses:', nurseList.length);
         console.log('Dentist list:', dentistList);
         console.log('Nurse list:', nurseList);
+        
+        if (dentistList.length > 0) {
+          console.log('dentist fields:', Object.keys(dentistList[0]));
+        }
+        if (nurseList.length > 0) {
+          console.log('nurse fields:', Object.keys(nurseList[0]));
+        }
       } else {
         console.error(' Staff API response not success:', staffRes);
         toast.error('API nhân viên trả về không thành công');
@@ -340,7 +346,7 @@ const StaffAssignment = () => {
                   {dentists.map(dentist => (
                     <Option key={dentist._id} value={dentist._id}>
                       <UserOutlined style={{ marginRight: 8 }} />
-                      {dentist.firstName} {dentist.lastName}
+                      {dentist.employeeCode || 'N/A'} | {dentist.fullName}
                     </Option>
                   ))}
                 </Select>
@@ -364,7 +370,7 @@ const StaffAssignment = () => {
                   {nurses.map(nurse => (
                     <Option key={nurse._id} value={nurse._id}>
                       <UserOutlined style={{ marginRight: 8 }} />
-                      {nurse.firstName} {nurse.lastName}
+                      {nurse.employeeCode || 'N/A'} | {nurse.fullName}
                     </Option>
                   ))}
                 </Select>
@@ -372,7 +378,6 @@ const StaffAssignment = () => {
             </Col>
           </Row>
 
-          {/* Info Alert */}
           <Alert
             message="Lưu ý"
             description="Hệ thống sẽ tự động phân công nhân sự vào các slot còn trống. Các slot đã được phân công sẽ không bị ghi đè."
@@ -380,8 +385,6 @@ const StaffAssignment = () => {
             showIcon
             style={{ marginBottom: 24 }}
           />
-
-          {/* Submit Button */}
           <Form.Item>
             <Space>
               <Button
