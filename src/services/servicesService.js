@@ -38,5 +38,37 @@ export const servicesService = {
   async deleteService(serviceId) {
     const response = await serviceApi.delete(`/service/${serviceId}`);
     return response.data;
+  },
+
+  // === SERVICE ADD-ONS APIs ===
+  
+  // Thêm add-on cho dịch vụ
+  async addServiceAddOn(serviceId, addOnData) {
+    const response = await serviceApi.post(`/service/${serviceId}/addons`, addOnData);
+    return response.data;
+  },
+
+  // Cập nhật add-on
+  async updateServiceAddOn(serviceId, addOnId, addOnData) {
+    const response = await serviceApi.put(`/service/${serviceId}/addons/${addOnId}`, addOnData);
+    return response.data;
+  },
+
+  // Toggle trạng thái add-on
+  async toggleServiceAddOn(serviceId, addOnId) {
+    const response = await serviceApi.patch(`/service/${serviceId}/addons/${addOnId}/toggle`);
+    return response.data;
+  },
+
+  // Xóa add-on
+  async deleteServiceAddOn(serviceId, addOnId) {
+    const response = await serviceApi.delete(`/service/${serviceId}/addons/${addOnId}`);
+    return response.data;
+  },
+
+  // Lấy chi tiết add-on theo ID
+  async getServiceAddOnById(serviceId, addOnId) {
+    const response = await serviceApi.get(`/service/${serviceId}/addons/${addOnId}`);
+    return response.data;
   }
 };
