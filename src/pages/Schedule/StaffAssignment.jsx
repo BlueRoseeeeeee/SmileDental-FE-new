@@ -424,7 +424,7 @@ const StaffAssignment = () => {
             {/* Dentist Selection */}
             <Col span={12}>
               <Form.Item
-                label={`Nha sĩ ${selectedRoom?.hasSubRooms}`}
+                label={`Nha sĩ`}
                 name="dentistIds"
                 rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 bác sĩ' }]}
               >
@@ -448,7 +448,7 @@ const StaffAssignment = () => {
             {/* Nurse Selection */}
             <Col span={12}>
               <Form.Item
-                label={`Y tá ${selectedRoom?.hasSubRooms}`}
+                label={`Y tá`}
                 name="nurseIds"
                 rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 y tá' }]}
               >
