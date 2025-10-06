@@ -36,29 +36,75 @@ const StaffAssignment = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadRooms = async () => {
+    try {
+      console.log('Loading rooms...');
+      const roomsRes = await roomService.getRooms(1, 100);
+      console.log('Rooms response:', roomsRes);
+      
+      // Room API không có field success, chỉ cần check có data
+      if (roomsRes?.rooms && Array.isArray(roomsRes.rooms)) {
+        setRooms(roomsRes.rooms);
+        console.log('Rooms loaded:', roomsRes.rooms.length);
+      } else {
+        console.error('Rooms API invalid format:', roomsRes);
+        toast.error('Dữ liệu phòng không hợp lệ');
+      }
+    } catch (error) {
+      console.error(' Room API error:', error);
+      console.error('Status:', error.response?.status);
+      console.error('Status Text:', error.response?.statusText);
+      console.error('Data:', error.response?.data);
+      toast.error(`Lỗi tải phòng: ${error.response?.status || error.message}`);
+    }
+  };
+
+  const loadStaff = async () => {
+    try {
+      console.log('Loading staff...');
+      const staffRes = await userService.getAllStaff(1, 100);
+      console.log(' Staff response:', staffRes);
+      
+      if (staffRes?.success) {
+        const allStaff = staffRes.users || []; // Lấy users trực tiếp, không qua data
+        console.log(' All staff:', allStaff);
+        
+        const dentistList = allStaff.filter(user => {
+          console.log('User role:', user.role);
+          return user.role === 'dentist' || user.role === 'doctor';
+        });
+        
+        const nurseList = allStaff.filter(user => {
+          return user.role === 'nurse';
+        });
+        
+        setDentists(dentistList);
+        setNurses(nurseList);
+        
+        console.log('Staff loaded - Dentists:', dentistList.length, 'Nurses:', nurseList.length);
+        console.log('Dentist list:', dentistList);
+        console.log('Nurse list:', nurseList);
+      } else {
+        console.error(' Staff API response not success:', staffRes);
+        toast.error('API nhân viên trả về không thành công');
+      }
+    } catch (error) {
+      console.error('Staff API error:', error);
+      console.error('Status:', error.response?.status);
+      console.error('Data:', error.response?.data);
+      toast.error(`Lỗi tải nhân viên: ${error.response?.status || error.message}`);
+    }
+  };
 
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      const [roomsRes, staffRes] = await Promise.all([
-        roomService.getRooms(1, 100),
-        userService.getAllStaff(1, 100)
-      ]);
-
-      if (roomsRes?.success) {
-        setRooms(roomsRes.data?.rooms || []);
-      }
-
-      if (staffRes?.success) {
-        const allStaff = staffRes.data?.users || [];
-        setDentists(allStaff.filter(user => user.role === 'dentist' || user.role === 'doctor'));
-        setNurses(allStaff.filter(user => user.role === 'nurse'));
-      }
-
+      await loadRooms();
+      await loadStaff();
     } catch (error) {
-      console.error('Error loading initial data:', error);
-      toast.error('Không thể tải dữ liệu ban đầu');
+      console.error('Overall error:', error);
     } finally {
       setLoading(false);
     }
@@ -121,9 +167,39 @@ const StaffAssignment = () => {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '60px 0' }}>
-        <Spin size="large" />
-        <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
+      <div className="staff-assignment">
+        <Card>
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error state with retry button if no data loaded
+  if (!loading && rooms.length === 0 && dentists.length === 0 && nurses.length === 0) {
+    return (
+      <div className="staff-assignment">
+        <Card>
+          <div style={{ textAlign: 'center', padding: '60px 0' }}>
+            <Alert
+              message="Không thể tải dữ liệu"
+              description="Không thể kết nối đến server. Kiểm tra console để xem chi tiết lỗi."
+              type="error"
+              showIcon
+              style={{ marginBottom: 24 }}
+            />
+            <Button 
+              type="primary" 
+              onClick={loadInitialData}
+              icon={<TeamOutlined />}
+            >
+              Thử lại
+            </Button>
+          </div>
+        </Card>
       </div>
     );
   }
