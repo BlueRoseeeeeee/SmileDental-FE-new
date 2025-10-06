@@ -170,13 +170,16 @@ const ScheduleCalendar = () => {
   };
 
   const goToNextWeek = () => {
-    setCurrentPage(prev => Math.max(1, prev - 1)); // Trang giảm = về tương lai
+    setCurrentPage(prev => Math.max(0, prev - 1)); // Trang giảm = về tương lai
   };
 
   const goToCurrentWeek = () => {
-    setCurrentPage(1);
+    setCurrentPage(0);
     setCurrentWeek(dayjs().startOf('isoWeek'));
   };
+
+  // Check if we're at current week
+  const isCurrentWeek = currentPage === 0;
 
   // Render room/subroom selector
   const RoomSelector = () => (
@@ -356,12 +359,6 @@ const ScheduleCalendar = () => {
                   {calendarData.roomInfo.hasSubRooms && !calendarData.roomInfo.subRoom && (
                     <Tag color="blue">Có phòng con</Tag>
                   )}
-                  {calendarData.roomInfo.maxDoctors && (
-                    <Tag color="green">Tối đa {calendarData.roomInfo.maxDoctors} NS</Tag>
-                  )}
-                  {calendarData.roomInfo.maxNurses && (
-                    <Tag color="cyan">Tối đa {calendarData.roomInfo.maxNurses} YT</Tag>
-                  )}
                 </Space>
               </div>
             )}
@@ -378,7 +375,7 @@ const ScheduleCalendar = () => {
                     <Button 
                       icon={<LeftOutlined />} 
                       onClick={goToPreviousWeek}
-                      disabled={!calendarData?.pagination?.hasPrev}
+                      disabled={isCurrentWeek}
                     >
                       Tuần trước
                     </Button>
