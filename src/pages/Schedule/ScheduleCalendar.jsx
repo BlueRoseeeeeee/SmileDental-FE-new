@@ -271,7 +271,7 @@ const ScheduleCalendar = () => {
 
     const hasDentist = shiftData.staffStats?.mostFrequentDentist;
     const hasNurse = shiftData.staffStats?.mostFrequentNurse;
-    const hasStaff = hasDentist || hasNurse;
+    // const hasStaff = hasDentist || hasNurse;
 
     return (
       <div className="calendar-cell">
