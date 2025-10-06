@@ -2,16 +2,14 @@
 * @author: HoTram
 */
 import React, { useState } from 'react';
+import dayjs from 'dayjs';
+import { Controller } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Card, Typography, Alert, Radio, Steps, Space, Divider } from 'antd';
+import { Button, Card, Typography, Alert, Radio, Steps, Space, Divider, DatePicker } from 'antd';
 import { toast } from '../../services/toastService';
 import { 
   CheckCircleOutlined,
   ArrowLeftOutlined,
-  HeartOutlined,
-  StarOutlined,
-  TeamOutlined,
-  SafetyOutlined
 } from '@ant-design/icons';
 import { useFormPersistence } from '../../hooks/useFormPersistence';
 import { useAuth } from '../../contexts/AuthContext';
@@ -500,22 +498,32 @@ const RegisterRHF = () => {
                   <label className="form-label">
                     Ngày sinh <span style={{ color: 'red' }}>*</span>
                   </label>
-                  <input
-                    {...register('dateOfBirth', getReactHookFormRules.dateOfBirthPatient())}
-                    type="date"
-                    className="form-input"
-                    placeholder="dd/mm/yyyy"
-                    tabIndex={3}
-                    autoComplete="bday"
-                    max={new Date().toISOString().split('T')[0]} // Không cho chọn ngày tương lai
-                    onChange={() => {
-                      // Trigger validation ngay khi thay đổi
-                      form.trigger('dateOfBirth');
-                    }}
-                    onBlur={() => {
-                      // Trigger validation khi blur
-                      form.trigger('dateOfBirth');
-                    }}
+                  <Controller
+                    name="dateOfBirth"
+                    control={form.control}
+                    rules={getReactHookFormRules.dateOfBirthPatient()}
+                    render={({ field: { value, onChange, onBlur } }) => (
+                      <DatePicker
+                        style={{ width: '100%' }}
+                        placeholder="Chọn ngày sinh"
+                        format="DD/MM/YYYY"
+                        value={value ? dayjs(value, 'YYYY-MM-DD') : null}
+                        onChange={(date) => {
+                          const formatted = date ? date.format('YYYY-MM-DD') : '';
+                          onChange(formatted);
+                          setTimeout(() => {
+                            form.trigger('dateOfBirth');
+                          }, 0);
+                        }}
+                        onBlur={() => {
+                          onBlur();
+                          setTimeout(() => {
+                            form.trigger('dateOfBirth');
+                          }, 0);
+                        }}
+                        disabledDate={(current) => current && current > dayjs()}
+                      />
+                    )}
                   />
                   {errors.dateOfBirth && (
                     <div className="form-error">{errors.dateOfBirth.message}</div>
@@ -599,6 +607,12 @@ const RegisterRHF = () => {
                         form.trigger(['password', 'confirmPassword']);
                       }, 100);
                     }}
+                    onBlur={() => {
+                      // Trigger validation khi rời khỏi field
+                      setTimeout(() => {
+                        form.trigger(['password', 'confirmPassword']);
+                      }, 100);
+                    }}
                   />
                   {errors.password && (
                     <div className="form-error">{errors.password.message}</div>
@@ -616,6 +630,12 @@ const RegisterRHF = () => {
                     placeholder="Nhập lại mật khẩu để xác nhận"
                     onChange={() => {
                       // Trigger validation khi thay đổi
+                      setTimeout(() => {
+                        form.trigger('confirmPassword');
+                      }, 100);
+                    }}
+                    onBlur={() => {
+                      // Trigger validation khi rời khỏi field
                       setTimeout(() => {
                         form.trigger('confirmPassword');
                       }, 100);
