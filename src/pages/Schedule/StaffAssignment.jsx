@@ -29,6 +29,7 @@ const StaffAssignment = () => {
   const [rooms, setRooms] = useState([]);
   const [dentists, setDentists] = useState([]);
   const [nurses, setNurses] = useState([]);
+  const [availableQuarters, setAvailableQuarters] = useState([]);
 
   // Form states
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -110,11 +111,46 @@ const StaffAssignment = () => {
     }
   };
 
+  const loadAvailableQuarters = async () => {
+    try {
+      console.log('Loading available quarters...');
+      const quartersRes = await slotService.getAvailableQuartersYears();
+      console.log('Available quarters response:', quartersRes);
+      
+      if (quartersRes?.success && quartersRes?.data?.availableOptions) {
+        setAvailableQuarters(quartersRes.data.availableOptions);
+        console.log('Available quarters loaded:', quartersRes.data.availableOptions.length);
+        
+        // Set default values to current quarter
+        if (quartersRes.data.currentQuarter) {
+          const current = quartersRes.data.currentQuarter;
+          form.setFieldsValue({
+            quarter: current.quarter,
+            year: current.year,
+            quarterYear: `${current.quarter}-${current.year}`
+          });
+          console.log('Set default quarter/year:', current.quarter, current.year);
+        }
+      } else {
+        console.error('Quarters API invalid format:', quartersRes);
+        toast.error('Dữ liệu quý không hợp lệ');
+      }
+    } catch (error) {
+      console.error('Quarters API error:', error);
+      console.error('Status:', error.response?.status);
+      console.error('Data:', error.response?.data);
+      toast.error(`Lỗi tải danh sách quý: ${error.response?.status || error.message}`);
+    }
+  };
+
   const loadInitialData = async () => {
     setLoading(true);
     try {
-      await loadRooms();
-      await loadStaff();
+      await Promise.all([
+        loadRooms(),
+        loadStaff(),
+        loadAvailableQuarters()
+      ]);
     } catch (error) {
       console.error('Overall error:', error);
     } finally {
@@ -314,37 +350,47 @@ const StaffAssignment = () => {
           </Row>
 
           <Row gutter={24}>
-            {/* Quarter Selection */}
-            <Col span={8}>
+            {/* Quarter and Year Selection - Combined */}
+            <Col span={16}>
               <Form.Item
-                label="Quý"
-                name="quarter"
-                rules={[{ required: true, message: 'Vui lòng chọn quý' }]}
+                label="Quý và Năm"
+                name="quarterYear"
+                rules={[{ required: true, message: 'Vui lòng chọn quý và năm' }]}
               >
-                <Select placeholder="Chọn quý">
-                  <Option value={1}>Quý 1</Option>
-                  <Option value={2}>Quý 2</Option>
-                  <Option value={3}>Quý 3</Option>
-                  <Option value={4}>Quý 4</Option>
+                <Select 
+                  placeholder="Chọn quý và năm"
+                  onChange={(value) => {
+                    const [quarter, year] = value.split('-');
+                    form.setFieldsValue({
+                      quarter: parseInt(quarter),
+                      year: parseInt(year)
+                    });
+                  }}
+                  showSearch
+                  optionFilterProp="children"
+                >
+                  {availableQuarters.map(option => (
+                    <Option 
+                      key={`${option.quarter}-${option.year}`} 
+                      value={`${option.quarter}-${option.year}`}
+                    >
+                      <CalendarOutlined style={{ marginRight: 8 }} />
+                      {option.label} 
+                      {option.isCurrent}
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
 
-            {/* Year Selection */}
-            <Col span={8}>
-              <Form.Item
-                label="Năm"
-                name="year"
-                rules={[{ required: true, message: 'Vui lòng chọn năm' }]}
-              >
-                <InputNumber
-                  placeholder="Năm"
-                  min={2024}
-                  max={2030}
-                  style={{ width: '100%' }}
-                />
-              </Form.Item>
-            </Col>
+            {/* Hidden fields for quarter and year values */}
+            <Form.Item name="quarter" hidden>
+              <InputNumber />
+            </Form.Item>
+            
+            <Form.Item name="year" hidden>
+              <InputNumber />
+            </Form.Item>
 
             {/* Shifts Selection */}
             <Col span={8}>
@@ -358,8 +404,8 @@ const StaffAssignment = () => {
                   placeholder="Chọn ca làm việc"
                   allowClear
                 >
-                  <Option value="Ca Sáng">Ca Sáng</Option>
-                  <Option value="Ca Chiều">Ca Chiều</Option>
+                  <Option value="Ca Sáng"> Ca Sáng</Option>
+                  <Option value="Ca Chiều"> Ca Chiều</Option>
                   <Option value="Ca Tối">Ca Tối</Option>
                 </Select>
               </Form.Item>
