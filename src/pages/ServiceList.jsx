@@ -26,7 +26,8 @@ import {
   MedicineBoxOutlined,
   PlusOutlined,
   EyeOutlined,
-  EditOutlined
+  EditOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
@@ -54,6 +55,11 @@ const ServiceList = () => {
   // Toggle confirmation modal states
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
+
+  // Delete confirmation modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedServiceForDelete, setSelectedServiceForDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
 
   // Filtered data using searchUtils
@@ -148,6 +154,38 @@ const ServiceList = () => {
   // Handle edit service
   const handleEditService = (serviceId) => {
     navigate(`/services/${serviceId}`);
+  };
+
+  // Handle show delete confirmation modal
+  const handleDeleteService = (service) => {
+    setSelectedServiceForDelete(service);
+    setShowDeleteModal(true);
+  };
+
+  // Handle confirm delete service
+  const handleConfirmDelete = async () => {
+    if (!selectedServiceForDelete) return;
+    
+    try {
+      setDeleteLoading(true);
+      const response = await servicesService.deleteService(selectedServiceForDelete._id);
+      toastService.success(response.message || `Đã xóa dịch vụ "${selectedServiceForDelete.name}" thành công`);
+      
+      // Reload data để cập nhật UI
+      loadServices(pagination.current, pagination.pageSize);
+    } catch (error) {
+      toastService.error('Lỗi khi xóa dịch vụ: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+      setSelectedServiceForDelete(null);
+    }
+  };
+
+  // Handle cancel delete confirmation
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setSelectedServiceForDelete(null);
   };
 
   // Dịch loại dịch vụ sang tiếng Việt
@@ -269,7 +307,7 @@ const ServiceList = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 220,
+      width: 280,
       align: 'center',
       render: (_, record) => (
         <Space>
@@ -297,6 +335,14 @@ const ServiceList = () => {
               checkedChildren="Bật"
               unCheckedChildren="Tắt"
               size="default"
+            />
+          </Tooltip>
+          <Tooltip title="Xóa dịch vụ" placement="top">
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteService(record)}
             />
           </Tooltip>
         </Space>
@@ -427,6 +473,50 @@ const ServiceList = () => {
         )}
       </Modal>
 
+      {/* Delete Confirmation Modal */}
+      <Modal
+        title="Xác nhận xóa dịch vụ"
+        open={showDeleteModal}
+        onOk={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        okText="Xóa dịch vụ"
+        cancelText="Hủy"
+        okType="danger"
+        confirmLoading={deleteLoading}
+      >
+        {selectedServiceForDelete && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: '#ff4d4f' }}>XÓA</strong>
+              {' '}dịch vụ{' '}
+              <strong>"{selectedServiceForDelete.name}"</strong>?
+            </p>
+            
+            <div style={{ backgroundColor: '#fff2f0', padding: 12, borderRadius: 6, border: '1px solid #ffccc7', marginTop: 16 }}>
+              {selectedServiceForDelete.hasBeenUsed && (
+                <p style={{ color: '#ff4d4f', fontSize: 12, margin: '0 0 8px 0' }}>
+                   <strong>Dịch vụ đã được sử dụng:</strong> Việc xóa có thể ảnh hưởng đến dữ liệu lịch sử và báo cáo.
+                </p>
+              )}
+              
+              {selectedServiceForDelete.serviceAddOns && selectedServiceForDelete.serviceAddOns.length > 0 && (
+                <p style={{ color: '#ff4d4f', fontSize: 12, margin: '0 0 8px 0' }}>
+                   <strong>Dịch vụ có {selectedServiceForDelete.serviceAddOns.length} cấp độ:</strong> Tất cả cấp độ sẽ bị xóa cùng.
+                </p>
+              )}
+              
+              <p style={{ color: '#ff4d4f', fontSize: 12, margin: 0 }}>
+                 <strong>Hành động này không thể hoàn tác!</strong>
+              </p>
+            </div>
+
+            <p style={{ marginTop: 16, fontSize: 13, color: '#666' }}>
+              Nếu bạn chỉ muốn tạm thời ngưng sử dụng dịch vụ, hãy <strong>TẮT</strong> thay vì xóa.
+            </p>
+          </div>
+        )}
+      </Modal>
 
     </div>
   );

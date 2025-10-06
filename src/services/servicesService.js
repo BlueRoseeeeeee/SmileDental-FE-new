@@ -32,5 +32,11 @@ export const servicesService = {
   async toggleServiceStatus(serviceId) {
     const response = await serviceApi.patch(`/service/${serviceId}/toggle`);
     return response.data;
+  },
+
+  // Xóa dịch vụ
+  async deleteService(serviceId) {
+    const response = await serviceApi.delete(`/service/${serviceId}`);
+    return response.data;
   }
 };
