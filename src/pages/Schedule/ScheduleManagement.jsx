@@ -1,25 +1,29 @@
 /**
+ * Schedule Management Component
  * @author: HoTram
- *  
  */
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Typography, Button, Space, Select, DatePicker, Table, Tag, Alert, Spin, Modal, Form, InputNumber, Divider, Badge, Tooltip, Empty, Tabs, Statistic } from 'antd';
-import { CalendarOutlined, ThunderboltOutlined, ReloadOutlined, ExclamationCircleOutlined, BarChartOutlined, SettingOutlined, PlusOutlined, EyeOutlined } from '@ant-design/icons';
+import { 
+  Card, Row, Col, Typography, Button, Space, Select, Table, Tag, 
+  Alert, Spin, Modal, Form, InputNumber, Divider, Badge, Tooltip, 
+  Empty, Tabs, Statistic 
+} from 'antd';
+import { 
+  CalendarOutlined, ReloadOutlined, BarChartOutlined, EyeOutlined 
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { scheduleService } from '../../services';
 import { toast } from '../../services/toastService.js';
 import './ScheduleManagement.css';
 
 const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 const ScheduleManagement = () => {
   // Main tab state
   const [activeTab, setActiveTab] = useState('overview');
   
-  // Loading / error
-  const [error, setError] = useState(null);
+  // Error states
   const [quarterError, setQuarterError] = useState(null);
 
   // Available quarters
@@ -45,83 +49,68 @@ const ScheduleManagement = () => {
       } else {
         throw new Error(res?.message || 'Không thể tải danh sách quý');
       }
-    } catch (e) {
-      console.error('Error loading available quarters:', e);
-      toast.error('Không thể tải danh sách quý: ' + (e.message || 'Lỗi không xác định'));
-      setAvailableQuarters([]); // Set empty array để tránh lỗi render
+    } catch (error) {
+      console.error('Error loading available quarters:', error);
+      toast.error(`Không thể tải danh sách quý: ${error.message || 'Lỗi không xác định'}`);
+      setAvailableQuarters([]);
     }
   };
 
 
 
   const handleGenerateQuarter = async () => {
+    if (!genQuarter || !genYear) {
+      toast.error('Hãy chọn quý và năm');
+      return;
+    }
+
     try {
-      if (!genQuarter || !genYear) {
-        toast.error('Hãy chọn quý và năm');
-        return;
-      }
       setGenerating(true);
       const res = await scheduleService.generateQuarterSchedule(genQuarter, genYear);
       
-      // Kiểm tra response từ server
-      if (res?.success === true) {
-        // Thành công
+      if (res?.success) {
         setGenerateResult(res.data);
         toast.success(res.message || 'Tạo lịch quý thành công');
         await loadAvailableQuarters();
-      } else if (res?.success === false) {
-        // Lỗi từ server nhưng có message rõ ràng
-        toast.error(res.message || 'Không thể tạo lịch quý');
       } else {
-        // Trường hợp response không đúng định dạng
-        toast.error('Phản hồi từ server không hợp lệ');
+        toast.error(res.message || 'Không thể tạo lịch quý');
       }
-    } catch (e) {
-      console.error('Error generating quarter schedule:', e);
-      // Lỗi network hoặc lỗi khác
-      toast.error(e.message || 'Không thể kết nối đến server');
+    } catch (error) {
+      console.error('Error generating quarter schedule:', error);
+      toast.error(error.message || 'Không thể kết nối đến server');
     } finally {
       setGenerating(false);
     }
   };
 
   const handleLoadQuarterStatus = async () => {
+    if (!statusQuarter || !statusYear) {
+      toast.error('Hãy chọn quý và năm trước khi xem trạng thái');
+      return;
+    }
+    
     try {
-      if (!statusQuarter || !statusYear) {
-        toast.error('Hãy chọn quý và năm trước khi xem trạng thái');
-        return;
-      }
-      
-      console.log('Loading quarter status for:', { quarter: statusQuarter, year: statusYear });
       setStatusLoading(true);
-      setQuarterStatus(null); // Reset previous data
-      setQuarterError(null); // Reset error state
+      setQuarterStatus(null);
+      setQuarterError(null);
       
-      const res = await scheduleService.getQuarterStatus({ quarter: statusQuarter, year: statusYear });
-      console.log('Quarter status response:', res);
+      const res = await scheduleService.getQuarterStatus({ 
+        quarter: statusQuarter, 
+        year: statusYear 
+      });
       
-      if (res?.success === true) {
+      if (res?.success) {
         setQuarterStatus(res.data);
-        setQuarterError(null);
-      } else if (res?.success === false) {
-        // Backend trả về lỗi với success: false
+      } else {
         const errorMessage = res.message || 'Không thể tải trạng thái quý';
         toast.error(errorMessage);
         setQuarterError(errorMessage);
-        setQuarterStatus(null);
-      } else {
-        // Trường hợp response không đúng định dạng
-        const errorMessage = 'Phản hồi từ server không hợp lệ';
-        toast.error(errorMessage);
-        setQuarterError(errorMessage);
-        setQuarterStatus(null);
       }
-    } catch (e) {
-      console.error('Error loading quarter status:', e);
-      const errorMessage = e.message || 'Không thể kết nối đến server';
+    } catch (error) {
+      console.error('Error loading quarter status:', error);
+      const errorMessage = error.message || 'Không thể kết nối đến server';
       toast.error(errorMessage);
       setQuarterError(errorMessage);
-      setQuarterStatus(null);
     } finally {
       setStatusLoading(false);
     }
@@ -132,8 +121,69 @@ const ScheduleManagement = () => {
     loadAvailableQuarters();
   }, []);
 
+  // Render quarter card with sequential logic
+  const renderQuarterCard = (quarter, index) => {
+    // Check if can create (all previous quarters must have schedules)
+    const canCreate = availableQuarters
+      .slice(0, index)
+      .every(q => q.hasSchedules);
 
+    const getStatusBadge = () => {
+      if (quarter.hasSchedules) {
+        return <Badge status="success" text="Đã có lịch" />;
+      }
+      return canCreate 
+        ? <Badge status="processing" text="Chưa có lịch" />
+        : <Badge status="default" text="Đang chờ" />;
+    };
 
+    const getActionButton = () => {
+      if (quarter.hasSchedules) {
+        return <Badge status="success" text="Hoàn thành" />;
+      }
+      
+      if (canCreate) {
+        return (
+          <Button 
+            type="primary" 
+            size="small"
+            onClick={() => {
+              setGenQuarter(quarter.quarter);
+              setGenYear(quarter.year);
+              setGenerateResult(null);
+              setGenerateModalOpen(true);
+            }}
+          >
+            Tạo ngay
+          </Button>
+        );
+      }
+
+      return (
+        <Tooltip title="Cần hoàn thành các quý trước đó">
+          <Button type="default" size="small" disabled>
+            Chờ lượt
+          </Button>
+        </Tooltip>
+      );
+    };
+
+    return (
+      <Col span={6} key={`${quarter.quarter}-${quarter.year}`}>
+        <Card size="small">
+          <div style={{ textAlign: 'center' }}>
+            <Title level={4} style={{ margin: '0 0 8px 0' }}>
+              {quarter.label}
+            </Title>
+            <Space direction="vertical" size={4}>
+              {getStatusBadge()}
+              {getActionButton()}
+            </Space>
+          </div>
+        </Card>
+      </Col>
+    );
+  };
 
   // Overview Dashboard Component
   const OverviewDashboard = () => (
@@ -151,44 +201,20 @@ const ScheduleManagement = () => {
           extra={<Button icon={<ReloadOutlined />} onClick={loadAvailableQuarters}>Tải lại</Button>}
         >
           <Row gutter={16}>
-            {availableQuarters.slice(0, 4).map((q) => (
-              <Col span={6} key={`${q.quarter}-${q.year}`}>
-                <Card size="small">
-                  <div style={{ textAlign: 'center' }}>
-                    <Title level={4} style={{ margin: '0 0 8px 0' }}>{q.label}</Title>
-                    <Space direction="vertical" size={4}>
-                      <Badge 
-                        status={q.isCreated ? 'success' : 'default'} 
-                        text={q.isCreated ? 'Đã tạo' : 'Chưa tạo'} 
-                      />
-                      <Badge 
-                        status={q.hasSchedules ? 'processing' : 'default'} 
-                        text={q.hasSchedules ? 'Có lịch' : 'Không có lịch'} 
-                      />
-                      {q.isCreatable && (
-                        <Button 
-                          type="primary" 
-                          size="small"
-                          onClick={() => {
-                            setGenQuarter(q.quarter);
-                            setGenYear(q.year);
-                            setGenerateResult(null);
-                            setGenerateModalOpen(true);
-                          }}
-                        >
-                          Tạo ngay
-                        </Button>
-                      )}
-                    </Space>
-                  </div>
-                </Card>
-              </Col>
-            ))}
+            {availableQuarters.slice(0, 4).map(renderQuarterCard)}
           </Row>
         </Card>
       </Col>
     </Row>
   );
+
+  // Quarter options for select
+  const quarterOptions = [
+    { value: 1, label: 'Quý 1' },
+    { value: 2, label: 'Quý 2' },
+    { value: 3, label: 'Quý 3' },
+    { value: 4, label: 'Quý 4' }
+  ];
 
   // Quarter Status Component
   const QuarterStatusView = () => (
@@ -207,12 +233,8 @@ const ScheduleManagement = () => {
             placeholder="Chọn quý"
             value={statusQuarter}
             onChange={setStatusQuarter}
-          >
-            <Option value={1}>Quý 1</Option>
-            <Option value={2}>Quý 2</Option>
-            <Option value={3}>Quý 3</Option>
-            <Option value={4}>Quý 4</Option>
-          </Select>
+            options={quarterOptions}
+          />
         </Col>
         <Col span={4}>
           <InputNumber 
@@ -271,54 +293,54 @@ const ScheduleManagement = () => {
             />
           </Col>
           
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Tổng phòng"
-                value={quarterStatus.totalRooms}
-                prefix={<CalendarOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Phòng có lịch"
-                value={quarterStatus.roomsWithSchedule}
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Tổng lịch"
-                value={quarterStatus.totalSchedules}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Tỷ lệ phòng có lịch"
-                value={quarterStatus.totalRooms > 0 ? Math.round((quarterStatus.roomsWithSchedule / quarterStatus.totalRooms) * 100) : 0}
-                suffix="%"
-                valueStyle={{ color: '#722ed1' }}
-              />
-            </Card>
-          </Col>
+          {[
+            {
+              title: "Tổng phòng",
+              value: quarterStatus.totalRooms,
+              prefix: <CalendarOutlined />,
+              color: undefined
+            },
+            {
+              title: "Phòng có lịch",
+              value: quarterStatus.roomsWithSchedule,
+              color: '#52c41a'
+            },
+            {
+              title: "Tổng lịch",
+              value: quarterStatus.totalSchedules,
+              color: '#1890ff'
+            },
+            {
+              title: "Tỷ lệ phòng có lịch",
+              value: quarterStatus.totalRooms > 0 
+                ? Math.round((quarterStatus.roomsWithSchedule / quarterStatus.totalRooms) * 100) 
+                : 0,
+              suffix: "%",
+              color: '#722ed1'
+            }
+          ].map((stat, index) => (
+            <Col span={6} key={index}>
+              <Card>
+                <Statistic
+                  title={stat.title}
+                  value={stat.value}
+                  prefix={stat.prefix}
+                  suffix={stat.suffix}
+                  valueStyle={stat.color ? { color: stat.color } : undefined}
+                />
+              </Card>
+            </Col>
+          ))}
 
           <Col span={24}>
             <Card title="Chi tiết từng phòng">
               <Table
-                rowKey={(r) => r.roomId}
+                rowKey="roomId"
                 dataSource={quarterStatus.rooms || []}
                 columns={[
                   { 
                     title: 'Tên phòng', 
                     dataIndex: 'roomName', 
-                    key: 'roomName',
                     render: (text, record) => (
                       <Tooltip title={`ID: ${record.roomId}`}>
                         <Text strong>{text || record.roomId}</Text>
@@ -327,8 +349,7 @@ const ScheduleManagement = () => {
                   },
                   { 
                     title: 'Trạng thái lịch', 
-                    dataIndex: 'hasSchedule', 
-                    key: 'hasSchedule',
+                    dataIndex: 'hasSchedule',
                     render: (hasSchedule) => (
                       <Badge 
                         status={hasSchedule ? 'success' : 'default'} 
@@ -343,8 +364,7 @@ const ScheduleManagement = () => {
                   },
                   { 
                     title: 'Số lượng lịch', 
-                    dataIndex: 'scheduleCount', 
-                    key: 'scheduleCount',
+                    dataIndex: 'scheduleCount',
                     sorter: (a, b) => a.scheduleCount - b.scheduleCount,
                     render: (count) => (
                       <Text type={count > 0 ? 'success' : 'secondary'}>{count}</Text>
@@ -365,26 +385,7 @@ const ScheduleManagement = () => {
   );
 
 
-  // Error boundary wrapper
-  if (error) {
-    return (
-      <div style={{ padding: '24px', backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 64px)' }}>
-        <div style={{ textAlign: 'center', padding: '60px 0' }}>
-          <Alert
-            type="error"
-            showIcon
-            message="Lỗi hệ thống"
-            description={error}
-            action={
-              <Button type="primary" onClick={() => window.location.reload()}>
-                Tải lại trang
-              </Button>
-            }
-          />
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div style={{ padding: '24px', backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 64px)' }}>
@@ -424,11 +425,7 @@ const ScheduleManagement = () => {
           setGenerateModalOpen(false);
           setGenerateResult(null);
         }}
-        title={
-          <Space>
-            <span>Tạo lịch làm việc theo quý</span>
-          </Space>
-        }
+        title="Xác nhận tạo lịch làm việc"
         okText="Tạo lịch"
         cancelText="Hủy bỏ"
         onOk={handleGenerateQuarter}
@@ -437,45 +434,30 @@ const ScheduleManagement = () => {
         destroyOnClose
       >
         <Alert
-          type="info"
+          type="warning"
           showIcon
-          message="Thông tin"
-          description="Hệ thống sẽ tự động tạo lịch làm việc cho tất cả phòng trong quý được chọn. Vui lòng chờ trong giây lát."
+          message={`Xác nhận tạo lịch Quý ${genQuarter}/${genYear}`}
+          description="Hệ thống sẽ tự động tạo lịch làm việc cho tất cả phòng trong quý này. Thao tác này không thể hoàn tác. Sau khi xác nhận vui lòng chờ trong giây lát"
           style={{ marginBottom: 16 }}
         />
         
-        <Form layout="vertical">
+        <div style={{ 
+          padding: '16px', 
+          backgroundColor: '#f5f5f5', 
+          borderRadius: '6px',
+          marginBottom: '16px'
+        }}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Chọn quý" required>
-                <Select
-                  size="large"
-                  value={genQuarter}
-                  onChange={setGenQuarter}
-                  placeholder="Chọn quý cần tạo lịch"
-                >
-                  <Option value={1}>Quý 1 (Tháng 1-3)</Option>
-                  <Option value={2}>Quý 2 (Tháng 4-6)</Option>
-                  <Option value={3}>Quý 3 (Tháng 7-9)</Option>
-                  <Option value={4}>Quý 4 (Tháng 10-12)</Option>
-                </Select>
-              </Form.Item>
+              <Text strong>Quý: </Text>
+              <Text>Quý {genQuarter} (Tháng {(genQuarter - 1) * 3 + 1}-{genQuarter * 3})</Text>
             </Col>
             <Col span={12}>
-              <Form.Item label="Chọn năm" required>
-                <InputNumber 
-                  size="large"
-                  style={{ width: '100%' }} 
-                  value={genYear} 
-                  onChange={setGenYear} 
-                  min={2020} 
-                  max={2035}
-                  placeholder="Nhập năm"
-                />
-              </Form.Item>
+              <Text strong>Năm: </Text>
+              <Text>{genYear}</Text>
             </Col>
           </Row>
-        </Form>
+        </div>
 
         {generateResult && (
           <div style={{ marginTop: 24 }}>
@@ -496,15 +478,14 @@ const ScheduleManagement = () => {
             />
             
             <Table
-              rowKey={(r) => r.roomId}
+              rowKey="roomId"
               size="small"
               pagination={false}
               scroll={{ y: 200 }}
               columns={[
                 { 
                   title: 'Tên phòng', 
-                  dataIndex: 'roomName', 
-                  key: 'roomName',
+                  dataIndex: 'roomName',
                   render: (text, record) => (
                     <Tooltip title={`Room ID: ${record.roomId}`}>
                       <Text>{text || record.roomId}</Text>
@@ -513,8 +494,7 @@ const ScheduleManagement = () => {
                 },
                 { 
                   title: 'Trạng thái', 
-                  dataIndex: 'success', 
-                  key: 'success',
+                  dataIndex: 'success',
                   render: (success) => (
                     <Tag color={success ? 'success' : 'error'}>
                       {success ? 'Thành công' : 'Thất bại'}
@@ -523,14 +503,12 @@ const ScheduleManagement = () => {
                 },
                 { 
                   title: 'Số lịch tạo', 
-                  dataIndex: 'scheduleCount', 
-                  key: 'scheduleCount',
+                  dataIndex: 'scheduleCount',
                   render: (count) => <Text strong>{count}</Text>
                 },
                 { 
                   title: 'Ghi chú', 
-                  dataIndex: 'message', 
-                  key: 'message',
+                  dataIndex: 'message',
                   ellipsis: true
                 }
               ]}
