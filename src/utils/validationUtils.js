@@ -46,7 +46,7 @@ export const isValidPhone = (phone) => {
  */
 export const validatePatientAge = (dateOfBirth) => {
   if (!dateOfBirth) {
-    return { valid: false, message: 'Vui lòng chọn ngày sinh!' };
+    return { isValid: false, valid: false, message: 'Vui lòng chọn ngày sinh!' };
   }
   
   const today = new Date();
@@ -54,7 +54,7 @@ export const validatePatientAge = (dateOfBirth) => {
   
   // Check if date is in future
   if (birthDate > today) {
-    return { valid: false, message: 'Ngày sinh không được ở tương lai!' };
+    return { isValid: false, valid: false, message: 'Ngày sinh không được ở tương lai!' };
   }
   
   // Calculate exact age
@@ -69,14 +69,14 @@ export const validatePatientAge = (dateOfBirth) => {
   
   // Check age limits for patients
   if (age < 1) {
-    return { valid: false, message: 'Tuổi phải từ 1 tuổi trở lên!' };
+    return { isValid: false, valid: false, message: 'Tuổi phải từ 1 tuổi trở lên!' };
   }
   
   if (age > 100) {
-    return { valid: false, message: 'Tuổi không được quá 100 tuổi!' };
+    return { isValid: false, valid: false, message: 'Tuổi không được quá 100 tuổi!' };
   }
   
-  return { valid: true, message: '' };
+  return { isValid: true, valid: true, message: '' };
 };
 
 /**
