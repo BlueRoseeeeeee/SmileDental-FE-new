@@ -281,6 +281,71 @@
   animation: slideIn 0.2s ease-out;
 }
 
+/* New cell stats styling */
+.cell-stats {
+  margin-bottom: 6px;
+  padding: 2px 4px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  text-align: center;
+}
+
+.cell-staff {
+  margin-bottom: 2px;
+}
+
+.slot-ready {
+  text-align: center;
+  margin-top: 4px;
+  padding: 2px 4px;
+  background: #f6ffed;
+  border-radius: 3px;
+  border: 1px solid #b7eb8f;
+}
+
+.slot-empty {
+  text-align: center;
+  margin-top: 4px;
+  padding: 2px 4px;
+  background: #fff7e6;
+  border-radius: 3px;
+  border: 1px solid #ffd591;
+}
+
+/* Staff status indicators */
+.calendar-cell .ant-tag {
+  font-size: 10px;
+  padding: 0 4px;
+  margin: 1px 0;
+  line-height: 16px;
+}
+
+/* Shift status styling */
+.shift-info .ant-typography {
+  margin: 0;
+}
+
+/* Room info styling */
+.room-info-card {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  border-left: 4px solid #1890ff;
+}
+
+/* Badge styling for slots */
+.cell-header .ant-badge {
+  font-size: 12px;
+}
+
+.cell-header .ant-badge-count {
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  font-size: 10px;
+}
+
 /* Print styles */
 @media print {
   .schedule-calendar {
