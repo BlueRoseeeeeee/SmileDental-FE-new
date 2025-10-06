@@ -162,11 +162,17 @@ const StaffAssignment = () => {
     const room = rooms.find(r => r._id === roomId);
     setSelectedRoom(room);
     
+    // Clear staff selections when changing room type to avoid single/multiple mode conflicts
+    form.setFieldsValue({ 
+      subRoomId: undefined,
+      dentistIds: undefined,
+      nurseIds: undefined
+    });
+    
     if (room?.hasSubRooms && room?.subRooms?.length > 0) {
       setAvailableSubRooms(room.subRooms);
     } else {
       setAvailableSubRooms([]);
-      form.setFieldsValue({ subRoomId: undefined });
     }
   };
 
@@ -418,12 +424,13 @@ const StaffAssignment = () => {
             {/* Dentist Selection */}
             <Col span={12}>
               <Form.Item
-                label="Bác sĩ"
+                label={`Nha sĩ ${selectedRoom?.hasSubRooms ? '(Chọn 1)' : '(Có thể chọn nhiều)'}`}
                 name="dentistIds"
                 rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 bác sĩ' }]}
               >
                 <Select
-                  placeholder="Chọn bác sĩ"
+                  mode={selectedRoom?.hasSubRooms ? undefined : "multiple"}
+                  placeholder="Chọn nha sĩ"
                   showSearch
                   optionFilterProp="children"
                   allowClear
@@ -441,11 +448,12 @@ const StaffAssignment = () => {
             {/* Nurse Selection */}
             <Col span={12}>
               <Form.Item
-                label="Y tá"
+                label={`Y tá ${selectedRoom?.hasSubRooms ? '(Chọn 1)' : '(Có thể chọn nhiều)'}`}
                 name="nurseIds"
                 rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 y tá' }]}
               >
                 <Select
+                  mode={selectedRoom?.hasSubRooms ? undefined : "multiple"}
                   placeholder="Chọn y tá"
                   showSearch
                   optionFilterProp="children"
@@ -463,8 +471,12 @@ const StaffAssignment = () => {
           </Row>
 
           <Alert
-            message="Lưu ý"
-            description="Hệ thống sẽ tự động phân công nhân sự vào các slot còn trống. Các slot đã được phân công sẽ không bị ghi đè."
+            message="Lưu ý phân công nhân sự"
+            description={
+              selectedRoom?.hasSubRooms 
+                ? "Phòng có sub-room: Mỗi sub-room chỉ được phân công 1 bác sĩ và 1 y tá. Hệ thống sẽ tự động phân bổ vào các slot còn trống."
+                : "Phòng đơn: Có thể phân công nhiều bác sĩ và y tá cùng lúc theo cấu hình tối đa của phòng. Các slot đã được phân công sẽ không bị ghi đè."
+            }
             type="info"
             showIcon
             style={{ marginBottom: 24 }}
