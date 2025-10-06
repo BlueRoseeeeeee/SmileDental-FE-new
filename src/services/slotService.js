@@ -32,10 +32,18 @@ const slotService = {
   },
 
   // Lấy lịch phòng với số lượng cuộc hẹn (xem theo ngày/tuần/tháng)
-  getRoomCalendar: async (roomId, view = 'daily', startDate, endDate) => {
-    const response = await scheduleApi.get(`/slot/room/${roomId}/calendar`, {
-      params: { view, startDate, endDate }
-    });
+  getRoomCalendar: async (roomId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    
+    // Add parameters
+    if (params.subRoomId) queryParams.append('subRoomId', params.subRoomId);
+    if (params.viewType) queryParams.append('viewType', params.viewType);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+
+    const url = `/slot/room/${roomId}/calendar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
     return response.data;
   },
 
