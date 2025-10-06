@@ -337,7 +337,6 @@ const StaffAssignment = () => {
                 rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 bác sĩ' }]}
               >
                 <Select
-                  mode="multiple"
                   placeholder="Chọn bác sĩ"
                   showSearch
                   optionFilterProp="children"
@@ -361,7 +360,6 @@ const StaffAssignment = () => {
                 rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 y tá' }]}
               >
                 <Select
-                  mode="multiple"
                   placeholder="Chọn y tá"
                   showSearch
                   optionFilterProp="children"
