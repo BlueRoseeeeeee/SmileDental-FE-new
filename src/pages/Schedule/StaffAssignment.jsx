@@ -14,6 +14,7 @@ import {
 import { roomService } from '../../services';
 import { userService } from '../../services';
 import slotService from '../../services/slotService.js';
+import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { toast } from '../../services/toastService.js';
 import './StaffAssignment.css';
 
@@ -30,6 +31,7 @@ const StaffAssignment = () => {
   const [dentists, setDentists] = useState([]);
   const [nurses, setNurses] = useState([]);
   const [availableQuarters, setAvailableQuarters] = useState([]);
+  const [availableShifts, setAvailableShifts] = useState([]);
 
   // Form states
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -105,13 +107,59 @@ const StaffAssignment = () => {
     }
   };
 
+  const loadAvailableShifts = async () => {
+    try {
+      const configRes = await scheduleConfigService.getConfig();
+      
+      if (configRes?.success && configRes?.data) {
+        const shifts = [];
+        const config = configRes.data;
+        
+        // Lấy các ca từ config và chỉ lấy những ca có isActive = true
+        if (config.morningShift?.isActive) {
+          shifts.push({
+            name: config.morningShift.name,
+            value: config.morningShift.name,
+            startTime: config.morningShift.startTime,
+            endTime: config.morningShift.endTime
+          });
+        }
+        
+        if (config.afternoonShift?.isActive) {
+          shifts.push({
+            name: config.afternoonShift.name,
+            value: config.afternoonShift.name,
+            startTime: config.afternoonShift.startTime,
+            endTime: config.afternoonShift.endTime
+          });
+        }
+        
+        if (config.eveningShift?.isActive) {
+          shifts.push({
+            name: config.eveningShift.name,
+            value: config.eveningShift.name,
+            startTime: config.eveningShift.startTime,
+            endTime: config.eveningShift.endTime
+          });
+        }
+        
+        setAvailableShifts(shifts);
+      } else {
+        toast.error('Dữ liệu cấu hình ca làm việc không hợp lệ');
+      }
+    } catch (error) {
+      toast.error(`Lỗi tải cấu hình ca làm việc: ${error.response?.status || error.message}`);
+    }
+  };
+
   const loadInitialData = async () => {
     setLoading(true);
     try {
       await Promise.all([
         loadRooms(),
         loadStaff(),
-        loadAvailableQuarters()
+        loadAvailableQuarters(),
+        loadAvailableShifts()
       ]);
     } catch (error) {
       // Error handling is done in individual functions
@@ -171,7 +219,6 @@ const StaffAssignment = () => {
           icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />
         });
 
-        // Backup toast service
         toast.success(response.data?.message || 'Phân công nhân sự thành công!');
         
         // Reset form
@@ -356,9 +403,11 @@ const StaffAssignment = () => {
                   placeholder="Chọn ca làm việc"
                   allowClear
                 >
-                  <Option value="Ca Sáng"> Ca Sáng</Option>
-                  <Option value="Ca Chiều"> Ca Chiều</Option>
-                  <Option value="Ca Tối">Ca Tối</Option>
+                  {availableShifts.map(shift => (
+                    <Option key={shift.value} value={shift.value}>
+                      {shift.name} ({shift.startTime} - {shift.endTime})
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
