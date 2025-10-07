@@ -166,20 +166,26 @@ const ScheduleCalendar = () => {
 
   // Navigation handlers - ISO Week (Thứ 2 đến Chủ Nhật)
   const goToPreviousWeek = () => {
-    setCurrentPage(prev => prev + 1); // Trang tăng = về quá khứ
+    setCurrentPage(prev => Math.max(1, prev - 1)); // Trang giảm = về quá khứ, tối thiểu là 1
   };
 
   const goToNextWeek = () => {
-    setCurrentPage(prev => prev - 1); // Trang giảm = về tương lai
+    setCurrentPage(prev => prev + 1); // Trang tăng = về tương lai
   };
 
   const goToCurrentWeek = () => {
-    setCurrentPage(0);
+    setCurrentPage(1);
     setCurrentWeek(dayjs().startOf('isoWeek'));
   };
 
-  // Check if we're at current week
-  const isCurrentWeek = currentPage === 0;
+  // Check if we're at current week (page 1 = tuần hiện tại)
+  const isCurrentWeek = currentPage === 1;
+  
+  // Check if we can go to previous week (quá khứ)
+  const canGoPrevious = currentPage > 1;
+  
+  // Check if we can go to next week (tương lai)
+  const canGoNext = calendarData?.pagination?.hasNext !== false;
 
   // Render room/subroom selector
   const RoomSelector = () => (
@@ -293,9 +299,14 @@ const ScheduleCalendar = () => {
           {/* Staff Assignment Status */}
           <div className="cell-staff">
             {hasDentist ? (
-              <Tag color="blue" size="small">
-                NS: {shiftData.staffStats.mostFrequentDentist.slotCount} slot
-              </Tag>
+              <div style={{ marginBottom: 4 }}>
+                <Tag color="blue" size="small">
+                  NS:
+                </Tag>
+                <div style={{ fontSize: '10px', color: '#666', marginTop: 2 }}>
+                  {shiftData.staffStats.mostFrequentDentist.employeeCode} - {shiftData.staffStats.mostFrequentDentist.fullName}
+                </div>
+              </div>
             ) : (
               <Tag color="orange" size="small">
                 NS: Chưa phân công
@@ -305,9 +316,14 @@ const ScheduleCalendar = () => {
           
           <div className="cell-staff">
             {hasNurse ? (
-              <Tag color="green" size="small">
-                YT: {shiftData.staffStats.mostFrequentNurse.slotCount} slot
-              </Tag>
+              <div style={{ marginBottom: 4 }}>
+                <Tag color="green" size="small">
+                  YT: 
+                </Tag>
+                <div style={{ fontSize: '10px', color: '#666', marginTop: 2 }}>
+                  {shiftData.staffStats.mostFrequentNurse.employeeCode} - {shiftData.staffStats.mostFrequentNurse.fullName}
+                </div>
+              </div>
             ) : (
               <Tag color="orange" size="small">
                 YT: Chưa phân công
@@ -375,7 +391,7 @@ const ScheduleCalendar = () => {
                     <Button 
                       icon={<LeftOutlined />} 
                       onClick={goToPreviousWeek}
-                      disabled={isCurrentWeek}
+                      disabled={!canGoPrevious}
                     >
                       Tuần trước
                     </Button>
@@ -383,6 +399,7 @@ const ScheduleCalendar = () => {
                     <Button 
                       icon={<RightOutlined />} 
                       onClick={goToNextWeek}
+                      disabled={!canGoNext}
                     >
                       Tuần sau
                     </Button>
