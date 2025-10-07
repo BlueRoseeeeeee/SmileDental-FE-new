@@ -137,7 +137,7 @@ const ScheduleCalendar = () => {
     const days = [];
     let startOfWeek;
     
-    // Nếu có API data, dùng startDate từ API để đảm bảo đồng bộ
+
     if (calendarData?.periods?.[0]?.startDate) {
       startOfWeek = dayjs(calendarData.periods[0].startDate).startOf('isoWeek');
     } else {
@@ -178,8 +178,7 @@ const ScheduleCalendar = () => {
     setCurrentWeek(dayjs().startOf('isoWeek'));
   };
 
-  // Check if we're at current week (page 1 = tuần hiện tại)
-  const isCurrentWeek = currentPage === 1;
+
   
   // Check if we can go to previous week (quá khứ)
   const canGoPrevious = currentPage > 1;
