@@ -24,9 +24,9 @@ const slotService = {
   },
 
   // Lấy slot theo ca và ngày
-  getSlotsByShiftAndDate: async (shift, date) => {
+  getSlotsByShiftAndDate: async (params) => {
     const response = await scheduleApi.get('/slot/by-shift', {
-      params: { shift, date }
+      params: params
     });
     return response.data;
   },
