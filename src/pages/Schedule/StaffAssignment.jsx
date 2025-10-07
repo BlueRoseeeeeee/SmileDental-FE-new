@@ -73,11 +73,11 @@ const StaffAssignment = () => {
         
         const dentistList = allStaff.filter(user => {
           console.log(`User ${user._id} - Role: ${user.role}, Name: ${user.fullName}`);
-          return user.role === 'dentist' || user.role === 'doctor';
+          return (user.role === 'dentist') && user.isActive === true;
         });
         
         const nurseList = allStaff.filter(user => {
-          return user.role === 'nurse';
+          return user.role === 'nurse' && user.isActive === true;
         });
         
         setDentists(dentistList);
