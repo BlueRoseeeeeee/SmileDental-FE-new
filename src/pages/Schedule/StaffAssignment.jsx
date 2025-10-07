@@ -41,9 +41,7 @@ const StaffAssignment = () => {
 
   const loadRooms = async () => {
     try {
-      console.log('Loading rooms...');
       const roomsRes = await roomService.getRooms(1, 100);
-      console.log('Rooms response:', roomsRes);
       
       // Room API không có field success, chỉ cần check có data
       if (roomsRes?.rooms && Array.isArray(roomsRes.rooms)) {
@@ -51,28 +49,21 @@ const StaffAssignment = () => {
         const activeRooms = roomsRes.rooms.filter(room => room.isActive === true);
         setRooms(activeRooms);
       } else {
-        console.error('Rooms API invalid format:', roomsRes);
         toast.error('Dữ liệu phòng không hợp lệ');
       }
     } catch (error) {
-      console.error(' Room API error:', error);
       toast.error(`Lỗi tải phòng: ${error.response?.status || error.message}`);
     }
   };
 
   const loadStaff = async () => {
     try {
-      // Load tất cả staff giống như UserManagement để đảm bảo lấy hết tất cả dentists
       const staffRes = await userService.getAllStaff(1, 1000);
-      console.log(' Staff response:', staffRes);
       
       if (staffRes?.success) {
-        const allStaff = staffRes.users || []; // Lấy users trực tiếp, không qua data
-        console.log(' All staff:', allStaff);
-        console.log(' Total staff loaded:', allStaff.length);
+        const allStaff = staffRes.users || [];
         
         const dentistList = allStaff.filter(user => {
-          console.log(`User ${user._id} - Role: ${user.role}, Name: ${user.fullName}`);
           return (user.role === 'dentist') && user.isActive === true;
         });
         
@@ -82,42 +73,20 @@ const StaffAssignment = () => {
         
         setDentists(dentistList);
         setNurses(nurseList);
-        
-        console.log('Staff loaded - Dentists:', dentistList.length, 'Nurses:', nurseList.length);
-        console.log('Dentist list:', dentistList);
-        console.log('Nurse list:', nurseList);
-        
-        // Debug: check if the specific dentist is in the list
-        const specificDentist = allStaff.find(user => user._id === '68e3468f2f0f4d523fa6acff');
-        console.log('Specific dentist 68e3468f2f0f4d523fa6acff found:', specificDentist);
-        
-        if (dentistList.length > 0) {
-          console.log('dentist fields:', Object.keys(dentistList[0]));
-        }
-        if (nurseList.length > 0) {
-          console.log('nurse fields:', Object.keys(nurseList[0]));
-        }
       } else {
-        console.error(' Staff API response not success:', staffRes);
         toast.error('API nhân viên trả về không thành công');
       }
     } catch (error) {
-      console.error('Staff API error:', error);
-      console.error('Status:', error.response?.status);
-      console.error('Data:', error.response?.data);
       toast.error(`Lỗi tải nhân viên: ${error.response?.status || error.message}`);
     }
   };
 
   const loadAvailableQuarters = async () => {
     try {
-      console.log('Loading available quarters...');
       const quartersRes = await slotService.getAvailableQuartersYears();
-      console.log('Available quarters response:', quartersRes);
       
       if (quartersRes?.success && quartersRes?.data?.availableOptions) {
         setAvailableQuarters(quartersRes.data.availableOptions);
-        console.log('Available quarters loaded:', quartersRes.data.availableOptions.length);
         
         // Set default values to current quarter
         if (quartersRes.data.currentQuarter) {
@@ -127,16 +96,11 @@ const StaffAssignment = () => {
             year: current.year,
             quarterYear: `${current.quarter}-${current.year}`
           });
-          console.log('Set default quarter/year:', current.quarter, current.year);
         }
       } else {
-        console.error('Quarters API invalid format:', quartersRes);
         toast.error('Dữ liệu quý không hợp lệ');
       }
     } catch (error) {
-      console.error('Quarters API error:', error);
-      console.error('Status:', error.response?.status);
-      console.error('Data:', error.response?.data);
       toast.error(`Lỗi tải danh sách quý: ${error.response?.status || error.message}`);
     }
   };
@@ -150,7 +114,7 @@ const StaffAssignment = () => {
         loadAvailableQuarters()
       ]);
     } catch (error) {
-      console.error('Overall error:', error);
+      // Error handling is done in individual functions
     } finally {
       setLoading(false);
     }
@@ -194,18 +158,9 @@ const StaffAssignment = () => {
         requestData.subRoomId = values.subRoomId;
       }
 
-      console.log('🚀 Final request data:', JSON.stringify(requestData, null, 2));
-      console.log('🔍 Raw form values:', values);
-
       const response = await slotService.assignStaffToSlots(requestData);
 
-      console.log('✅ Success response:', response);
-      console.log('✅ Response.success:', response.success);
-      console.log('✅ Response.data:', response.data);
-
       if (response.success) {
-        console.log('🎉 Showing success notification');
-        
         // Force notification hiển thị  
         notification.destroy(); // Clear existing notifications
         notification.success({
@@ -223,18 +178,9 @@ const StaffAssignment = () => {
         form.resetFields();
         setSelectedRoom(null);
         setAvailableSubRooms([]);
-      } else {
-        console.log('❌ Response success is false:', response);
       }
     } catch (error) {
-      console.error('Error assigning staff:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
       const errorMessage = error.response?.data?.message || error.message;
-      console.log('Showing notification with message:', errorMessage);
-      console.log('🔍 Request config:', error.config);
-      console.log('🔍 Request data sent:', error.config?.data);
       
       // Force notification hiển thị
       notification.destroy(); // Clear existing notifications first
