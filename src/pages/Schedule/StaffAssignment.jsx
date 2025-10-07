@@ -168,7 +168,9 @@ const StaffAssignment = () => {
     });
     
     if (room?.hasSubRooms && room?.subRooms?.length > 0) {
-      setAvailableSubRooms(room.subRooms);
+      // Lọc chỉ những subroom có isActive = true
+      const activeSubRooms = room.subRooms.filter(subRoom => subRoom.isActive === true);
+      setAvailableSubRooms(activeSubRooms);
     } else {
       setAvailableSubRooms([]);
     }
