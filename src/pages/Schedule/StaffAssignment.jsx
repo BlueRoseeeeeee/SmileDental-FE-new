@@ -350,7 +350,7 @@ const StaffAssignment = () => {
 
           <Row gutter={24}>
             {/* Quarter and Year Selection - Combined */}
-            <Col span={16}>
+            <Col span={12}>
               <Form.Item
                 label="Quý và Năm"
                 name="quarterYear"
@@ -392,7 +392,7 @@ const StaffAssignment = () => {
             </Form.Item>
 
             {/* Shifts Selection */}
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item
                 label="Ca làm việc"
                 name="shifts"
