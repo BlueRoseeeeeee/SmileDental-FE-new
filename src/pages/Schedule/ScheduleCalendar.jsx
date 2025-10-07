@@ -5,17 +5,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Card, Row, Col, Typography, Button, Space, Select, Tag, Spin, Empty, Divider, Badge,
-  Switch,
+  Tabs,
 } from 'antd';
 import { 
   CalendarOutlined, UserOutlined, HomeOutlined,
-  LeftOutlined, RightOutlined
+  LeftOutlined, RightOutlined, MedicineBoxOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 
 dayjs.extend(isoWeek);
-import { roomService } from '../../services';
+import { roomService, scheduleConfigService } from '../../services';
 import { userService } from '../../services';
 import slotService from '../../services/slotService.js';
 import { toast } from '../../services/toastService.js';
@@ -26,14 +26,19 @@ const { Option } = Select;
 
 const ScheduleCalendar = () => {
   // View mode state
-  const [viewMode, setViewMode] = useState('room'); // 'room' or 'dentist'
+  const [viewMode, setViewMode] = useState('room'); // 'room', 'dentist', or 'nurse'
   
-  // Room/Dentist selection
+  // Room/Dentist/Nurse selection
   const [rooms, setRooms] = useState([]);
   const [dentists, setDentists] = useState([]);
+  const [nurses, setNurses] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [selectedSubRoom, setSelectedSubRoom] = useState(null);
   const [selectedDentist, setSelectedDentist] = useState(null);
+  const [selectedNurse, setSelectedNurse] = useState(null);
+  
+  // Schedule config for shift times
+  const [scheduleConfig, setScheduleConfig] = useState(null);
   
   // Calendar state - Tuần bắt đầu từ Thứ 2 (ISO Week)
   const [currentWeek, setCurrentWeek] = useState(dayjs().startOf('isoWeek'));
@@ -47,8 +52,20 @@ const ScheduleCalendar = () => {
   // Load initial data
   useEffect(() => {
     loadRooms();
-    loadDentists();
+    loadStaff();
+    loadScheduleConfig();
   }, []);
+
+  const loadScheduleConfig = async () => {
+    try {
+      const res = await scheduleConfigService.getConfig();
+      if (res?.success && res?.data) {
+        setScheduleConfig(res.data);
+      }
+    } catch (error) {
+      console.error('Error loading schedule config:', error);
+    }
+  };
 
   const loadRooms = async () => {
     try {
@@ -65,21 +82,25 @@ const ScheduleCalendar = () => {
     }
   };
 
-  const loadDentists = async () => {
+  const loadStaff = async () => {
     try {
       const res = await userService.getAllStaff(1, 100);
       
       if (res?.success) {
-        const allStaff = res.users || []; // Giống StaffAssignment
+        const allStaff = res.users || [];
         const dentistList = allStaff.filter(user => 
-          user.role === 'dentist' || user.role === 'doctor'
+          (user.role === 'dentist' || user.role === 'doctor') && user.isActive === true
+        );
+        const nurseList = allStaff.filter(user => 
+          user.role === 'nurse' && user.isActive === true
         );
         setDentists(dentistList);
+        setNurses(nurseList);
       } else {
         toast.error('API nhân viên trả về không thành công');
       }
     } catch (error) {
-      toast.error(`Lỗi tải nha sĩ: ${error.response?.status || error.message}`);
+      toast.error(`Lỗi tải nhân viên: ${error.response?.status || error.message}`);
     }
   };
 
@@ -88,6 +109,9 @@ const ScheduleCalendar = () => {
       return;
     }
     if (viewMode === 'dentist' && !selectedDentist) {
+      return;
+    }
+    if (viewMode === 'nurse' && !selectedNurse) {
       return;
     }
 
@@ -115,8 +139,45 @@ const ScheduleCalendar = () => {
           setCalendarData(null);
         }
       } else if (viewMode === 'dentist') {
-        // TODO: Implement dentist calendar API call
-        console.log('Dentist calendar not implemented yet');
+        const params = {
+          viewType: 'week',
+          page: currentPage,
+          startDate: currentWeek.format('YYYY-MM-DD'),
+          limit: 1
+        };
+        
+        const response = await slotService.getDentistCalendar(selectedDentist.id, params);
+        
+        console.log('🔍 Dentist Calendar Response:', response);
+        console.log('🔍 Response.data:', response?.data);
+        console.log('🔍 Response.data.periods:', response?.data?.periods);
+        
+        if (response?.success) {
+          setCalendarData(response.data);
+        } else {
+          toast.error('Không thể tải lịch nha sĩ');
+          setCalendarData(null);
+        }
+      } else if (viewMode === 'nurse') {
+        const params = {
+          viewType: 'week',
+          page: currentPage,
+          startDate: currentWeek.format('YYYY-MM-DD'),
+          limit: 1
+        };
+        
+        const response = await slotService.getNurseCalendar(selectedNurse.id, params);
+        
+        console.log('🔍 Nurse Calendar Response:', response);
+        console.log('🔍 Response.data:', response?.data);
+        console.log('🔍 Response.data.periods:', response?.data?.periods);
+        
+        if (response?.success) {
+          setCalendarData(response.data);
+        } else {
+          toast.error('Không thể tải lịch y tá');
+          setCalendarData(null);
+        }
       }
     } catch (error) {
       console.error('Error loading schedule data:', error);
@@ -125,7 +186,7 @@ const ScheduleCalendar = () => {
     } finally {
       setLoading(false);
     }
-  }, [viewMode, selectedRoom, selectedSubRoom, selectedDentist, currentWeek, currentPage]);
+  }, [viewMode, selectedRoom, selectedSubRoom, selectedDentist, selectedNurse, currentWeek, currentPage]);
 
   // Reload when selection or week changes
   useEffect(() => {
@@ -151,6 +212,53 @@ const ScheduleCalendar = () => {
     }
     return days;
   }, [currentWeek, calendarData]);
+
+  // Extract shift overview from calendar data
+  // Room calendar has shiftOverview field, dentist/nurse calendar needs to extract from days
+  const shiftOverview = useMemo(() => {
+    if (calendarData?.shiftOverview) {
+      return calendarData.shiftOverview;
+    }
+    
+    // For dentist/nurse calendar, extract shift names from data and use scheduleConfig for times
+    if (calendarData?.periods?.[0]?.days?.[0]?.shifts && scheduleConfig) {
+      const firstDayShifts = calendarData.periods[0].days[0].shifts;
+      const overview = {};
+      
+      // Map shift names to scheduleConfig
+      const shiftMapping = {
+        'Ca Sáng': {
+          startTime: scheduleConfig.morningShift?.startTime || '--:--',
+          endTime: scheduleConfig.morningShift?.endTime || '--:--',
+          isActive: scheduleConfig.morningShift?.isActive !== false
+        },
+        'Ca Chiều': {
+          startTime: scheduleConfig.afternoonShift?.startTime || '--:--',
+          endTime: scheduleConfig.afternoonShift?.endTime || '--:--',
+          isActive: scheduleConfig.afternoonShift?.isActive !== false
+        },
+        'Ca Tối': {
+          startTime: scheduleConfig.eveningShift?.startTime || '--:--',
+          endTime: scheduleConfig.eveningShift?.endTime || '--:--',
+          isActive: scheduleConfig.eveningShift?.isActive !== false
+        }
+      };
+      
+      // Create shift overview using config data
+      Object.keys(firstDayShifts).forEach(shiftName => {
+        overview[shiftName] = {
+          name: shiftName,
+          startTime: shiftMapping[shiftName]?.startTime || '--:--',
+          endTime: shiftMapping[shiftName]?.endTime || '--:--',
+          isActive: shiftMapping[shiftName]?.isActive !== false
+        };
+      });
+      
+      return overview;
+    }
+    
+    return null;
+  }, [calendarData, scheduleConfig]);
 
   const getDayData = (date) => {
     if (!calendarData?.periods?.[0]?.days) return null;
@@ -254,12 +362,31 @@ const ScheduleCalendar = () => {
       {dentists.map(dentist => (
         <Option key={dentist._id} value={dentist._id}>
           <UserOutlined style={{ marginRight: 8 }} />
-          {dentist.firstName} {dentist.lastName}
+          {dentist.fullName}
         </Option>
       ))}
     </Select>
   );
 
+  // Render nurse selector
+  const NurseSelector = () => (
+    <Select
+      style={{ width: 300 }}
+      placeholder="Chọn y tá"
+      value={selectedNurse?.id}
+      onChange={(nurseId) => {
+        const nurse = nurses.find(n => n._id === nurseId);
+        setSelectedNurse({ id: nurseId, ...nurse });
+      }}
+    >
+      {nurses.map(nurse => (
+        <Option key={nurse._id} value={nurse._id}>
+          <MedicineBoxOutlined style={{ marginRight: 8 }} />
+          {nurse.fullName}
+        </Option>
+      ))}
+    </Select>
+  );
 
   // Render calendar cell
   const CalendarCell = ({ date, shift }) => {
@@ -282,9 +409,12 @@ const ScheduleCalendar = () => {
       );
     }
 
+    // Room calendar shows staff info
     const hasDentist = shiftData.staffStats?.mostFrequentDentist;
     const hasNurse = shiftData.staffStats?.mostFrequentNurse;
-    // const hasStaff = hasDentist || hasNurse;
+    
+    // Dentist/Nurse calendar shows room info
+    const mostFrequentRoom = shiftData.mostFrequentRoom;
 
     return (
       <div className="calendar-cell">
@@ -295,40 +425,69 @@ const ScheduleCalendar = () => {
             </Text>
           </div>
           
-          {/* Staff Assignment Status */}
-          <div className="cell-staff">
-            {hasDentist ? (
-              <div style={{ marginBottom: 4 }}>
-                <Tag color="blue" size="small">
-                  NS:
-                </Tag>
-                <div style={{ fontSize: '10px', color: '#666', marginTop: 2 }}>
-                  {shiftData.staffStats.mostFrequentDentist.employeeCode} - {shiftData.staffStats.mostFrequentDentist.fullName}
-                </div>
+          {/* For Room view: Show Staff Assignment Status */}
+          {viewMode === 'room' && (
+            <>
+              <div className="cell-staff">
+                {hasDentist ? (
+                  <div style={{ marginBottom: 4 }}>
+                    <Tag color="blue" size="small">
+                      NS:
+                    </Tag>
+                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2 }}>
+                      {shiftData.staffStats.mostFrequentDentist.employeeCode} - {shiftData.staffStats.mostFrequentDentist.fullName}
+                    </div>
+                  </div>
+                ) : (
+                  <Tag color="orange" size="small">
+                    NS: Chưa phân công
+                  </Tag>
+                )}
               </div>
-            ) : (
-              <Tag color="orange" size="small">
-                NS: Chưa phân công
-              </Tag>
-            )}
-          </div>
-          
-          <div className="cell-staff">
-            {hasNurse ? (
-              <div style={{ marginBottom: 4 }}>
-                <Tag color="green" size="small">
-                  YT: 
-                </Tag>
-                <div style={{ fontSize: '10px', color: '#666', marginTop: 2 }}>
-                  {shiftData.staffStats.mostFrequentNurse.employeeCode} - {shiftData.staffStats.mostFrequentNurse.fullName}
-                </div>
+              
+              <div className="cell-staff">
+                {hasNurse ? (
+                  <div style={{ marginBottom: 4 }}>
+                    <Tag color="green" size="small">
+                      YT: 
+                    </Tag>
+                    <div style={{ fontSize: '10px', color: '#666', marginTop: 2 }}>
+                      {shiftData.staffStats.mostFrequentNurse.employeeCode} - {shiftData.staffStats.mostFrequentNurse.fullName}
+                    </div>
+                  </div>
+                ) : (
+                  <Tag color="orange" size="small">
+                    YT: Chưa phân công
+                  </Tag>
+                )}
               </div>
-            ) : (
-              <Tag color="orange" size="small">
-                YT: Chưa phân công
-              </Tag>
-            )}
-          </div>
+            </>
+          )}
+
+          {/* For Dentist/Nurse view: Show Most Frequent Room */}
+          {(viewMode === 'dentist' || viewMode === 'nurse') && (
+            <div className="cell-staff">
+              {mostFrequentRoom ? (
+                <div style={{ marginBottom: 4 }}>
+                  <Tag color="cyan" size="small">
+                    <HomeOutlined style={{ fontSize: '10px' }} />
+                  </Tag>
+                  <div style={{ fontSize: '11px', color: '#333', marginTop: 2 }}>
+                    {mostFrequentRoom.name}
+                  </div>
+                  {mostFrequentRoom.subRoom && (
+                    <div style={{ fontSize: '10px', color: '#999', marginTop: 1 }}>
+                      {mostFrequentRoom.subRoom.name}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Tag color="default" size="small">
+                  Chưa phân công
+                </Tag>
+              )}
+            </div>
+          )}
 
         </div>
       </div>
@@ -343,24 +502,52 @@ const ScheduleCalendar = () => {
           <CalendarOutlined style={{ marginRight: 8 }} />
           Lịch Làm Việc
         </Title>
-
-        {/* View Mode Selector */}
-        <div className="view-mode-selector">
-          <Switch
-            checkedChildren="Theo nha sĩ"
-            unCheckedChildren="Theo phòng"
-            checked={viewMode === 'dentist'}
-            onChange={(checked) => setViewMode(checked ? 'dentist' : 'room')}
-          />
-        </div>
       </div>
 
       <Row gutter={16}>
         {/* Main Calendar */}
         <Col span={24}>
           <Card>
-            {/* Room Info */}
-            {calendarData?.roomInfo && (
+            {/* View Mode Tabs */}
+            <Tabs
+              activeKey={viewMode}
+              onChange={(key) => {
+                setViewMode(key);
+                setCalendarData(null);
+              }}
+              items={[
+                {
+                  key: 'room',
+                  label: (
+                    <span>
+                      <HomeOutlined />
+                      Theo Phòng
+                    </span>
+                  ),
+                },
+                {
+                  key: 'dentist',
+                  label: (
+                    <span>
+                      <UserOutlined />
+                      Theo Nha Sĩ
+                    </span>
+                  ),
+                },
+                {
+                  key: 'nurse',
+                  label: (
+                    <span>
+                      <MedicineBoxOutlined />
+                      Theo Y Tá
+                    </span>
+                  ),
+                },
+              ]}
+            />
+            
+            {/* Info Display - Room/Dentist/Nurse */}
+            {viewMode === 'room' && calendarData?.roomInfo && (
               <div style={{ marginBottom: 16, padding: 12, background: '#f5f5f5', borderRadius: 8 }}>
                 <Space>
                   <HomeOutlined />
@@ -378,13 +565,45 @@ const ScheduleCalendar = () => {
               </div>
             )}
 
+            {viewMode === 'dentist' && selectedDentist && (
+              <div style={{ marginBottom: 16, padding: 12, background: '#e6f7ff', borderRadius: 8 }}>
+                <Space>
+                  <UserOutlined style={{ color: '#1890ff' }} />
+                  <Text strong>Nha sĩ: {selectedDentist.name || selectedDentist.fullName}</Text>
+                  {selectedDentist.email && (
+                    <>
+                      <Text type="secondary">•</Text>
+                      <Text type="secondary">{selectedDentist.email}</Text>
+                    </>
+                  )}
+                </Space>
+              </div>
+            )}
+
+            {viewMode === 'nurse' && selectedNurse && (
+              <div style={{ marginBottom: 16, padding: 12, background: '#f6ffed', borderRadius: 8 }}>
+                <Space>
+                  <MedicineBoxOutlined style={{ color: '#52c41a' }} />
+                  <Text strong>Y tá: {selectedNurse.name || selectedNurse.fullName}</Text>
+                  {selectedNurse.email && (
+                    <>
+                      <Text type="secondary">•</Text>
+                      <Text type="secondary">{selectedNurse.email}</Text>
+                    </>
+                  )}
+                </Space>
+              </div>
+            )}
+
             {/* Controls */}
             <div className="calendar-controls">
               <Space wrap>
-                {viewMode === 'room' ? <RoomSelector /> : <DentistSelector />}
+                {viewMode === 'room' && <RoomSelector />}
+                {viewMode === 'dentist' && <DentistSelector />}
+                {viewMode === 'nurse' && <NurseSelector />}
                 
-                {/* Show navigation only when room is selected */}
-                {(viewMode === 'room' && selectedRoom) || (viewMode === 'dentist' && selectedDentist) ? (
+                {/* Show navigation only when selection is made */}
+                {((viewMode === 'room' && selectedRoom) || (viewMode === 'dentist' && selectedDentist) || (viewMode === 'nurse' && selectedNurse)) ? (
                   <>
                     <Divider type="vertical" />
                     <Button 
@@ -412,7 +631,7 @@ const ScheduleCalendar = () => {
                   </>
                 ) : (
                   <Text type="secondary" style={{ marginLeft: 16 }}>
-                    Vui lòng chọn {viewMode === 'room' ? 'phòng' : 'nha sĩ'} để xem lịch
+                    Vui lòng chọn {viewMode === 'room' ? 'phòng' : viewMode === 'dentist' ? 'nha sĩ' : 'y tá'} để xem lịch
                   </Text>
                 )}
 
@@ -442,7 +661,7 @@ const ScheduleCalendar = () => {
                 </div>
 
                 {/* Shift Rows - cột hiển thị tên ca-thời gian */}
-                {calendarData?.shiftOverview ? Object.values(calendarData.shiftOverview).map(shift => (
+                {shiftOverview ? Object.values(shiftOverview).map(shift => (
                   <div key={shift.name} className="calendar-row">
                     <div className="time-column">
                       <div className="shift-info">
@@ -468,7 +687,7 @@ const ScheduleCalendar = () => {
                     <div style={{ padding: 20, textAlign: 'center', gridColumn: '1 / -1' }}>
                       {loading ? (
                         <Text type="secondary">Đang tải ca làm việc...</Text>
-                      ) : selectedRoom ? (
+                      ) : (selectedRoom || selectedDentist || selectedNurse) ? (
                         <div>
                           <Text type="warning">Không thể tải dữ liệu lịch</Text>
                           <br />
@@ -485,7 +704,9 @@ const ScheduleCalendar = () => {
                           </Button>
                         </div>
                       ) : (
-                        <Text type="secondary">Chọn phòng để xem lịch</Text>
+                        <Text type="secondary">
+                          Chọn {viewMode === 'room' ? 'phòng' : viewMode === 'dentist' ? 'nha sĩ' : 'y tá'} để xem lịch
+                        </Text>
                       )}
                     </div>
                   </div>

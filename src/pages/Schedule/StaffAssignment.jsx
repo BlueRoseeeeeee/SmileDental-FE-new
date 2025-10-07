@@ -1,16 +1,19 @@
-/**
+﻿/**
  * @author: HoTram
  * Staff Assignment Component - Phân công nhân sự vào slots
+ * Hỗ trợ 3 chế độ: Assign (phân công mới), Reassign (phân công lại), Update (cập nhật slot cụ thể)
  */
 import React, { useState, useEffect } from 'react';
 import { 
   Card, Form, Select, Button, Space, Typography, Row, Col, 
-  Divider, Alert, Spin, notification, Checkbox, InputNumber
+  Divider, Alert, Spin, notification, Input, Tag, DatePicker, Checkbox
 } from 'antd';
 import { 
   TeamOutlined, UserOutlined, CalendarOutlined, HomeOutlined,
-  CheckCircleOutlined, ExclamationCircleOutlined
+  CheckCircleOutlined, ExclamationCircleOutlined, EditOutlined,
+  ReloadOutlined, SaveOutlined, InfoCircleOutlined, ClockCircleOutlined
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { roomService } from '../../services';
 import { userService } from '../../services';
 import slotService from '../../services/slotService.js';
@@ -20,6 +23,13 @@ import './StaffAssignment.css';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+// Các chế độ phân công
+const ASSIGNMENT_MODES = {
+  ASSIGN: 'assign',
+  REASSIGN: 'reassign',
+  UPDATE: 'update'
+};
 
 const StaffAssignment = () => {
   const [form] = Form.useForm();
@@ -36,6 +46,18 @@ const StaffAssignment = () => {
   // Form states
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [availableSubRooms, setAvailableSubRooms] = useState([]);
+  const [assignmentMode, setAssignmentMode] = useState(ASSIGNMENT_MODES.ASSIGN);
+  
+  // States cho việc kiểm soát số lượng nhân viên
+  const [selectedDentists, setSelectedDentists] = useState([]);
+  const [selectedNurses, setSelectedNurses] = useState([]);
+  const [maxDentists, setMaxDentists] = useState(1);
+  const [maxNurses, setMaxNurses] = useState(1);
+  
+  // States cho UPDATE mode - slot selection
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [selectedSlots, setSelectedSlots] = useState([]);
 
   useEffect(() => {
     loadInitialData();
@@ -172,75 +194,214 @@ const StaffAssignment = () => {
     const room = rooms.find(r => r._id === roomId);
     setSelectedRoom(room);
     
-    // Clear staff selections when changing room type to avoid single/multiple mode conflicts
+    console.log('DEBUG Room selected:', room);
+    
+    // Reset selections
     form.setFieldsValue({ 
       subRoomId: undefined,
       dentistIds: undefined,
-      nurseIds: undefined
+      nurseIds: undefined,
+      slotIds: undefined
     });
+    setSelectedDentists([]);
+    setSelectedNurses([]);
+    setAvailableSlots([]);
+    setSelectedSlots([]);
     
     if (room?.hasSubRooms && room?.subRooms?.length > 0) {
-      // Lọc chỉ những subroom có isActive = true
+      // Phòng có buồng: chỉ cho chọn 1 nha sĩ và 1 y tá
       const activeSubRooms = room.subRooms.filter(subRoom => subRoom.isActive === true);
+      console.log('DEBUG Active SubRooms:', activeSubRooms);
       setAvailableSubRooms(activeSubRooms);
+      setMaxDentists(1);
+      setMaxNurses(1);
     } else {
+      // Phòng đơn: lấy max từ cấu hình phòng
       setAvailableSubRooms([]);
+      setMaxDentists(room?.maxDoctors || 1);
+      setMaxNurses(room?.maxNurses || 1);
     }
+  };
+
+  const handleAssignmentModeChange = (mode) => {
+    setAssignmentMode(mode);
+    // Reset form khi đổi chế độ
+    form.resetFields();
+    setSelectedRoom(null);
+    setAvailableSubRooms([]);
+    setSelectedDentists([]);
+    setSelectedNurses([]);
+    setAvailableSlots([]);
+    setSelectedSlots([]);
+  };
+
+  const handleDentistChange = (values) => {
+    const valueArray = Array.isArray(values) ? values : (values ? [values] : []);
+    
+    // Kiểm tra giới hạn
+    if (valueArray.length > maxDentists) {
+      toast.warning(`Chỉ được chọn tối đa ${maxDentists} nha sĩ cho phòng này`);
+      return;
+    }
+    
+    setSelectedDentists(valueArray);
+    form.setFieldsValue({ dentistIds: valueArray });
+  };
+
+  const handleNurseChange = (values) => {
+    const valueArray = Array.isArray(values) ? values : (values ? [values] : []);
+    
+    // Kiểm tra giới hạn
+    if (valueArray.length > maxNurses) {
+      toast.warning(`Chỉ được chọn tối đa ${maxNurses} y tá cho phòng này`);
+      return;
+    }
+    
+    setSelectedNurses(valueArray);
+    form.setFieldsValue({ nurseIds: valueArray });
+  };
+
+  // Handler cho UPDATE mode - load slots theo room, date, shift
+  const handleLoadSlots = async () => {
+    const roomId = form.getFieldValue('roomId');
+    const subRoomId = form.getFieldValue('subRoomId');
+    const date = form.getFieldValue('date');
+    const shiftName = form.getFieldValue('shiftName');
+
+    console.log('DEBUG Form values:', { roomId, subRoomId, date, shiftName });
+    console.log('DEBUG subRoomId type:', typeof subRoomId, 'value:', subRoomId);
+
+    setLoadingSlots(true);
+    try {
+      const requestParams = {
+        roomId,
+        date: dayjs(date).format('YYYY-MM-DD'),
+        shiftName
+      };
+      
+      // Luôn thêm subRoomId vào params (backend sẽ xử lý nếu null/undefined)
+      if (subRoomId !== undefined && subRoomId !== null && subRoomId !== '') {
+        requestParams.subRoomId = subRoomId;
+      }
+      
+      console.log('DEBUG Request params:', requestParams);
+      
+      const response = await slotService.getSlotsByShiftAndDate(requestParams);
+      
+      console.log('DEBUG API Response:', response);
+
+      if (response?.success && response?.data) {
+        const slots = response.data.slots || [];
+        console.log('DEBUG Slots found:', slots.length);
+        setAvailableSlots(slots);
+        
+        if (slots.length === 0) {
+          toast.warning('Không tìm thấy slot nào cho lựa chọn này');
+        } else {
+          toast.success(`Tìm thấy ${slots.length} slot(s)`);
+        }
+      } else {
+        toast.error('Không thể tải danh sách slot');
+        setAvailableSlots([]);
+      }
+    } catch (error) {
+      console.error('DEBUG Error loading slots:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Lỗi không xác định';
+      toast.error(`Lỗi tải slots: ${errorMsg}`);
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const handleSlotSelectionChange = (slotIds) => {
+    setSelectedSlots(slotIds);
   };
 
   const handleSubmit = async (values) => {
     setSubmitting(true);
     try {
-      const requestData = {
-        roomId: values.roomId,
-        quarter: values.quarter,
-        year: values.year,
-        shifts: values.shifts,
-        // Đảm bảo dentistIds và nurseIds luôn là array
-        dentistIds: Array.isArray(values.dentistIds) ? values.dentistIds : [values.dentistIds].filter(Boolean),
-        nurseIds: Array.isArray(values.nurseIds) ? values.nurseIds : [values.nurseIds].filter(Boolean)
-      };
+      let response;
+      
+      // Chế độ UPDATE: gọi API updateSlotStaff
+      if (assignmentMode === ASSIGNMENT_MODES.UPDATE) {
+        // Validate có chọn slot không
+        if (!selectedSlots || selectedSlots.length === 0) {
+          toast.error('Vui lòng chọn ít nhất 1 slot để cập nhật');
+          setSubmitting(false);
+          return;
+        }
 
-      // Thêm subRoomId nếu room has subrooms
-      if (selectedRoom?.hasSubRooms && values.subRoomId) {
-        requestData.subRoomId = values.subRoomId;
+        const requestData = {
+          slotIds: selectedSlots,
+          dentistId: selectedDentists[0] || null,
+          nurseId: selectedNurses[0] || null
+        };
+
+        // Ít nhất phải có 1 trong 2
+        if (!requestData.dentistId && !requestData.nurseId) {
+          toast.error('Phải chọn ít nhất 1 nha sĩ hoặc y tá để cập nhật');
+          setSubmitting(false);
+          return;
+        }
+
+        response = await slotService.updateSlotStaff(requestData);
+      } 
+      // Chế độ ASSIGN hoặc REASSIGN
+      else {
+        const requestData = {
+          roomId: values.roomId,
+          quarter: values.quarter,
+          year: values.year,
+          shifts: values.shifts,
+          dentistIds: selectedDentists,
+          nurseIds: selectedNurses
+        };
+
+        // Thêm subRoomId nếu room has subrooms
+        if (selectedRoom?.hasSubRooms && values.subRoomId) {
+          requestData.subRoomId = values.subRoomId;
+        }
+
+        if (assignmentMode === ASSIGNMENT_MODES.ASSIGN) {
+          response = await slotService.assignStaffToSlots(requestData);
+        } else {
+          response = await slotService.reassignStaffToSlots(requestData);
+        }
       }
 
-      const response = await slotService.assignStaffToSlots(requestData);
-
       if (response.success) {
-        // Force notification hiển thị  
-        notification.destroy(); // Clear existing notifications
+        notification.destroy();
         notification.success({
-          message: 'Phân công nhân sự thành công!',
-          description: response.data?.message || 'Phân công nhân sự đã được thực hiện thành công',
+          message: 'Thành công!',
+          description: response.data?.message || response.message || 'Đã thực hiện thành công',
           duration: 5,
           placement: 'topRight',
           icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />
         });
 
-        toast.success(response.data?.message || 'Phân công nhân sự thành công!');
+        toast.success(response.data?.message || response.message || 'Thành công!');
         
         // Reset form
         form.resetFields();
         setSelectedRoom(null);
         setAvailableSubRooms([]);
+        setSelectedDentists([]);
+        setSelectedNurses([]);
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message;
       
-      // Force notification hiển thị
-      notification.destroy(); // Clear existing notifications first
+      notification.destroy();
       notification.error({
-        message: 'Lỗi phân công nhân sự',
-        description: errorMessage || 'Có lỗi xảy ra khi phân công nhân sự',
+        message: 'Lỗi thao tác',
+        description: errorMessage || 'Có lỗi xảy ra',
         duration: 6,
         placement: 'topRight',
         icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
       });
 
-      // Backup toast service nếu notification không hoạt động
-      toast.error(errorMessage || 'Có lỗi xảy ra khi phân công nhân sự');
+      toast.error(errorMessage || 'Có lỗi xảy ra');
     } finally {
       setSubmitting(false);
     }
@@ -291,12 +452,75 @@ const StaffAssignment = () => {
         <div style={{ marginBottom: 24 }}>
           <Title level={3}>
             <TeamOutlined style={{ marginRight: 8 }} />
-            Phân Công Nhân Sự
+            Quản Lý Phân Công Nhân Sự
           </Title>
           <Text type="secondary">
-            Phân công bác sĩ và y tá vào các slot làm việc theo quý
+            Phân công, phân công lại hoặc cập nhật bác sĩ và y tá vào các slot làm việc
           </Text>
         </div>
+
+        {/* Chọn chế độ phân công */}
+        <Card 
+          size="small" 
+          style={{ marginBottom: 24, background: '#f8f9fa', borderLeft: '4px solid #1890ff' }}
+        >
+          <Row gutter={16} align="middle">
+            <Col span={6}>
+              <Text strong style={{ fontSize: '15px' }}>
+                <InfoCircleOutlined style={{ marginRight: 8, color: '#1890ff' }} />
+                Chế độ thao tác:
+              </Text>
+            </Col>
+            <Col span={18}>
+              <Select
+                value={assignmentMode}
+                onChange={handleAssignmentModeChange}
+                style={{ width: '100%' }}
+                size="large"
+              >
+                <Option value={ASSIGNMENT_MODES.ASSIGN}>
+                  <SaveOutlined style={{ marginRight: 8 }} />
+                  Phân công mới (Assign) - Phân công nhân sự vào slot trống theo quý
+                </Option>
+                <Option value={ASSIGNMENT_MODES.REASSIGN}>
+                  <ReloadOutlined style={{ marginRight: 8 }} />
+                  Phân công lại (Reassign) - Thay đổi nhân sự cho slot đã có người theo quý
+                </Option>
+                <Option value={ASSIGNMENT_MODES.UPDATE}>
+                  <EditOutlined style={{ marginRight: 8 }} />
+                  Cập nhật slot (Update) - Cập nhật nhân sự cho slot cụ thể (cần Slot ID)
+                </Option>
+              </Select>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Mô tả chế độ được chọn */}
+        <Alert
+          message={
+            assignmentMode === ASSIGNMENT_MODES.ASSIGN 
+              ? "Chế độ: Phân công mới (Assign Staff)" 
+              : assignmentMode === ASSIGNMENT_MODES.REASSIGN
+              ? "Chế độ: Phân công lại (Reassign Staff)"
+              : "Chế độ: Cập nhật slot (Update Staff)"
+          }
+          description={
+            assignmentMode === ASSIGNMENT_MODES.ASSIGN 
+              ? "Phân công nhân sự vào các slot TRỐNG trong quý được chọn. Slot đã có người sẽ được giữ nguyên."
+              : assignmentMode === ASSIGNMENT_MODES.REASSIGN
+              ? "Thay đổi nhân sự cho các slot ĐÃ CÓ NGƯỜI trong quý được chọn. Chỉ áp dụng cho slot đã được phân công."
+              : "Cập nhật nhân sự cho một hoặc nhiều slot CỤ THỂ. Cần nhập Slot ID. Thích hợp cho chỉnh sửa từng slot riêng lẻ."
+          }
+          type={
+            assignmentMode === ASSIGNMENT_MODES.ASSIGN 
+              ? "info" 
+              : assignmentMode === ASSIGNMENT_MODES.REASSIGN 
+              ? "warning"
+              : "success"
+          }
+          showIcon
+          style={{ marginBottom: 24 }}
+        />
 
         <Form
           form={form}
@@ -304,200 +528,547 @@ const StaffAssignment = () => {
           onFinish={handleSubmit}
           requiredMark={false}
         >
-          <Row gutter={24}>
-            {/* Room Selection */}
-            <Col span={12}>
-              <Form.Item
-                label="Chọn phòng"
-                name="roomId"
-                rules={[{ required: true, message: 'Vui lòng chọn phòng' }]}
-              >
-                <Select
-                  placeholder="Chọn phòng"
-                  onChange={handleRoomChange}
-                  showSearch
-                  optionFilterProp="children"
-                >
-                  {rooms.map(room => (
-                    <Option key={room._id} value={room._id}>
-                      <HomeOutlined style={{ marginRight: 8 }} />
-                      {room.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-
-            {/* SubRoom Selection (if applicable) */}
-            {selectedRoom?.hasSubRooms && availableSubRooms.length > 0 && (
-              <Col span={12}>
-                <Form.Item
-                  label="Chọn phòng con"
-                  name="subRoomId"
-                  rules={[{ required: true, message: 'Vui lòng chọn phòng con' }]}
-                >
-                  <Select placeholder="Chọn phòng con">
-                    {availableSubRooms.map(subRoom => (
-                      <Option key={subRoom._id} value={subRoom._id}>
-                        {subRoom.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            )}
-          </Row>
-
-          <Row gutter={24}>
-            {/* Quarter and Year Selection - Combined */}
-            <Col span={12}>
-              <Form.Item
-                label="Quý và Năm"
-                name="quarterYear"
-                rules={[{ required: true, message: 'Vui lòng chọn quý và năm' }]}
-              >
-                <Select 
-                  placeholder="Chọn quý và năm"
-                  onChange={(value) => {
-                    const [quarter, year] = value.split('-');
-                    form.setFieldsValue({
-                      quarter: parseInt(quarter),
-                      year: parseInt(year)
-                    });
-                  }}
-                  showSearch
-                  optionFilterProp="children"
-                >
-                  {availableQuarters.map(option => (
-                    <Option 
-                      key={`${option.quarter}-${option.year}`} 
-                      value={`${option.quarter}-${option.year}`}
+          {/* Form cho UPDATE MODE: chọn slot qua UI */}
+          {assignmentMode === ASSIGNMENT_MODES.UPDATE && (
+            <>
+              <Row gutter={24}>
+                {/* Room Selection */}
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <HomeOutlined style={{ marginRight: 8 }} />
+                        Chọn phòng
+                      </span>
+                    }
+                    name="roomId"
+                    rules={[{ required: true, message: 'Vui lòng chọn phòng' }]}
+                  >
+                    <Select
+                      placeholder="Chọn phòng"
+                      onChange={handleRoomChange}
+                      showSearch
+                      optionFilterProp="children"
                     >
-                      <CalendarOutlined style={{ marginRight: 8 }} />
-                      {option.label} 
-                      {option.isCurrent}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
+                      {rooms.map(room => (
+                        <Option key={room._id} value={room._id}>
+                          {room.name}
+                          {room.hasSubRooms && (
+                            <Tag color="blue" style={{ marginLeft: 8 }}>
+                              {room.subRooms?.length || 0} buồng
+                            </Tag>
+                          )}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
 
-            {/* Hidden fields for quarter and year values */}
-            <Form.Item name="quarter" hidden>
-              <InputNumber />
-            </Form.Item>
-            
-            <Form.Item name="year" hidden>
-              <InputNumber />
-            </Form.Item>
+                {/* SubRoom Selection (if applicable) */}
+                {selectedRoom?.hasSubRooms && availableSubRooms.length > 0 && (
+                  <Col span={12}>
+                    <Form.Item
+                      label={
+                        <span>
+                          <HomeOutlined style={{ marginRight: 8 }} />
+                          Chọn buồng con
+                        </span>
+                      }
+                      name="subRoomId"
+                    >
+                      <Select
+                        placeholder="Chọn buồng con (tùy chọn)"
+                        allowClear
+                      >
+                        {availableSubRooms.map(subRoom => (
+                          <Option key={subRoom._id} value={subRoom._id}>
+                            {subRoom.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                )}
+              </Row>
 
-            {/* Shifts Selection */}
-            <Col span={12}>
-              <Form.Item
-                label="Ca làm việc"
-                name="shifts"
-                rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 ca' }]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="Chọn ca làm việc"
-                  allowClear
-                >
-                  {availableShifts.map(shift => (
-                    <Option key={shift.value} value={shift.value}>
-                      {shift.name} ({shift.startTime} - {shift.endTime})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+              <Row gutter={24}>
+                {/* Date Selection */}
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <CalendarOutlined style={{ marginRight: 8 }} />
+                        Chọn ngày
+                      </span>
+                    }
+                    name="date"
+                    rules={[{ required: true, message: 'Vui lòng chọn ngày' }]}
+                  >
+                    <DatePicker
+                      style={{ width: '100%' }}
+                      format="DD/MM/YYYY"
+                      placeholder="Chọn ngày"
+                      disabledDate={(current) => {
+                        // Không cho chọn ngày quá khứ (trước hôm nay)
+                        return current && current < dayjs().startOf('day');
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
 
+                {/* Shift Selection */}
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <ClockCircleOutlined style={{ marginRight: 8 }} />
+                        Chọn ca làm việc
+                      </span>
+                    }
+                    name="shiftName"
+                    rules={[{ required: true, message: 'Vui lòng chọn ca' }]}
+                  >
+                    <Select placeholder="Chọn ca làm việc">
+                      {availableShifts.map(shift => (
+                        <Option key={shift.value} value={shift.value}>
+                          {shift.name} ({shift.startTime} - {shift.endTime})
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={24}>
+                <Col span={24}>
+                  <Button
+                    type="primary"
+                    icon={<CalendarOutlined />}
+                    onClick={handleLoadSlots}
+                    loading={loadingSlots}
+                    block
+                    style={{ marginBottom: 16 }}
+                  >
+                    Tải danh sách Slot
+                  </Button>
+                </Col>
+              </Row>
+
+              {/* Slot Selection */}
+              {availableSlots.length > 0 && (
+                <>
+                  <Alert
+                    message={`Tìm thấy ${availableSlots.length} slot(s)`}
+                    description="Chọn các slot bạn muốn cập nhật nhân sự"
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                  
+                  <Form.Item
+                    label={
+                      <Space>
+                        <CheckCircleOutlined />
+                        <span>Chọn Slot(s) - Đã chọn: {selectedSlots.length}/{availableSlots.length}</span>
+                        <Button 
+                          type="link" 
+                          size="small"
+                          onClick={() => {
+                            const allSlotIds = availableSlots.map(slot => slot.slotId);
+                            setSelectedSlots(allSlotIds);
+                          }}
+                        >
+                          Chọn tất cả
+                        </Button>
+                        <Button 
+                          type="link" 
+                          size="small"
+                          onClick={() => setSelectedSlots([])}
+                          danger
+                        >
+                          Bỏ chọn tất cả
+                        </Button>
+                      </Space>
+                    }
+                  >
+                    <Checkbox.Group
+                      style={{ width: '100%' }}
+                      value={selectedSlots}
+                      onChange={handleSlotSelectionChange}
+                    >
+                      <Row gutter={[8, 8]}>
+                        {availableSlots.map(slot => (
+                          <Col span={24} key={slot.slotId}>
+                            <Checkbox value={slot.slotId}>
+                              <Space direction="vertical" size={0}>
+                                <Text strong>
+                                  {slot.startTimeVN} - {slot.endTimeVN}
+                                  {slot.isBooked && (
+                                    <Tag color="red" style={{ marginLeft: 8 }}>Đã đặt</Tag>
+                                  )}
+                                  {slot.status === 'available' && (
+                                    <Tag color="green" style={{ marginLeft: 8 }}>Sẵn sàng</Tag>
+                                  )}
+                                  {slot.status === 'no_staff' && (
+                                    <Tag color="orange" style={{ marginLeft: 8 }}>Thiếu nhân sự</Tag>
+                                  )}
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Bác sĩ: {slot.dentist?.name || 'Chưa có'}
+                                  {' | '}
+                                  Y tá: {slot.nurse?.name || 'Chưa có'}
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                  Slot ID: {slot.slotId}
+                                </Text>
+                              </Space>
+                            </Checkbox>
+                          </Col>
+                        ))}
+                      </Row>
+                    </Checkbox.Group>
+                  </Form.Item>
+                </>
+              )}
+
+              <Divider />
+
+              <Alert
+                message="Chọn nhân sự mới"
+                description="Chọn 1 nha sĩ HOẶC 1 y tá HOẶC cả hai để cập nhật cho slot(s) đã chọn"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+
+              <Row gutter={24}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <UserOutlined style={{ marginRight: 8 }} />
+                        Nha sĩ mới (tùy chọn)
+                      </span>
+                    }
+                    name="dentistIds"
+                  >
+                    <Select
+                      placeholder="Chọn nha sĩ"
+                      showSearch
+                      optionFilterProp="children"
+                      allowClear
+                      onChange={(value) => handleDentistChange(value ? [value] : [])}
+                    >
+                      {dentists.map(dentist => (
+                        <Option key={dentist._id} value={dentist._id}>
+                          {dentist.employeeCode || 'N/A'} | {dentist.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <UserOutlined style={{ marginRight: 8 }} />
+                        Y tá mới (tùy chọn)
+                      </span>
+                    }
+                    name="nurseIds"
+                  >
+                    <Select
+                      placeholder="Chọn y tá"
+                      showSearch
+                      optionFilterProp="children"
+                      allowClear
+                      onChange={(value) => handleNurseChange(value ? [value] : [])}
+                    >
+                      {nurses.map(nurse => (
+                        <Option key={nurse._id} value={nurse._id}>
+                          {nurse.employeeCode || 'N/A'} | {nurse.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </>
+          )}
+
+          {/* Form cho ASSIGN và REASSIGN MODE */}
+          {(assignmentMode === ASSIGNMENT_MODES.ASSIGN || assignmentMode === ASSIGNMENT_MODES.REASSIGN) && (
+            <>
+              <Row gutter={24}>
+                {/* Room Selection */}
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <HomeOutlined style={{ marginRight: 8 }} />
+                        Chọn phòng
+                      </span>
+                    }
+                    name="roomId"
+                    rules={[{ required: true, message: 'Vui lòng chọn phòng' }]}
+                  >
+                    <Select
+                      placeholder="Chọn phòng"
+                      onChange={handleRoomChange}
+                      showSearch
+                      optionFilterProp="children"
+                    >
+                      {rooms.map(room => (
+                        <Option key={room._id} value={room._id}>
+                          {room.name}
+                          {room.hasSubRooms && (
+                            <Tag color="blue" style={{ marginLeft: 8 }}>
+                              {room.subRooms?.length || 0} buồng
+                            </Tag>
+                          )}
+                          {!room.hasSubRooms && (
+                            <Tag color="green" style={{ marginLeft: 8 }}>
+                              Max: {room.maxDoctors}BS, {room.maxNurses}YT
+                            </Tag>
+                          )}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                {/* SubRoom Selection (if applicable) */}
+                {selectedRoom?.hasSubRooms && availableSubRooms.length > 0 && (
+                  <Col span={12}>
+                    <Form.Item
+                      label={
+                        <span>
+                          <HomeOutlined style={{ marginRight: 8 }} />
+                          Chọn phòng con
+                        </span>
+                      }
+                      name="subRoomId"
+                      rules={[{ required: true, message: 'Vui lòng chọn phòng con' }]}
+                    >
+                      <Select placeholder="Chọn phòng con">
+                        {availableSubRooms.map(subRoom => (
+                          <Option key={subRoom._id} value={subRoom._id}>
+                            {subRoom.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                )}
+              </Row>
+
+              {/* Hiển thị thông tin giới hạn phòng */}
+              {selectedRoom && (
+                <Alert
+                  message="Giới hạn phân công"
+                  description={
+                    selectedRoom.hasSubRooms 
+                      ? `Phòng có buồng: Mỗi buồng chỉ được chọn 1 nha sĩ và 1 y tá. Hệ thống sẽ tự động phân bổ.`
+                      : `Phòng đơn: Tối đa ${maxDentists} nha sĩ và ${maxNurses} y tá. Đã chọn: ${selectedDentists.length}/${maxDentists} nha sĩ, ${selectedNurses.length}/${maxNurses} y tá.`
+                  }
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+              )}
+
+              <Row gutter={24}>
+                {/* Quarter and Year Selection */}
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <CalendarOutlined style={{ marginRight: 8 }} />
+                        Quý và Năm
+                      </span>
+                    }
+                    name="quarterYear"
+                    rules={[{ required: true, message: 'Vui lòng chọn quý và năm' }]}
+                  >
+                    <Select 
+                      placeholder="Chọn quý và năm"
+                      onChange={(value) => {
+                        const [quarter, year] = value.split('-');
+                        form.setFieldsValue({
+                          quarter: parseInt(quarter),
+                          year: parseInt(year)
+                        });
+                      }}
+                      showSearch
+                      optionFilterProp="children"
+                    >
+                      {availableQuarters.map(option => (
+                        <Option 
+                          key={`${option.quarter}-${option.year}`} 
+                          value={`${option.quarter}-${option.year}`}
+                        >
+                          {option.label} {option.isCurrent && <Tag color="green">Hiện tại</Tag>}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Form.Item name="quarter" hidden>
+                  <Input />
+                </Form.Item>
+                
+                <Form.Item name="year" hidden>
+                  <Input />
+                </Form.Item>
+
+                {/* Shifts Selection */}
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <CalendarOutlined style={{ marginRight: 8 }} />
+                        Ca làm việc
+                      </span>
+                    }
+                    name="shifts"
+                    rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 ca' }]}
+                  >
+                    <Select
+                      mode="multiple"
+                      placeholder="Chọn ca làm việc"
+                      allowClear
+                    >
+                      {availableShifts.map(shift => (
+                        <Option key={shift.value} value={shift.value}>
+                          {shift.name} ({shift.startTime} - {shift.endTime})
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Divider />
+
+              {/* Chọn nhân sự */}
+              <Row gutter={24}>
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <UserOutlined style={{ marginRight: 8 }} />
+                        Nha sĩ {selectedRoom && `(Tối đa: ${maxDentists}, Đã chọn: ${selectedDentists.length})`}
+                      </span>
+                    }
+                    name="dentistIds"
+                    rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 nha sĩ' }]}
+                  >
+                    <Select
+                      mode={selectedRoom?.hasSubRooms ? undefined : "multiple"}
+                      placeholder="Chọn nha sĩ"
+                      showSearch
+                      optionFilterProp="children"
+                      allowClear
+                      value={selectedDentists}
+                      onChange={handleDentistChange}
+                      maxTagCount="responsive"
+                    >
+                      {dentists.map(dentist => (
+                        <Option 
+                          key={dentist._id} 
+                          value={dentist._id}
+                          disabled={
+                            !selectedRoom?.hasSubRooms && 
+                            selectedDentists.length >= maxDentists && 
+                            !selectedDentists.includes(dentist._id)
+                          }
+                        >
+                          {dentist.employeeCode || 'N/A'} | {dentist.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+
+                <Col span={12}>
+                  <Form.Item
+                    label={
+                      <span>
+                        <UserOutlined style={{ marginRight: 8 }} />
+                        Y tá {selectedRoom && `(Tối đa: ${maxNurses}, Đã chọn: ${selectedNurses.length})`}
+                      </span>
+                    }
+                    name="nurseIds"
+                    rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 y tá' }]}
+                  >
+                    <Select
+                      mode={selectedRoom?.hasSubRooms ? undefined : "multiple"}
+                      placeholder="Chọn y tá"
+                      showSearch
+                      optionFilterProp="children"
+                      allowClear
+                      value={selectedNurses}
+                      onChange={handleNurseChange}
+                      maxTagCount="responsive"
+                    >
+                      {nurses.map(nurse => (
+                        <Option 
+                          key={nurse._id} 
+                          value={nurse._id}
+                          disabled={
+                            !selectedRoom?.hasSubRooms && 
+                            selectedNurses.length >= maxNurses && 
+                            !selectedNurses.includes(nurse._id)
+                          }
+                        >
+                          {nurse.employeeCode || 'N/A'} | {nurse.fullName}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </>
+          )}
+
+          {/* Submit buttons */}
           <Divider />
-          <Row >
-          <Col span={24}>
-          <Alert
-            message="Lưu ý phân công nhân sự"
-            description={
-              selectedRoom?.hasSubRooms 
-                ? "Phòng có buồng: Mỗi buồng chỉ được phân công 1 bác sĩ và 1 y tá. Hệ thống sẽ tự động phân bổ vào các slot còn trống."
-                : "Phòng đơn: Có thể phân công nhiều bác sĩ và y tá cùng lúc theo cấu hình tối đa của phòng. Các slot đã được phân công sẽ không bị ghi đè."
-            }
-            type="info"
-            showIcon
-          />
-          </Col>
-          </Row>
-          <Row gutter={24}>
-            {/* Dentist Selection */}
-            <Col span={12}>
-              <Form.Item
-                label={`Nha sĩ`}
-                name="dentistIds"
-                rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 bác sĩ' }]}
-              >
-                <Select
-                  mode={selectedRoom?.hasSubRooms ? undefined : "multiple"}
-                  placeholder="Chọn nha sĩ"
-                  showSearch
-                  optionFilterProp="children"
-                  allowClear
-                >
-                  {dentists.map(dentist => (
-                    <Option key={dentist._id} value={dentist._id}>
-                      <UserOutlined style={{ marginRight: 8 }} />
-                      {dentist.employeeCode || 'N/A'} | {dentist.fullName}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-
-            {/* Nurse Selection */}
-            <Col span={12}>
-              <Form.Item
-                label={`Y tá`}
-                name="nurseIds"
-                rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 y tá' }]}
-              >
-                <Select
-                  mode={selectedRoom?.hasSubRooms ? undefined : "multiple"}
-                  placeholder="Chọn y tá"
-                  showSearch
-                  optionFilterProp="children"
-                  allowClear
-                >
-                  {nurses.map(nurse => (
-                    <Option key={nurse._id} value={nurse._id}>
-                      <UserOutlined style={{ marginRight: 8 }} />
-                      {nurse.employeeCode || 'N/A'} | {nurse.fullName}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
           <Form.Item>
-            <Space>
+            <Space size="large">
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={submitting}
                 size="large"
-                icon={<TeamOutlined />}
+                icon={
+                  assignmentMode === ASSIGNMENT_MODES.ASSIGN 
+                    ? <SaveOutlined /> 
+                    : assignmentMode === ASSIGNMENT_MODES.REASSIGN 
+                    ? <ReloadOutlined />
+                    : <EditOutlined />
+                }
+                style={{ minWidth: 180 }}
               >
-                Phân Công Nhân Sự
+                {assignmentMode === ASSIGNMENT_MODES.ASSIGN 
+                  ? 'Phân Công Mới' 
+                  : assignmentMode === ASSIGNMENT_MODES.REASSIGN 
+                  ? 'Phân Công Lại'
+                  : 'Cập Nhật Slot'}
               </Button>
               <Button
                 onClick={() => {
                   form.resetFields();
                   setSelectedRoom(null);
                   setAvailableSubRooms([]);
+                  setSelectedDentists([]);
+                  setSelectedNurses([]);
                 }}
                 size="large"
+                style={{ minWidth: 120 }}
               >
-                Reset
+                Reset Form
               </Button>
             </Space>
           </Form.Item>

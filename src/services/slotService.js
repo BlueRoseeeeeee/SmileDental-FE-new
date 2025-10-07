@@ -46,18 +46,28 @@ const slotService = {
   },
 
   // Lấy lịch bác sĩ với số lượng cuộc hẹn (hỗ trợ lịch sử)
-  getDentistCalendar: async (dentistId, view = 'daily', startDate, endDate) => {
-    const response = await scheduleApi.get(`/slot/dentist/${dentistId}/calendar`, {
-      params: { view, startDate, endDate }
-    });
+  getDentistCalendar: async (dentistId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.viewType) queryParams.append('viewType', params.viewType);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+
+    const url = `/slot/dentist/${dentistId}/calendar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
     return response.data;
   },
 
   // Lấy lịch y tá với số lượng cuộc hẹn (hỗ trợ lịch sử)
-  getNurseCalendar: async (nurseId, view = 'daily', startDate, endDate) => {
-    const response = await scheduleApi.get(`/slot/nurse/${nurseId}/calendar`, {
-      params: { view, startDate, endDate }
-    });
+  getNurseCalendar: async (nurseId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.viewType) queryParams.append('viewType', params.viewType);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+
+    const url = `/slot/nurse/${nurseId}/calendar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
     return response.data;
   },
 
