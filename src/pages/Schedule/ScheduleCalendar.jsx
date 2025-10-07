@@ -170,7 +170,7 @@ const ScheduleCalendar = () => {
   };
 
   const goToNextWeek = () => {
-    setCurrentPage(prev => Math.max(0, prev - 1)); // Trang giảm = về tương lai
+    setCurrentPage(prev => prev - 1); // Trang giảm = về tương lai
   };
 
   const goToCurrentWeek = () => {
@@ -383,7 +383,6 @@ const ScheduleCalendar = () => {
                     <Button 
                       icon={<RightOutlined />} 
                       onClick={goToNextWeek}
-                      disabled={!calendarData?.pagination?.hasNext}
                     >
                       Tuần sau
                     </Button>
