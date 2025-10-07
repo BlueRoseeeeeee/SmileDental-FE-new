@@ -699,18 +699,21 @@ const StaffAssignment = () => {
                       <Row gutter={[8, 8]}>
                         {availableSlots.map(slot => (
                           <Col span={24} key={slot.slotId}>
-                            <Checkbox value={slot.slotId}>
+                            <Checkbox value={slot.slotId} disabled={!slot.canUpdate}>
                               <Space direction="vertical" size={0}>
                                 <Text strong>
                                   {slot.startTimeVN} - {slot.endTimeVN}
                                   {slot.isBooked && (
                                     <Tag color="red" style={{ marginLeft: 8 }}>Đã đặt</Tag>
                                   )}
-                                  {slot.status === 'available' && (
-                                    <Tag color="green" style={{ marginLeft: 8 }}>Sẵn sàng</Tag>
+                                  {slot.status === 'assigned' && !slot.isBooked && (
+                                    <Tag color="green" style={{ marginLeft: 8 }}>Đã phân công</Tag>
                                   )}
-                                  {slot.status === 'no_staff' && (
-                                    <Tag color="orange" style={{ marginLeft: 8 }}>Thiếu nhân sự</Tag>
+                                  {slot.status === 'not_assigned' && (
+                                    <Tag color="orange" style={{ marginLeft: 8 }}>Chưa phân công</Tag>
+                                  )}
+                                  {!slot.canUpdate && (
+                                    <Tag color="default" style={{ marginLeft: 8 }}>Không thể cập nhật</Tag>
                                   )}
                                 </Text>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
