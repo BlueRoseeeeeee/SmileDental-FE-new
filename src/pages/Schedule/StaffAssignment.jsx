@@ -47,17 +47,15 @@ const StaffAssignment = () => {
       
       // Room API không có field success, chỉ cần check có data
       if (roomsRes?.rooms && Array.isArray(roomsRes.rooms)) {
-        setRooms(roomsRes.rooms);
-        console.log('Rooms loaded:', roomsRes.rooms.length);
+        // Lọc chỉ những phòng có isActive = true
+        const activeRooms = roomsRes.rooms.filter(room => room.isActive === true);
+        setRooms(activeRooms);
       } else {
         console.error('Rooms API invalid format:', roomsRes);
         toast.error('Dữ liệu phòng không hợp lệ');
       }
     } catch (error) {
       console.error(' Room API error:', error);
-      console.error('Status:', error.response?.status);
-      console.error('Status Text:', error.response?.statusText);
-      console.error('Data:', error.response?.data);
       toast.error(`Lỗi tải phòng: ${error.response?.status || error.message}`);
     }
   };
