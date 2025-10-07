@@ -166,7 +166,7 @@ const ScheduleCalendar = () => {
 
   // Navigation handlers - ISO Week (Thứ 2 đến Chủ Nhật)
   const goToPreviousWeek = () => {
-    setCurrentPage(prev => Math.max(1, prev - 1)); // Trang giảm = về quá khứ, tối thiểu là 1
+    setCurrentPage(prev => prev - 1); // Trang giảm = về quá khứ (có thể âm)
   };
 
   const goToNextWeek = () => {
@@ -180,10 +180,10 @@ const ScheduleCalendar = () => {
 
 
   
-  // Check if we can go to previous week (quá khứ)
-  const canGoPrevious = currentPage > 1;
+  // cho  phép hiển thị tuần trước
+  const canGoPrevious = true;
   
-  // Check if we can go to next week (tương lai)
+  // Check if we can go to next week (tương lai)- case này thì lịch phải được tạo
   const canGoNext = calendarData?.pagination?.hasNext !== false;
 
   // Render room/subroom selector
