@@ -162,6 +162,9 @@ const UserManagement = () => {
         } else if (sortConfig.field === 'updatedAt') {
           aValue = new Date(a.updatedAt);
           bValue = new Date(b.updatedAt);
+        } else if (sortConfig.field === 'dateOfBirth') {
+          aValue = new Date(a.dateOfBirth || '1900-01-01');
+          bValue = new Date(b.dateOfBirth || '1900-01-01');
         } else if (sortConfig.field === 'role') {
           // Sắp xếp theo thứ tự ưu tiên vai trò
           const roleOrder = { admin: 1, manager: 2, dentist: 3, nurse: 4, receptionist: 5, patient: 6 };
@@ -216,37 +219,104 @@ const UserManagement = () => {
   // Export to Excel function
   const exportToExcel = () => {
     try {
-      // Prepare data for export
-      const exportData = filteredUsers.map(user => ({
-        'Mã nhân viên': user.employeeCode || '',
-        'Họ và tên': user.fullName || '',
-        'Email': user.email || '',
-        'Số điện thoại': user.phone || '',
-        'Vai trò': getRoleText(user.role),
-        'Trạng thái': user.isActive ? 'Đang làm việc' : 'Đã nghỉ việc',
-        'Ngày sinh': user.dateOfBirth ? dayjs(user.dateOfBirth).format('DD/MM/YYYY') : '',
-        'Giới tính': getGenderText(user.gender),
-        'Ngày tạo': user.createdAt ? dayjs(user.createdAt).format('DD/MM/YYYY HH:mm') : '',
-        'Ngày cập nhật': user.updatedAt ? dayjs(user.updatedAt).format('DD/MM/YYYY HH:mm') : ''
-      }));
+      // Prepare data for export based on table column order
+      const exportData = filteredUsers.map(user => {
+        const rowData = {};
+        
+        // Add data in the same order as table columns
+        columns.forEach(column => {
+          switch (column.key) {
+            case 'avatar':
+              // Skip avatar column in Excel
+              break;
+            case 'fullName':
+              rowData['Họ và tên'] = user.fullName || '';
+              break;
+            case 'email':
+              rowData['Email'] = user.email || '';
+              break;
+            case 'phone':
+              rowData['Số điện thoại'] = user.phone || '';
+              break;
+            case 'dateOfBirth':
+              rowData['Ngày sinh'] = user.dateOfBirth ? dayjs(user.dateOfBirth).format('DD/MM/YYYY') : '-';
+              break;
+            case 'role':
+              rowData['Vai trò'] = getRoleText(user.role);
+              break;
+            case 'isActive':
+              rowData['Trạng thái'] = user.isActive ? 'Đang làm việc' : 'Đã nghỉ việc';
+              break;
+            case 'updatedAt':
+              rowData['Ngày cập nhật'] = user.updatedAt ? dayjs(user.updatedAt).format('DD/MM/YYYY HH:mm') : '';
+              break;
+            case 'actions':
+              // Skip actions column in Excel
+              break;
+            default:
+              // Add employee code if not in columns but needed
+              if (!rowData['Mã nhân viên'] && user.employeeCode) {
+                rowData['Mã nhân viên'] = user.employeeCode;
+              }
+              break;
+          }
+        });
+        
+        // Add employee code at the beginning if not already added
+        if (user.employeeCode && !rowData['Mã nhân viên']) {
+          const newRowData = { 'Mã nhân viên': user.employeeCode };
+          Object.keys(rowData).forEach(key => {
+            newRowData[key] = rowData[key];
+          });
+          return newRowData;
+        }
+        
+        return rowData;
+      });
 
       // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
 
-      // Set column widths
-      const colWidths = [
-        { wch: 15 }, // Mã nhân viên
-        { wch: 25 }, // Họ và tên
-        { wch: 30 }, // Email
-        { wch: 15 }, // Số điện thoại
-        { wch: 15 }, // Vai trò
-        { wch: 15 }, // Trạng thái
-        { wch: 12 }, // Ngày sinh
-        { wch: 10 }, // Giới tính
-        { wch: 20 }, // Ngày tạo
-        { wch: 20 }  // Ngày cập nhật
-      ];
+      // Set column widths dynamically based on actual columns
+      const colWidths = [];
+      columns.forEach(column => {
+        switch (column.key) {
+          case 'avatar':
+            // Skip avatar
+            break;
+          case 'fullName':
+            colWidths.push({ wch: 25 }); // Họ và tên
+            break;
+          case 'email':
+            colWidths.push({ wch: 30 }); // Email
+            break;
+          case 'phone':
+            colWidths.push({ wch: 15 }); // Số điện thoại
+            break;
+          case 'dateOfBirth':
+            colWidths.push({ wch: 12 }); // Ngày sinh
+            break;
+          case 'role':
+            colWidths.push({ wch: 15 }); // Vai trò
+            break;
+          case 'isActive':
+            colWidths.push({ wch: 15 }); // Trạng thái
+            break;
+          case 'updatedAt':
+            colWidths.push({ wch: 20 }); // Ngày cập nhật
+            break;
+          case 'actions':
+            // Skip actions
+            break;
+        }
+      });
+      
+      // Add employee code width at the beginning if it exists
+      if (exportData.length > 0 && exportData[0]['Mã nhân viên']) {
+        colWidths.unshift({ wch: 15 }); // Mã nhân viên
+      }
+      
       ws['!cols'] = colWidths;
 
       // Add worksheet to workbook
@@ -501,6 +571,13 @@ const UserManagement = () => {
       key: 'phone',
       sorter: true,
       render: (text) => <Text copyable={{ text }}>{text}</Text>
+    },
+    {
+      title: 'Ngày sinh',
+      dataIndex: 'dateOfBirth',
+      key: 'dateOfBirth',
+      sorter: true,
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : '-'
     },
     {
       title: 'Vai trò',
