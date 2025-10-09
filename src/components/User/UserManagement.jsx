@@ -22,7 +22,8 @@ import {
   Steps,
   Radio,
   Alert,
-  DatePicker
+  DatePicker,
+  Tabs
 } from 'antd';
 import { 
   UserSwitchOutlined,
@@ -43,7 +44,6 @@ import SearchBar from '../Common/SearchBar.jsx';
 import { 
   searchAndFilter, 
   createRoleFilter, 
-  createStatusFilter,
   debounce 
 } from '../../utils/searchUtils.js';
 import { 
@@ -70,6 +70,7 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' hoặc 'inactive'
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
@@ -100,7 +101,7 @@ const UserManagement = () => {
     }, 300);
     
     debouncedSearch();
-  }, [searchTerm, filters, users]);
+  }, [searchTerm, filters, users, activeTab]);
 
   const loadUsers = async () => {
     try {
@@ -126,7 +127,18 @@ const UserManagement = () => {
 
   const applySearchAndFilter = () => {
     const searchFields = ['fullName', 'email', 'phone', 'employeeCode'];
-    const filtered = searchAndFilter(users, searchTerm, searchFields, filters);
+    
+    // Filter users theo trạng thái trước
+    const statusFilteredUsers = users.filter(user => {
+      if (activeTab === 'active') {
+        return user.isActive === true;
+      } else {
+        return user.isActive === false;
+      }
+    });
+    
+    // Sau đó apply search và filter khác
+    const filtered = searchAndFilter(statusFilteredUsers, searchTerm, searchFields, filters);
     setFilteredUsers(filtered);
     
     // Reset về page 1 khi có search/filter mới để user thấy kết quả
@@ -436,8 +448,7 @@ const UserManagement = () => {
         onFilterChange={handleFilterChange}
         placeholder="       Tìm kiếm theo tên, email, số điện thoại, mã nhân viên..."
         filters={[
-          createRoleFilter(),
-          createStatusFilter()
+          createRoleFilter()
         ]}
         searchValue={searchTerm}
         filterValues={filters}
@@ -447,55 +458,113 @@ const UserManagement = () => {
         }}
       />
 
-      {/* Users Table */}
+      {/* Users Table with Tabs */}
       <Card>
-      <div style={{marginBottom:16, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-      <div style={{display:'flex', gap:10}}>
-        <UserSwitchOutlined style={{fontSize: 18, color: '#1890ff'}}/>
-        <Title level={4} style={{margin:0, fontSize:16}}>Danh sách nhân viên</Title>
-      </div>  
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setSelectedUser(null);
-            form.resetFields();
-            setModalVisible(true);
-          }}
-          size="large"
-          style={{
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
-            border: 'none',
-            boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
-            fontWeight: '600'
-          }}
-        >
-          Thêm nhân viên
-        </Button>
-      </div>
-        <Table
-          columns={columns}
-          dataSource={filteredUsers}
-          rowKey="_id"
-          loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: filteredUsers.length, // Sử dụng tổng số filteredUsers thay vì backend total
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} của ${total} người dùng`,
-            onChange: (page, pageSize) => {
-              setPagination(prev => ({
-                ...prev,
-                current: page,
-                pageSize: pageSize || prev.pageSize
-              }));
+        <div style={{marginBottom:16, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+          <div style={{display:'flex', gap:10}}>
+            <UserSwitchOutlined style={{fontSize: 18, color: '#1890ff'}}/>
+            <Title level={4} style={{margin:0, fontSize:16}}>Danh sách nhân viên</Title>
+          </div>  
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setSelectedUser(null);
+              form.resetFields();
+              setModalVisible(true);
+            }}
+            size="large"
+            style={{
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
+              fontWeight: '600'
+            }}
+          >
+            Thêm nhân viên
+          </Button>
+        </div>
+
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'active',
+              label: (
+                <span>
+                  <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                  Đang làm việc
+                  <Tag color="green" style={{ marginLeft: 8 }}>
+                    {users.filter(user => user.isActive === true).length}
+                  </Tag>
+                </span>
+              ),
+              children: (
+                <Table
+                  columns={columns}
+                  dataSource={filteredUsers}
+                  rowKey="_id"
+                  loading={loading}
+                  pagination={{
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    total: filteredUsers.length,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) => 
+                      `${range[0]}-${range[1]} của ${total} nhân viên đang làm việc`,
+                    onChange: (page, pageSize) => {
+                      setPagination(prev => ({
+                        ...prev,
+                        current: page,
+                        pageSize: pageSize || prev.pageSize
+                      }));
+                    }
+                  }}
+                  scroll={{ x: 1000 }}
+                />
+              )
+            },
+            {
+              key: 'inactive',
+              label: (
+                <span>
+                  <UserSwitchOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
+                  Đã nghỉ việc
+                  <Tag color="red" style={{ marginLeft: 8 }}>
+                    {users.filter(user => user.isActive === false).length}
+                  </Tag>
+                </span>
+              ),
+              children: (
+                <Table
+                  columns={columns}
+                  dataSource={filteredUsers}
+                  rowKey="_id"
+                  loading={loading}
+                  pagination={{
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    total: filteredUsers.length,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) => 
+                      `${range[0]}-${range[1]} của ${total} nhân viên đã nghỉ việc`,
+                    onChange: (page, pageSize) => {
+                      setPagination(prev => ({
+                        ...prev,
+                        current: page,
+                        pageSize: pageSize || prev.pageSize
+                      }));
+                    }
+                  }}
+                  scroll={{ x: 1000 }}
+                />
+              )
             }
-          }}
-          scroll={{ x: 1000 }}
+          ]}
         />
       </Card>
       
