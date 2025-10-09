@@ -28,7 +28,8 @@ import {
 import { 
   UserSwitchOutlined,
   CheckCircleOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  FileExcelOutlined
 } from '@ant-design/icons';
 import { toast } from '../../services/toastService';
 import { 
@@ -51,6 +52,7 @@ import {
   getAntDesignFormRules
 } from '../../utils/validationUtils.js';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -209,6 +211,82 @@ const UserManagement = () => {
         order: null
       });
     }
+  };
+
+  // Export to Excel function
+  const exportToExcel = () => {
+    try {
+      // Prepare data for export
+      const exportData = filteredUsers.map(user => ({
+        'Mã nhân viên': user.employeeCode || '',
+        'Họ và tên': user.fullName || '',
+        'Email': user.email || '',
+        'Số điện thoại': user.phone || '',
+        'Vai trò': getRoleText(user.role),
+        'Trạng thái': user.isActive ? 'Đang làm việc' : 'Đã nghỉ việc',
+        'Ngày sinh': user.dateOfBirth ? dayjs(user.dateOfBirth).format('DD/MM/YYYY') : '',
+        'Giới tính': getGenderText(user.gender),
+        'Ngày tạo': user.createdAt ? dayjs(user.createdAt).format('DD/MM/YYYY HH:mm') : '',
+        'Ngày cập nhật': user.updatedAt ? dayjs(user.updatedAt).format('DD/MM/YYYY HH:mm') : ''
+      }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 15 }, // Mã nhân viên
+        { wch: 25 }, // Họ và tên
+        { wch: 30 }, // Email
+        { wch: 15 }, // Số điện thoại
+        { wch: 15 }, // Vai trò
+        { wch: 15 }, // Trạng thái
+        { wch: 12 }, // Ngày sinh
+        { wch: 10 }, // Giới tính
+        { wch: 20 }, // Ngày tạo
+        { wch: 20 }  // Ngày cập nhật
+      ];
+      ws['!cols'] = colWidths;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Danh sách nhân viên');
+
+      // Generate filename with current date
+      const currentDate = dayjs().format('DD-MM-YYYY');
+      const tabName = activeTab === 'active' ? 'Dang-lam-viec' : 'Da-nghi-viec';
+      const filename = `Danh-sach-nhan-vien-${tabName}-${currentDate}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, filename);
+
+      toast.success(`Đã xuất file Excel thành công: ${filename}`);
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('Có lỗi xảy ra khi xuất file Excel');
+    }
+  };
+
+  // Helper functions for export
+  const getRoleText = (role) => {
+    const roleMap = {
+      admin: 'Quản trị viên',
+      manager: 'Quản lý',
+      dentist: 'Nha sĩ',
+      nurse: 'Y tá',
+      receptionist: 'Lễ tân',
+      patient: 'Bệnh nhân'
+    };
+    return roleMap[role] || role;
+  };
+
+  const getGenderText = (gender) => {
+    const genderMap = {
+      male: 'Nam',
+      female: 'Nữ',
+      other: 'Khác'
+    };
+    return genderMap[gender] || '';
   };
 
   const handleEdit = (user) => {
@@ -523,25 +601,40 @@ const UserManagement = () => {
             <UserSwitchOutlined style={{fontSize: 18, color: '#1890ff'}}/>
             <Title level={4} style={{margin:0, fontSize:16}}>Danh sách nhân viên</Title>
           </div>  
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setSelectedUser(null);
-              form.resetFields();
-              setModalVisible(true);
-            }}
-            size="large"
-            style={{
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
-              border: 'none',
-              boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
-              fontWeight: '600'
-            }}
-          >
-            Thêm nhân viên
-          </Button>
+          <Space>
+            <Button 
+              icon={<FileExcelOutlined />}
+              onClick={exportToExcel}
+              size="large"
+              style={{
+                borderRadius: '8px',
+                border: '1px solid #52c41a',
+                color: '#52c41a',
+                background: '#f6ffed'
+              }}
+            >
+              Xuất Excel
+            </Button>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setSelectedUser(null);
+                form.resetFields();
+                setModalVisible(true);
+              }}
+              size="large"
+              style={{
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
+                border: 'none',
+                boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
+                fontWeight: '600'
+              }}
+            >
+              Thêm nhân viên
+            </Button>
+          </Space>
         </div>
 
         <Tabs
