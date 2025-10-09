@@ -71,6 +71,10 @@ const UserManagement = () => {
   const [filters, setFilters] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeTab, setActiveTab] = useState('active'); // 'active' hoặc 'inactive'
+  const [sortConfig, setSortConfig] = useState({
+    field: null,
+    order: null
+  });
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
@@ -101,7 +105,7 @@ const UserManagement = () => {
     }, 300);
     
     debouncedSearch();
-  }, [searchTerm, filters, users, activeTab]);
+  }, [searchTerm, filters, users, activeTab, sortConfig]);
 
   const loadUsers = async () => {
     try {
@@ -138,11 +142,45 @@ const UserManagement = () => {
     });
     
     // Sau đó apply search và filter khác
-    const filtered = searchAndFilter(statusFilteredUsers, searchTerm, searchFields, filters);
+    let filtered = searchAndFilter(statusFilteredUsers, searchTerm, searchFields, filters);
+    
+    // Apply sorting nếu có
+    if (sortConfig.field && sortConfig.order) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = a[sortConfig.field];
+        let bValue = b[sortConfig.field];
+        
+        // Xử lý các trường hợp đặc biệt
+        if (sortConfig.field === 'fullName') {
+          aValue = a.fullName?.toLowerCase() || '';
+          bValue = b.fullName?.toLowerCase() || '';
+        } else if (sortConfig.field === 'email') {
+          aValue = a.email?.toLowerCase() || '';
+          bValue = b.email?.toLowerCase() || '';
+        } else if (sortConfig.field === 'updatedAt') {
+          aValue = new Date(a.updatedAt);
+          bValue = new Date(b.updatedAt);
+        } else if (sortConfig.field === 'role') {
+          // Sắp xếp theo thứ tự ưu tiên vai trò
+          const roleOrder = { admin: 1, manager: 2, dentist: 3, nurse: 4, receptionist: 5, patient: 6 };
+          aValue = roleOrder[a.role] || 999;
+          bValue = roleOrder[b.role] || 999;
+        }
+        
+        if (aValue < bValue) {
+          return sortConfig.order === 'ascend' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.order === 'ascend' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    
     setFilteredUsers(filtered);
     
-    // Reset về page 1 khi có search/filter mới để user thấy kết quả
-    if (searchTerm || Object.keys(filters).length > 0) {
+    // Reset về page 1 khi có search/filter/sort mới để user thấy kết quả
+    if (searchTerm || Object.keys(filters).length > 0 || sortConfig.field) {
       setPagination(prev => ({
         ...prev,
         current: 1
@@ -156,6 +194,21 @@ const UserManagement = () => {
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
+  };
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    // Handle sorting
+    if (sorter && sorter.field) {
+      setSortConfig({
+        field: sorter.field,
+        order: sorter.order
+      });
+    } else {
+      setSortConfig({
+        field: null,
+        order: null
+      });
+    }
   };
 
   const handleEdit = (user) => {
@@ -345,6 +398,7 @@ const UserManagement = () => {
       title: 'Họ tên',
       dataIndex: 'fullName',
       key: 'fullName',
+      sorter: true,
       render: (text, record) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
@@ -360,18 +414,21 @@ const UserManagement = () => {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      sorter: true,
       render: (text) => <Text copyable={{ text }}>{text}</Text>
     },
     {
       title: 'Số điện thoại',
       dataIndex: 'phone',
       key: 'phone',
+      sorter: true,
       render: (text) => <Text copyable={{ text }}>{text}</Text>
     },
     {
       title: 'Vai trò',
       dataIndex: 'role',
       key: 'role',
+      sorter: true,
       render: (role) => getRoleTag(role)
     },
     {
@@ -384,6 +441,7 @@ const UserManagement = () => {
       title: 'Ngày cập nhật',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
+      sorter: true,
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
@@ -507,6 +565,7 @@ const UserManagement = () => {
                   dataSource={filteredUsers}
                   rowKey="_id"
                   loading={loading}
+                  onChange={handleTableChange}
                   pagination={{
                     current: pagination.current,
                     pageSize: pagination.pageSize,
@@ -544,6 +603,7 @@ const UserManagement = () => {
                   dataSource={filteredUsers}
                   rowKey="_id"
                   loading={loading}
+                  onChange={handleTableChange}
                   pagination={{
                     current: pagination.current,
                     pageSize: pagination.pageSize,
