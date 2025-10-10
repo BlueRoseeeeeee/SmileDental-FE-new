@@ -27,6 +27,9 @@ import RoomManagement from './pages/RoomManagement.jsx';
 import ServiceList from './pages/ServiceList.jsx';
 import ServiceDetails from './pages/ServiceDetails.jsx';
 import AddService from './pages/AddService.jsx';
+import EditService from './pages/EditService.jsx';
+import AddServiceAddOn from './pages/AddServiceAddOn.jsx';
+import EditServiceAddOn from './pages/EditServiceAddOn.jsx';
 
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
@@ -146,10 +149,31 @@ function App() {
               </ProtectedRoute>
             } />
             
+            {/* Edit Service (Admin/Manager only) */}
+            <Route path="services/:serviceId/edit" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <EditService />
+              </ProtectedRoute>
+            } />
+            
             {/* Add Service (Admin/Manager only) */}
             <Route path="services/add" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <AddService />
+              </ProtectedRoute>
+            } />
+            
+            {/* Add Service Add-On (Admin/Manager only) */}
+            <Route path="services/:serviceId/addons/add" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AddServiceAddOn />
+              </ProtectedRoute>
+            } />
+            
+            {/* Edit Service Add-On (Admin/Manager only) */}
+            <Route path="services/:serviceId/addons/:addOnId/edit" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <EditServiceAddOn />
               </ProtectedRoute>
             } />
             

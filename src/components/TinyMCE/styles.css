@@ -4,6 +4,7 @@
 .smile-dental-tiny-mce {
   margin-bottom: 0;
   width: 100%;
+  height: 100%;
   display: block;
   max-width: 100%;
   overflow: hidden;
@@ -33,6 +34,7 @@
   transition: all 0.2s ease-in-out !important;
   width: 100% !important;
   max-width: 100% !important;
+  height: 100% !important;
   box-sizing: border-box !important;
 }
 
@@ -117,17 +119,21 @@
   background: #ffffff !important;
   width: 100% !important;
   max-width: 100% !important;
+  height: 100% !important;
+  flex: 1 !important;
 }
 
 .smile-dental-tiny-mce .tox-edit-area__iframe {
   border: none !important;
   width: 100% !important;
   max-width: 100% !important;
+  height: 100% !important;
 }
 
 /* Content Styling */
 .smile-dental-tiny-mce .tox-edit-area iframe {
   background: #ffffff !important;
+  height: 100% !important;
 }
 
 .smile-dental-tiny-mce .tox-edit-area iframe body {
@@ -138,6 +144,8 @@
   padding: 16px !important;
   margin: 0 !important;
   background: #ffffff !important;
+  min-height: 100% !important;
+  height: 100% !important;
 }
 
 /* Placeholder Styling */

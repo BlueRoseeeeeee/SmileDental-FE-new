@@ -25,7 +25,6 @@ import {
   SearchOutlined,
   MedicineBoxOutlined,
   PlusOutlined,
-  EyeOutlined,
   EditOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
@@ -146,14 +145,9 @@ const ServiceList = () => {
     setSelectedService(null);
   };
 
-  // Handle view service details
-  const handleViewDetails = (serviceId) => {
-    navigate(`/services/${serviceId}`);
-  };
-
   // Handle edit service
   const handleEditService = (serviceId) => {
-    navigate(`/services/${serviceId}`);
+    navigate(`/services/${serviceId}/edit`);
   };
 
   // Handle show delete confirmation modal
@@ -311,13 +305,6 @@ const ServiceList = () => {
       align: 'center',
       render: (_, record) => (
         <Space>
-          <Tooltip title="Xem chi tiết dịch vụ" placement="top">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetails(record._id)}
-            />
-          </Tooltip>
           <Tooltip title="Chỉnh sửa dịch vụ" placement="top">
             <Button
               type="text"
