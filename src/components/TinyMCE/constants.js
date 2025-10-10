@@ -59,6 +59,44 @@ export const TINYMCE_CONFIG_NEW = {
       editor.getContainer().style.transition = 'all 0.2s ease-in-out';
     });
     
+    // Compress pasted images
+    editor.on('paste', function (e) {
+      setTimeout(function() {
+        const images = editor.dom.select('img');
+        images.forEach(function(img) {
+          if (img.src && img.src.startsWith('data:') && img.src.length > 100000) { // Only compress large images
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const newImg = new Image();
+            
+            newImg.onload = function() {
+              const maxWidth = 800;
+              const maxHeight = 600;
+              let { width, height } = newImg;
+              
+              if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              }
+              if (height > maxHeight) {
+                width = (width * maxHeight) / height;
+                height = maxHeight;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              ctx.drawImage(newImg, 0, 0, width, height);
+              
+              const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              img.src = compressedDataUrl;
+            };
+            
+            newImg.src = img.src;
+          }
+        });
+      }, 100);
+    });
+    
       // Add custom image upload button
       editor.ui.registry.addButton('imageupload', {
         icon: 'image',
@@ -86,9 +124,48 @@ export const TINYMCE_CONFIG_NEW = {
                 return;
               }
               
+              // Compress image before upload
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              const img = new Image();
+              
+              img.onload = function() {
+                // Calculate new dimensions (max 800px width)
+                const maxWidth = 800;
+                const maxHeight = 600;
+                let { width, height } = img;
+                
+                if (width > maxWidth) {
+                  height = (height * maxWidth) / width;
+                  width = maxWidth;
+                }
+                if (height > maxHeight) {
+                  width = (width * maxHeight) / height;
+                  height = maxHeight;
+                }
+                
+                // Set canvas dimensions
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Draw and compress
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Convert to base64 with compression (quality 0.7 = 70%)
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                
+                // Insert compressed image
+                editor.insertContent('<img src="' + compressedDataUrl + '" alt="Uploaded image" style="max-width: 100%; height: auto;" />');
+              };
+              
+              img.onerror = function() {
+                alert('Không thể xử lý file ảnh. Vui lòng thử lại.');
+              };
+              
+              // Load image for compression
               const reader = new FileReader();
               reader.onload = function() {
-                editor.insertContent('<img src="' + reader.result + '" alt="Uploaded image" style="max-width: 100%; height: auto;" />');
+                img.src = reader.result;
               };
               reader.onerror = function() {
                 alert('Không thể đọc file ảnh. Vui lòng thử lại.');
