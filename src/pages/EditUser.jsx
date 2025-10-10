@@ -302,13 +302,18 @@ const EditUser = () => {
 
   const handleDeleteCertificate = async (certificateId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates/${certificateId}`, {
-        method: 'DELETE',
+      const formData = new FormData();
+      formData.append('action', 'batch-delete');
+      formData.append('certificateId0', certificateId);
+
+      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
-        }
+        },
+        body: formData
       });
 
       if (response.ok) {
@@ -772,7 +777,7 @@ const EditUser = () => {
                                   type="link" 
                                   danger
                                   icon={<DeleteOutlined />}
-                                  onClick={() => handleDeleteCertificate(cert._id)}
+                                  onClick={() => handleDeleteCertificate(cert.certificateId)}
                                 >
                                   Xóa
                                 </Button>
