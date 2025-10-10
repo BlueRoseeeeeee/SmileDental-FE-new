@@ -14,12 +14,12 @@ import {
   Space,
   Tabs,
   List,
-  message
+  message,
+  Modal
 } from 'antd';
 import {
   UserOutlined,
-  EyeOutlined,
-  DeleteOutlined
+  EyeOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
@@ -31,6 +31,8 @@ const DetailStaff = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [certificates, setCertificates] = useState([]);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewCertificate, setPreviewCertificate] = useState(null);
 
   useEffect(() => {
     loadUser();
@@ -62,25 +64,14 @@ const DetailStaff = () => {
   };
 
 
-  const handleDeleteCertificate = async (certificateId) => {
-    try {
-      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates/${certificateId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
-      });
+  const handlePreviewCertificate = (cert) => {
+    setPreviewCertificate(cert);
+    setPreviewModalVisible(true);
+  };
 
-      if (response.ok) {
-        const data = await response.json();
-        setCertificates(data.user.certificates);
-        message.success('Xóa chứng chỉ thành công');
-      } else {
-        message.error('Xóa chứng chỉ thất bại');
-      }
-    } catch (error) {
-      message.error('Lỗi khi xóa chứng chỉ');
-    }
+  const handleClosePreview = () => {
+    setPreviewModalVisible(false);
+    setPreviewCertificate(null);
   };
 
 
@@ -321,112 +312,59 @@ const DetailStaff = () => {
                             border: '1px solid #e8e8e8',
                             padding: '20px'
                           }}>
-                            <div style={{ 
-                              display: 'flex', 
-                              justifyContent: 'space-between', 
-                              alignItems: 'center',
-                              marginBottom: '16px'
-                            }}>
-                              <h4 style={{ margin: 0, color: '#333' }}>Chứng chỉ & Bằng cấp</h4>
-                            </div>
                             
                             {/* Danh sách chứng chỉ cho dentist */}
                             {certificates && certificates.length > 0 ? (
-                              <div>
-                                {certificates.map((cert, index) => (
-                                  <div key={cert._id || index} style={{
-                                    border: '1px solid #e8e8e8',
-                                    borderRadius: '8px',
-                                    padding: '16px',
-                                    marginBottom: '12px',
-                                    background: '#fafafa'
-                                  }}>
-                                    <div style={{ 
-                                      display: 'flex', 
-                                      justifyContent: 'space-between', 
-                                      alignItems: 'flex-start',
-                                      marginBottom: '8px'
-                                    }}>
-                                      <div style={{ flex: 1 }}>
-                                        <h5 style={{ margin: 0, color: '#333', fontSize: '14px' }}>
-                                          Chứng chỉ {index + 1}
-                                        </h5>
-                                        <p style={{ margin: '4px 0 0 0', color: '#666', fontSize: '12px' }}>
-                                          Upload: {new Date(cert.uploadedAt).toLocaleDateString('vi-VN')}
-                                        </p>
-                                        {cert.notes && (
-                                          <p style={{ margin: '4px 0 0 0', color: '#999', fontSize: '11px' }}>
-                                            Ghi chú: {cert.notes}
-                                          </p>
-                                        )}
-                                      </div>
-                                      <div style={{ display: 'flex', gap: '8px' }}>
-                                        <Button 
-                                          type="text" 
-                                          icon={<EyeOutlined />}
-                                          size="small"
-                                          style={{ color: '#2596be' }}
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            window.open(cert.imageUrl, '_blank');
-                                          }}
-                                        >
-                                          Xem
-                                        </Button>
-                                        <Button 
-                                          type="text" 
-                                          danger
-                                          icon={<DeleteOutlined />}
-                                          size="small"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            handleDeleteCertificate(cert._id);
-                                          }}
-                                        >
-                                          Xóa
-                                        </Button>
-                                      </div>
-                                    </div>
-                                    <div style={{ 
-                                      display: 'flex', 
-                                      gap: '8px', 
-                                      alignItems: 'center',
-                                      marginTop: '8px'
-                                    }}>
-                                      <Tag color={cert.isVerified ? "green" : "orange"} style={{ fontSize: '11px' }}>
-                                        {cert.isVerified ? 'Đã xác thực' : 'Chờ xác thực'}
-                                      </Tag>
-                                      {cert.verifiedAt && (
-                                        <span style={{ fontSize: '11px', color: '#999' }}>
-                                          Xác thực: {new Date(cert.verifiedAt).toLocaleDateString('vi-VN')}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
+                              <List
+                                dataSource={certificates}
+                                renderItem={(cert, index) => (
+                                  <List.Item
+                                    actions={[
+                                      <Button 
+                                        type="link" 
+                                        icon={<EyeOutlined />}
+                                        onClick={() => handlePreviewCertificate(cert)}
+                                      >
+                                        Xem
+                                      </Button>
+                                    ]}
+                                  >
+                                    <List.Item.Meta
+                                      title={cert.name || `Chứng chỉ ${index + 1}`}
+                                      description={
+                                        <div>
+                                          <div style={{ marginBottom: '8px' }}>
+                                            {cert.notes && <div>Ghi chú: {cert.notes}</div>}
+                                            <div style={{ fontSize: '12px', color: '#999' }}>
+                                              {cert.uploadedAt 
+                                                ? `Upload: ${new Date(cert.uploadedAt).toLocaleDateString('vi-VN')}`
+                                                : `Tạo: ${new Date(cert.createdAt).toLocaleDateString('vi-VN')}`
+                                              }
+                                            </div>
+                                          </div>
+                                          <Tag color={cert.isVerified ? 'green' : 'orange'}>
+                                            {cert.isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
+                                          </Tag>
+                                        </div>
+                                      }
+                                    />
+                                  </List.Item>
+                                )}
+                              />
                             ) : (
-                              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                                <div style={{ 
-                                  fontSize: '48px', 
-                                  color: '#d9d9d9',
-                                  marginBottom: '16px'
-                                }}>
-                                  📜
-                                </div>
-                                <div style={{ 
-                                  fontSize: '14px', 
-                                  color: '#999',
-                                  marginBottom: '8px'
-                                }}>
+                              <div style={{ 
+                                textAlign: 'center', 
+                                color: '#999', 
+                                padding: '40px 20px',
+                                background: '#fafafa',
+                                borderRadius: '8px',
+                                border: '1px dashed #d9d9d9'
+                              }}>
+                                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📜</div>
+                                <div style={{ fontSize: '16px', marginBottom: '8px' }}>
                                   Chưa có chứng chỉ nào
                                 </div>
-                                <div style={{ 
-                                  fontSize: '12px', 
-                                  color: '#ccc'
-                                }}>
+                                <div style={{ fontSize: '14px', color: '#ccc' }}>
                                   Chưa có chứng chỉ nào được upload
                                 </div>
                               </div>
@@ -443,6 +381,118 @@ const DetailStaff = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Certificate Preview Modal */}
+      <Modal
+        title={previewCertificate ? `${previewCertificate.name || 'Chứng chỉ'}` : ''}
+        open={previewModalVisible}
+        onCancel={handleClosePreview}
+        footer={null}
+        width="auto"
+        style={{ maxWidth: '90vw' }}
+        centered
+      >
+        {previewCertificate && (
+          <div>
+            {/* Two Column Layout for Front and Back Images */}
+            {(previewCertificate.frontImage || previewCertificate.backImage) && (
+              <div style={{ 
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '20px',
+                alignItems: 'start'
+              }}>
+                {/* Front Image Column */}
+                {previewCertificate.frontImage && (
+                  <div>
+                    <div style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '500', 
+                      marginBottom: '12px',
+                      color: '#333',
+                      textAlign: 'center'
+                    }}>
+                      Mặt trước
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <img 
+                        src={previewCertificate.frontImage} 
+                        alt="Mặt trước"
+                        style={{ 
+                          width: '100%', 
+                          maxHeight: '80vh', 
+                          height: '80vh',
+                          objectFit: 'contain',
+                          borderRadius: '8px',
+                          border: '1px solid #d9d9d9'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Back Image Column */}
+                {previewCertificate.backImage && (
+                  <div>
+                    <div style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '500', 
+                      marginBottom: '12px',
+                      color: '#333',
+                      textAlign: 'center'
+                    }}>
+                      Mặt sau
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <img 
+                        src={previewCertificate.backImage} 
+                        alt="Mặt sau"
+                        style={{ 
+                          width: '100%', 
+                          height: '80vh',
+                          maxHeight: '80vh', 
+                          objectFit: 'contain',
+                          borderRadius: '8px',
+                          border: '1px solid #d9d9d9'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Old format single image */}
+            {previewCertificate.imageUrl && !previewCertificate.frontImage && (
+              <div style={{ textAlign: 'center' }}>
+                <img 
+                  src={previewCertificate.imageUrl} 
+                  alt="Chứng chỉ"
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '80vh', 
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    border: '1px solid #d9d9d9'
+                  }}
+                />
+              </div>
+            )}
+
+            {/* No images message */}
+            {!previewCertificate.frontImage && !previewCertificate.backImage && !previewCertificate.imageUrl && (
+              <div style={{ 
+                textAlign: 'center', 
+                color: '#999', 
+                padding: '40px 20px',
+                fontSize: '16px'
+              }}>
+                Không có ảnh để hiển thị
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
 
     </div>
   );
