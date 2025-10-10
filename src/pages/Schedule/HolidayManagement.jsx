@@ -65,7 +65,25 @@ const HolidayManagement = () => {
       setHolidays(response.data?.holidays || []);
     } catch (error) {
       console.error('Error loading holidays:', error);
-      toast.error('Không thể tải danh sách ngày nghỉ');
+      
+      // Ưu tiên hiển thị lỗi từ backend trước
+      let errorMessage = 'Không thể tải danh sách ngày nghỉ';
+      
+      if (error.response && error.response.data) {
+        const { message, type } = error.response.data;
+        
+        // Nếu có message từ backend, ưu tiên hiển thị
+        if (message) {
+          errorMessage = message;
+        }
+        
+        console.log('Backend error:', { message, type });
+      } else if (error.message) {
+        // Nếu không có response từ backend, sử dụng error.message
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
       setHolidays([]);
     } finally {
       setLoading(false);
@@ -159,7 +177,25 @@ const HolidayManagement = () => {
       toast.success('Xóa ngày nghỉ thành công!');
     } catch (error) {
       console.error('Error deleting holiday:', error);
-      toast.error('Không thể xóa ngày nghỉ');
+      
+      // Ưu tiên hiển thị lỗi từ backend trước
+      let errorMessage = 'Không thể xóa ngày nghỉ';
+      
+      if (error.response && error.response.data) {
+        const { message, type } = error.response.data;
+        
+        // Nếu có message từ backend, ưu tiên hiển thị
+        if (message) {
+          errorMessage = message;
+        }
+        
+        console.log('Backend error:', { message, type });
+      } else if (error.message) {
+        // Nếu không có response từ backend, sử dụng error.message
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -197,7 +233,25 @@ const HolidayManagement = () => {
       form.resetFields();
     } catch (error) {
       console.error('Error saving holiday:', error);
-      toast.error('Không thể lưu ngày nghỉ');
+      
+      // Ưu tiên hiển thị lỗi từ backend trước
+      let errorMessage = 'Không thể lưu ngày nghỉ';
+      
+      if (error.response && error.response.data) {
+        const { message, type } = error.response.data;
+        
+        // Nếu có message từ backend, ưu tiên hiển thị
+        if (message) {
+          errorMessage = message;
+        }
+        
+        console.log('Backend error:', { message, type });
+      } else if (error.message) {
+        // Nếu không có response từ backend, sử dụng error.message
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
