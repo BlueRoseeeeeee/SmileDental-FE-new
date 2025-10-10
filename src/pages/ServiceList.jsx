@@ -242,6 +242,8 @@ const ServiceList = () => {
       dataIndex: 'name',
       key: 'name',
       width: 150,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'vi'),
+      sortDirections: ['ascend', 'descend'],
       render: (text) => (
         <Text strong style={{ color: '#1890ff' }}>
           {text}
@@ -253,6 +255,8 @@ const ServiceList = () => {
       dataIndex: 'durationMinutes',
       key: 'durationMinutes',
       width: 100,
+      sorter: (a, b) => a.durationMinutes - b.durationMinutes,
+      sortDirections: ['ascend', 'descend'],
       render: (minutes) => (
         <Tag color="blue">
           {minutes} phút
@@ -264,6 +268,16 @@ const ServiceList = () => {
       dataIndex: 'serviceAddOns',
       key: 'price',
       width: 150,
+      sorter: (a, b) => {
+        const getMinPrice = (addOns) => {
+          if (!addOns || addOns.length === 0) return 0;
+          const activeAddOns = addOns.filter(addon => addon.isActive);
+          if (activeAddOns.length === 0) return 0;
+          return Math.min(...activeAddOns.map(addon => addon.price));
+        };
+        return getMinPrice(a.serviceAddOns) - getMinPrice(b.serviceAddOns);
+      },
+      sortDirections: ['ascend', 'descend'],
       render: (addOns) => {
         const priceRange = getAddOnPriceRange(addOns);
         return priceRange ? (
@@ -280,6 +294,8 @@ const ServiceList = () => {
       dataIndex: 'type',
       key: 'type',
       width: 100,
+      sorter: (a, b) => a.type.localeCompare(b.type),
+      sortDirections: ['ascend', 'descend'],
       render: (type) => (
         <Tag color="green">
           {translateServiceType(type)}
@@ -291,6 +307,8 @@ const ServiceList = () => {
       dataIndex: 'isActive',
       key: 'isActive',
       width: 120,
+      sorter: (a, b) => a.isActive - b.isActive,
+      sortDirections: ['ascend', 'descend'],
       render: (isActive) => (
         <Tag color={isActive ? 'green' : 'red'}>
           {isActive ? 'Hoạt động' : 'Ngưng hoạt động'}
@@ -302,6 +320,13 @@ const ServiceList = () => {
       dataIndex: 'serviceAddOns',
       key: 'serviceAddOns',
       width: 120,
+      sorter: (a, b) => {
+        const getActiveAddOnsCount = (addOns) => {
+          return addOns?.filter(addon => addon.isActive).length || 0;
+        };
+        return getActiveAddOnsCount(a.serviceAddOns) - getActiveAddOnsCount(b.serviceAddOns);
+      },
+      sortDirections: ['ascend', 'descend'],
       render: (addOns, record) => {
         const activeAddOns = addOns?.filter(addon => addon.isActive) || [];
         return (
