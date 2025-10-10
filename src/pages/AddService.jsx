@@ -464,7 +464,6 @@ const AddService = () => {
                           <Text strong style={{ color: '#262626' }}>Tên tùy chọn *</Text>
                         </div>
                          <Input
-                           placeholder="VD: Cấp độ 1 - Cơ bản"
                            value={addon.name}
                            onChange={(e) => updateServiceAddOn(index, 'name', e.target.value)}
                            size="large"
