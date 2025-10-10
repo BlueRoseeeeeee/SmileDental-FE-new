@@ -1,3 +1,6 @@
+/**
+ * @author: HoTram  
+ */
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 
