@@ -285,7 +285,7 @@ const ServiceList = () => {
         return (
           <div>
             <Tag color="purple">
-              {activeAddOns.length} cấp độ
+              {activeAddOns.length} tùy chọn
             </Tag>
             {record.requireExamFirst && (
               <div style={{ marginTop: 4 }}>
