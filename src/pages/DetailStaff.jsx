@@ -303,7 +303,7 @@ const DetailStaff = () => {
                     // Chỉ hiển thị tab chứng chỉ cho dentist
                     ...(user?.role === 'dentist' ? [{
                       key: 'certificates',
-                      label: 'Chứng chỉ & Bằng cấp',
+                      label: `Chứng chỉ & Bằng cấp ${certificates && certificates.length > 0 ? `(${certificates.length})` : ''}`,
                       children: (
                         <div style={{ padding: '20px' }}>
                           <div style={{

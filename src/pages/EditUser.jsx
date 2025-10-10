@@ -875,7 +875,7 @@ const EditUser = () => {
                 },
                 {
                   key: 'certificates',
-                  label: 'Chứng chỉ & Bằng cấp',
+                  label: `Chứng chỉ & Bằng cấp ${certificates && certificates.length > 0 ? `(${certificates.length})` : ''}`,
                   children: (
                     <div>
                       <div style={{ 
