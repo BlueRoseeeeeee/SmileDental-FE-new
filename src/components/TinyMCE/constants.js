@@ -6,11 +6,12 @@ export const TINYMCE_CONFIG_NEW = {
   plugins: [
     'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
     'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-    'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons'
+    'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
+    'paste', 'imagetools'
   ],
   toolbar: [
     'undo redo | blocks fontsize fontfamily | bold italic underline strikethrough | forecolor backcolor | removeformat',
-    'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | fullscreen preview code | help emoticons'
+    'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image imageupload media table | fullscreen preview code | help emoticons'
   ],
   content_style: `
     body { 
@@ -38,10 +39,67 @@ export const TINYMCE_CONFIG_NEW = {
   min_height: 400,
   fontsize_formats: '8pt 9pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 22pt 24pt 26pt 28pt 36pt 48pt 72pt',
   block_formats: 'Paragraph=p; Heading 1=h1; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6',
+  
+  // Disable default image upload handler
+  images_upload_handler: false,
+  
+  // Enable paste images
+  paste_data_images: true,
+  
+  // Image tools
+  image_advtab: true,
+  image_caption: true,
+  image_title: true,
+  
+  // Media configuration
+  media_live_embeds: true,
+  
   setup: function (editor) {
     editor.on('init', function () {
       editor.getContainer().style.transition = 'all 0.2s ease-in-out';
     });
+    
+      // Add custom image upload button
+      editor.ui.registry.addButton('imageupload', {
+        icon: 'image',
+        tooltip: 'Upload ảnh từ máy',
+        onAction: function () {
+          const input = document.createElement('input');
+          input.setAttribute('type', 'file');
+          input.setAttribute('accept', 'image/*');
+          input.style.display = 'none';
+          document.body.appendChild(input);
+          input.click();
+          
+          input.onchange = function() {
+            const file = input.files[0];
+            if (file) {
+              // Check file size (max 5MB)
+              if (file.size > 5 * 1024 * 1024) {
+                alert('File ảnh quá lớn. Vui lòng chọn file nhỏ hơn 5MB.');
+                return;
+              }
+              
+              // Check file type
+              if (!file.type.startsWith('image/')) {
+                alert('Vui lòng chọn file ảnh hợp lệ.');
+                return;
+              }
+              
+              const reader = new FileReader();
+              reader.onload = function() {
+                editor.insertContent('<img src="' + reader.result + '" alt="Uploaded image" style="max-width: 100%; height: auto;" />');
+              };
+              reader.onerror = function() {
+                alert('Không thể đọc file ảnh. Vui lòng thử lại.');
+              };
+              reader.readAsDataURL(file);
+            }
+            // Clean up
+            document.body.removeChild(input);
+          };
+        }
+      });
   }
 };
 
