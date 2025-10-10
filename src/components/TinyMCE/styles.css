@@ -1,0 +1,179 @@
+.smile-dental-tiny-mce {
+  margin-bottom: 0;
+  width: 100%;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.smile-dental-tiny-mce .tiny-mce-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.smile-dental-tiny-mce .tiny-mce-label .required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+/* Main Editor Container */
+.smile-dental-tiny-mce .tox-tinymce {
+  border: 1px solid #d1d5db !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+  transition: all 0.2s ease-in-out !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.smile-dental-tiny-mce .tox-tinymce:focus-within {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Menu Bar - Hidden */
+.smile-dental-tiny-mce .tox-menubar {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Toolbar - Clean & Minimal */
+.smile-dental-tiny-mce .tox-toolbar {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 6px 8px !important;
+  min-height: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.smile-dental-tiny-mce .tox-toolbar__primary {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 6px 8px !important;
+}
+
+.smile-dental-tiny-mce .tox-toolbar__overflow {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 6px 8px !important;
+}
+
+.smile-dental-tiny-mce .tox-toolbar__group {
+  border-right: 1px solid #d1d5db !important;
+  margin-right: 12px !important;
+  padding-right: 12px !important;
+}
+
+.smile-dental-tiny-mce .tox-toolbar__group:last-child {
+  border-right: none !important;
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Toolbar Buttons - Modern Style */
+.smile-dental-tiny-mce .tox-tbtn {
+  border-radius: 2px !important;
+  transition: all 0.15s ease !important;
+  color: #374151 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 4px 6px !important;
+  margin: 0 1px !important;
+  font-size: 13px !important;
+}
+
+.smile-dental-tiny-mce .tox-tbtn:hover {
+  background: #e5e7eb !important;
+  color: #1f2937 !important;
+}
+
+.smile-dental-tiny-mce .tox-tbtn--enabled {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+}
+
+.smile-dental-tiny-mce .tox-tbtn--enabled:hover {
+  background: #bfdbfe !important;
+  color: #1e3a8a !important;
+}
+
+/* Editor Content Area */
+.smile-dental-tiny-mce .tox-edit-area {
+  background: #ffffff !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.smile-dental-tiny-mce .tox-edit-area__iframe {
+  border: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Content Styling */
+.smile-dental-tiny-mce .tox-edit-area iframe {
+  background: #ffffff !important;
+}
+
+.smile-dental-tiny-mce .tox-edit-area iframe body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: #1f2937 !important;
+  padding: 16px !important;
+  margin: 0 !important;
+  background: #ffffff !important;
+}
+
+/* Placeholder Styling */
+.smile-dental-tiny-mce .tox-edit-area iframe body:empty:before {
+  content: attr(placeholder) !important;
+  color: #9ca3af !important;
+  font-style: italic !important;
+  font-size: 14px !important;
+}
+
+/* Status Bar - Hidden for Clean Look */
+.smile-dental-tiny-mce .tox-statusbar {
+  display: none !important;
+}
+
+/* Hide Trial/Upgrade Button */
+.smile-dental-tiny-mce .tox-promotion,
+.smile-dental-tiny-mce .tox-promotion-link,
+.smile-dental-tiny-mce .tox-promotion__link,
+.smile-dental-tiny-mce .tox-promotion__link--upgrade,
+.smile-dental-tiny-mce .tox-promotion__link--trial,
+.smile-dental-tiny-mce .tox-promotion__link--explore,
+.smile-dental-tiny-mce .tox-promotion__link--explore-trial {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .smile-dental-tiny-mce .tox-toolbar {
+    padding: 6px 8px !important;
+  }
+  
+  .smile-dental-tiny-mce .tox-toolbar__group {
+    margin-right: 8px !important;
+    padding-right: 8px !important;
+  }
+  
+  .smile-dental-tiny-mce .tox-tbtn {
+    padding: 4px 6px !important;
+  }
+}

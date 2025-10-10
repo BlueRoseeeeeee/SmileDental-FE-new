@@ -24,10 +24,13 @@ import {
   ArrowLeftOutlined,
   PlusOutlined,
   DeleteOutlined,
-  EyeOutlined
+  EyeOutlined,
+  UpOutlined,
+  DownOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
+import { TinyMCE } from '../components/TinyMCE';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -37,8 +40,10 @@ const AddService = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [serviceDescription, setServiceDescription] = useState('');
+  const [showDescriptionEditor, setShowDescriptionEditor] = useState(false);
   const [serviceAddOns, setServiceAddOns] = useState([
-    { name: '', price: 0, description: '', isActive: true }
+    { name: '', price: 0, description: '', isActive: true, showEditor: false }
   ]);
 
   // Handle form submit
@@ -61,7 +66,7 @@ const AddService = () => {
         name: values.name,
         durationMinutes: values.durationMinutes,
         type: values.type,
-        description: values.description,
+        description: serviceDescription,
         requireExamFirst: values.requireExamFirst || false,
         serviceAddOns: validAddOns.map(addon => ({
           name: addon.name.trim(),
@@ -102,7 +107,7 @@ const AddService = () => {
 
   // Add new addon
   const addServiceAddOn = () => {
-    setServiceAddOns([...serviceAddOns, { name: '', price: 0, description: '' }]);
+    setServiceAddOns([...serviceAddOns, { name: '', price: 0, description: '', isActive: true, showEditor: false }]);
     // Scroll to the new addon after a short delay
     setTimeout(() => {
       const addonCards = document.querySelectorAll('[data-addon-card]');
@@ -129,18 +134,36 @@ const AddService = () => {
     setServiceAddOns(newAddOns);
   };
 
+  // Toggle editor for addon
+  const toggleAddonEditor = (index) => {
+    const newAddOns = [...serviceAddOns];
+    newAddOns[index].showEditor = !newAddOns[index].showEditor;
+    setServiceAddOns(newAddOns);
+  };
+
   return (
-    <div style={{ padding: '24px', backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
+    <div style={{ 
+      padding: '32px', 
+      backgroundColor: '#f8fafc', 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)'
+    }}>
       {/* Header */}
-      <Card style={{ marginBottom: 24 }}>
+      <div style={{ 
+        background: '#ffffff',
+        borderRadius: '12px',
+        padding: '24px',
+        marginBottom: '24px',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        border: '1px solid #e2e8f0'
+      }}>
         <Row align="middle" justify="space-between">
           <Col>
-            <Space align="center">
-              <MedicineBoxOutlined style={{ fontSize: 24, color: '#1890ff' }} />
-              <Title level={3} style={{ margin: 0 }}>
-                Thêm dịch vụ mới
-              </Title>
-            </Space>
+              <div>
+                <Title level={2} style={{ margin: 0, color: '#1e293b', fontWeight: '700', fontSize: '16px' }}>
+                  Thêm dịch vụ mới
+                </Title>
+              </div>
           </Col>
           <Col>
             <Button 
@@ -150,14 +173,17 @@ const AddService = () => {
               style={{
                 height: '48px',
                 borderRadius: '8px',
-                fontWeight: '500'
+                fontWeight: '600',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                color: '#475569'
               }}
             >
               Quay lại
             </Button>
           </Col>
         </Row>
-      </Card>
+      </div>
 
        <Row gutter={24}>
          {/* Form chính */}
@@ -169,20 +195,31 @@ const AddService = () => {
              scrollToFirstError
            >
              {/* Form Container */}
-             <Card 
+             <div 
                style={{ 
-                 borderRadius: '12px',
-                 border: '1px solid #f0f0f0',
-                 boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                 background: '#ffffff',
+                 borderRadius: '16px',
+                 border: '1px solid #e2e8f0',
+                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                 overflow: 'hidden'
                }}
-               bodyStyle={{ padding: '0' }}
              >
                {/* Thông tin cơ bản */}
                <div style={{
-                 padding: '24px',
-                 borderBottom: '1px solid #f0f0f0',
-                 background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)'
+                 padding: '32px',
+                 borderBottom: '1px solid #e2e8f0',
+                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
                }}>
+                 <div style={{ marginBottom: '24px' }}>
+                   <Title level={4} style={{ 
+                     margin: 0, 
+                     color: '#1e293b', 
+                     fontWeight: '600',
+                     fontSize: '18px'
+                   }}>
+                     Thông tin dịch vụ
+                   </Title>
+                 </div>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
@@ -266,23 +303,61 @@ const AddService = () => {
 
               <Row gutter={[16, 16]}>
                         <Col xs={24}>
-                          <Form.Item
-                            name="description"
-                            label="Mô tả thêm"
-                          >
-                            <TextArea
-                              rows={6}
-                              placeholder="Nhập mô tả về dịch vụ"
-                              className="custom-textarea"
-                            />
-                          </Form.Item>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            marginBottom: '12px',
+                            padding: '16px',
+                            background: '#f8fafc',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0'
+                          }}>
+                            <div>
+                              <Text strong style={{ color: '#1e293b', fontSize: '14px', fontWeight: '600' }}>
+                                Mô tả dịch vụ (không bắt buộc)
+                              </Text>
+                            </div>
+                             <Button
+                               type="text"
+                               size="small"
+                               icon={showDescriptionEditor ? <DownOutlined /> : <UpOutlined />}
+                               onClick={() => setShowDescriptionEditor(!showDescriptionEditor)}
+                               style={{
+                                 color: '#3b82f6',
+                                 height: '32px',
+                                 width: '32px',
+                                 padding: '0',
+                                 borderRadius: '6px',
+                                 fontWeight: '500',
+                                 background: showDescriptionEditor ? '#eff6ff' : 'transparent',
+                                 border: showDescriptionEditor ? '1px solid #dbeafe' : '1px solid transparent',
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 justifyContent: 'center'
+                               }}
+                             />
+                          </div>
+                          
+                          {showDescriptionEditor && (
+                            <div style={{
+                              height: '400px'
+                            }}>
+                              <TinyMCE
+                                value={serviceDescription}
+                                onChange={setServiceDescription}
+                                placeholder="Nhập mô tả chi tiết về dịch vụ..."
+                                containerStyle={{ width: '100%'}}
+                              />
+                            </div>
+                          )}
                         </Col>
                       </Row>
                </div>
 
                {/* Service Add-ons */}
                <div style={{
-                 padding: '24px',
+                 padding: '32px',
                  background: '#ffffff'
                }}>
                  <div style={{ 
@@ -291,14 +366,15 @@ const AddService = () => {
                    justifyContent: 'space-between',
                    marginBottom: '24px'
                  }}>
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                     <PlusOutlined style={{ color: '#1890ff', fontSize: '20px' }} />
-                     <Title level={4} style={{ margin: 0, color: '#262626' }}>
+                   <div>
+                     <Title level={4} style={{ 
+                       margin: 0, 
+                       color: '#1e293b', 
+                       fontWeight: '600',
+                       fontSize: '18px'
+                     }}>
                        Tùy chọn dịch vụ
                      </Title>
-                     {/* <Text type="secondary" style={{ fontSize: '12px' }}>
-                       ({serviceAddOns.length} tùy chọn)
-                     </Text> */}
                    </div>
                    <Button 
                      type="primary"
@@ -306,7 +382,11 @@ const AddService = () => {
                      onClick={addServiceAddOn}
                      style={{
                        borderRadius: '8px',
-                       fontWeight: '600'
+                       fontWeight: '600',
+                       height: '40px',
+                       background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                       border: 'none',
+                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                      }}
                    >
                      Thêm tùy chọn
@@ -317,12 +397,14 @@ const AddService = () => {
                   <Card 
                     key={index} 
                     style={{ 
-                      borderRadius: '8px',
-                      border: '1px solid #e8e8e8',
-                      background: '#fafafa',
-                      position: 'relative'
+                      borderRadius: '12px',
+                      border: '1px solid #e2e8f0',
+                      background: '#ffffff',
+                      position: 'relative',
+                      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                      transition: 'all 0.2s ease-in-out'
                     }}
-                    bodyStyle={{ padding: '20px' }}
+                    bodyStyle={{ padding: '24px' }}
                   >
                     <div style={{ 
                       position: 'absolute', 
@@ -415,16 +497,58 @@ const AddService = () => {
 
                     <Row gutter={[16, 16]}>
                         <Col xs={24}>
-                          <div style={{ marginBottom: '8px' }}>
-                            <Text strong style={{ color: '#262626' }}>Mô tả chi tiết</Text>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            marginBottom: '12px',
+                            padding: '12px',
+                            background: '#f8fafc',
+                            borderRadius: '6px',
+                            border: '1px solid #e2e8f0',
+                            marginTop: '12px'
+                          }}>
+                            <div>
+                              <Text strong style={{ color: '#1e293b', fontSize: '14px', fontWeight: '600' }}>
+                                Mô tả dịch vụ (không bắt buộc)
+                              </Text>
+                            </div>
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={addon.showEditor ? <DownOutlined /> : <UpOutlined />}
+                              onClick={() => toggleAddonEditor(index)}
+                              style={{
+                                color: '#3b82f6',
+                                height: '28px',
+                                width: '28px',
+                                padding: '0',
+                                borderRadius: '6px',
+                                fontWeight: '500',
+                                background: addon.showEditor ? '#eff6ff' : 'transparent',
+                                border: addon.showEditor ? '1px solid #dbeafe' : '1px solid transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                            />
                           </div>
-                          <TextArea
-                            rows={6}
-                            placeholder="Mô tả chi tiết về tùy chọn này..."
-                            value={addon.description}
-                            onChange={(e) => updateServiceAddOn(index, 'description', e.target.value)}
-                            className="custom-textarea"
-                          />
+                          
+                          {addon.showEditor && (
+                            <div style={{
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              background: '#ffffff'
+                            }}>
+                              <TinyMCE
+                                value={addon.description || ''}
+                                onChange={(content) => updateServiceAddOn(index, 'description', content)}
+                                placeholder="Mô tả chi tiết về dịch vụ này..."
+                                containerStyle={{ marginTop: 0 }}
+                              />
+                            </div>
+                          )}
                         </Col>
                       </Row>
 
@@ -455,9 +579,9 @@ const AddService = () => {
 
                {/* Action Buttons */}
                <div style={{
-                 padding: '24px',
-                 borderTop: '1px solid #f0f0f0',
-                 background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)'
+                 padding: '32px',
+                 borderTop: '1px solid #e2e8f0',
+                 background: 'linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)'
                }}>
               <div style={{ 
                 display: 'flex', 
@@ -469,10 +593,13 @@ const AddService = () => {
                   onClick={() => navigate('/services')}
                   size="large"
                   style={{
-                    height: '60px',
+                    height: '48px',
                     borderRadius: '8px',
-                    fontWeight: '500',
-                    minWidth: '120px'
+                    fontWeight: '600',
+                    minWidth: '120px',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    color: '#475569'
                   }}
                 >
                   Hủy bỏ
@@ -482,14 +609,14 @@ const AddService = () => {
                   icon={<SaveOutlined />}
                   loading={submitLoading}
                   onClick={handleSubmit}
-                  size="small"
+                  size="large"
                   style={{
                     height: '48px',
                     borderRadius: '8px',
                     fontWeight: '600',
-                    background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                     border: 'none',
-                    boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                     minWidth: '160px'
                   }}
                 >
@@ -497,7 +624,7 @@ const AddService = () => {
                 </Button>
               </div>
              </div>
-           </Card>
+           </div>
          </Form>
         </Col>
 
