@@ -163,13 +163,13 @@ const UserManagement = () => {
           aValue = new Date(a.updatedAt);
           bValue = new Date(b.updatedAt);
         } else if (sortConfig.field === 'dateOfBirth') {
-          aValue = new Date(a.dateOfBirth || '1900-01-01');
-          bValue = new Date(b.dateOfBirth || '1900-01-01');
+          aValue = new Date(a.dateOfBirth );
+          bValue = new Date(b.dateOfBirth);
         } else if (sortConfig.field === 'role') {
           // Sắp xếp theo thứ tự ưu tiên vai trò
           const roleOrder = { admin: 1, manager: 2, dentist: 3, nurse: 4, receptionist: 5, patient: 6 };
-          aValue = roleOrder[a.role] || 999;
-          bValue = roleOrder[b.role] || 999;
+          aValue = roleOrder[a.role];
+          bValue = roleOrder[b.role];
         }
         
         if (aValue < bValue) {
@@ -724,9 +724,6 @@ const UserManagement = () => {
                 <span>
                   <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
                   Đang làm việc
-                  <Tag color="green" style={{ marginLeft: 8 }}>
-                    {users.filter(user => user.isActive === true).length}
-                  </Tag>
                 </span>
               ),
               children: (
@@ -762,9 +759,6 @@ const UserManagement = () => {
                 <span>
                   <UserSwitchOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
                   Đã nghỉ việc
-                  <Tag color="red" style={{ marginLeft: 8 }}>
-                    {users.filter(user => user.isActive === false).length}
-                  </Tag>
                 </span>
               ),
               children: (
