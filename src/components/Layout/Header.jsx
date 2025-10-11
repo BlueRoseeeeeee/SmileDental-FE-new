@@ -1,17 +1,19 @@
 /*
 * @author: HoTram
 */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Avatar, Dropdown, Space, Typography } from 'antd';
 import { 
   MenuOutlined,
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  DownOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { servicesService } from '../../services/servicesService';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -21,6 +23,20 @@ const Header = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
+  const [services, setServices] = useState([]);
+
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const loadServices = async () => {
+    try {
+      const response = await servicesService.getServices(1, 100);
+      setServices(response.services || []);
+    } catch (error) {
+      console.error('Error loading services:', error);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -50,6 +66,29 @@ const Header = () => {
       onClick: handleLogout
     }
   ];
+
+  // Create services dropdown menu
+  const getServicesMenuItems = () => {
+    return services
+      .filter(service => service.isActive)
+      .map(service => ({
+        key: service._id,
+        label: service.name,
+        children: service.serviceAddOns && service.serviceAddOns.length > 0 
+          ? service.serviceAddOns
+              .filter(addon => addon.isActive)
+              .map(addon => ({
+                key: `${service._id}-${addon._id}`,
+                label: addon.name,
+                onClick: () => navigate('/login')
+              }))
+          : [{
+              key: `${service._id}-contact`,
+              label: 'Liên hệ tư vấn',
+              onClick: () => navigate('/login')
+            }]
+      }));
+  };
 
   // Menu items based on authentication status
   const getMenuItems = () => {
@@ -82,7 +121,8 @@ const Header = () => {
         },
         {
           key: '/services',
-          label: 'Dịch vụ'
+          label: 'Dịch vụ',
+          children: getServicesMenuItems()
         },
         {
           key: '/knowledge',
@@ -102,19 +142,161 @@ const Header = () => {
   };
 
   return (
-    <AntHeader 
-      style={{ 
-        background: '#fff',
-        padding: '0 24px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}
-    >
+    <>
+      <style>{`
+        .services-dropdown {
+          z-index: 9999 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup {
+          z-index: 9999 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu {
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+          border-radius: 16px !important;
+          border: none !important;
+          min-width: 280px !important;
+          padding: 8px !important;
+          backdrop-filter: blur(10px) !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item {
+          color: #1e293b !important;
+          font-weight: 600 !important;
+          font-size: 15px !important;
+          height: 48px !important;
+          line-height: 48px !important;
+          border-radius: 12px !important;
+          margin: 4px 0 !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          position: relative !important;
+          overflow: hidden !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: linear-gradient(135deg, #2596be 0%, #40a9ff 100%) !important;
+          opacity: 0 !important;
+          transition: opacity 0.3s ease !important;
+          z-index: -1 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item:hover {
+          background: transparent !important;
+          color: white !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 10px 20px rgba(37, 150, 190, 0.3) !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item:hover::before {
+          opacity: 1 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu-title {
+          color: #1e293b !important;
+          font-weight: 700 !important;
+          font-size: 16px !important;
+          height: 52px !important;
+          line-height: 52px !important;
+          border-radius: 12px !important;
+          margin: 4px 0 !important;
+          background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+          border: 2px solid transparent !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          position: relative !important;
+          overflow: hidden !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu-title::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: linear-gradient(135deg, #2596be 0%, #40a9ff 100%) !important;
+          opacity: 0 !important;
+          transition: opacity 0.3s ease !important;
+          z-index: -1 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu-title:hover {
+          background: transparent !important;
+          color: white !important;
+          border-color: #2596be !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 10px 20px rgba(37, 150, 190, 0.3) !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu-title:hover::before {
+          opacity: 1 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+          border-radius: 12px !important;
+          margin: 8px 0 !important;
+          padding: 8px !important;
+          border: 1px solid #e2e8f0 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu .ant-menu-item {
+          color: #475569 !important;
+          font-weight: 500 !important;
+          font-size: 14px !important;
+          padding-left: 32px !important;
+          height: 44px !important;
+          line-height: 44px !important;
+          border-radius: 10px !important;
+          margin: 2px 0 !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          position: relative !important;
+          overflow: hidden !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu .ant-menu-item::before {
+          content: '' !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+          opacity: 0 !important;
+          transition: opacity 0.3s ease !important;
+          z-index: -1 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu .ant-menu-item:hover {
+          background: transparent !important;
+          color: white !important;
+          transform: translateX(4px) !important;
+          box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3) !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu .ant-menu-item:hover::before {
+          opacity: 1 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu .ant-menu-item::after {
+          content: '→' !important;
+          position: absolute !important;
+          right: 16px !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+          color: #94a3b8 !important;
+          font-weight: bold !important;
+          transition: all 0.3s ease !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu .ant-menu-item:hover::after {
+          color: white !important;
+          transform: translateY(-50%) translateX(4px) !important;
+        }
+      `}</style>
+      <AntHeader 
+        style={{ 
+          background: '#fff',
+          padding: '0 24px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}
+      >
       {/* Logo and Brand */}
       <div 
         style={{ 
@@ -151,8 +333,13 @@ const Header = () => {
           border: 'none',
           background: 'transparent',
           margin: '0 24px',
-          display: window.innerWidth > 768 ? 'flex' : 'none'
+          display: window.innerWidth > 768 ? 'flex' : 'none',
+          zIndex: 1000
         }}
+        triggerSubMenuAction="hover"
+        subMenuOpenDelay={0.1}
+        subMenuCloseDelay={0.1}
+        popupClassName="services-dropdown"
       />
 
       {/* User Actions */}
@@ -255,10 +442,12 @@ const Header = () => {
             items={getMenuItems()}
             onClick={handleMenuClick}
             style={{ border: 'none' }}
+            triggerSubMenuAction="click"
           />
         </div>
       )}
     </AntHeader>
+    </>
   );
 };
 
