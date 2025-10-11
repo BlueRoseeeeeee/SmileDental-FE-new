@@ -31,6 +31,18 @@ const slotService = {
     return response.data;
   },
 
+  // Lấy slot details theo ngày và ca cho phòng
+  getSlotsByDate: async (roomId, params) => {
+    const queryParams = new URLSearchParams();
+    if (params.date) queryParams.append('date', params.date);
+    if (params.shiftName) queryParams.append('shiftName', params.shiftName);
+    if (params.subRoomId) queryParams.append('subRoomId', params.subRoomId);
+
+    const url = `/slot/room/${roomId}/details${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
+    return response.data;
+  },
+
   // Lấy lịch phòng với số lượng cuộc hẹn (xem theo ngày/tuần/tháng)
   getRoomCalendar: async (roomId, params = {}) => {
     const queryParams = new URLSearchParams();
@@ -45,7 +57,7 @@ const slotService = {
     return response.data;
   },
 
-  // Lấy lịch bác sĩ với số lượng cuộc hẹn (hỗ trợ lịch sử)
+  // Lấy lịch nha sĩ với số lượng cuộc hẹn (hỗ trợ lịch sử)
   getDentistCalendar: async (dentistId, params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.viewType) queryParams.append('viewType', params.viewType);
@@ -80,6 +92,37 @@ const slotService = {
   // Lấy danh sách ca làm việc có sẵn
   getAvailableShifts: async () => {
     const response = await scheduleApi.get('/slot/available-shifts');
+    return response.data;
+  },
+
+  // Lấy chi tiết slots của nha sĩ theo ngày và ca
+  getDentistSlots: async (dentistId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.date) queryParams.append('date', params.date);
+    if (params.shiftName) queryParams.append('shiftName', params.shiftName);
+
+    const url = `/slot/dentist/${dentistId}/details${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
+    return response.data;
+  },
+
+  // Lấy chi tiết slots của y tá theo ngày và ca
+  getNurseSlots: async (nurseId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.date) queryParams.append('date', params.date);
+    if (params.shiftName) queryParams.append('shiftName', params.shiftName);
+
+    const url = `/slot/nurse/${nurseId}/details${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
+    return response.data;
+  },
+
+  // 🆕 Kiểm tra nhân sự có lịch làm việc không
+  checkStaffHasSchedule: async (staffIds, role) => {
+    const response = await scheduleApi.post('/slot/check-has-schedule', {
+      staffIds,
+      role // 'dentist' or 'nurse'
+    });
     return response.data;
   }
 };

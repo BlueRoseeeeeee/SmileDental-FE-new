@@ -51,6 +51,12 @@ const scheduleConfigService = {
   removeHoliday: async (holidayId) => {
     const response = await scheduleApi.delete(`/schedule/config/holidays/${holidayId}`);
     return response.data;
+  },
+
+  // 🆕 Lấy khoảng thời gian bị chặn (tháng có lịch + ngày nghỉ lễ hiện có)
+  getBlockedDateRanges: async () => {
+    const response = await scheduleApi.get('/schedule/config/holidays/blocked-ranges');
+    return response.data;
   }
 };
 

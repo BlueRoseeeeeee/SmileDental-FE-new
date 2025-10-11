@@ -125,12 +125,13 @@ const DashboardLayout = () => {
     if (user?.role === 'admin' || user?.role === 'manager') {
       roleBasedItems.push(
         {
-          key: '/schedules',
+          key: 'schedules-menu',
           icon: <ClockCircleOutlined />,
           label: 'Quản lý lịch làm việc',
           children: [
             { key: '/schedules', label: 'Cấu hình hệ thống' },
-            { key: '/schedules/management', label: 'Quản lý lịch chính' },
+            { key: '/schedules/holidays', label: 'Quản lý ngày nghỉ' },
+            { key: '/schedules/create-for-room', label: 'Tạo lịch cho phòng' },
             { key: '/schedules/calendar', label: 'Lịch làm việc' },
             { key: '/schedules/staff-assignment', label: 'Phân công nhân sự' },
           ]
@@ -195,7 +196,7 @@ const DashboardLayout = () => {
         onClose={() => setMobileMenuVisible(false)}
         open={mobileMenuVisible}
         width={280}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         <div style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
           <img src={logo} alt="Smile Dental" style={{ width: '100%', height: '100%' }} />

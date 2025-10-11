@@ -241,7 +241,7 @@ const RoomList = () => {
           {!record.hasSubRooms && (
             <div>
               <Tag color="green" size="small">
-                <SettingOutlined /> {record.maxDoctors} bác sĩ, {record.maxNurses} y tá
+                <SettingOutlined /> {record.maxDoctors} nha sĩ, {record.maxNurses} y tá
               </Tag>
             </div>
           )}
@@ -262,15 +262,10 @@ const RoomList = () => {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive, record) => (
-        <Space>
-          <Tag color={isActive ? 'green' : 'red'}>
-            {isActive ? 'Hoạt động' : 'Không hoạt động'}
-          </Tag>
-          {record.hasBeenUsed && (
-            <Tag color="orange">Đã sử dụng</Tag>
-          )}
-        </Space>
+      render: (isActive) => (
+        <Tag color={isActive ? 'green' : 'red'}>
+          {isActive ? 'Hoạt động' : 'Không hoạt động'}
+        </Tag>
       )
     },
     {
@@ -312,11 +307,12 @@ const RoomList = () => {
             />
           </Tooltip>
           
-          <Tooltip title="Xóa phòng">
+          <Tooltip title={record.hasBeenUsed ? 'Phòng đã được sử dụng, không thể xóa' : 'Xóa phòng'}>
             <Button
               type="text"
               danger
               icon={<DeleteOutlined />}
+              disabled={record.hasBeenUsed}
               onClick={() => handleDeleteRoom(record)}
             />
           </Tooltip>
@@ -429,7 +425,7 @@ const RoomList = () => {
 
       {/* Modal tạo/sửa phòng */}
       <RoomFormModal
-        visible={isModalVisible}
+        open={isModalVisible}
         onClose={handleModalClose}
         onSuccess={handleSuccess}
         room={editingRoom}

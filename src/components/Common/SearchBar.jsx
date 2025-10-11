@@ -57,7 +57,7 @@ const SearchBar = ({
         border: '1px solid #f0f0f0',
         ...cardStyle
       }}
-      bodyStyle={{ padding: '20px 24px' }}
+      styles={{ body: { padding: '20px 24px' } }}
     >
       <Row gutter={[20, 16]} align="middle">
         {/* Search Input */}
@@ -115,7 +115,6 @@ const SearchBar = ({
                   onBlur={(e) => {
                     e.target.style.borderColor = '#e8e8e8';
                   }}
-                  loading={loading}
                 />
               </div>
             </div>

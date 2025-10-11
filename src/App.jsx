@@ -30,10 +30,15 @@ import AddService from './pages/AddService.jsx';
 
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
-import HolidayManagement from './pages/Schedule/HolidayManagement.jsx';
-import ScheduleManagement from './pages/Schedule/ScheduleManagement.jsx';
+import HolidayManagementPage from './pages/Schedule/HolidayManagementPage.jsx';
 import ScheduleCalendar from './pages/Schedule/ScheduleCalendar.jsx';
 import StaffAssignment from './pages/Schedule/StaffAssignment.jsx';
+import StaffAssignmentNew from './pages/Schedule/StaffAssignmentNew.jsx';
+import StaffAssignmentDetail from './pages/Schedule/StaffAssignmentDetail.jsx';
+import AssignStaffForm from './pages/Schedule/AssignStaffForm.jsx';
+import CreateScheduleForRoom from './pages/Schedule/CreateScheduleForRoom.jsx';
+import StaffAssignmentUnified from './pages/Schedule/StaffAssignmentUnified.jsx';
+import StaffReplacement from './pages/Schedule/StaffReplacement.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -197,9 +202,9 @@ function App() {
                 <ScheduleConfig />
               </ProtectedRoute>
             } />
-            <Route path="schedules/management" element={
+            <Route path="schedules/create-for-room" element={
               <ProtectedRoute roles={['admin', 'manager']}>
-                <ScheduleManagement />
+                <CreateScheduleForRoom />
               </ProtectedRoute>
             } />
             <Route path="schedules/calendar" element={
@@ -209,12 +214,32 @@ function App() {
             } />
             <Route path="schedules/holidays" element={
               <ProtectedRoute roles={['admin', 'manager']}>
-                <HolidayManagement />
+                <HolidayManagementPage />
               </ProtectedRoute>
             } />
             <Route path="schedules/staff-assignment" element={
               <ProtectedRoute roles={['admin', 'manager']}>
-                <StaffAssignment />
+                <StaffAssignmentUnified />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment/detail" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffAssignmentDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment/assign" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AssignStaffForm />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment-unified" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffAssignmentUnified />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-replacement" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffReplacement />
               </ProtectedRoute>
             } />
             

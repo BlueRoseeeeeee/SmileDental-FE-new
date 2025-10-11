@@ -37,7 +37,7 @@ const Dashboard = () => {
     const roleTitles = {
       admin: 'Quản trị viên hệ thống',
       manager: 'Quản lý phòng khám',
-      dentist: 'Bác sĩ nha khoa',
+      dentist: 'nha sĩ nha khoa',
       nurse: 'Y tá',
       receptionist: 'Nhân viên lễ tân',
       patient: 'Bệnh nhân',

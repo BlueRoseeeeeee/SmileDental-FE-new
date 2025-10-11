@@ -50,6 +50,19 @@ const roomService = {
     return response.data;
   },
 
+  // 🆕 Lấy danh sách phòng với thông tin lịch (cho UI tạo lịch)
+  getRoomsForSchedule: async ({ page = 1, limit = 20, isActive }) => {
+    const params = { page, limit };
+    // Chỉ thêm isActive vào params nếu nó được định nghĩa
+    if (isActive !== undefined) {
+      params.isActive = isActive;
+    }
+    const response = await roomApi.get('/room/schedule-info', {
+      params
+    });
+    return response.data;
+  }
+
 };
 export default roomService;
 

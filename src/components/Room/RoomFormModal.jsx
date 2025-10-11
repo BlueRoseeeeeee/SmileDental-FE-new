@@ -13,26 +13,40 @@ import {
   Col,
   InputNumber,
   Typography,
-  Divider
+  Divider,
+  List,
+  Tag,
+  Tooltip
 } from 'antd';
 import { toast } from '../../services/toastService';
 import {
   EnvironmentOutlined,
   HomeOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import roomService from '../../services/roomService';
 
 const {Text } = Typography;
 
-const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
+const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [hasSubRooms, setHasSubRooms] = useState(false);
+  const [subRoomTogglingMap, setSubRoomTogglingMap] = useState({});
+  
+  // Support both visible and open props (visible is deprecated)
+  const isOpen = open ?? visible;
 
   // Toggle confirmation modal states
   const [showToggleModal, setShowToggleModal] = useState(false);
   const [pendingToggleValue, setPendingToggleValue] = useState(null);
   const [toggleField, setToggleField] = useState(null);
+  
+  // SubRoom toggle confirmation states
+  const [showSubRoomToggleModal, setShowSubRoomToggleModal] = useState(false);
+  const [selectedSubRoom, setSelectedSubRoom] = useState(null);
+  const [pendingSubRoomToggle, setPendingSubRoomToggle] = useState(null);
 
   useEffect(() => {
     if (visible) {
@@ -129,6 +143,43 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
     setToggleField(null);
   };
 
+  // Handle SubRoom toggle confirmation
+  const handleSubRoomToggleConfirmation = (subRoom) => {
+    setSelectedSubRoom(subRoom);
+    setPendingSubRoomToggle(!subRoom.isActive);
+    setShowSubRoomToggleModal(true);
+  };
+
+  // Handle confirm SubRoom toggle
+  const handleConfirmSubRoomToggle = async () => {
+    if (!selectedSubRoom) return;
+    
+    const subRoomId = selectedSubRoom._id;
+    setSubRoomTogglingMap(prev => ({ ...prev, [subRoomId]: true }));
+    
+    try {
+      await roomService.toggleSubRoomStatus(room._id, subRoomId);
+      toast.success(`Đã ${pendingSubRoomToggle ? 'kích hoạt' : 'tắt'} buồng "${selectedSubRoom.name}"`);
+      
+      // Refresh parent to update subRooms list
+      onSuccess();
+    } catch (error) {
+      toast.error('Lỗi khi thay đổi trạng thái buồng: ' + error.message);
+    } finally {
+      setSubRoomTogglingMap(prev => ({ ...prev, [subRoomId]: false }));
+      setShowSubRoomToggleModal(false);
+      setSelectedSubRoom(null);
+      setPendingSubRoomToggle(null);
+    }
+  };
+
+  // Handle cancel SubRoom toggle
+  const handleCancelSubRoomToggle = () => {
+    setShowSubRoomToggleModal(false);
+    setSelectedSubRoom(null);
+    setPendingSubRoomToggle(null);
+  };
+
   return (
     <Modal
       title={
@@ -137,11 +188,11 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
           {room ? 'Chỉnh sửa phòng khám' : 'Tạo phòng khám mới'}
         </Space>
       }
-      open={visible}
+      open={isOpen}
       onCancel={handleCancel}
       footer={null}
       width={600}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}
@@ -211,11 +262,48 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
 
         {hasSubRooms ? (
           room ? (
-            // Khi edit phòng có subrooms - chỉ hiển thị thông tin
-            <div style={{ padding: '16px', background: '#f5f5f5', borderRadius: '8px' }}>
-              <Text type="secondary">
+            // Khi edit phòng có subrooms - Hiển thị danh sách buồng với toggle
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: 12 }}>
                 <HomeOutlined style={{ marginRight: 8 }} />
-                Phòng này hiện có <strong>{room.subRooms?.length || 0}</strong> buồng con.
+                Danh sách buồng ({room.subRooms?.length || 0} buồng)
+              </Text>
+              <List
+                size="small"
+                bordered
+                dataSource={room.subRooms || []}
+                renderItem={(subRoom) => (
+                  <List.Item
+                    actions={[
+                      <Tooltip title={subRoom.isActive ? 'Tắt buồng' : 'Bật buồng'}>
+                        <Switch
+                          size="small"
+                          checked={subRoom.isActive}
+                          loading={subRoomTogglingMap[subRoom._id]}
+                          onChange={() => handleSubRoomToggleConfirmation(subRoom)}
+                          checkedChildren="Bật"
+                          unCheckedChildren="Tắt"
+                        />
+                      </Tooltip>
+                    ]}
+                  >
+                    <Space>
+                      <Text>{subRoom.name}</Text>
+                      <Tag 
+                        color={subRoom.isActive ? 'green' : 'red'} 
+                        icon={subRoom.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                      >
+                        {subRoom.isActive ? 'Hoạt động' : 'Tắt'}
+                      </Tag>
+                      {subRoom.hasBeenUsed && (
+                        <Tag color="orange" size="small">Đã sử dụng</Tag>
+                      )}
+                    </Space>
+                  </List.Item>
+                )}
+                style={{ maxHeight: 300, overflow: 'auto' }}
+              />
+              <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
                 Để thêm/xóa buồng, vui lòng sử dụng trang quản lý chi tiết.
               </Text>
             </div>
@@ -242,17 +330,17 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
             <Col span={12}>
               <Form.Item
                 name="maxDoctors"
-                label="Số bác sĩ tối đa"
+                label="Số nha sĩ tối đa"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập số bác sĩ tối đa' },
-                  { type: 'number', min: 1, message: 'Số bác sĩ phải lớn hơn 0' }
+                  { required: true, message: 'Vui lòng nhập số nha sĩ tối đa' },
+                  { type: 'number', min: 1, message: 'Số nha sĩ phải lớn hơn 0' }
                 ]}
               >
                 <InputNumber
                   min={1}
                   max={10}
                   style={{ width: '100%' }}
-                  placeholder="Nhập số bác sĩ"
+                  placeholder="Nhập số nha sĩ"
                 />
               </Form.Item>
             </Col>
@@ -335,7 +423,7 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
                     marginTop: '12px'
                   }}>
                     <p style={{ margin: 0, color: '#389e0d', fontSize: '12px' }}>
-                       Phòng đơn sẽ có thông số về số lượng bác sĩ và y tá tối đa.
+                       Phòng đơn sẽ có thông số về số lượng nha sĩ và y tá tối đa.
                     </p>
                   </div>
                 )}
@@ -379,6 +467,59 @@ const RoomFormModal = ({ visible, onClose, onSuccess, room }) => {
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* SubRoom Toggle Confirmation Modal */}
+      <Modal
+        title="Xác nhận thay đổi trạng thái buồng"
+        open={showSubRoomToggleModal}
+        onOk={handleConfirmSubRoomToggle}
+        onCancel={handleCancelSubRoomToggle}
+        okText="Xác nhận"
+        cancelText="Hủy bỏ"
+        centered
+        width={480}
+        confirmLoading={selectedSubRoom && subRoomTogglingMap[selectedSubRoom._id]}
+      >
+        {selectedSubRoom && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn{' '}
+              <strong style={{ color: pendingSubRoomToggle ? '#52c41a' : '#ff4d4f' }}>
+                {pendingSubRoomToggle ? 'KÍCH HOẠT' : 'TẮT'}
+              </strong>
+              {' '}buồng <strong>{selectedSubRoom.name}</strong>?
+            </p>
+            
+            {pendingSubRoomToggle && (
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#f6ffed', 
+                borderLeft: '4px solid #52c41a',
+                borderRadius: '4px',
+                marginTop: '12px'
+              }}>
+                <p style={{ margin: 0, color: '#389e0d', fontSize: '12px' }}>
+                   Buồng sẽ được kích hoạt và sẵn sàng cho việc tạo lịch và phục vụ bệnh nhân.
+                </p>
+              </div>
+            )}
+            
+            {!pendingSubRoomToggle && (
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#fff2e8', 
+                borderLeft: '4px solid #ff7a00',
+                borderRadius: '4px',
+                marginTop: '12px'
+              }}>
+                <p style={{ margin: 0, color: '#d46b08', fontSize: '12px' }}>
+                   Buồng sẽ không còn khả dụng cho việc đặt lịch và sắp xếp bệnh nhân.
+                </p>
               </div>
             )}
           </div>

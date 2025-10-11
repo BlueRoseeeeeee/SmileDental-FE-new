@@ -405,7 +405,7 @@ const RoomManagement = () => {
             <Col span={8}>
               <Card size="small" style={{ textAlign: 'center' }}>
                 <Statistic
-                  title="Bác sĩ tối đa"
+                  title="nha sĩ tối đa"
                   value={room.maxDoctors}
                   prefix={<EnvironmentOutlined />}
                   valueStyle={{ color: '#1890ff', fontSize: '24px' }}
