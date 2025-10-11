@@ -16,7 +16,6 @@ import {
   Button,
   Space,
   Statistic,
-  Badge,
   Switch,
   Select,
   Modal,
@@ -445,13 +444,7 @@ const ServiceList = () => {
           items={[
             {
               key: 'active',
-              label: (
-                <span>
-                  <Badge count={services.filter(s => s.isActive).length} size="small">
-                    Hoạt động
-                  </Badge>
-                </span>
-              ),
+              label: 'Hoạt động',
               children: (
                 <Table
                   columns={columns}
@@ -464,7 +457,7 @@ const ServiceList = () => {
                       : {
                           current: pagination.current,
                           pageSize: pagination.pageSize,
-                          total: pagination.total,
+                          total: filteredServices.length,
                           showSizeChanger: true,
                           showQuickJumper: true,
                           showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
@@ -484,13 +477,7 @@ const ServiceList = () => {
             },
             {
               key: 'inactive',
-              label: (
-                <span>
-                  <Badge count={services.filter(s => !s.isActive).length} size="small">
-                    Đã ngưng hoạt động
-                  </Badge>
-                </span>
-              ),
+              label: 'Đã ngưng hoạt động',
               children: (
                 <Table
                   columns={columns}
@@ -503,7 +490,7 @@ const ServiceList = () => {
                       : {
                           current: pagination.current,
                           pageSize: pagination.pageSize,
-                          total: pagination.total,
+                          total: filteredServices.length,
                           showSizeChanger: true,
                           showQuickJumper: true,
                           showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
