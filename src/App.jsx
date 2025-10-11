@@ -109,6 +109,62 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Profile />} />
+          </Route>
+          
+          <Route path="/users" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<UserManagement />} />
+          </Route>
+          
+          <Route path="/services" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ServiceList />} />
+          </Route>
+          
+          <Route path="/rooms" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<RoomList />} />
+          </Route>
+          
+          <Route path="/schedules" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ScheduleManagement />} />
+          </Route>
+          
+          <Route path="/certificates" element={
+            <ProtectedRoute roles={['dentist']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<CertificateManagement />} />
+          </Route>
+          
+          <Route path="/change-password" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ChangePassword />} />
+          </Route>
+          
           {/* Protected routes - Dashboard cho người đã đăng nhập */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
@@ -116,7 +172,7 @@ function App() {
             </ProtectedRoute>
           }>
             {/* Default redirect cho dashboard */}
-            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route index element={<Navigate to="/dashboard/dashboard" replace />} />
             
             {/* Dashboard */}
             <Route path="dashboard" element={<Dashboard />} />

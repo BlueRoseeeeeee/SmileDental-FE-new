@@ -151,13 +151,32 @@ const Header = () => {
           z-index: 9999 !important;
         }
         .services-dropdown .ant-menu-submenu-popup .ant-menu {
-          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
-          border-radius: 16px !important;
-          border: none !important;
+          background: #ffffff !important;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+          border-radius: 12px !important;
+          border: 1px solid #e2e8f0 !important;
           min-width: 280px !important;
           padding: 8px !important;
-          backdrop-filter: blur(10px) !important;
+        }
+        
+        /* Chia 2 cột khi có nhiều hơn 5 items */
+        .services-dropdown .ant-menu-submenu-popup .ant-menu:has(.ant-menu-item:nth-child(6)) {
+          display: grid !important;
+          grid-template-columns: 1fr 1fr !important;
+          gap: 8px !important;
+          min-width: 560px !important;
+          max-width: 600px !important;
+        }
+        
+        /* Fallback cho browsers không hỗ trợ :has() */
+        @supports not (selector(:has(*))) {
+          .services-dropdown.multi-column .ant-menu-submenu-popup .ant-menu {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+            min-width: 560px !important;
+            max-width: 600px !important;
+          }
         }
         .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item {
           color: #1e293b !important;
@@ -229,11 +248,12 @@ const Header = () => {
           opacity: 1 !important;
         }
         .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu {
-          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+          background: #ffffff !important;
           border-radius: 12px !important;
           margin: 8px 0 !important;
           padding: 8px !important;
           border: 1px solid #e2e8f0 !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         }
         .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-submenu .ant-menu .ant-menu-item {
           color: #475569 !important;
@@ -294,7 +314,9 @@ const Header = () => {
           zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          height: '100px',
+          minHeight: '100px'
         }}
       >
       {/* Logo and Brand */}
@@ -339,7 +361,11 @@ const Header = () => {
         triggerSubMenuAction="hover"
         subMenuOpenDelay={0.1}
         subMenuCloseDelay={0.1}
-        popupClassName="services-dropdown"
+        popupClassName={
+          services.filter(service => service.isActive).length > 5 
+            ? "services-dropdown multi-column" 
+            : "services-dropdown"
+        }
       />
 
       {/* User Actions */}

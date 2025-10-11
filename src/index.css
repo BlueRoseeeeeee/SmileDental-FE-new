@@ -491,9 +491,48 @@ html, body {
 
 /* Dropdown Customization */
 .ant-dropdown-menu {
+  background: #ffffff !important;
   border-radius: var(--border-radius-lg) !important;
   box-shadow: var(--shadow-heavy) !important;
   border: 1px solid var(--border-color) !important;
+}
+
+/* Services dropdown - make sure it's not transparent */
+.ant-menu-submenu-popup {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.ant-menu-submenu-popup .ant-menu {
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Remove any blur effects from dropdowns */
+.ant-dropdown,
+.ant-dropdown-menu,
+.ant-menu-submenu-popup,
+.services-dropdown {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* Force solid background for all dropdown elements */
+.ant-menu-submenu-popup .ant-menu,
+.ant-dropdown-menu,
+.services-dropdown .ant-menu {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  filter: none !important;
+}
+
+/* Text should be fully visible */
+.ant-menu-submenu-popup .ant-menu .ant-menu-item,
+.ant-dropdown-menu .ant-dropdown-menu-item,
+.services-dropdown .ant-menu .ant-menu-item {
+  color: #1e293b !important;
+  opacity: 1 !important;
 }
 
 /* Utility Classes */
