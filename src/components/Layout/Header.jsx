@@ -130,45 +130,17 @@ const Header = () => {
   return (
     <>
       <style>{`
-        .services-dropdown {
-          z-index: 9999 !important;
-        }
-        .services-dropdown .ant-menu-submenu-popup {
-          z-index: 9999 !important;
-        }
         .services-dropdown .ant-menu-submenu-popup .ant-menu {
           background: #ffffff !important;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
-          border-radius: 8px !important;
-          border: 1px solid #e8e8e8 !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+          border-radius: 6px !important;
           min-width: 200px !important;
-          padding: 4px !important;
-        }
-        /* Multi-column layout for services (2 columns when > 10 items) */
-        .services-dropdown .ant-menu-submenu-popup .ant-menu:has(.ant-menu-item:nth-child(11)) {
-          display: grid !important;
-          grid-template-columns: 1fr 1fr !important;
-          gap: 8px !important;
-          min-width: 400px !important;
-        }
-        /* Fallback for browsers without :has() support */
-        @supports not (selector(:has(*))) {
-          .services-dropdown.multi-column .ant-menu-submenu-popup .ant-menu {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
-            min-width: 400px !important;
-          }
         }
         .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item {
-          color: #1f1f1f !important;
-          font-weight: 500 !important;
-          height: 40px !important;
-          line-height: 40px !important;
-          border-radius: 6px !important;
-          margin: 2px 0 !important;
-          padding: 0 16px !important;
-          transition: all 0.2s ease !important;
+          color: #333 !important;
+          height: 36px !important;
+          line-height: 36px !important;
+          padding: 0 12px !important;
         }
         .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item:hover {
           background: #f0f8ff !important;
@@ -232,11 +204,7 @@ const Header = () => {
           triggerSubMenuAction="hover"
           subMenuOpenDelay={0.1}
           subMenuCloseDelay={0.1}
-          popupClassName={
-            services.filter(service => service.isActive).length > 10 
-              ? "services-dropdown multi-column" 
-              : "services-dropdown"
-          }
+          popupClassName="services-dropdown"
         />
 
         {/* User Actions */}
