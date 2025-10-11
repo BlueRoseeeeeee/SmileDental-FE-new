@@ -13,8 +13,10 @@ import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 
 // Layout
 import DashboardLayout from './components/Layout/DashboardLayout.jsx';
+import HomepageLayout from './components/Layout/HomepageLayout.jsx';
 
 // Pages
+import Homepage from './pages/Homepage.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
@@ -97,18 +99,23 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes */}
+          {/* Public routes - Trang chủ công khai */}
+          <Route path="/" element={
+            <HomepageLayout>
+              <Homepage />
+            </HomepageLayout>
+          } />
           <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           
-          {/* Protected routes */}
-          <Route path="/" element={
+          {/* Protected routes - Dashboard cho người đã đăng nhập */}
+          <Route path="/dashboard" element={
             <ProtectedRoute>
               <DashboardLayout />
             </ProtectedRoute>
           }>
-            {/* Default redirect */}
+            {/* Default redirect cho dashboard */}
             <Route index element={<Navigate to="/dashboard" replace />} />
             
             {/* Dashboard */}
