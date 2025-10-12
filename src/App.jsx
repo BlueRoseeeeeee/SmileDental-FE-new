@@ -107,9 +107,21 @@ function App() {
               <Homepage />
             </HomepageLayout>
           } />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/login" element={
+            <HomepageLayout>
+              <Login />
+            </HomepageLayout>
+          } />
+          <Route path="/register" element={
+            <HomepageLayout>
+              <Register />
+            </HomepageLayout>
+          } />
+          <Route path="/forgot-password" element={
+            <HomepageLayout>
+              <ForgotPassword />
+            </HomepageLayout>
+          } />
            
            {/* Public Service AddOns Route */}
            <Route path="/services/pl/:serviceName/addons" element={
