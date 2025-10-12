@@ -31,7 +31,7 @@ const slotService = {
     return response.data;
   },
 
-  // Lấy slot details theo ngày và ca cho phòng
+  // Lấy slot details theo ngày và ca cho phòng (ALL slots - for calendar)
   getSlotsByDate: async (roomId, params) => {
     const queryParams = new URLSearchParams();
     if (params.date) queryParams.append('date', params.date);
@@ -39,6 +39,18 @@ const slotService = {
     if (params.subRoomId) queryParams.append('subRoomId', params.subRoomId);
 
     const url = `/slot/room/${roomId}/details${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
+    return response.data;
+  },
+
+  // 🆕 Lấy FUTURE slot details theo ngày và ca cho phòng (for staff assignment)
+  getSlotsByDateFuture: async (roomId, params) => {
+    const queryParams = new URLSearchParams();
+    if (params.date) queryParams.append('date', params.date);
+    if (params.shiftName) queryParams.append('shiftName', params.shiftName);
+    if (params.subRoomId) queryParams.append('subRoomId', params.subRoomId);
+
+    const url = `/slot/room/${roomId}/details/future${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await scheduleApi.get(url);
     return response.data;
   },
@@ -51,6 +63,7 @@ const slotService = {
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
+    if (params.futureOnly !== undefined) queryParams.append('futureOnly', params.futureOnly ? 'true' : 'false');
 
     const url = `/slot/room/${roomId}/calendar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await scheduleApi.get(url);
@@ -64,6 +77,7 @@ const slotService = {
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
+    if (params.futureOnly !== undefined) queryParams.append('futureOnly', params.futureOnly ? 'true' : 'false');
 
     const url = `/slot/dentist/${dentistId}/calendar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await scheduleApi.get(url);
@@ -77,25 +91,22 @@ const slotService = {
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
+    if (params.futureOnly !== undefined) queryParams.append('futureOnly', params.futureOnly ? 'true' : 'false');
 
     const url = `/slot/nurse/${nurseId}/calendar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await scheduleApi.get(url);
     return response.data;
   },
 
-  // Lấy quý và năm có thể phân công nhân sự
-  getAvailableQuartersYears: async () => {
-    const response = await scheduleApi.get('/slot/available-quarters');
-    return response.data;
-  },
-
+  // ❌ REMOVED: getAvailableQuartersYears - Frontend không dùng
+  
   // Lấy danh sách ca làm việc có sẵn
   getAvailableShifts: async () => {
     const response = await scheduleApi.get('/slot/available-shifts');
     return response.data;
   },
 
-  // Lấy chi tiết slots của nha sĩ theo ngày và ca
+  // Lấy chi tiết slots của nha sĩ theo ngày và ca (ALL slots - for calendar)
   getDentistSlots: async (dentistId, params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.date) queryParams.append('date', params.date);
@@ -106,13 +117,35 @@ const slotService = {
     return response.data;
   },
 
-  // Lấy chi tiết slots của y tá theo ngày và ca
+  // 🆕 Lấy FUTURE chi tiết slots của nha sĩ (for staff replacement)
+  getDentistSlotsFuture: async (dentistId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.date) queryParams.append('date', params.date);
+    if (params.shiftName) queryParams.append('shiftName', params.shiftName);
+
+    const url = `/slot/dentist/${dentistId}/details/future${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
+    return response.data;
+  },
+
+  // Lấy chi tiết slots của y tá theo ngày và ca (ALL slots - for calendar)
   getNurseSlots: async (nurseId, params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.date) queryParams.append('date', params.date);
     if (params.shiftName) queryParams.append('shiftName', params.shiftName);
 
     const url = `/slot/nurse/${nurseId}/details${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await scheduleApi.get(url);
+    return response.data;
+  },
+
+  // 🆕 Lấy FUTURE chi tiết slots của y tá (for staff replacement)
+  getNurseSlotsFuture: async (nurseId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.date) queryParams.append('date', params.date);
+    if (params.shiftName) queryParams.append('shiftName', params.shiftName);
+
+    const url = `/slot/nurse/${nurseId}/details/future${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await scheduleApi.get(url);
     return response.data;
   },

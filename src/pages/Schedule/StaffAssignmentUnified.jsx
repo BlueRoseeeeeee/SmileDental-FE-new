@@ -296,18 +296,7 @@ const buildSlotDetail = (entry, slot, shiftMeta, defaultRoom, defaultSubRoom) =>
 const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
   const staffRole = staff.assignmentRole || staff.role;
   
-  console.log('🔍 detectConflictsForStaff called:', {
-    staffId: staff._id,
-    staffName: staff.displayName || staff.fullName,
-    staffRole: staffRole,
-    originalRole: staff.role,
-    assignmentRole: staff.assignmentRole,
-    slotDetailsCount: slotDetails?.length || 0,
-    scheduleEntriesCount: scheduleEntries?.length || 0
-  });
-  
   if (!Array.isArray(slotDetails) || slotDetails.length === 0) {
-    console.log('⚠️ No slot details to check');
     return [];
   }
 
@@ -334,36 +323,6 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
   // Nếu staff đã được assign vào chính slot đang chọn → không phải conflict
 
   const normalizedSchedule = Array.isArray(scheduleEntries) ? scheduleEntries : [];
-  
-  console.log('📋 Checking conflicts for staff:', {
-    staffId: staff._id,
-    slotsToAssign: slotDetails.length,
-    existingSchedule: normalizedSchedule.length
-  });
-  
-  // Log first 3 entries for debugging
-  if (normalizedSchedule.length > 0) {
-    console.log('📅 Sample schedule entries:', normalizedSchedule.slice(0, 3).map(e => ({
-      date: e.date,
-      dateStr: e.dateStr,
-      startTime: e.startTime,
-      endTime: e.endTime,
-      shiftName: e.shiftName,
-      roomName: e.roomName,
-      slotId: e.slotId
-    })));
-  }
-  
-  if (slotDetails.length > 0) {
-    console.log('🎯 Sample slot details to check:', slotDetails.slice(0, 3).map(d => ({
-      date: d.date,
-      shiftName: d.shiftName,
-      start: d.start?.format('YYYY-MM-DD HH:mm'),
-      end: d.end?.format('YYYY-MM-DD HH:mm'),
-      slotId: d.slotId,
-      roomName: d.roomName
-    })));
-  }
 
   normalizedSchedule.forEach(entry => {
     const entryRole = entry.assignedAs || entry.role;
@@ -375,12 +334,6 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
       const isDoctorDentistMismatch = (entryRole === 'doctor' && staffRole === 'dentist') || 
                                        (entryRole === 'dentist' && staffRole === 'doctor');
       if (!isDoctorDentistMismatch) {
-        console.log('⏭️ Skipping entry due to role mismatch:', {
-          entryRole,
-          staffRole,
-          entryDate: entry.date || entry.startDate,
-          entryTime: `${entry.startTime || ''} - ${entry.endTime || ''}`
-        });
         return;
       }
     }
@@ -397,16 +350,6 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
     const entryEnd = parseDateTimeSafe(entryDateStr, entry.endDateTime || entry.endTimeISO, entry.endTime, null);
 
       if (!entryStart || !entryEnd) {
-        console.log('⚠️ Could not parse entry date/time:', {
-          entryDate,
-          entryDateStr,
-          startTime: entry.startTime,
-          endTime: entry.endTime,
-          startDateTime: entry.startDateTime,
-          endDateTime: entry.endDateTime,
-          entryStart: entryStart?.format(),
-          entryEnd: entryEnd?.format()
-        });
         return;
       }    slotDetails.forEach(detail => {
       if (!detail.start || !detail.end) {
@@ -434,25 +377,8 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
         // If not same slot (already checked above), this is a real conflict within same room
       }
 
-      // Check time overlap
+      // ⭐ Check time overlap - ACTIVE CONFLICT DETECTION
       if (detail.start.isBefore(entryEnd) && entryStart.isBefore(detail.end)) {
-        console.log('⚠️ CONFLICT DETECTED:', {
-          staffId: staff._id,
-          staffName: staff.displayName || staff.fullName,
-          detailDate: detail.date,
-          detailShift: detail.shiftName,
-          detailTime: `${detail.start.format('HH:mm')} - ${detail.end.format('HH:mm')}`,
-          detailSlotId: detail.slotId,
-          detailRoomId: detail.roomId,
-          detailRoomName: detail.roomName,
-          existingDate: entryStart.format('YYYY-MM-DD'),
-          existingTime: `${entryStart.format('HH:mm')} - ${entryEnd.format('HH:mm')}`,
-          existingSlotId: entrySlotId,
-          existingRoomId: entry.roomId || entry.room?._id,
-          existingRoom: entry.roomName,
-          sameSlot: entrySlotId === detail.slotId
-        });
-        
         recordConflict(
           detail,
           entry.roomName || entry.room?.name || detail.roomName,
@@ -462,8 +388,6 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
       }
     });
   });
-
-  console.log(`✅ Conflict check complete for ${staff.displayName || staff._id}: ${conflicts.length} conflicts found`);
   
   return conflicts;
 };
@@ -806,6 +730,9 @@ const StaffAssignmentUnified = () => {
   const [availableShiftKeys, setAvailableShiftKeys] = useState([]);
   const [selectedShiftFilters, setSelectedShiftFilters] = useState([]);
   
+  // ⭐ Lưu trạng thái shift filters và slots theo từng tháng (key: YYYY-MM)
+  const [monthStateForRoom, setMonthStateForRoom] = useState({}); // { 'YYYY-MM': { shiftFilters: [], slots: [] } }
+  
   // Track selected subroom in dropdown for each room (to reset after modal closes)
   const [subroomSelectValues, setSubroomSelectValues] = useState({});
   
@@ -851,6 +778,10 @@ const StaffAssignmentUnified = () => {
   const [selectedSlotsForReplacement, setSelectedSlotsForReplacement] = useState([]); // [{ slotKey, date, shiftName, slotIds, totalSlots, slots }]
   const [availableShiftKeysStaff, setAvailableShiftKeysStaff] = useState([]);
   const [selectedShiftFiltersStaff, setSelectedShiftFiltersStaff] = useState([]);
+  
+  // ⭐ Lưu trạng thái shift filters và slots theo từng tháng (key: YYYY-MM) cho Staff
+  const [monthStateForStaff, setMonthStateForStaff] = useState({}); // { 'YYYY-MM': { shiftFilters: [], slots: [] } }
+  
   const [slotDetailsCacheStaff, setSlotDetailsCacheStaff] = useState({});
   const [quickSelectLoadingKeyStaff, setQuickSelectLoadingKeyStaff] = useState(null);
   const [selectingAllMonthStaff, setSelectingAllMonthStaff] = useState(false); // ⭐ Loading for staff "Chọn tất cả tháng"
@@ -948,7 +879,25 @@ const StaffAssignmentUnified = () => {
     let total = 0;
     let fullyAssigned = 0;
 
-    selectedSlotsForAssignment.forEach(entry => {
+    // ⭐ Tính tổng slots từ TẤT CẢ CÁC THÁNG (bao gồm tháng hiện tại)
+    // Combine slots from monthStateForRoom + selectedSlotsForAssignment (tháng hiện tại)
+    const allMonthSlots = [];
+    
+    // 1. Lấy slots từ các tháng đã lưu trong monthStateForRoom
+    Object.values(monthStateForRoom).forEach(monthState => {
+      if (monthState?.slots && Array.isArray(monthState.slots)) {
+        allMonthSlots.push(...monthState.slots);
+      }
+    });
+    
+    // 2. Thêm slots của tháng hiện tại (nếu chưa được lưu vào monthStateForRoom)
+    const currentMonthKey = dayjs().add(currentPageForRoom, 'month').format('YYYY-MM');
+    if (!monthStateForRoom[currentMonthKey] && selectedSlotsForAssignment.length > 0) {
+      allMonthSlots.push(...selectedSlotsForAssignment);
+    }
+
+    // Tính tổng từ tất cả slots
+    allMonthSlots.forEach(entry => {
       const selectedIds = new Set(entry?.slotIds || []);
       if (selectedIds.size === 0) {
         return;
@@ -976,7 +925,7 @@ const StaffAssignmentUnified = () => {
       total,
       fullyAssigned
     };
-  }, [selectedSlotsForAssignment]);
+  }, [selectedSlotsForAssignment, monthStateForRoom, currentPageForRoom]);
 
   const totalSelectedSlotCount = slotSelectionStats.selected;
   const totalAvailableSlotCount = slotSelectionStats.total;
@@ -1047,6 +996,56 @@ const StaffAssignmentUnified = () => {
       return [...others, newEntry];
     });
   }, [createSlotKey]);
+
+  // ⭐ Helper functions để lưu và khôi phục state theo tháng (Room-based)
+  const saveMonthStateForRoom = useCallback((monthKey) => {
+    setMonthStateForRoom(prev => ({
+      ...prev,
+      [monthKey]: {
+        shiftFilters: [...selectedShiftFilters],
+        slots: [...selectedSlotsForAssignment]
+      }
+    }));
+  }, [selectedShiftFilters, selectedSlotsForAssignment]);
+
+  const restoreMonthStateForRoom = useCallback((monthKey) => {
+    const savedState = monthStateForRoom[monthKey];
+    if (savedState) {
+      // Khôi phục state đã lưu
+      setSelectedShiftFilters(savedState.shiftFilters || []);
+      setSelectedSlotsForAssignment(savedState.slots || []);
+      return true;
+    }
+    // Không có state đã lưu → reset về mặc định
+    setSelectedShiftFilters([]);
+    setSelectedSlotsForAssignment([]);
+    return false;
+  }, [monthStateForRoom]);
+
+  // ⭐ Helper functions để lưu và khôi phục state theo tháng (Staff-based)
+  const saveMonthStateForStaff = useCallback((monthKey) => {
+    setMonthStateForStaff(prev => ({
+      ...prev,
+      [monthKey]: {
+        shiftFilters: [...selectedShiftFiltersStaff],
+        slots: [...selectedSlotsForReplacement]
+      }
+    }));
+  }, [selectedShiftFiltersStaff, selectedSlotsForReplacement]);
+
+  const restoreMonthStateForStaff = useCallback((monthKey) => {
+    const savedState = monthStateForStaff[monthKey];
+    if (savedState) {
+      // Khôi phục state đã lưu
+      setSelectedShiftFiltersStaff(savedState.shiftFilters || []);
+      setSelectedSlotsForReplacement(savedState.slots || []);
+      return true;
+    }
+    // Không có state đã lưu → reset về mặc định
+    setSelectedShiftFiltersStaff([]);
+    setSelectedSlotsForReplacement([]);
+    return false;
+  }, [monthStateForStaff]);
 
   const toggleSingleSlotSelection = useCallback((dateObj, shiftName, slots, slotId) => {
     if (!slotId) return;
@@ -1271,6 +1270,10 @@ const StaffAssignmentUnified = () => {
     setCurrentPageForStaff(0); // Reset về tháng hiện tại
     setSelectedSlotsForReplacement([]); // Clear selections
     setSelectedShiftFiltersStaff([]); // Reset shift filters
+    
+    // ⭐ Reset month state khi chọn nhân sự mới
+    setMonthStateForStaff({});
+    
     await fetchStaffCalendar(staff._id, staff.assignmentRole || staff.role, 0);
   };
 
@@ -1288,23 +1291,18 @@ const StaffAssignmentUnified = () => {
       const params = {
         viewType: 'month',
         page: 0,
-        startDate: startDate.format('YYYY-MM-DD')
+        startDate: startDate.format('YYYY-MM-DD'),
+        futureOnly: true  // ⭐ Only fetch future slots for staff assignment
       };
-      
-      console.log('🔍 Fetching staff calendar (monthly):', { staffId, role, params });
       
       let response;
       if (role === 'dentist' || role === 'doctor') {
-        console.log('📞 Calling getDentistCalendar...');
         response = await slotService.getDentistCalendar(staffId, params);
       } else if (role === 'nurse') {
-        console.log('📞 Calling getNurseCalendar...');
         response = await slotService.getNurseCalendar(staffId, params);
       } else {
         throw new Error(`Invalid role: ${role}. Must be dentist, doctor, or nurse.`);
       }
-      
-      console.log('📅 Staff calendar response:', response);
       
       if (!response || !response.success) {
         throw new Error(response?.message || 'Không thể tải lịch làm việc');
@@ -1339,10 +1337,7 @@ const StaffAssignmentUnified = () => {
       if (shiftNames.length > 0) {
         setAvailableShiftKeysStaff(shiftNames);
         setSelectedShiftFiltersStaff([]); // DON'T auto-select - let user choose
-        console.log('✅ Staff calendar loaded. Available shifts:', shiftNames);
-        console.log('📊 Total days with schedule:', normalizedData.periods[0]?.totalDays || 0);
       } else {
-        console.warn('⚠️ No shifts found in calendar data');
         toast.warning('Nhân sự này chưa có lịch làm việc trong tháng này');
         setAvailableShiftKeysStaff([]);
         setSelectedShiftFiltersStaff([]);
@@ -1362,8 +1357,18 @@ const StaffAssignmentUnified = () => {
   // Month navigation for staff calendar (tương tự room calendar)
   const goToPreviousMonthForStaff = () => {
     if (currentPageForStaff > 0) {
+      // ⭐ Lưu state của tháng hiện tại trước khi chuyển
+      const currentMonthKey = dayjs().add(currentPageForStaff, 'month').format('YYYY-MM');
+      saveMonthStateForStaff(currentMonthKey);
+      
       const targetPage = currentPageForStaff - 1;
+      const targetMonthKey = dayjs().add(targetPage, 'month').format('YYYY-MM');
+      
       setCurrentPageForStaff(targetPage);
+      
+      // ⭐ Khôi phục state của tháng mới (nếu có)
+      restoreMonthStateForStaff(targetMonthKey);
+      
       if (selectedStaffForReplacement) {
         fetchStaffCalendar(
           selectedStaffForReplacement._id,
@@ -1375,8 +1380,18 @@ const StaffAssignmentUnified = () => {
   };
 
   const goToNextMonthForStaff = () => {
+    // ⭐ Lưu state của tháng hiện tại trước khi chuyển
+    const currentMonthKey = dayjs().add(currentPageForStaff, 'month').format('YYYY-MM');
+    saveMonthStateForStaff(currentMonthKey);
+    
     const targetPage = currentPageForStaff + 1;
+    const targetMonthKey = dayjs().add(targetPage, 'month').format('YYYY-MM');
+    
     setCurrentPageForStaff(targetPage);
+    
+    // ⭐ Khôi phục state của tháng mới (nếu có)
+    restoreMonthStateForStaff(targetMonthKey);
+    
     if (selectedStaffForReplacement) {
       fetchStaffCalendar(
         selectedStaffForReplacement._id,
@@ -1388,12 +1403,21 @@ const StaffAssignmentUnified = () => {
 
   const goToSpecificMonthForStaff = (date) => {
     if (!date) return;
+    
+    // ⭐ Lưu state của tháng hiện tại trước khi chuyển
+    const currentMonthKey = dayjs().add(currentPageForStaff, 'month').format('YYYY-MM');
+    saveMonthStateForStaff(currentMonthKey);
+    
     const now = dayjs().startOf('month');
     const targetMonth = dayjs(date).startOf('month');
     const monthDiff = targetMonth.diff(now, 'month');
+    const targetMonthKey = targetMonth.format('YYYY-MM');
     
     setCurrentPageForStaff(monthDiff);
     setCurrentMonthForStaff(targetMonth);
+    
+    // ⭐ Khôi phục state của tháng mới (nếu có)
+    restoreMonthStateForStaff(targetMonthKey);
     
     if (selectedStaffForReplacement) {
       fetchStaffCalendar(
@@ -1477,15 +1501,11 @@ const StaffAssignmentUnified = () => {
     const dateStr = date.format('YYYY-MM-DD');
     const cacheKey = createSlotKeyForStaff(dateStr, shiftName);
     
-    console.log('🔍 Fetching slot details for staff:', { dateStr, shiftName, cacheKey });
-    
     if (slotDetailsCacheStaff[cacheKey]) {
-      console.log('✅ Found in cache:', slotDetailsCacheStaff[cacheKey]);
       return normalizeSlotList(slotDetailsCacheStaff[cacheKey]);
     }
     
     if (shiftData?.slots && Array.isArray(shiftData.slots) && shiftData.slots.length > 0) {
-      console.log('✅ Found slots in shiftData:', shiftData.slots);
       const normalized = normalizeSlotList(shiftData.slots);
       setSlotDetailsCacheStaff(prev => ({ ...prev, [cacheKey]: normalized }));
       return normalized;
@@ -1499,37 +1519,26 @@ const StaffAssignmentUnified = () => {
       };
       
       const role = selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role;
-      console.log('📞 Calling API to fetch slots:', { 
-        staffId: selectedStaffForReplacement._id, 
-        role, 
-        params 
-      });
       
       let response;
       if (role === 'dentist' || role === 'doctor') {
-        response = await slotService.getDentistSlots(selectedStaffForReplacement._id, params);
+        response = await slotService.getDentistSlotsFuture(selectedStaffForReplacement._id, params);
       } else if (role === 'nurse') {
-        response = await slotService.getNurseSlots(selectedStaffForReplacement._id, params);
+        response = await slotService.getNurseSlotsFuture(selectedStaffForReplacement._id, params);
       } else {
         console.error('❌ Invalid role:', role);
         return [];
       }
       
-      console.log('📦 API Response:', response);
-      
       if (response?.success && response?.data?.slots) {
         const normalized = normalizeSlotList(response.data.slots);
-        console.log('✅ Normalized slots:', normalized);
         setSlotDetailsCacheStaff(prev => ({ ...prev, [cacheKey]: normalized }));
         return normalized;
       } else if (response?.data?.slots) {
         // Backend might return data directly without success wrapper
         const normalized = normalizeSlotList(response.data.slots);
-        console.log('✅ Normalized slots (direct data):', normalized);
         setSlotDetailsCacheStaff(prev => ({ ...prev, [cacheKey]: normalized }));
         return normalized;
-      } else {
-        console.warn('⚠️ No slots in response or response failed:', response);
       }
     } catch (error) {
       console.error('❌ Error fetching staff slot details:', error);
@@ -1573,16 +1582,6 @@ const StaffAssignmentUnified = () => {
   // Toggle entire shift for staff
   const handleToggleEntireShiftForStaff = async (date, shiftName, shiftData, shiftEndTime) => {
     const dateStr = date.format('YYYY-MM-DD');
-    const now = dayjs();
-    
-    // If no endTime provided, check date only
-    const isPast = shiftEndTime 
-      ? dayjs(`${dateStr} ${shiftEndTime}`, 'YYYY-MM-DD HH:mm').isBefore(now)
-      : date.isBefore(now, 'day');
-    
-    if (isPast) {
-      return;
-    }
 
     const cacheKey = createSlotKeyForStaff(dateStr, shiftName);
     let slots = slotDetailsCacheStaff[cacheKey];
@@ -1699,9 +1698,6 @@ const StaffAssignmentUnified = () => {
         const hasSlots = (shiftData?.totalSlots > 0);
         if (!hasSlots) return;
 
-        // Check if past - without endTime, check date only
-        if (date.isBefore(now, 'day')) return;
-
         const slotKey = `${dateStr}-${shiftName}`;
         const totalSlots = shiftData?.totalSlots || 0;
         slots.push({
@@ -1744,8 +1740,28 @@ const StaffAssignmentUnified = () => {
 
   // Calculate total selected slot count for staff
   const totalSelectedSlotCountForStaff = useMemo(() => {
-    return selectedSlotsForReplacement.reduce((sum, entry) => sum + (entry.slotIds?.length || 0), 0);
-  }, [selectedSlotsForReplacement]);
+    let totalCount = 0;
+    
+    // ⭐ Tính tổng slots từ TẤT CẢ CÁC THÁNG (bao gồm tháng hiện tại)
+    // 1. Lấy slots từ các tháng đã lưu trong monthStateForStaff
+    Object.values(monthStateForStaff).forEach(monthState => {
+      if (monthState?.slots && Array.isArray(monthState.slots)) {
+        monthState.slots.forEach(entry => {
+          totalCount += (entry.slotIds?.length || 0);
+        });
+      }
+    });
+    
+    // 2. Thêm slots của tháng hiện tại (nếu chưa được lưu vào monthStateForStaff)
+    const currentMonthKey = dayjs().add(currentPageForStaff, 'month').format('YYYY-MM');
+    if (!monthStateForStaff[currentMonthKey] && selectedSlotsForReplacement.length > 0) {
+      selectedSlotsForReplacement.forEach(entry => {
+        totalCount += (entry.slotIds?.length || 0);
+      });
+    }
+    
+    return totalCount;
+  }, [selectedSlotsForReplacement, monthStateForStaff, currentPageForStaff]);
 
   // ⭐ Auto-load replacement staff when slots are selected
   useEffect(() => {
@@ -1772,8 +1788,9 @@ const StaffAssignmentUnified = () => {
   const fetchReplacementStaff = async () => {
     console.log('🔄 fetchReplacementStaff START');
     
-    if (selectedSlotsForReplacement.length === 0) {
-      console.log('⚠️ No slots selected for replacement');
+    // ⭐ Check total slots from ALL months instead of just current month
+    if (totalSelectedSlotCountForStaff === 0) {
+      console.log('⚠️ No slots selected for replacement (checked all months)');
       toast.warning('Vui lòng chọn ít nhất 1 slot để thay thế');
       return;
     }
@@ -1781,10 +1798,27 @@ const StaffAssignmentUnified = () => {
     console.log('🔄 Setting loadingReplacementStaff = TRUE');
     setLoadingReplacementStaff(true);
     try {
-      // Build slot details from selected slots (similar to proceedToAssignStaff)
+      // ⭐ Build slot details from ALL months in monthStateForStaff
       const selectedDetails = [];
       
-      selectedSlotsForReplacement.forEach(entry => {
+      // Collect all slot entries from saved months
+      const allSlotEntries = [];
+      
+      Object.values(monthStateForStaff).forEach(monthState => {
+        if (monthState?.slots && Array.isArray(monthState.slots)) {
+          allSlotEntries.push(...monthState.slots);
+        }
+      });
+      
+      // Add current month if not saved
+      const currentMonthKey = dayjs().add(currentPageForStaff, 'month').format('YYYY-MM');
+      if (!monthStateForStaff[currentMonthKey] && selectedSlotsForReplacement.length > 0) {
+        allSlotEntries.push(...selectedSlotsForReplacement);
+      }
+      
+      console.log('📊 Processing slot entries from ALL months:', allSlotEntries.length);
+      
+      allSlotEntries.forEach(entry => {
         const slotKey = createSlotKeyForStaff(entry.date, entry.shiftName);
         const slotIdSet = new Set(entry.slotIds || []);
         if (slotIdSet.size === 0) return;
@@ -2094,8 +2128,34 @@ const StaffAssignmentUnified = () => {
     }
     
     try {
-      // Extract all slot IDs from selected slots
-      const allSlotIds = selectedSlotsForReplacement.flatMap(entry => entry.slotIds || []);
+      // ⭐ Extract all slot IDs from ALL months in monthStateForStaff
+      const slotIdSet = new Set();
+      
+      // Collect from saved months
+      Object.values(monthStateForStaff).forEach(monthState => {
+        if (monthState?.slots && Array.isArray(monthState.slots)) {
+          monthState.slots.forEach(entry => {
+            (entry.slotIds || []).forEach(id => {
+              if (id) slotIdSet.add(id);
+            });
+          });
+        }
+      });
+      
+      // Add current month if not saved
+      const currentMonthKey = dayjs().add(currentPageForStaff, 'month').format('YYYY-MM');
+      if (!monthStateForStaff[currentMonthKey] && selectedSlotsForReplacement.length > 0) {
+        selectedSlotsForReplacement.forEach(entry => {
+          (entry.slotIds || []).forEach(id => {
+            if (id) slotIdSet.add(id);
+          });
+        });
+      }
+      
+      const allSlotIds = Array.from(slotIdSet);
+      
+      console.log('🎯 Collected slot IDs from ALL months:', allSlotIds.length);
+      console.log('📊 Total months processed:', Object.keys(monthStateForStaff).length);
       
       if (allSlotIds.length === 0) {
         toast.warning('Không có slot nào được chọn');
@@ -2132,10 +2192,14 @@ const StaffAssignmentUnified = () => {
           currentPageForStaff
         );
         
-        // Clear selections
+        // ⭐ Reset ALL selections (including month state and shift filters)
+        setMonthStateForStaff({}); // Clear all month states
+        setSelectedShiftFiltersStaff([]); // Uncheck all shift checkboxes
         setSelectedSlotsForReplacement([]);
         setSelectedReplacementStaff(null);
         setReplacementStaffList([]);
+        
+        console.log('✅ All replacement selections cleared');
       } else {
         throw new Error(response?.message || 'Không thể thay thế nhân sự');
       }
@@ -2152,6 +2216,11 @@ const StaffAssignmentUnified = () => {
     setShowAssignmentModal(true);
     setCurrentPageForRoom(0); // Reset to current month
     setSelectedSlotsForAssignment([]); // Clear selections
+    
+    // ⭐ Reset month state khi chọn phòng mới
+    setMonthStateForRoom({});
+    setSelectedShiftFilters([]);
+    
     setStaffList([]);
     setSelectedDentists([]);
     setSelectedNurses([]);
@@ -2177,19 +2246,20 @@ const StaffAssignmentUnified = () => {
       const params = {
         viewType: 'month', // Đổi sang month
         page: 0,
-        startDate: startDate.format('YYYY-MM-DD')
+        startDate: startDate.format('YYYY-MM-DD'),
+        futureOnly: true  // ⭐ Only fetch future slots for staff assignment
       };
       
       if (subRoomId) {
         params.subRoomId = subRoomId;
       }
       
-      console.log('🔍 Fetching room calendar (monthly):', { roomId, params, currentPage: currentPageForRoom });
+      console.log('🔍 Fetching room calendar (monthly, FUTURE only):', { roomId, params, currentPage: currentPageForRoom });
       
       const response = await slotService.getRoomCalendar(roomId, params);
       
-      console.log('📅 Room calendar response:', response);
-      console.log('📊 Days count:', response?.data?.periods?.[0]?.days?.length);
+      // console.log('📅 Room calendar response:', response);
+      // console.log('📊 Days count:', response?.data?.periods?.[0]?.days?.length);
       
       // Debug: Check each day's shifts
       const normalizedData = {
@@ -2206,8 +2276,8 @@ const StaffAssignmentUnified = () => {
           return hasMorning || hasAfternoon || hasEvening;
         });
         
-        console.log('📋 Days with slots:', daysWithSlots.length);
-        console.log('🔍 Shift distribution:');
+        // console.log('📋 Days with slots:', daysWithSlots.length);
+        // console.log('🔍 Shift distribution:');
         
         let morningCount = 0, afternoonCount = 0, eveningCount = 0;
         normalizedData.periods[0].days.forEach(day => {
@@ -2254,8 +2324,18 @@ const StaffAssignmentUnified = () => {
   const goToPreviousMonthForRoom = () => {
     // Chỉ cho phép quay lại nếu không ở tháng hiện tại
     if (currentPageForRoom > 0) {
+      // ⭐ Lưu state của tháng hiện tại trước khi chuyển
+      const currentMonthKey = dayjs().add(currentPageForRoom, 'month').format('YYYY-MM');
+      saveMonthStateForRoom(currentMonthKey);
+      
       const targetPage = currentPageForRoom - 1;
+      const targetMonthKey = dayjs().add(targetPage, 'month').format('YYYY-MM');
+      
       setCurrentPageForRoom(targetPage);
+      
+      // ⭐ Khôi phục state của tháng mới (nếu có)
+      restoreMonthStateForRoom(targetMonthKey);
+      
       if (selectedRoom) {
         fetchRoomCalendar(selectedRoom._id, selectedSubRoom?._id, targetPage);
       }
@@ -2263,8 +2343,18 @@ const StaffAssignmentUnified = () => {
   };
 
   const goToNextMonthForRoom = () => {
+    // ⭐ Lưu state của tháng hiện tại trước khi chuyển
+    const currentMonthKey = dayjs().add(currentPageForRoom, 'month').format('YYYY-MM');
+    saveMonthStateForRoom(currentMonthKey);
+    
     const targetPage = currentPageForRoom + 1;
+    const targetMonthKey = dayjs().add(targetPage, 'month').format('YYYY-MM');
+    
     setCurrentPageForRoom(targetPage);
+    
+    // ⭐ Khôi phục state của tháng mới (nếu có)
+    restoreMonthStateForRoom(targetMonthKey);
+    
     if (selectedRoom) {
       fetchRoomCalendar(selectedRoom._id, selectedSubRoom?._id, targetPage);
     }
@@ -2273,14 +2363,23 @@ const StaffAssignmentUnified = () => {
   // Jump to specific month for room calendar
   const goToSpecificMonthForRoom = (date) => {
     if (!date) return;
+    
+    // ⭐ Lưu state của tháng hiện tại trước khi chuyển
+    const currentMonthKey = dayjs().add(currentPageForRoom, 'month').format('YYYY-MM');
+    saveMonthStateForRoom(currentMonthKey);
+    
     const now = dayjs().startOf('month');
     const targetMonth = dayjs(date).startOf('month');
     
     // Calculate page offset from current month
     const monthDiff = targetMonth.diff(now, 'month');
+    const targetMonthKey = targetMonth.format('YYYY-MM');
     
     setCurrentPageForRoom(monthDiff);
     setCurrentMonthForRoom(targetMonth);
+    
+    // ⭐ Khôi phục state của tháng mới (nếu có)
+    restoreMonthStateForRoom(targetMonthKey);
     
     if (selectedRoom) {
       fetchRoomCalendar(selectedRoom._id, selectedSubRoom?._id, monthDiff);
@@ -2304,7 +2403,7 @@ const StaffAssignmentUnified = () => {
       return normalized;
     }
     
-    // Otherwise fetch from API
+    // Otherwise fetch from API - use FUTURE API for staff assignment
     try {
       const params = {
         date: dateStr,
@@ -2315,9 +2414,9 @@ const StaffAssignmentUnified = () => {
         params.subRoomId = selectedSubRoom._id;
       }
       
-      const response = await slotService.getSlotsByDate(selectedRoom._id, params);
+      const response = await slotService.getSlotsByDateFuture(selectedRoom._id, params);
       
-      console.log('📊 Slot details API response:', response);
+      console.log('📊 FUTURE Slot details API response:', response);
       console.log('📊 Slots array:', response?.data?.slots);
       
       if (response?.success && response?.data?.slots) {
@@ -2329,7 +2428,7 @@ const StaffAssignmentUnified = () => {
       
       return [];
     } catch (error) {
-      console.error('Error fetching slot details:', error);
+      console.error('Error fetching FUTURE slot details:', error);
       return [];
     }
   };
@@ -2449,15 +2548,6 @@ const StaffAssignmentUnified = () => {
     const hasSlots = (shiftData?.slots?.length > 0) || (shiftData?.totalSlots > 0);
     if (!hasSlots) return;
     
-    // Check if slot is in the past (Vietnam timezone)
-    const now = dayjs(); // Current time in Vietnam
-    const slotDateTime = dayjs(`${date.format('YYYY-MM-DD')} ${shiftEndTime}`, 'YYYY-MM-DD HH:mm');
-    
-    if (slotDateTime.isBefore(now)) {
-      toast.warning('Không thể chọn lịch đã qua');
-      return;
-    }
-    
     // Open modal for individual slot selection
     handleOpenSlotModal(date, shiftName, shiftData, shiftEndTime);
   };
@@ -2466,14 +2556,6 @@ const StaffAssignmentUnified = () => {
   const handleToggleEntireShift = async (date, shiftName, shiftData, shiftEndTime) => {
     const hasSlots = (shiftData?.slots?.length > 0) || (shiftData?.totalSlots > 0);
     if (!hasSlots) return;
-    
-    // Check if in the past
-    const now = dayjs();
-    const slotDateTime = dayjs(`${date.format('YYYY-MM-DD')} ${shiftEndTime}`, 'YYYY-MM-DD HH:mm');
-    if (slotDateTime.isBefore(now)) {
-      toast.warning('Không thể chọn lịch đã qua');
-      return;
-    }
 
     const dateStr = date.format('YYYY-MM-DD');
     
@@ -2510,7 +2592,6 @@ const StaffAssignmentUnified = () => {
       return { slots: [], keys: new Set(), total: 0, fullySelected: 0, partiallySelected: 0, metaByKey: new Map() };
     }
 
-    const now = dayjs();
     const startOfMonth = (currentMonthForRoom || (period.startDate ? dayjs(period.startDate) : dayjs())).startOf('month');
     const daysInMonth = startOfMonth.daysInMonth();
     const dayMap = new Map();
@@ -2538,19 +2619,17 @@ const StaffAssignmentUnified = () => {
         const shiftMeta = roomCalendarData?.shiftOverview?.[shiftName];
         if (!shiftMeta) return;
 
-        const slotDateTime = dayjs(`${dateStr} ${shiftMeta.endTime}`, 'YYYY-MM-DD HH:mm');
-        if (slotDateTime.isAfter(now)) {
-          const slotKey = `${dateStr}-${shiftName}`;
-          const totalSlots = shiftData?.totalSlots || shiftData?.slots?.length || 0;
-          slots.push({
-            slotKey,
-            date: dateStr,
-            shiftName,
-            shiftData,
-            totalSlots
-          });
-          metaByKey.set(slotKey, { totalSlots, shiftData });
-        }
+        // Backend already filters for future slots, so we don't need to check here
+        const slotKey = `${dateStr}-${shiftName}`;
+        const totalSlots = shiftData?.totalSlots || shiftData?.slots?.length || 0;
+        slots.push({
+          slotKey,
+          date: dateStr,
+          shiftName,
+          shiftData,
+          totalSlots
+        });
+        metaByKey.set(slotKey, { totalSlots, shiftData });
       });
     }
 
@@ -2642,7 +2721,24 @@ const StaffAssignmentUnified = () => {
 
     const selectedDetails = [];
 
-    selectedSlotsForAssignment.forEach(entry => {
+    // ⭐ Collect slot entries from ALL months in monthStateForRoom
+    const allSlotEntries = [];
+    
+    Object.values(monthStateForRoom).forEach(monthState => {
+      if (monthState?.slots && Array.isArray(monthState.slots)) {
+        allSlotEntries.push(...monthState.slots);
+      }
+    });
+    
+    // Add current month if not saved
+    const currentMonthKey = dayjs().add(currentPageForRoom, 'month').format('YYYY-MM');
+    if (!monthStateForRoom[currentMonthKey] && selectedSlotsForAssignment.length > 0) {
+      allSlotEntries.push(...selectedSlotsForAssignment);
+    }
+    
+    console.log('📊 Processing slot entries from ALL months for assignment:', allSlotEntries.length);
+
+    allSlotEntries.forEach(entry => {
       const slotKey = createSlotKey(entry.date, entry.shiftName);
       const slotIdSet = new Set(entry.slotIds || []);
       if (slotIdSet.size === 0) return;
@@ -2796,18 +2892,40 @@ const StaffAssignmentUnified = () => {
     
     try {
       const slotIdSet = new Set();
-      selectedSlotsForAssignment.forEach(slot => {
-        console.log('🔍 Processing slot entry:', slot);
-        (slot.slotIds || []).forEach(id => {
-          if (id) {
-            console.log('  ➕ Adding slot ID:', id);
-            slotIdSet.add(id);
-          }
-        });
+      
+      // ⭐ Collect slots from ALL months in monthStateForRoom
+      Object.values(monthStateForRoom).forEach(monthState => {
+        if (monthState?.slots && Array.isArray(monthState.slots)) {
+          monthState.slots.forEach(slot => {
+            console.log('🔍 Processing slot entry from saved month:', slot);
+            (slot.slotIds || []).forEach(id => {
+              if (id) {
+                console.log('  ➕ Adding slot ID:', id);
+                slotIdSet.add(id);
+              }
+            });
+          });
+        }
       });
+      
+      // ⭐ Add current month slots if not yet saved
+      const currentMonthKey = dayjs().add(currentPageForRoom, 'month').format('YYYY-MM');
+      if (!monthStateForRoom[currentMonthKey] && selectedSlotsForAssignment.length > 0) {
+        selectedSlotsForAssignment.forEach(slot => {
+          console.log('🔍 Processing slot entry from current month:', slot);
+          (slot.slotIds || []).forEach(id => {
+            if (id) {
+              console.log('  ➕ Adding slot ID:', id);
+              slotIdSet.add(id);
+            }
+          });
+        });
+      }
+      
       const slotIds = Array.from(slotIdSet);
       
-      console.log('🎯 Final extracted slot IDs:', slotIds);
+      console.log('🎯 Final extracted slot IDs from ALL months:', slotIds);
+      console.log('📊 Total months processed:', Object.keys(monthStateForRoom).length);
       
       if (slotIds.length === 0) {
         toast.error('Không tìm thấy slot ID để phân công');
@@ -2846,11 +2964,15 @@ const StaffAssignmentUnified = () => {
         await fetchRoomCalendar(selectedRoom._id, selectedSubRoom?._id);
         console.log('✅ Calendar data refreshed');
         
-        // Clear selections
+        // ⭐ Reset ALL selections (including month state and shift filters)
+        setMonthStateForRoom({}); // Clear all month states
+        setSelectedShiftFilters([]); // Uncheck all shift checkboxes
         setSelectedSlotsForAssignment([]);
         setStaffList([]);
         setSelectedDentists([]);
         setSelectedNurses([]);
+        
+        console.log('✅ All selections cleared');
       } else {
         toast.error(response.message || 'Phân công thất bại');
       }
@@ -3332,18 +3454,13 @@ const StaffAssignmentUnified = () => {
                                   const hasSelectedSlots = selectedSlotCount > 0;
                                   const hasSlots = (shiftData?.slots?.length > 0) || (shiftData?.totalSlots > 0);
                                   
-                                  const now = dayjs();
-                                  const slotDateTime = dayjs(`${dateStr} ${shift.endTime}`, 'YYYY-MM-DD HH:mm');
-                                  const isPast = slotDateTime.isBefore(now);
-                                  
                                   const dentistAssigned = shiftData?.staffStats?.mostFrequentDentist;
                                   const nurseAssigned = shiftData?.staffStats?.mostFrequentNurse;
                                   
+                                  // Backend already filters out past slots, no need to check here
                                   let bgColor = '#f5f5f5';
                                   if (hasSlots) {
-                                    if (isPast) {
-                                      bgColor = '#fafafa';
-                                    } else if (hasSelectedSlots) {
+                                    if (hasSelectedSlots) {
                                       bgColor = '#e6f7ff'; // Highlight if has selected slots
                                     } else {
                                       bgColor = '#fff';
@@ -3372,16 +3489,15 @@ const StaffAssignmentUnified = () => {
                                         padding: '8px', 
                                         border: '1px solid #d9d9d9',
                                         backgroundColor: bgColor,
-                                        cursor: hasSlots && !isPast ? 'pointer' : 'not-allowed',
-                                        verticalAlign: 'top',
-                                        opacity: isPast && hasSlots ? 0.5 : 1
+                                        cursor: hasSlots ? 'pointer' : 'not-allowed',
+                                        verticalAlign: 'top'
                                       }}
                                       onClick={(e) => {
                                         // Don't trigger if clicking on checkbox
                                         if (e.target.type === 'checkbox' || e.target.closest('.ant-checkbox-wrapper')) {
                                           return;
                                         }
-                                        if (hasSlots && !isPast) {
+                                        if (hasSlots) {
                                           handleSlotSelectionForAssignment(date, shift.name, shiftData, shift.endTime);
                                         }
                                       }}
@@ -3391,13 +3507,12 @@ const StaffAssignmentUnified = () => {
                                           <Checkbox 
                                             checked={isEntireShiftSelected}
                                             indeterminate={hasPartialSelection}
-                                            disabled={isPast}
                                             onClick={(e) => e.stopPropagation()}
-                                            onChange={() => !isPast && handleToggleEntireShift(date, shift.name, shiftData, shift.endTime)}
+                                            onChange={() => handleToggleEntireShift(date, shift.name, shiftData, shift.endTime)}
                                           />
                                           
                                           <Popover
-                                            trigger={isPast ? [] : ['hover', 'click']}
+                                            trigger={['hover', 'click']}
                                             placement="right"
                                             overlayStyle={{ maxWidth: 360 }}
                                             content={(
@@ -3411,9 +3526,6 @@ const StaffAssignmentUnified = () => {
                                               />
                                             )}
                                             onOpenChange={async (visible) => {
-                                              if (isPast) {
-                                                return;
-                                              }
                                               if (visible && hasSlots && slotDetailsForPopover.length === 0) {
                                                 setQuickSelectLoadingKey(cacheKey);
                                                 await fetchSlotDetails(date, shift.name, shiftData);
@@ -3424,8 +3536,8 @@ const StaffAssignmentUnified = () => {
                                               }
                                             }}
                                           >
-                                            <div style={{ cursor: isPast ? 'not-allowed' : 'pointer' }}>
-                                              <Tag color={isPast ? 'default' : 'cyan'} size="small">
+                                            <div style={{ cursor: 'pointer' }}>
+                                              <Tag color="cyan" size="small">
                                                 {totalSlotsInShift || slotCount} slot
                                               </Tag>
                                               <div style={{ fontSize: '10px', marginTop: 2 }}>
@@ -3449,17 +3561,11 @@ const StaffAssignmentUnified = () => {
                                                   PC: {coverageNumerator}/{coverageDenominator || totalSlotsInShift || slotCount}
                                                 </Text>
                                               </div>
-                                              {!isPast && (
-                                                <div style={{ fontSize: '10px', color: '#1890ff', marginTop: 4 }}>
-                                                  Hover hoặc click để chọn slot
-                                                </div>
-                                              )}
+                                              <div style={{ fontSize: '10px', color: '#1890ff', marginTop: 4 }}>
+                                                Hover hoặc click để chọn slot
+                                              </div>
                                             </div>
                                           </Popover>
-                                          
-                                          {isPast && (
-                                            <Tag color="red" size="small">Đã qua</Tag>
-                                          )}
                                           
                                           
                                         </Space>
@@ -3494,7 +3600,7 @@ const StaffAssignmentUnified = () => {
                     
                     {/* Selected Slots Info */}
                     <Alert
-                      message="Thông tin các ca đã chọn"
+                      message="Thông tin các ca đã chọn (tất cả các tháng)"
                       description={
                         <div>
                           <Space size={[8, 8]} wrap style={{ marginBottom: 8 }}>
@@ -3505,7 +3611,7 @@ const StaffAssignmentUnified = () => {
                           </Space>
                           <Text strong>Tổng slot: {totalSelectedSlotCount}</Text>
                           <div style={{ fontSize: 12, color: '#999', margin: '4px 0 8px' }}>
-                            Bao gồm {selectedSlotsForAssignment.length} ca trong các ngày/khung giờ sau:
+                            Bao gồm {selectedSlotsForAssignment.length} ca trong tháng này. Tổng từ tất cả các tháng: {totalSelectedSlotCount} slot
                           </div>
                           <div style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto' }}>
                             {selectedSlotsForAssignment.map((slot, index) => {
@@ -4536,15 +4642,10 @@ const StaffAssignmentUnified = () => {
                                             // Backend returns totalSlots, not slots array
                                             const hasSlots = (shiftData?.totalSlots > 0);
                                             
-                                            const now = dayjs();
-                                            // Can't check exact time without endTime, so check date only
-                                            const isPast = date.isBefore(now, 'day');
-                                            
+                                            // Backend already filters out past slots, no need to check here
                                             let bgColor = '#f5f5f5';
                                             if (hasSlots) {
-                                              if (isPast) {
-                                                bgColor = '#fafafa';
-                                              } else if (hasSelectedSlots) {
+                                              if (hasSelectedSlots) {
                                                 bgColor = '#e6f7ff';
                                               } else {
                                                 bgColor = '#fff';
@@ -4568,9 +4669,8 @@ const StaffAssignmentUnified = () => {
                                                   padding: '8px', 
                                                   border: '1px solid #d9d9d9',
                                                   backgroundColor: bgColor,
-                                                  cursor: hasSlots && !isPast ? 'pointer' : 'not-allowed',
-                                                  verticalAlign: 'top',
-                                                  opacity: isPast && hasSlots ? 0.5 : 1
+                                                  cursor: hasSlots ? 'pointer' : 'not-allowed',
+                                                  verticalAlign: 'top'
                                                 }}
                                                 onClick={(e) => {
                                                   // Don't trigger if clicking on checkbox or inside Popover
@@ -4580,7 +4680,7 @@ const StaffAssignmentUnified = () => {
                                                     return;
                                                   }
                                                   // Click to open modal for slot selection
-                                                  if (hasSlots && !isPast) {
+                                                  if (hasSlots) {
                                                     handleOpenSlotModalForStaff(date, shift.name, shiftData, shift.endTime);
                                                   }
                                                 }}
@@ -4590,13 +4690,12 @@ const StaffAssignmentUnified = () => {
                                                     <Checkbox 
                                                       checked={isEntireShiftSelected}
                                                       indeterminate={hasPartialSelection}
-                                                      disabled={isPast}
                                                       onClick={(e) => e.stopPropagation()}
-                                                      onChange={() => !isPast && handleToggleEntireShiftForStaff(date, shift.name, shiftData, shift.endTime)}
+                                                      onChange={() => handleToggleEntireShiftForStaff(date, shift.name, shiftData, shift.endTime)}
                                                     />
                                                     
                                                     <Popover
-                                                      trigger={isPast ? [] : ['hover', 'click']}
+                                                      trigger={['hover', 'click']}
                                                       placement="right"
                                                       overlayStyle={{ maxWidth: 360 }}
                                                       content={(
@@ -4610,7 +4709,6 @@ const StaffAssignmentUnified = () => {
                                                         />
                                                       )}
                                                       onOpenChange={async (visible) => {
-                                                        if (isPast) return;
                                                         if (visible && hasSlots && slotsForInfo.length === 0) {
                                                           setQuickSelectLoadingKeyStaff(cacheKey);
                                                           await fetchSlotDetailsForStaff(date, shift.name, shiftData);
@@ -4621,8 +4719,8 @@ const StaffAssignmentUnified = () => {
                                                         }
                                                       }}
                                                     >
-                                                      <div style={{ cursor: isPast ? 'not-allowed' : 'pointer' }}>
-                                                        <Tag color={isPast ? 'default' : 'cyan'} size="small">
+                                                      <div style={{ cursor: 'pointer' }}>
+                                                        <Tag color="cyan" size="small">
                                                           {totalSlotsInShift || slotCount} slot
                                                         </Tag>
                                                         <div style={{ fontSize: '10px', marginTop: 2 }}>
@@ -4634,17 +4732,12 @@ const StaffAssignmentUnified = () => {
                                                             Đã chọn: {selectedSlotCount}/{totalSlotsInShift}
                                                           </Text>
                                                         </div>
-                                                        {!isPast && (
-                                                          <div style={{ fontSize: '10px', color: '#1890ff', marginTop: 4 }}>
-                                                            Hover hoặc click để chọn slot
-                                                          </div>
-                                                        )}
+                                                        <div style={{ fontSize: '10px', color: '#1890ff', marginTop: 4 }}>
+                                                          Hover hoặc click để chọn slot
+                                                        </div>
                                                       </div>
                                                     </Popover>
                                                     
-                                                    {isPast && (
-                                                      <Tag color="red" size="small">Đã qua</Tag>
-                                                    )}
                                                     
                                                     {shiftData?.mostFrequentRoom && (
                                                       <div style={{ fontSize: '10px', color: '#666', marginTop: 4 }}>
@@ -4685,9 +4778,9 @@ const StaffAssignmentUnified = () => {
                               
                               <Row gutter={16}>
                                 <Col span={12}>
-                                  <Card size="small" title="Thông tin thay thế">
+                                  <Card size="small" title="Thông tin thay thế (tất cả các tháng)">
                                     <Space direction="vertical" style={{ width: '100%' }}>
-                                      <Text><strong>Số slot đã chọn:</strong> {totalSelectedSlotCountForStaff}</Text>
+                                      <Text><strong>Số slot đã chọn:</strong> {totalSelectedSlotCountForStaff} <Text type="secondary">(từ tất cả các tháng)</Text></Text>
                                       <Text><strong>Nhân sự hiện tại:</strong> {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn'}</Text>
                                       <Text><strong>Vai trò:</strong> <Tag color={getRoleTagColor(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}>
                                         {getRoleLabel(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}
