@@ -75,8 +75,8 @@ const PublicServiceAddOns = () => {
 
   // Xử lý click vào serviceAddOn
   const handleAddOnClick = (addOn) => {
-    // Có thể mở modal chi tiết hoặc chuyển đến trang đặt lịch
-    console.log('Selected addon:', addOn);
+    // Chuyển đến trang chi tiết dịch vụ
+    navigate(`/services/pl/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(addOn.name)}/detail`);
   };
 
   // Breadcrumb items

@@ -32,6 +32,7 @@ import AddService from './pages/AddService.jsx';
 import EditService from './pages/EditService.jsx';
 import AddServiceAddOn from './pages/AddServiceAddOn.jsx';
 import EditServiceAddOn from './pages/EditServiceAddOn.jsx';
+import PublicServiceAddOnDetail from './pages/PublicServiceAddOnDetail.jsx';
 import PublicServiceAddOns from './pages/PublicServiceAddOns.jsx';
 
 // Schedule Management
@@ -114,6 +115,13 @@ function App() {
            <Route path="/services/pl/:serviceName/addons" element={
              <HomepageLayout>
                <PublicServiceAddOns />
+             </HomepageLayout>
+           } />
+           
+           {/* Public Service AddOn Detail Route */}
+           <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
+             <HomepageLayout>
+               <PublicServiceAddOnDetail />
              </HomepageLayout>
            } />
            
