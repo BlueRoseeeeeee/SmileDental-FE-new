@@ -70,7 +70,7 @@ const Header = () => {
     return services
       .filter(service => service.isActive)
       .map(service => ({
-        key: `/services/pl/${service.name}/addons`,
+        key: `/services/pl/${encodeURIComponent(service.name)}/addons`,
         label: service.name
       }));
   };

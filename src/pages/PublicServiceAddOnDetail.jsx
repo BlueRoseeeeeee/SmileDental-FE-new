@@ -46,14 +46,19 @@ const PublicServiceAddOnDetail = () => {
   const fetchServiceDetails = async () => {
     setLoading(true);
     try {
-      const response = await servicesService.getServices(1, 100);
-      const foundService = response.services?.find(s => s.name === decodeURIComponent(serviceName));
+      // Tìm service theo tên để lấy ID
+      const servicesResponse = await servicesService.getServices(1, 100);
+      const foundService = servicesResponse.services?.find(s => s.name === decodeURIComponent(serviceName));
       
       if (foundService) {
         setService(foundService);
+        
+        // Tìm addOn theo tên để lấy ID
         const foundAddOn = foundService.serviceAddOns?.find(a => a.name === decodeURIComponent(addOnName));
         if (foundAddOn) {
-          setAddOn(foundAddOn);
+          // Sử dụng API chi tiết để lấy thông tin addOn
+          const addOnResponse = await servicesService.getServiceAddOnById(foundService._id, foundAddOn._id);
+          setAddOn(addOnResponse.addOn);
         } else {
           navigate('/');
         }
@@ -184,13 +189,12 @@ const PublicServiceAddOnDetail = () => {
             }}
           >
             <div style={{
-              height: '300px',
+              height: '100%',
               backgroundColor: '#fafafa',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: '8px',
-              marginBottom: '16px'
+              borderRadius: '8px'
             }}>
               <MedicineBoxOutlined 
                 style={{ 
@@ -199,19 +203,6 @@ const PublicServiceAddOnDetail = () => {
                   opacity: 0.6
                 }} 
               />
-            </div>
-            
-            <div style={{ textAlign: 'center' }}>
-              <Tag 
-                color="blue" 
-                style={{ 
-                  fontSize: '14px',
-                  padding: '6px 16px',
-                  borderRadius: '16px'
-                }}
-              >
-                {translateServiceType(service.type)}
-              </Tag>
             </div>
           </Card>
         </Col>
