@@ -162,7 +162,7 @@ const PublicServiceAddOnDetail = () => {
       {/* Back Button */}
       <Button 
         icon={<ArrowLeftOutlined />} 
-        onClick={() => navigate(`/services/pl/${encodeURIComponent(service.name)}/addons`)}
+        onClick={() => navigate(-1)}
         style={{ marginBottom: 24 }}
       >
         Quay lại danh sách
