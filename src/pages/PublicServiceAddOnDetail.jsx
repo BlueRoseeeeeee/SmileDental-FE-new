@@ -327,9 +327,6 @@ const PublicServiceAddOnDetail = () => {
           }}
           bodyStyle={{ padding: '24px' }}
         >
-          <Title level={3} style={{ marginBottom: '16px' }}>
-            Mô tả dịch vụ
-          </Title>
           <div 
             style={{ 
               color: '#666',
