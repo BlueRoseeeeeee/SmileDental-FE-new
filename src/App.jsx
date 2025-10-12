@@ -32,6 +32,7 @@ import AddService from './pages/AddService.jsx';
 import EditService from './pages/EditService.jsx';
 import AddServiceAddOn from './pages/AddServiceAddOn.jsx';
 import EditServiceAddOn from './pages/EditServiceAddOn.jsx';
+import PublicServiceAddOns from './pages/PublicServiceAddOns.jsx';
 
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
@@ -107,7 +108,15 @@ function App() {
           } />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+           <Route path="/forgot-password" element={<ForgotPassword />} />
+           
+           {/* Public Service AddOns Route */}
+           <Route path="/services/pl/:serviceName/addons" element={
+             <HomepageLayout>
+               <PublicServiceAddOns />
+             </HomepageLayout>
+           } />
+           
           
           {/* Protected routes - Dashboard cho người đã đăng nhập */}
           <Route path="/dashboard" element={

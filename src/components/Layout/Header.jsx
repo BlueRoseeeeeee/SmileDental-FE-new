@@ -70,9 +70,8 @@ const Header = () => {
     return services
       .filter(service => service.isActive)
       .map(service => ({
-        key: service._id,
-        label: service.name,
-        onClick: () => navigate('/login')
+        key: `/services/pl/${service.name}/addons`,
+        label: service.name
       }));
   };
 
