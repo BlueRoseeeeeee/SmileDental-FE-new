@@ -1953,16 +1953,28 @@ const StaffAssignmentUnified = () => {
       // ⭐ Lấy lịch từ HIỆN TẠI trở đi để check conflict (không chỉ trong khoảng slot đã chọn)
       const now = dayjs();
       const fiveMinutesLater = now.add(5, 'minute');
-      const fromDateStr = now.format('YYYY-MM-DD');
-      const toDateStr = (maxDate || minDate || dayjs().add(1, 'year')).format('YYYY-MM-DD');
 
-      console.log('📅 Fetching staff schedules for replacement conflict check:', { 
-        fromDateStr, 
-        toDateStr,
-        filterAfter: fiveMinutesLater.format('YYYY-MM-DD HH:mm')
+      console.log(`⚡ Checking conflicts for ${selectedDetails.length} replacement slots using optimized API`);
+
+      // ⚡ STEP 1: Call optimized conflict check API
+      const conflictResponse = await scheduleService.checkConflictsForSlots({
+        slots: selectedDetails.map(d => ({
+          date: d.date,
+          startTime: d.start.toISOString(),
+          endTime: d.end.toISOString(),
+          shiftName: d.shiftName
+        }))
       });
 
-      // Get all staff
+      if (!conflictResponse.success) {
+        toast.error('Không thể kiểm tra xung đột lịch');
+        return;
+      }
+
+      const { conflictingDentists, conflictingNurses, conflictDetails, staffStats } = conflictResponse.data;
+      console.log(`✅ Replacement conflicts found: ${conflictingDentists.length} dentists, ${conflictingNurses.length} nurses`);
+
+      // ⚡ STEP 2: Get all staff
       const response = await userService.getAllStaff(1, 1000);
       
       if (!response.success) {
@@ -1980,69 +1992,34 @@ const StaffAssignmentUnified = () => {
           return staffRole === currentRole && staff._id !== selectedStaffForReplacement._id;
         });
 
-      // Check conflicts for each staff (batch processing)
-      const enrichedStaff = [];
-      const batchSize = 5;
+      // ⚡ STEP 3: Map conflicts to replacement staff (NO LOOP - just Set.has())
+      const enrichedStaff = filteredStaff.map(staff => {
+        const staffId = staff._id;
+        const role = staff.assignmentRole || staff.role;
+        const hasConflict = (role === 'dentist' && conflictingDentists.includes(staffId)) ||
+                           (role === 'nurse' && conflictingNurses.includes(staffId));
 
-      for (let i = 0; i < filteredStaff.length; i += batchSize) {
-        const batch = filteredStaff.slice(i, i + batchSize);
-        const batchResults = await Promise.all(batch.map(async (staff) => {
-          try {
-            const scheduleResponse = await scheduleService.getStaffSchedule({
-              staffId: staff._id,
-              fromDate: fromDateStr,
-              toDate: toDateStr
-            });
+        let conflicts = [];
+        if (hasConflict && conflictDetails[staffId]) {
+          // Filter future conflicts only
+          conflicts = conflictDetails[staffId].filter(entry => {
+            const entryStart = parseDateTimeSafe(
+              entry.dateStr,
+              entry.startDateTime,
+              entry.startTime,
+              null
+            );
+            return entryStart && entryStart.isAfter(fiveMinutesLater);
+          });
+        }
 
-            let scheduleEntries = scheduleResponse?.success
-              ? scheduleResponse?.data?.schedule || []
-              : [];
-
-            // ⭐ Filter schedule entries: only keep slots with startTime > now + 5 minutes
-            scheduleEntries = scheduleEntries.filter(entry => {
-              const entryDate = entry.date || entry.startDate || entry.shiftDate;
-              if (!entryDate) return false;
-              
-              const entryDateStr = entry.dateStr || (entryDate instanceof Date 
-                ? dayjs(entryDate).format('YYYY-MM-DD')
-                : (typeof entryDate === 'string' ? entryDate : dayjs(entryDate).format('YYYY-MM-DD')));
-
-              const entryStart = parseDateTimeSafe(entryDateStr, entry.startDateTime || entry.startTimeISO, entry.startTime, null);
-              
-              if (!entryStart) return false;
-              
-              // Only include if startTime is after now + 5 minutes
-              return entryStart.isAfter(fiveMinutesLater);
-            });
-
-            console.log(`📋 Staff ${staff.displayName}: ${scheduleEntries.length} future slots (filtered)`);
-
-            const conflicts = detectConflictsForStaff(staff, selectedDetails, scheduleEntries);
-
-            console.log(`✅ Staff ${staff.displayName || staff._id} conflict result:`, {
-              totalConflicts: conflicts.length,
-              conflicts: conflicts.slice(0, 3),
-              canAssign: conflicts.length === 0
-            });
-
-            return {
-              ...staff,
-              conflicts,
-              canAssign: conflicts.length === 0
-            };
-          } catch (error) {
-            console.error('Failed to load staff schedule for replacement', error);
-            return {
-              ...staff,
-              conflicts: [],
-              canAssign: true,
-              conflictCheckFailed: true
-            };
-          }
-        }));
-
-        enrichedStaff.push(...batchResults);
-      }
+        return {
+          ...staff,
+          conflicts,
+          canAssign: conflicts.length === 0,
+          assignmentStats: staffStats[staffId] || { total: 0, asDentist: 0, asNurse: 0 }
+        };
+      });
       
       setReplacementStaffList(enrichedStaff);
       setReplacementStaffFilter('all');
@@ -2811,6 +2788,27 @@ const StaffAssignmentUnified = () => {
 
     setLoadingStaff(true);
     try {
+      // ⚡ STEP 1: Call optimized conflict check API
+      console.log(`⚡ Checking conflicts for ${selectedDetails.length} slots using optimized API`);
+      
+      const conflictResponse = await scheduleService.checkConflictsForSlots({
+        slots: selectedDetails.map(d => ({
+          date: d.date,
+          startTime: d.start.toISOString(),
+          endTime: d.end.toISOString(),
+          shiftName: d.shiftName
+        }))
+      });
+
+      if (!conflictResponse.success) {
+        toast.error('Không thể kiểm tra xung đột lịch');
+        return;
+      }
+
+      const { conflictingDentists, conflictingNurses, conflictDetails, staffStats } = conflictResponse.data;
+      console.log(`✅ Conflicts found: ${conflictingDentists.length} dentists, ${conflictingNurses.length} nurses`);
+
+      // ⚡ STEP 2: Get all staff
       const response = await userService.getAllStaff(1, 1000);
 
       if (!response.success) {
@@ -2822,62 +2820,37 @@ const StaffAssignmentUnified = () => {
         .map(normalizeStaffRecord)
         .filter(staff => (staff.assignmentRole === 'dentist' || staff.assignmentRole === 'nurse'));
 
-      const enrichedStaff = [];
-      const batchSize = 5;
+      // ⚡ STEP 3: Map conflicts to staff (NO LOOP - just Set.has())
+      const now = dayjs();
+      const fiveMinutesLater = now.add(5, 'minute');
+      
+      const enrichedStaff = filteredStaff.map(staff => {
+        const staffId = staff._id;
+        const role = staff.assignmentRole || staff.role;
+        const hasConflict = (role === 'dentist' && conflictingDentists.includes(staffId)) ||
+                           (role === 'nurse' && conflictingNurses.includes(staffId));
 
-      for (let i = 0; i < filteredStaff.length; i += batchSize) {
-        const batch = filteredStaff.slice(i, i + batchSize);
-        const batchResults = await Promise.all(batch.map(async (staff) => {
-          try {
-            const scheduleResponse = await scheduleService.getStaffSchedule({
-              staffId: staff._id,
-              fromDate: fromDateStr,
-              toDate: toDateStr
-            });
+        let conflicts = [];
+        if (hasConflict && conflictDetails[staffId]) {
+          // Filter future conflicts only
+          conflicts = conflictDetails[staffId].filter(entry => {
+            const entryStart = parseDateTimeSafe(
+              entry.dateStr,
+              entry.startDateTime,
+              entry.startTime,
+              null
+            );
+            return entryStart && entryStart.isAfter(fiveMinutesLater);
+          });
+        }
 
-            let scheduleEntries = scheduleResponse?.success
-              ? scheduleResponse?.data?.schedule || []
-              : [];
-
-            // ⭐ Filter schedule entries: only keep slots with startTime > now + 5 minutes
-            scheduleEntries = scheduleEntries.filter(entry => {
-              const entryDate = entry.date || entry.startDate || entry.shiftDate;
-              if (!entryDate) return false;
-              
-              const entryDateStr = entry.dateStr || (entryDate instanceof Date 
-                ? dayjs(entryDate).format('YYYY-MM-DD')
-                : (typeof entryDate === 'string' ? entryDate : dayjs(entryDate).format('YYYY-MM-DD')));
-
-              const entryStart = parseDateTimeSafe(entryDateStr, entry.startDateTime || entry.startTimeISO, entry.startTime, null);
-              
-              if (!entryStart) return false;
-              
-              // Only include if startTime is after now + 5 minutes
-              return entryStart.isAfter(fiveMinutesLater);
-            });
-
-            console.log(`📋 Staff ${staff.displayName}: ${scheduleEntries.length} future slots (filtered)`);
-
-            const conflicts = detectConflictsForStaff(staff, selectedDetails, scheduleEntries);
-
-            return {
-              ...staff,
-              conflicts,
-              canAssign: conflicts.length === 0
-            };
-          } catch (error) {
-            console.error('Failed to load staff schedule', error);
-            return {
-              ...staff,
-              conflicts: [],
-              canAssign: true,
-              conflictCheckFailed: true
-            };
-          }
-        }));
-
-        enrichedStaff.push(...batchResults);
-      }
+        return {
+          ...staff,
+          conflicts,
+          canAssign: conflicts.length === 0,
+          assignmentStats: staffStats[staffId] || { total: 0, asDentist: 0, asNurse: 0 }
+        };
+      });
 
       setStaffList(enrichedStaff);
       setDentistConflictFilter('all');
@@ -2885,6 +2858,7 @@ const StaffAssignmentUnified = () => {
       setSelectedDentists(prev => prev.slice(0, maxDentists));
       setSelectedNurses(prev => prev.slice(0, maxNurses));
     } catch (error) {
+      console.error('❌ Error in proceedToAssignStaff:', error);
       toast.error('Lỗi khi tải danh sách nhân sự: ' + error.message);
     } finally {
       setLoadingStaff(false);

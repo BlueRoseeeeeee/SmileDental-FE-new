@@ -200,6 +200,19 @@ const scheduleService = {
     }
   },
 
+  // ⚡ OPTIMIZED: Check conflicts for selected slots (new approach)
+  checkConflictsForSlots: async ({ slots }) => {
+    try {
+      const response = await scheduleApi.post('/schedule/check-conflicts', { slots });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
   // 🆕 Lấy danh sách nhân sự có thể thay thế (với conflict checking)
   getAvailableReplacementStaff: async ({ originalStaffId, role, slots, fromDate }) => {
     try {

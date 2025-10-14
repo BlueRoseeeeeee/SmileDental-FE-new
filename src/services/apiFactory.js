@@ -24,7 +24,7 @@ const MICROSERVICES_CONFIG = {
   },
   schedule: {
     baseURL: import.meta.env.VITE_SCHEDULE_API_URL || 'http://localhost:3005/api',
-    timeout: 10000, 
+    timeout: 20000, 
   }
 };
 
