@@ -2308,17 +2308,17 @@ const StaffAssignmentUnified = () => {
         console.log(`  - Ca Chiều: ${afternoonCount} days have slots`);
         console.log(`  - Ca Tối: ${eveningCount} days have slots`);
         
-        const sampleDay = normalizedData.periods[0].days.find(day => day?.date);
-        if (sampleDay) {
-          console.log('📅 Sample day:', {
-            date: sampleDay.date,
-            shifts: {
-              'Ca Sáng': sampleDay.shifts?.['Ca Sáng'],
-              'Ca Chiều': sampleDay.shifts?.['Ca Chiều'],
-              'Ca Tối': sampleDay.shifts?.['Ca Tối']
-            }
-          });
-        }
+        // const sampleDay = normalizedData.periods[0].days.find(day => day?.date);
+        // if (sampleDay) {
+        //   console.log('📅 Sample day:', {
+        //     date: sampleDay.date,
+        //     shifts: {
+        //       'Ca Sáng': sampleDay.shifts?.['Ca Sáng'],
+        //       'Ca Chiều': sampleDay.shifts?.['Ca Chiều'],
+        //       'Ca Tối': sampleDay.shifts?.['Ca Tối']
+        //     }
+        //   });
+        // }
       }
       
       if (response?.success && response?.data) {
@@ -3086,7 +3086,7 @@ const StaffAssignmentUnified = () => {
               }}
               value={subroomSelectValues[record._id] || undefined}
             >
-              {record.subRooms?.filter(sr => sr.isActive).map(subRoom => (
+              {record.subRooms?.map(subRoom => (
                 <Option
                   key={subRoom._id}
                   value={subRoom._id}
@@ -3097,7 +3097,7 @@ const StaffAssignmentUnified = () => {
                     subRoom.description
                   ].map(normalizeLower).filter(Boolean).join(' ')}
                 >
-                  {subRoom.name}
+                  {subRoom.name} {!subRoom.isActive && <Tag color="gray" style={{ marginLeft: 4 }}>Đang tắt</Tag>}
                 </Option>
               ))}
             </Select>
