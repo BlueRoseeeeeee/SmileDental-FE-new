@@ -1698,28 +1698,59 @@ const CreateScheduleForRoom = () => {
                       });
                     });
 
-                    // ⭐ Tính toán trạng thái nhóm - LOGIC MỚI
-                    // Kiểm tra xem TẤT CẢ các buồng ACTIVE có đầy đủ hay không
-                    const activeSubRooms = allSubRooms.filter(sr => sr.isActiveSubRoom === true);
+                    // ⭐ Tính toán trạng thái nhóm - LOGIC MỚI (ÁP DỤNG CHO CẢ PHÒNG CÓ VÀ KHÔNG CÓ BUỒNG)
+                    let allComplete = false;
                     
-                    let allActiveSubRoomsComplete = false;
-                    if (activeSubRooms.length > 0) {
-                      // Có buồng active → check từng buồng
-                      allActiveSubRoomsComplete = activeSubRooms.every(subRoom => {
-                        const activeShifts = ['morning', 'afternoon', 'evening'].filter(
-                          shift => subRoom.shifts && subRoom.shifts[shift] === true
-                        );
-                        const generatedShiftKeys = (subRoom.generatedShifts || []).map(s => s.key);
+                    if (allSubRooms.length > 0) {
+                      // PHÒNG CÓ BUỒNG: Kiểm tra xem TẤT CẢ các buồng ACTIVE có đầy đủ hay không
+                      const activeSubRooms = allSubRooms.filter(sr => sr.isActiveSubRoom === true);
+                      
+                      if (activeSubRooms.length > 0) {
+                        // Có buồng active → check từng buồng
+                        allComplete = activeSubRooms.every(subRoom => {
+                          const activeShifts = ['morning', 'afternoon', 'evening'].filter(
+                            shift => subRoom.shifts && subRoom.shifts[shift] === true
+                          );
+                          const generatedShiftKeys = (subRoom.generatedShifts || []).map(s => s.key);
+                          
+                          // Buồng đầy đủ = tất cả ca active đều đã tạo
+                          return activeShifts.length > 0 && 
+                                 activeShifts.every(shift => generatedShiftKeys.includes(shift));
+                        });
+                      }
+                    } else {
+                      // PHÒNG KHÔNG CÓ BUỒNG: Kiểm tra ca của schedule đầu tiên
+                      const schedule = group.schedules[0];
+                      if (schedule) {
+                        // Build shifts object từ generatedShifts và missingShifts
+                        const activeShifts = [];
+                        const generatedShiftKeys = (schedule.generatedShifts || []).map(s => s.key);
                         
-                        // Buồng đầy đủ = tất cả ca active đều đã tạo
-                        return activeShifts.length > 0 && 
-                               activeShifts.every(shift => generatedShiftKeys.includes(shift));
-                      });
+                        // Thu thập tất cả ca active (đã tạo + còn thiếu)
+                        if (schedule.generatedShifts) {
+                          schedule.generatedShifts.forEach(shift => {
+                            if (shift.key && !activeShifts.includes(shift.key)) {
+                              activeShifts.push(shift.key);
+                            }
+                          });
+                        }
+                        if (schedule.missingShifts) {
+                          schedule.missingShifts.forEach(shift => {
+                            if (shift.key && !activeShifts.includes(shift.key)) {
+                              activeShifts.push(shift.key);
+                            }
+                          });
+                        }
+                        
+                        // Phòng đầy đủ = tất cả ca active đều đã tạo
+                        allComplete = activeShifts.length > 0 && 
+                                     activeShifts.every(shift => generatedShiftKeys.includes(shift));
+                      }
                     }
                     
-                    // Nếu TẤT CẢ buồng active đều đầy đủ → group đầy đủ
+                    // Nếu TẤT CẢ đều đầy đủ → group đầy đủ
                     // Ngược lại → group còn thiếu
-                    const hasAnyMissingShifts = !allActiveSubRoomsComplete;
+                    const hasAnyMissingShifts = !allComplete;
                     
                     const isExpired = group.schedules.every(s => s.isExpired);
                     const canCreate = group.schedules.some(s => s.canCreate);
@@ -1729,7 +1760,6 @@ const CreateScheduleForRoom = () => {
                       allSubRooms,
                       groupSubRoomShiftStatus, // 🔧 ADD: Thêm subRoomShiftStatus riêng của group
                       hasMissingShifts: hasAnyMissingShifts,
-                      allActiveSubRoomsComplete, // ⭐ NEW: Đánh dấu tất cả buồng active đã đầy đủ
                       isExpired,
                       canCreate
                     };
@@ -1788,7 +1818,7 @@ const CreateScheduleForRoom = () => {
                                       group.isExpired 
                                         ? `Lịch đã kết thúc vào ${dayjs(group.endDate).format('DD/MM/YYYY')}`
                                         : !group.canCreate
-                                        ? 'Tất cả ca thiếu đang tắt hoạt động'
+                                        ? 'Có ca thiếu hoặc buồng đang tắt hoạt động'
                                         : 'Thêm các ca chưa tạo vào lịch này'
                                     }
                                   >
