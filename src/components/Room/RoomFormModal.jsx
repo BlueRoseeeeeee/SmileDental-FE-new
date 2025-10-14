@@ -23,7 +23,9 @@ import {
   EnvironmentOutlined,
   HomeOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  PlusOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import roomService from '../../services/roomService';
 
@@ -48,26 +50,62 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
   const [selectedSubRoom, setSelectedSubRoom] = useState(null);
   const [pendingSubRoomToggle, setPendingSubRoomToggle] = useState(null);
 
+  // Add/Delete SubRoom states
+  const [addSubRoomCount, setAddSubRoomCount] = useState(1);
+  const [isAddingSubRooms, setIsAddingSubRooms] = useState(false);
+  const [showDeleteSubRoomModal, setShowDeleteSubRoomModal] = useState(false);
+  const [selectedSubRoomForDelete, setSelectedSubRoomForDelete] = useState(null);
+  const [deleteSubRoomLoading, setDeleteSubRoomLoading] = useState(false);
+
+  // State để lưu room data đầy đủ khi edit
+  const [fullRoomData, setFullRoomData] = useState(null);
+  const [fetchingRoomData, setFetchingRoomData] = useState(false);
+
+  // Fetch full room data khi mở modal edit
   useEffect(() => {
-    if (visible) {
-      if (room) {
-        // Chế độ chỉnh sửa
-        form.setFieldsValue({
-          name: room.name,
-          hasSubRooms: room.hasSubRooms,
-          subRoomCount: room.subRooms?.length || 1,
-          maxDoctors: room.maxDoctors || 1,
-          maxNurses: room.maxNurses || 1,
-          isActive: room.isActive
-        });
-        setHasSubRooms(room.hasSubRooms);
-      } else {
+    const fetchRoomData = async () => {
+      if (isOpen && room && room._id) {
+        setFetchingRoomData(true);
+        try {
+          const response = await roomService.getRoomById(room._id);
+          const roomData = response.room || response;
+          setFullRoomData(roomData);
+          
+          // Set form values với dữ liệu đầy đủ
+          form.setFieldsValue({
+            name: roomData.name,
+            hasSubRooms: roomData.hasSubRooms,
+            subRoomCount: roomData.subRooms?.length || 1,
+            maxDoctors: roomData.maxDoctors ?? 1, // 🔧 Cho phép giá trị 0
+            maxNurses: roomData.maxNurses ?? 1,   // 🔧 Cho phép giá trị 0
+            isActive: roomData.isActive
+          });
+          setHasSubRooms(roomData.hasSubRooms);
+        } catch (error) {
+          toast.error('Lỗi khi tải thông tin phòng: ' + error.message);
+          // Fallback to room prop data
+          form.setFieldsValue({
+            name: room.name,
+            hasSubRooms: room.hasSubRooms,
+            subRoomCount: room.subRooms?.length || 1,
+            maxDoctors: room.maxDoctors ?? 1, // 🔧 Cho phép giá trị 0
+            maxNurses: room.maxNurses ?? 1,   // 🔧 Cho phép giá trị 0
+            isActive: room.isActive
+          });
+          setHasSubRooms(room.hasSubRooms);
+        } finally {
+          setFetchingRoomData(false);
+        }
+      } else if (isOpen && !room) {
         // Chế độ tạo mới
+        setFullRoomData(null);
         form.resetFields();
         setHasSubRooms(false);
       }
-    }
-  }, [visible, room, form]);
+    };
+
+    fetchRoomData();
+  }, [isOpen, room, form]);
 
   const handleSubmit = async (values) => {
     setLoading(true);
@@ -81,6 +119,18 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
         if (!room.hasSubRooms) {
           updateData.maxDoctors = values.maxDoctors;
           updateData.maxNurses = values.maxNurses;
+        } else {
+          // 🆕 Nếu có subrooms, kiểm tra xem tất cả subroom đã tắt chưa
+          const currentRoomData = fullRoomData || room;
+          if (currentRoomData.subRooms && currentRoomData.subRooms.length > 0) {
+            const allSubRoomsInactive = currentRoomData.subRooms.every(sr => !sr.isActive);
+            
+            if (allSubRoomsInactive) {
+              // Nếu tất cả subroom đã tắt, bắt buộc room cũng phải tắt
+              updateData.isActive = false;
+              console.log('⚠️ Tất cả subroom đã tắt → Tự động tắt room');
+            }
+          }
         }
 
         await roomService.updateRoom(room._id, updateData);
@@ -114,6 +164,10 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
   const handleCancel = () => {
     form.resetFields();
     onClose();
+    // Refresh parent list khi đóng modal để cập nhật số liệu
+    if (room) {
+      onSuccess();
+    }
   };
 
   // Handle toggle confirmation
@@ -161,8 +215,12 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
       await roomService.toggleSubRoomStatus(room._id, subRoomId);
       toast.success(`Đã ${pendingSubRoomToggle ? 'kích hoạt' : 'tắt'} buồng "${selectedSubRoom.name}"`);
       
-      // Refresh parent to update subRooms list
-      onSuccess();
+      // Fetch lại dữ liệu phòng để cập nhật UI trong modal
+      const response = await roomService.getRoomById(room._id);
+      const roomData = response.room || response;
+      setFullRoomData(roomData);
+      
+      // KHÔNG gọi onSuccess() để modal không đóng
     } catch (error) {
       toast.error('Lỗi khi thay đổi trạng thái buồng: ' + error.message);
     } finally {
@@ -178,6 +236,70 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
     setShowSubRoomToggleModal(false);
     setSelectedSubRoom(null);
     setPendingSubRoomToggle(null);
+  };
+
+  // Handle add SubRooms
+  const handleAddSubRooms = async () => {
+    if (!room || addSubRoomCount < 1) {
+      toast.error('Số lượng buồng phải lớn hơn 0');
+      return;
+    }
+
+    setIsAddingSubRooms(true);
+    try {
+      await roomService.addSubRooms(room._id, addSubRoomCount);
+      toast.success(`Đã thêm ${addSubRoomCount} buồng thành công`);
+      
+      // Fetch lại dữ liệu phòng để cập nhật UI trong modal
+      const response = await roomService.getRoomById(room._id);
+      const roomData = response.room || response;
+      setFullRoomData(roomData);
+      
+      // Reset count
+      setAddSubRoomCount(1);
+      
+      // KHÔNG gọi onSuccess() để modal không đóng
+    } catch (error) {
+      toast.error('Lỗi khi thêm buồng: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsAddingSubRooms(false);
+    }
+  };
+
+  // Handle delete SubRoom confirmation
+  const handleDeleteSubRoomConfirmation = (subRoom) => {
+    setSelectedSubRoomForDelete(subRoom);
+    setShowDeleteSubRoomModal(true);
+  };
+
+  // Handle confirm delete SubRoom
+  const handleConfirmDeleteSubRoom = async () => {
+    if (!selectedSubRoomForDelete) return;
+
+    setDeleteSubRoomLoading(true);
+    try {
+      await roomService.deleteSubRoom(room._id, selectedSubRoomForDelete._id);
+      toast.success(`Đã xóa buồng "${selectedSubRoomForDelete.name}" thành công`);
+      
+      // Fetch lại dữ liệu phòng để cập nhật UI trong modal
+      const response = await roomService.getRoomById(room._id);
+      const roomData = response.room || response;
+      setFullRoomData(roomData);
+      
+      // KHÔNG gọi onSuccess() để modal không đóng
+    } catch (error) {
+      toast.error('Lỗi khi xóa buồng: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setDeleteSubRoomLoading(false);
+      setShowDeleteSubRoomModal(false);
+      setSelectedSubRoomForDelete(null);
+    }
+  };
+
+  // Handle cancel delete SubRoom
+  const handleCancelDeleteSubRoom = () => {
+    setShowDeleteSubRoomModal(false);
+    setSelectedSubRoomForDelete(null);
   };
 
   return (
@@ -232,8 +354,8 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
               valuePropName="checked"
             >
               <Switch
-                checkedChildren="Có buồng con"
-                unCheckedChildren="Phòng đơn"
+                checkedChildren="Có buồng"
+                unCheckedChildren="Không buồng"
                 onChange={(value) => {
                   if (!room) { // Chỉ show confirm khi tạo mới
                     handleToggleConfirmation('hasSubRooms', value);
@@ -262,50 +384,97 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
 
         {hasSubRooms ? (
           room ? (
-            // Khi edit phòng có subrooms - Hiển thị danh sách buồng với toggle
+            // Khi edit phòng có subrooms - Hiển thị danh sách buồng với toggle, thêm, xóa
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 12 }}>
-                <HomeOutlined style={{ marginRight: 8 }} />
-                Danh sách buồng ({room.subRooms?.length || 0} buồng)
-              </Text>
-              <List
-                size="small"
-                bordered
-                dataSource={room.subRooms || []}
-                renderItem={(subRoom) => (
-                  <List.Item
-                    actions={[
-                      <Tooltip title={subRoom.isActive ? 'Tắt buồng' : 'Bật buồng'}>
-                        <Switch
-                          size="small"
-                          checked={subRoom.isActive}
-                          loading={subRoomTogglingMap[subRoom._id]}
-                          onChange={() => handleSubRoomToggleConfirmation(subRoom)}
-                          checkedChildren="Bật"
-                          unCheckedChildren="Tắt"
-                        />
-                      </Tooltip>
-                    ]}
-                  >
-                    <Space>
-                      <Text>{subRoom.name}</Text>
-                      <Tag 
-                        color={subRoom.isActive ? 'green' : 'red'} 
-                        icon={subRoom.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text strong>
+                  <HomeOutlined style={{ marginRight: 8 }} />
+                  Danh sách buồng ({fullRoomData?.subRooms?.length || room.subRooms?.length || 0} buồng)
+                </Text>
+              </div>
+
+              {fetchingRoomData ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <Text type="secondary">Đang tải dữ liệu...</Text>
+                </div>
+              ) : (
+                <>
+                  <List
+                    size="small"
+                    bordered
+                    dataSource={fullRoomData?.subRooms || room.subRooms || []}
+                    renderItem={(subRoom) => (
+                      <List.Item
+                        actions={[
+                          <Tooltip title={subRoom.isActive ? 'Tắt buồng' : 'Bật buồng'}>
+                            <Switch
+                              size="small"
+                              checked={subRoom.isActive}
+                              loading={subRoomTogglingMap[subRoom._id]}
+                              onChange={() => handleSubRoomToggleConfirmation(subRoom)}
+                              checkedChildren="Bật"
+                              unCheckedChildren="Tắt"
+                            />
+                          </Tooltip>,
+                          <Tooltip title={subRoom.hasBeenUsed ? 'Không thể xóa buồng đã sử dụng' : 'Xóa buồng'}>
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<DeleteOutlined />}
+                              onClick={() => handleDeleteSubRoomConfirmation(subRoom)}
+                              disabled={subRoom.hasBeenUsed}
+                            />
+                          </Tooltip>
+                        ]}
                       >
-                        {subRoom.isActive ? 'Hoạt động' : 'Tắt'}
-                      </Tag>
-                      {subRoom.hasBeenUsed && (
-                        <Tag color="orange" size="small">Đã sử dụng</Tag>
-                      )}
+                        <Space>
+                          <Text>{subRoom.name}</Text>
+                          <Tag 
+                            color={subRoom.isActive ? 'green' : 'red'} 
+                            icon={subRoom.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                          >
+                            {subRoom.isActive ? 'Hoạt động' : 'Tắt'}
+                          </Tag>
+                          {subRoom.hasBeenUsed && (
+                            <Tag color="orange" size="small">Đã sử dụng</Tag>
+                          )}
+                        </Space>
+                      </List.Item>
+                    )}
+                    style={{ maxHeight: 300, overflow: 'auto' }}
+                  />
+
+                  {/* Add SubRooms Section */}
+                  <div style={{ marginTop: 16, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                      <PlusOutlined style={{ marginRight: 8 }} />
+                      Thêm buồng mới
+                    </Text>
+                    <Space>
+                      <InputNumber
+                        min={1}
+                        max={10}
+                        value={addSubRoomCount}
+                        onChange={setAddSubRoomCount}
+                        placeholder="Số lượng"
+                        style={{ width: 120 }}
+                      />
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={handleAddSubRooms}
+                        loading={isAddingSubRooms}
+                      >
+                        Thêm {addSubRoomCount} buồng
+                      </Button>
                     </Space>
-                  </List.Item>
-                )}
-                style={{ maxHeight: 300, overflow: 'auto' }}
-              />
-              <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
-                Để thêm/xóa buồng, vui lòng sử dụng trang quản lý chi tiết.
-              </Text>
+                    <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+                      Buồng mới sẽ được đánh số tự động tiếp theo buồng cuối cùng
+                    </Text>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             // Khi tạo mới phòng có subrooms
@@ -326,21 +495,36 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
             </Form.Item>
           )
         ) : (
+          // Phòng không có subrooms - Hiển thị maxDoctors/maxNurses
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
                 name="maxDoctors"
                 label="Số nha sĩ tối đa"
+                dependencies={['maxNurses']} // 🔧 Trigger validation khi maxNurses thay đổi
                 rules={[
                   { required: true, message: 'Vui lòng nhập số nha sĩ tối đa' },
-                  { type: 'number', min: 1, message: 'Số nha sĩ phải lớn hơn 0' }
+                  { type: 'number', min: 0, message: 'Số nha sĩ phải từ 0 trở lên' },
+                  // 🔧 Custom validator: Ít nhất 1 người (nha sĩ hoặc y tá)
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const maxNurses = getFieldValue('maxNurses') || 0;
+                      const maxDoctors = value || 0;
+                      if (maxDoctors + maxNurses >= 1) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('Phòng phải có ít nhất 1 nha sĩ hoặc 1 y tá'));
+                    },
+                  })
                 ]}
               >
                 <InputNumber
-                  min={1}
+                  min={0}
                   max={10}
                   style={{ width: '100%' }}
                   placeholder="Nhập số nha sĩ"
+                  parser={value => value.replace(/\D/g, '')} // 🔧 Chặn ký tự không phải số
+                  formatter={value => value} // Hiển thị số nguyên
                 />
               </Form.Item>
             </Col>
@@ -348,16 +532,30 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
               <Form.Item
                 name="maxNurses"
                 label="Số y tá tối đa"
+                dependencies={['maxDoctors']} // 🔧 Trigger validation khi maxDoctors thay đổi
                 rules={[
                   { required: true, message: 'Vui lòng nhập số y tá tối đa' },
-                  { type: 'number', min: 1, message: 'Số y tá phải lớn hơn 0' }
+                  { type: 'number', min: 0, message: 'Số y tá phải từ 0 trở lên' },
+                  // 🔧 Custom validator: Ít nhất 1 người (nha sĩ hoặc y tá)
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const maxDoctors = getFieldValue('maxDoctors') || 0;
+                      const maxNurses = value || 0;
+                      if (maxDoctors + maxNurses >= 1) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error('Phòng phải có ít nhất 1 nha sĩ hoặc 1 y tá'));
+                    },
+                  })
                 ]}
               >
                 <InputNumber
-                  min={1}
+                  min={0}
                   max={10}
                   style={{ width: '100%' }}
                   placeholder="Nhập số y tá"
+                  parser={value => value.replace(/\D/g, '')} // 🔧 Chặn ký tự không phải số
+                  formatter={value => value} // Hiển thị số nguyên
                 />
               </Form.Item>
             </Col>
@@ -396,7 +594,7 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
                 <p>
                   Bạn có chắc chắn muốn thay đổi loại phòng thành{' '}
                   <strong style={{ color: pendingToggleValue ? '#1890ff' : '#52c41a' }}>
-                    {pendingToggleValue ? 'Có buồng con' : 'Phòng đơn'}
+                    {pendingToggleValue ? 'Có buồng' : 'Không buồng'}
                   </strong>?
                 </p>
                 
@@ -409,7 +607,7 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
                     marginTop: '12px'
                   }}>
                     <p style={{ margin: 0, color: '#096dd9', fontSize: '12px' }}>
-                       Phòng có buồng con sẽ được tạo với số lượng buồng bạn chỉ định.
+                       Phòng có buồng sẽ được tạo với số lượng buồng bạn chỉ định.
                     </p>
                   </div>
                 )}
@@ -423,7 +621,7 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
                     marginTop: '12px'
                   }}>
                     <p style={{ margin: 0, color: '#389e0d', fontSize: '12px' }}>
-                       Phòng đơn sẽ có thông số về số lượng nha sĩ và y tá tối đa.
+                       Phòng không buồng sẽ có thông số về số lượng nha sĩ và y tá tối đa.
                     </p>
                   </div>
                 )}
@@ -519,6 +717,57 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
               }}>
                 <p style={{ margin: 0, color: '#d46b08', fontSize: '12px' }}>
                    Buồng sẽ không còn khả dụng cho việc đặt lịch và sắp xếp bệnh nhân.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete SubRoom Confirmation Modal */}
+      <Modal
+        title="Xác nhận xóa buồng"
+        open={showDeleteSubRoomModal}
+        onOk={handleConfirmDeleteSubRoom}
+        onCancel={handleCancelDeleteSubRoom}
+        okText="Xóa buồng"
+        cancelText="Hủy"
+        okType="danger"
+        confirmLoading={deleteSubRoomLoading}
+        centered
+        width={480}
+      >
+        {selectedSubRoomForDelete && (
+          <div>
+            <p>
+              Bạn có chắc chắn muốn xóa buồng{' '}
+              <strong style={{ color: '#ff4d4f' }}>
+                {selectedSubRoomForDelete.name}
+              </strong>?
+            </p>
+            
+            <div style={{ 
+              padding: '12px', 
+              backgroundColor: '#fff1f0', 
+              borderLeft: '4px solid #ff4d4f',
+              borderRadius: '4px',
+              marginTop: '12px'
+            }}>
+              <p style={{ margin: 0, color: '#cf1322', fontSize: '12px' }}>
+                ⚠️ <strong>Cảnh báo:</strong> Hành động này không thể hoàn tác. Buồng sẽ bị xóa vĩnh viễn khỏi hệ thống.
+              </p>
+            </div>
+
+            {selectedSubRoomForDelete.hasBeenUsed && (
+              <div style={{ 
+                padding: '12px', 
+                backgroundColor: '#fffbe6', 
+                borderLeft: '4px solid #faad14',
+                borderRadius: '4px',
+                marginTop: '12px'
+              }}>
+                <p style={{ margin: 0, color: '#d48806', fontSize: '12px' }}>
+                  ⚠️ Buồng này đã được sử dụng trong hệ thống và không thể xóa.
                 </p>
               </div>
             )}

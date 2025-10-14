@@ -288,7 +288,7 @@ const RoomManagement = () => {
         <Row gutter={16}>
           <Col span={12}>
             <Text strong>
-              <EnvironmentOutlined /> {room.name} ({room.hasSubRooms ? `${subRooms.length} buồng` : 'Phòng đơn'})
+              <EnvironmentOutlined /> {room.name} ({room.hasSubRooms ? `${subRooms.length} buồng` : 'Phòng không buồng'})
             </Text>
           </Col>
           <Col span={12} style={{ textAlign: 'right' }}>
@@ -400,7 +400,7 @@ const RoomManagement = () => {
         </>
       ) : (
         /* Hiển thị thông tin phòng đơn */
-        <Card title="Thông tin phòng đơn" size="small">
+        <Card title="Thông tin không buồng" size="small">
           <Row gutter={24}>
             <Col span={8}>
               <Card size="small" style={{ textAlign: 'center' }}>
@@ -441,7 +441,7 @@ const RoomManagement = () => {
           <Row>
             <Col span={24}>
               <Text type="secondary">
-                <strong>Ghi chú:</strong> Đây là phòng đơn không có buồng con. 
+                <strong>Ghi chú:</strong> Đây là phòng không buồng. 
               </Text>
             </Col>
           </Row>

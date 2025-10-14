@@ -26,15 +26,18 @@ const scheduleService = {
   },
 
   // 🆕 Tạo lịch thủ công cho phòng cụ thể với chọn ca (MONTHLY RANGE)
-  generateRoomSchedule: async ({ roomId, subRoomId, fromMonth, toMonth, year, startDate, shifts }) => {
+  generateRoomSchedule: async ({ roomId, subRoomId, selectedSubRoomIds, fromMonth, toMonth, fromYear, toYear, startDate, partialStartDate, shifts }) => {
     try {
       const response = await scheduleApi.post('/schedule/room/generate', {
         roomId,
         subRoomId,
+        selectedSubRoomIds, // 🆕 Array of selected subroom IDs
         fromMonth,
         toMonth,
-        year,
+        fromYear,
+        toYear,
         startDate,
+        partialStartDate, // 🆕 For adding missing shifts
         shifts
       });
       return response.data;
@@ -47,9 +50,11 @@ const scheduleService = {
   },
 
   // 🆕 Lấy thông tin lịch và ca đã tạo của phòng (cho UI tạo lịch)
-  getRoomSchedulesWithShifts: async (roomId, subRoomId = null) => {
+  getRoomSchedulesWithShifts: async (roomId, subRoomId = null, month = null, year = null) => {
     const params = {};
     if (subRoomId) params.subRoomId = subRoomId;
+    if (month) params.month = month;
+    if (year) params.year = year;
     const response = await scheduleApi.get(`/schedule/room/${roomId}/shifts`, { params });
     return response.data;
   },
@@ -230,7 +235,45 @@ const scheduleService = {
       }
       throw error;
     }
+  },
+
+  // 🆕 Cập nhật lịch (reactive scheduling - admin only)
+  updateSchedule: async (scheduleId, { isActive, reactivateShifts, reactivateSubRooms }) => {
+    try {
+      const response = await scheduleApi.put(`/schedule/${scheduleId}`, {
+        isActive,
+        reactivateShifts,
+        reactivateSubRooms
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  // 🆕 Thêm ca thiếu vào lịch đã tạo (admin only)
+  addMissingShifts: async ({ roomId, month, year, subRoomIds, selectedShifts, partialStartDate }) => {
+    try {
+      const response = await scheduleApi.post(`/schedule/add-missing-shifts`, {
+        roomId,
+        month,
+        year,
+        subRoomIds,
+        selectedShifts,
+        partialStartDate
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   }
 };
 
+export const updateSchedule = scheduleService.updateSchedule;
 export default scheduleService;

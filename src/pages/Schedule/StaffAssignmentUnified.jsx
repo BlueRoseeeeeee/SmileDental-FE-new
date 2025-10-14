@@ -943,14 +943,29 @@ const StaffAssignmentUnified = () => {
   const canConfirmAssignment = useMemo(() => {
     if (totalSelectedSlotCount === 0) return false;
     
+    // 🔧 Xử lý cho phòng không yêu cầu dentist hoặc nurse
+    const requiresDentist = maxDentists > 0;
+    const requiresNurse = maxNurses > 0;
+    
     if (allSlotsFullyAssigned) {
-      // All slots fully assigned → allow update with just dentist OR nurse
+      // All slots fully assigned → allow update with at least 1 staff
       return selectedDentists.length > 0 || selectedNurses.length > 0;
     } else {
-      // Some slots not fully assigned → require BOTH dentist AND nurse
-      return selectedDentists.length > 0 && selectedNurses.length > 0;
+      // Some slots not fully assigned → validate theo yêu cầu của phòng
+      if (requiresDentist && requiresNurse) {
+        // Phòng yêu cầu cả dentist và nurse
+        return selectedDentists.length > 0 && selectedNurses.length > 0;
+      } else if (requiresDentist) {
+        // Chỉ yêu cầu dentist (maxNurses = 0)
+        return selectedDentists.length > 0;
+      } else if (requiresNurse) {
+        // Chỉ yêu cầu nurse (maxDentists = 0)
+        return selectedNurses.length > 0;
+      }
+      // Không yêu cầu gì (không thể xảy ra vì backend validate tổng >= 1)
+      return false;
     }
-  }, [allSlotsFullyAssigned, totalSelectedSlotCount, selectedDentists, selectedNurses]);
+  }, [allSlotsFullyAssigned, totalSelectedSlotCount, selectedDentists, selectedNurses, maxDentists, maxNurses]);
 
   const createSlotKey = useCallback((dateStr, shiftName) => `${dateStr}-${shiftName}`, []);
 
@@ -1129,12 +1144,15 @@ const StaffAssignmentUnified = () => {
     }
 
     if (selectedRoom) {
-      const dentistLimit = selectedRoom?.maxDentists || selectedRoom?.maxDoctors || 1;
-      const nurseLimit = selectedRoom?.maxNurses || 1;
+      // 🔧 Sử dụng ?? thay vì || để cho phép giá trị 0
+      const dentistLimit = selectedRoom?.maxDentists ?? selectedRoom?.maxDoctors ?? 1;
+      const nurseLimit = selectedRoom?.maxNurses ?? 1;
       setMaxDentists(dentistLimit);
       setMaxNurses(nurseLimit);
-      setSelectedDentists(prev => prev.slice(0, dentistLimit));
-      setSelectedNurses(prev => prev.slice(0, nurseLimit));
+      
+      // 🔧 Clear selection nếu limit = 0, ngược lại trim về limit
+      setSelectedDentists(prev => dentistLimit === 0 ? [] : prev.slice(0, dentistLimit));
+      setSelectedNurses(prev => nurseLimit === 0 ? [] : prev.slice(0, nurseLimit));
     } else {
       setMaxDentists(1);
       setMaxNurses(1);
@@ -1188,11 +1206,11 @@ const StaffAssignmentUnified = () => {
         // Backend trả về data: { rooms: [...], total, page, ... }
         let filteredRooms = response.data?.rooms || [];
         
-        // Apply schedule status filter
+        // Apply schedule status filter - 🔧 FIX: Dùng hasBeenUsed thay vì hasSchedule
         if (scheduleStatusFilter === 'has-schedule') {
-          filteredRooms = filteredRooms.filter(room => room.hasSchedule);
+          filteredRooms = filteredRooms.filter(room => room.hasBeenUsed);
         } else if (scheduleStatusFilter === 'no-schedule') {
-          filteredRooms = filteredRooms.filter(room => !room.hasSchedule);
+          filteredRooms = filteredRooms.filter(room => !room.hasBeenUsed);
         }
         
         setRooms(filteredRooms);
@@ -3019,14 +3037,14 @@ const StaffAssignmentUnified = () => {
     },
     {
       title: 'Trạng thái lịch',
-      dataIndex: 'hasSchedule',
-      key: 'hasSchedule',
-      render: (hasSchedule) => (
+      dataIndex: 'hasBeenUsed', // 🔧 FIX: Đổi thành hasBeenUsed
+      key: 'hasBeenUsed',
+      render: (hasBeenUsed) => (
         <Tag 
-          color={hasSchedule ? 'success' : 'default'}
-          icon={hasSchedule ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+          color={hasBeenUsed ? 'success' : 'default'}
+          icon={hasBeenUsed ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
         >
-          {hasSchedule ? 'Đã có lịch' : 'Chưa có lịch'}
+          {hasBeenUsed ? 'Đã có lịch' : 'Chưa có lịch'}
         </Tag>
       )
     },
@@ -3034,7 +3052,7 @@ const StaffAssignmentUnified = () => {
       title: 'Hành động',
       key: 'action',
       render: (_, record) => {
-        if (!record.hasSchedule) {
+        if (!record.hasBeenUsed) { // 🔧 FIX: Đổi thành hasBeenUsed
           return <Text type="secondary">Chưa có lịch để phân công</Text>;
         }
         
@@ -3718,6 +3736,7 @@ const StaffAssignmentUnified = () => {
                               onChange={(e) => setDentistConflictFilter(e.target.value)}
                               size="small"
                               buttonStyle="solid"
+                              disabled={maxDentists === 0} // 🔧 Disable khi không cho phép nha sĩ
                             >
                               <Radio.Button value="all">Tất cả</Radio.Button>
                               <Radio.Button value="no-conflict">
@@ -3728,20 +3747,25 @@ const StaffAssignmentUnified = () => {
                               </Radio.Button>
                             </Radio.Group>
                             
-                            <Select
-                              style={{ width: '100%' }}
-                              placeholder={`Chọn nha sĩ (tối đa ${maxDentists})`}
-                              mode={maxDentists > 1 ? 'multiple' : undefined}
-                              value={maxDentists > 1 ? selectedDentists : (selectedDentists[0] || undefined)}
-                              onChange={handleDentistSelectionChange}
-                              showSearch
-                              optionFilterProp="staffsearch"
-                              filterOption={(input, option) =>
-                                option?.props?.staffsearch?.includes(normalizeLower(input))
-                              }
-                              maxTagCount="responsive"
-                              allowClear
-                            >
+                            {maxDentists === 0 ? (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                Phòng này không yêu cầu nha sĩ
+                              </Text>
+                            ) : (
+                              <Select
+                                style={{ width: '100%' }}
+                                placeholder={`Chọn nha sĩ (tối đa ${maxDentists})`}
+                                mode={maxDentists > 1 ? 'multiple' : undefined}
+                                value={maxDentists > 1 ? selectedDentists : (selectedDentists[0] || undefined)}
+                                onChange={handleDentistSelectionChange}
+                                showSearch
+                                optionFilterProp="staffsearch"
+                                filterOption={(input, option) =>
+                                  option?.props?.staffsearch?.includes(normalizeLower(input))
+                                }
+                                maxTagCount="responsive"
+                                allowClear
+                              >
                               {staffList
                                 .filter(staff => (staff.assignmentRole || staff.role) === 'dentist')
                                 .filter(staff => {
@@ -3798,6 +3822,7 @@ const StaffAssignmentUnified = () => {
                                 })
                               }
                             </Select>
+                            )}
                           </Space>
                         </Card>
                       </Col>
@@ -3810,6 +3835,7 @@ const StaffAssignmentUnified = () => {
                               onChange={(e) => setNurseConflictFilter(e.target.value)}
                               size="small"
                               buttonStyle="solid"
+                              disabled={maxNurses === 0} // 🔧 Disable khi không cho phép y tá
                             >
                               <Radio.Button value="all">Tất cả</Radio.Button>
                               <Radio.Button value="no-conflict">
@@ -3820,20 +3846,25 @@ const StaffAssignmentUnified = () => {
                               </Radio.Button>
                             </Radio.Group>
                             
-                            <Select
-                              style={{ width: '100%' }}
-                              placeholder={`Chọn y tá (tối đa ${maxNurses})`}
-                              mode={maxNurses > 1 ? 'multiple' : undefined}
-                              value={maxNurses > 1 ? selectedNurses : (selectedNurses[0] || undefined)}
-                              onChange={handleNurseSelectionChange}
-                              showSearch
-                              optionFilterProp="staffsearch"
-                              filterOption={(input, option) =>
-                                option?.props?.staffsearch?.includes(normalizeLower(input))
-                              }
-                              maxTagCount="responsive"
-                              allowClear
-                            >
+                            {maxNurses === 0 ? (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                Phòng này không yêu cầu y tá
+                              </Text>
+                            ) : (
+                              <Select
+                                style={{ width: '100%' }}
+                                placeholder={`Chọn y tá (tối đa ${maxNurses})`}
+                                mode={maxNurses > 1 ? 'multiple' : undefined}
+                                value={maxNurses > 1 ? selectedNurses : (selectedNurses[0] || undefined)}
+                                onChange={handleNurseSelectionChange}
+                                showSearch
+                                optionFilterProp="staffsearch"
+                                filterOption={(input, option) =>
+                                  option?.props?.staffsearch?.includes(normalizeLower(input))
+                                }
+                                maxTagCount="responsive"
+                                allowClear
+                              >
                               {staffList
                                 .filter(staff => (staff.assignmentRole || staff.role) === 'nurse')
                                 .filter(staff => {
@@ -3890,6 +3921,7 @@ const StaffAssignmentUnified = () => {
                                 })
                               }
                             </Select>
+                            )}
                           </Space>
                         </Card>
                       </Col>
@@ -3900,8 +3932,19 @@ const StaffAssignmentUnified = () => {
                       title={
                         !canConfirmAssignment
                           ? allSlotsFullyAssigned
-                            ? 'Vui lòng chọn ít nhất 1 nha sĩ hoặc 1 y tá để cập nhật'
-                            : 'Vui lòng chọn ít nhất 1 nha sĩ VÀ 1 y tá để phân công'
+                            ? 'Vui lòng chọn ít nhất 1 nhân sự để cập nhật'
+                            : (() => {
+                                const requiresDentist = maxDentists > 0;
+                                const requiresNurse = maxNurses > 0;
+                                if (requiresDentist && requiresNurse) {
+                                  return 'Vui lòng chọn ít nhất 1 nha sĩ VÀ 1 y tá để phân công';
+                                } else if (requiresDentist) {
+                                  return 'Vui lòng chọn ít nhất 1 nha sĩ để phân công';
+                                } else if (requiresNurse) {
+                                  return 'Vui lòng chọn ít nhất 1 y tá để phân công';
+                                }
+                                return 'Vui lòng chọn nhân sự để phân công';
+                              })()
                           : ''
                       }
                     >
@@ -4284,7 +4327,7 @@ const StaffAssignmentUnified = () => {
                         style={{ width: 150 }}
                       >
                         <Option value="all">Tất cả vai trò</Option>
-                        <Option value="dentist">nha sĩ</Option>
+                        <Option value="dentist">Nha sĩ</Option>
                         <Option value="nurse">Y tá</Option>
                       </Select>
                       

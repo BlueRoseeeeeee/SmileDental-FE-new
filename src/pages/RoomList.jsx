@@ -254,7 +254,7 @@ const RoomList = () => {
       key: 'hasSubRooms',
       render: (hasSubRooms) => (
         <Tag color={hasSubRooms ? 'blue' : 'green'}>
-          {hasSubRooms ? 'Có buồng con' : 'Phòng đơn'}
+          {hasSubRooms ? 'Có buồng' : 'Không buồng'}
         </Tag>
       )
     },
@@ -372,8 +372,8 @@ const RoomList = () => {
                 }}
                 style={{ width: '100%' }}
               >
-                <Select.Option value="true">Có phòng con</Select.Option>
-                <Select.Option value="false">Phòng đơn</Select.Option>
+                <Select.Option value="true">Có buồng</Select.Option>
+                <Select.Option value="false">Không buồng</Select.Option>
               </Select>
             </div>
           </Col>

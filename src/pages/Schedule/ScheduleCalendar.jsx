@@ -152,10 +152,11 @@ const ScheduleCalendar = () => {
     setLoading(true);
     try {
       if (viewMode === 'room') {
+        // 🔧 FIX: startDate luôn là ngày hiện tại, backend sẽ dùng page để offset
         const params = {
           viewType: 'week',
           page: currentPage,
-          startDate: currentWeek.format('YYYY-MM-DD')
+          startDate: dayjs().format('YYYY-MM-DD') // Luôn gửi ngày hiện tại
         };
         
         // Add subroom if selected
@@ -167,16 +168,25 @@ const ScheduleCalendar = () => {
         
         if (response?.success) {
           setCalendarData(response.data);
+          
+          // 🔧 FIX: Cập nhật currentWeek từ dữ liệu backend
+          if (response.data?.periods?.[0]?.startDate) {
+            const weekStart = dayjs(response.data.periods[0].startDate).startOf('isoWeek');
+            if (!currentWeek.isSame(weekStart, 'day')) {
+              setCurrentWeek(weekStart);
+            }
+          }
         } else {
           console.error('API returned error:', response);
           toast.error('API trả về lỗi');
           setCalendarData(null);
         }
       } else if (viewMode === 'dentist') {
+        // 🔧 FIX: startDate luôn là ngày hiện tại
         const params = {
           viewType: 'week',
           page: currentPage,
-          startDate: currentWeek.format('YYYY-MM-DD'),
+          startDate: dayjs().format('YYYY-MM-DD'),
           limit: 1
         };
         
@@ -188,15 +198,24 @@ const ScheduleCalendar = () => {
         
         if (response?.success) {
           setCalendarData(response.data);
+          
+          // 🔧 FIX: Cập nhật currentWeek từ dữ liệu backend
+          if (response.data?.periods?.[0]?.startDate) {
+            const weekStart = dayjs(response.data.periods[0].startDate).startOf('isoWeek');
+            if (!currentWeek.isSame(weekStart, 'day')) {
+              setCurrentWeek(weekStart);
+            }
+          }
         } else {
           toast.error('Không thể tải lịch nha sĩ');
           setCalendarData(null);
         }
       } else if (viewMode === 'nurse') {
+        // 🔧 FIX: startDate luôn là ngày hiện tại
         const params = {
           viewType: 'week',
           page: currentPage,
-          startDate: currentWeek.format('YYYY-MM-DD'),
+          startDate: dayjs().format('YYYY-MM-DD'),
           limit: 1
         };
         
@@ -208,6 +227,14 @@ const ScheduleCalendar = () => {
         
         if (response?.success) {
           setCalendarData(response.data);
+          
+          // 🔧 FIX: Cập nhật currentWeek từ dữ liệu backend
+          if (response.data?.periods?.[0]?.startDate) {
+            const weekStart = dayjs(response.data.periods[0].startDate).startOf('isoWeek');
+            if (!currentWeek.isSame(weekStart, 'day')) {
+              setCurrentWeek(weekStart);
+            }
+          }
         } else {
           toast.error('Không thể tải lịch y tá');
           setCalendarData(null);
@@ -220,7 +247,7 @@ const ScheduleCalendar = () => {
     } finally {
       setLoading(false);
     }
-  }, [viewMode, selectedRoom, selectedSubRoom, selectedDentist, selectedNurse, currentWeek, currentPage]);
+  }, [viewMode, selectedRoom, selectedSubRoom, selectedDentist, selectedNurse, currentPage]); // 🔧 FIX: Loại bỏ currentWeek để tránh infinite loop
 
   // Reload when selection or week changes
   useEffect(() => {
@@ -334,8 +361,13 @@ const ScheduleCalendar = () => {
   const goToDateWeek = (date) => {
     if (!date) return;
     const weekStart = dayjs(date).startOf('isoWeek');
+    const todayWeek = dayjs().startOf('isoWeek');
+    
+    // 🔧 FIX: Tính page offset từ tuần hiện tại đến tuần được chọn
+    const weekDiff = weekStart.diff(todayWeek, 'week');
+    
     setCurrentWeek(weekStart);
-    setCurrentPage(0); // Reset page to 0 (current week) when jumping to specific date
+    setCurrentPage(weekDiff); // Set page = số tuần cách tuần hiện tại
   };
 
 
@@ -428,7 +460,7 @@ const ScheduleCalendar = () => {
       
       {selectedRoom && !selectedRoom.hasSubRooms && (
         <Text type="secondary" style={{ fontSize: '12px' }}>
-          Phòng đơn - không có phòng con
+          Phòng không buồng   
         </Text>
       )}
     </Space>
@@ -1100,9 +1132,10 @@ const ScheduleCalendar = () => {
                     <DatePicker
                       placeholder="Chọn ngày để xem tuần"
                       format="DD/MM/YYYY"
+                      value={currentWeek} // 🔧 ADD: Hiển thị ngày bắt đầu tuần hiện tại
                       onChange={goToDateWeek}
                       style={{ width: 180 }}
-                      allowClear
+                      allowClear={false} // 🔧 FIX: Không cho phép xóa
                     />
                     
                     <Divider type="vertical" />

@@ -1,7 +1,4 @@
-/**
- * @author: TrungNghia & HoTram
- * Component: Tạo lịch thủ công cho phòng khám
- */
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Card,
@@ -22,7 +19,8 @@ import {
   Tooltip,
   Radio,
   List,
-  Input
+  Input,
+  message
 } from 'antd';
 import {
   CalendarOutlined,
@@ -40,17 +38,12 @@ import scheduleService from '../../services/scheduleService';
 import scheduleConfigService from '../../services/scheduleConfigService';
 import dayjs from 'dayjs';
 import { debounce } from '../../utils/searchUtils';
+import EditScheduleModal from '../../components/Schedule/EditScheduleModal';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const SHIFT_KEYS = ['morning', 'afternoon', 'evening'];
-
-const SHIFT_DEFAULTS = {
-  morning: { name: 'Ca Sáng', startTime: '07:00', endTime: '12:00', isActive: true },
-  afternoon: { name: 'Ca Chiều', startTime: '13:00', endTime: '17:00', isActive: true },
-  evening: { name: 'Ca Tối', startTime: '17:30', endTime: '21:00', isActive: true }
-};
 
 const SHIFT_COLORS = {
   morning: 'gold',
@@ -66,44 +59,58 @@ const SHIFT_CONFIG_MAP = {
 
 const DEFAULT_SLOT_DURATION = 30;
 
-const buildShiftMetaFromConfig = (config = null) => {
+// ⚠️ Build shift meta ONLY from backend config - No fallback
+const buildShiftMetaFromConfig = (config) => {
+  if (!config) {
+    throw new Error('Config is required');
+  }
+
   const meta = {};
 
   SHIFT_KEYS.forEach((key) => {
     const configKey = SHIFT_CONFIG_MAP[key];
-    const configShift = config?.[configKey] || null;
-    const defaults = SHIFT_DEFAULTS[key];
+    const configShift = config[configKey];
+
+    if (!configShift) {
+      throw new Error(`Missing shift config for ${key}`);
+    }
 
     meta[key] = {
       key,
-      name: configShift?.name || defaults.name,
-      startTime: configShift?.startTime || defaults.startTime,
-      endTime: configShift?.endTime || defaults.endTime,
-      isActive: configShift ? configShift.isActive !== false : defaults.isActive
+      name: configShift.name,
+      startTime: configShift.startTime,
+      endTime: configShift.endTime,
+      isActive: configShift.isActive !== false
     };
   });
 
-  const unitDuration = Number.isFinite(config?.unitDuration) && config.unitDuration > 0
+  const unitDuration = Number.isFinite(config.unitDuration) && config.unitDuration > 0
     ? config.unitDuration
     : DEFAULT_SLOT_DURATION;
 
   return { meta, unitDuration };
 };
 
+// Build from schedule's saved config (for editing)
 const buildShiftMetaFromScheduleConfig = (shiftConfig = null, fallbackDuration = DEFAULT_SLOT_DURATION) => {
+  if (!shiftConfig) {
+    return { meta: {}, unitDuration: fallbackDuration };
+  }
+
   const meta = {};
 
   SHIFT_KEYS.forEach((key) => {
-    const scheduleShift = shiftConfig?.[key] || null;
-    const defaults = SHIFT_DEFAULTS[key];
+    const scheduleShift = shiftConfig[key] || null;
 
-    meta[key] = {
-      key,
-      name: scheduleShift?.name || defaults.name,
-      startTime: scheduleShift?.startTime || defaults.startTime,
-      endTime: scheduleShift?.endTime || defaults.endTime,
-      isActive: scheduleShift ? scheduleShift.isActive !== false : defaults.isActive
-    };
+    if (scheduleShift) {
+      meta[key] = {
+        key,
+        name: scheduleShift.name,
+        startTime: scheduleShift.startTime,
+        endTime: scheduleShift.endTime,
+        isActive: scheduleShift.isActive !== false
+      };
+    }
   });
 
   const slotDurations = SHIFT_KEYS
@@ -119,8 +126,6 @@ const getActiveShiftKeys = (meta) => {
   if (!meta) return SHIFT_KEYS;
   return SHIFT_KEYS.filter((key) => meta[key]?.isActive);
 };
-
-const { meta: INITIAL_SHIFT_META, unitDuration: INITIAL_UNIT_DURATION } = buildShiftMetaFromConfig();
 
 const CreateScheduleForRoom = () => {
   const navigate = useNavigate();
@@ -145,53 +150,103 @@ const CreateScheduleForRoom = () => {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [selectedSubRoom, setSelectedSubRoom] = useState(null);
   const [selectedSubRooms, setSelectedSubRooms] = useState([]); // Array of subRooms for bulk operations
+  const [selectedSubRoomIds, setSelectedSubRoomIds] = useState([]); // 🆕 Array of subRoomIds được chọn để tạo lịch
   const [fromMonth, setFromMonth] = useState(dayjs().month() + 1); // 1-12
   const [toMonth, setToMonth] = useState(dayjs().month() + 1); // 1-12
-  const [selectedYear, setSelectedYear] = useState(dayjs().year());
+  const [selectedYear, setSelectedYear] = useState(dayjs().year()); // Năm bắt đầu
+  const [toYear, setToYear] = useState(dayjs().year()); // Năm kết thúc
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [partialStartDate, setPartialStartDate] = useState(null); // 🆕 Ngày bắt đầu tạo lịch (cho tạo thiếu)
   const [isEditingExistingSchedule, setIsEditingExistingSchedule] = useState(false);
   const [existingScheduleId, setExistingScheduleId] = useState(null);
-  const [shiftMeta, setShiftMeta] = useState(INITIAL_SHIFT_META);
-  const [slotDuration, setSlotDuration] = useState(INITIAL_UNIT_DURATION);
+  const [shiftMeta, setShiftMeta] = useState({}); // ⚠️ Sẽ được load từ backend
+  const [slotDuration, setSlotDuration] = useState(DEFAULT_SLOT_DURATION);
   const [configLoading, setConfigLoading] = useState(false);
-  const [selectedShifts, setSelectedShifts] = useState(getActiveShiftKeys(INITIAL_SHIFT_META));
+  const [selectedShifts, setSelectedShifts] = useState([]); // ⚠️ Sẽ được set sau khi load config
   const [initialMissingShifts, setInitialMissingShifts] = useState([]); // Track original missing shifts for editing
+  const [subRoomShiftStatus, setSubRoomShiftStatus] = useState([]); // 🆕 Chi tiết trạng thái ca của từng buồng
   const [creatingSchedule, setCreatingSchedule] = useState(false);
   const [holidayPreview, setHolidayPreview] = useState(null); // 🆕 Holiday preview data
   const [loadingHolidayPreview, setLoadingHolidayPreview] = useState(false); // 🆕
 
   // Schedule list modal filters
   const [scheduleListFilterType, setScheduleListFilterType] = useState('all'); // 'all' | 'missing' | 'complete'
-  const [scheduleListSearchDate, setScheduleListSearchDate] = useState(null); // For date search
+  const [scheduleListSearchMonth, setScheduleListSearchMonth] = useState(null); // For month/year search - Format: "YYYY-MM"
+
+  // 🆕 Edit Schedule Modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
 
   const loadScheduleConfig = useCallback(async () => {
     setConfigLoading(true);
     try {
       const response = await scheduleConfigService.getConfig();
-      if (response?.success && response?.data) {
-        const built = buildShiftMetaFromConfig(response.data);
-        setShiftMeta(built.meta);
-        setSlotDuration(built.unitDuration);
-        return built;
+      
+      // ⚠️ Bắt buộc phải có config từ backend
+      if (!response?.success || !response?.data) {
+        toast.error('Chưa có cấu hình hệ thống. Vui lòng vào Cài đặt → Cấu hình ca làm việc để khởi tạo trước khi tạo lịch.');
+        setConfigLoading(false);
+        setShowCreateModal(false); // Đóng modal
+        return null;
       }
 
-      const fallback = buildShiftMetaFromConfig();
-      setShiftMeta(fallback.meta);
-      setSlotDuration(fallback.unitDuration);
-      toast.warning('Không lấy được cấu hình ca làm việc mới nhất. Đang sử dụng giá trị mặc định.');
-      return fallback;
+      // Config hợp lệ → Build shift meta
+      const built = buildShiftMetaFromConfig(response.data);
+      setShiftMeta(built.meta);
+      setSlotDuration(built.unitDuration);
+      
+      // ✅ Set selectedShifts với các ca đang active
+      const activeShifts = getActiveShiftKeys(built.meta);
+      setSelectedShifts(activeShifts);
+      
+      return built;
     } catch (error) {
       console.error('Error loading schedule config:', error);
-      toast.error('Không thể lấy cấu hình ca làm việc. Đang sử dụng giá trị mặc định.');
-      const fallback = buildShiftMetaFromConfig();
-      setShiftMeta(fallback.meta);
-      setSlotDuration(fallback.unitDuration);
-      return fallback;
+      toast.error('Không thể lấy cấu hình ca làm việc. Vui lòng kiểm tra kết nối hoặc khởi tạo cấu hình hệ thống.');
+      setConfigLoading(false);
+      setShowCreateModal(false); // Đóng modal
+      return null;
     } finally {
       setConfigLoading(false);
     }
   }, []);
+
+  // 🆕 Recalculate available shifts based on selected subrooms
+  const recalculateAvailableShifts = useCallback((selectedIds) => {
+    if (!scheduleListData?.subRoomShiftStatus || selectedIds.length === 0) {
+      return;
+    }
+
+    // Lọc chỉ các buồng được chọn
+    const selectedSubRoomStatuses = scheduleListData.subRoomShiftStatus.filter(sr =>
+      selectedIds.includes(sr.subRoomId.toString())
+    );
+
+    // ✅ Tính ca thiếu: Ca đang BẬT (isActive) VÀ có ít nhất 1 buồng chưa tạo
+    const missingShifts = [];
+    
+    // Check morning: Ca đang bật VÀ chưa generate
+    if (selectedSubRoomStatuses.some(sr => sr.shifts.morning === true && sr.generatedShifts.morning === false)) {
+      missingShifts.push('morning');
+    }
+    
+    // Check afternoon: Ca đang bật VÀ chưa generate
+    if (selectedSubRoomStatuses.some(sr => sr.shifts.afternoon === true && sr.generatedShifts.afternoon === false)) {
+      missingShifts.push('afternoon');
+    }
+    
+    // Check evening: Ca đang bật VÀ chưa generate
+    if (selectedSubRoomStatuses.some(sr => sr.shifts.evening === true && sr.generatedShifts.evening === false)) {
+      missingShifts.push('evening');
+    }
+
+    console.log(`🔄 Recalculated missing shifts for ${selectedIds.length} subrooms:`, missingShifts);
+    setInitialMissingShifts(missingShifts);
+    
+    // ❌ KHÔNG tự động chọn ca - Để người dùng tự chọn
+    // setSelectedShifts(missingShifts);
+  }, [scheduleListData]);
 
   useEffect(() => {
     fetchRooms();
@@ -235,99 +290,26 @@ const CreateScheduleForRoom = () => {
       if (response.success) {
         let filteredRooms = response.data.rooms;
         
-        // Apply schedule status filter
+        // Apply schedule status filter based on hasBeenUsed
         if (scheduleStatusFilter === 'has-schedule') {
-          filteredRooms = filteredRooms.filter(room => room.hasSchedule);
+          filteredRooms = filteredRooms.filter(room => room.hasBeenUsed);
         } else if (scheduleStatusFilter === 'no-schedule') {
-          filteredRooms = filteredRooms.filter(room => !room.hasSchedule);
+          filteredRooms = filteredRooms.filter(room => !room.hasBeenUsed);
         }
         
-        // Fetch missing shifts info for rooms with schedules
-        const roomsWithShiftInfo = await Promise.all(
-          filteredRooms.map(async (room) => {
-            if (room.hasSchedule) {
-              try {
-                // Nếu phòng có buồng con, check từng buồng
-                if (room.hasSubRooms && room.subRooms && room.subRooms.length > 0) {
-                  const subRoomsWithShiftInfo = await Promise.all(
-                    room.subRooms.map(async (subRoom) => {
-                      try {
-                        const shiftResponse = await scheduleService.getRoomSchedulesWithShifts(
-                          room._id,
-                          subRoom._id
-                        );
-                        
-                        const hasMissingShifts = shiftResponse.success && 
-                          shiftResponse.data?.schedules && 
-                          shiftResponse.data.schedules.some(s => s.hasMissingShifts);
-                        
-                        return {
-                          ...subRoom,
-                          hasMissingShifts,
-                          lastCreatedDate: shiftResponse.data?.summary?.lastCreatedDate,
-                          scheduleCount: shiftResponse.data?.summary?.totalSchedules || 0
-                        };
-                      } catch (error) {
-                        console.error(`Error fetching shift info for subroom ${subRoom._id}:`, error);
-                        return subRoom;
-                      }
-                    })
-                  );
-                  
-                  // Aggregate data from all subrooms
-                  const allLastCreatedDates = subRoomsWithShiftInfo
-                    .map(sr => sr.lastCreatedDate)
-                    .filter(Boolean);
-                  const latestCreatedDate = allLastCreatedDates.length > 0
-                    ? allLastCreatedDates.sort((a, b) => new Date(b) - new Date(a))[0]
-                    : null;
-                  const totalScheduleCount = subRoomsWithShiftInfo
-                    .reduce((sum, sr) => sum + (sr.scheduleCount || 0), 0);
-                  
-                  return {
-                    ...room,
-                    subRooms: subRoomsWithShiftInfo,
-                    hasMissingShifts: subRoomsWithShiftInfo.some(sr => sr.hasMissingShifts),
-                    lastCreatedDate: latestCreatedDate,
-                    scheduleCount: totalScheduleCount
-                  };
-                } else {
-                  // Phòng không có buồng con
-                  const shiftResponse = await scheduleService.getRoomSchedulesWithShifts(room._id);
-                  
-                  const hasMissingShifts = shiftResponse.success && 
-                    shiftResponse.data?.schedules && 
-                    shiftResponse.data.schedules.some(s => s.hasMissingShifts);
-                  
-                  return {
-                    ...room,
-                    hasMissingShifts,
-                    lastCreatedDate: shiftResponse.data?.summary?.lastCreatedDate,
-                    scheduleCount: shiftResponse.data?.summary?.totalSchedules || 0
-                  };
-                }
-              } catch (error) {
-                console.error(`Error fetching shift info for room ${room._id}:`, error);
-                return room;
-              }
-            }
-            return room;
-          })
-        );
-        
-        setRooms(roomsWithShiftInfo);
-        setPagination({
-          ...pagination,
+        setRooms(filteredRooms);
+        setPagination(prev => ({
+          ...prev,
           total: response.data.total
-        });
+        }));
       } else {
-        toast.error(response.message || 'Lỗi khi tải danh sách phòng');
+        message.error(response.message || 'Không thể lấy danh sách phòng');
       }
     } catch (error) {
-      toast.error('Lỗi khi tải danh sách phòng: ' + error.message);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching rooms:', error);
+      message.error('Lỗi khi lấy danh sách phòng');
     }
+    setLoading(false);
   };
 
   // Handle create schedule button click - Show schedule list first
@@ -336,129 +318,32 @@ const CreateScheduleForRoom = () => {
       setLoading(true);
       setSelectedRoom(room);
       
-      // Nếu phòng có subroom và không truyền subRoom cụ thể
-      if (room.hasSubRooms && room.subRooms && room.subRooms.length > 0 && !subRoom) {
-        // Fetch schedules cho TẤT CẢ subrooms và gộp lại
-        const subRoomSchedules = await Promise.all(
-          room.subRooms.map(async (sr) => {
-            try {
-              const response = await scheduleService.getRoomSchedulesWithShifts(
-                room._id,
-                sr._id
-              );
-              
-              return {
-                subRoom: sr,
-                schedules: response.success && response.data ? response.data : null
-              };
-            } catch (error) {
-              console.error(`Error loading schedules for subroom ${sr._id}:`, error);
-              return {
-                subRoom: sr,
-                schedules: null,
-                error: error.message
-              };
-            }
-          })
-        );
+      // ✅ GỌI 1 API DUY NHẤT - không truyền subRoomId để lấy tất cả
+      const response = await scheduleService.getRoomSchedulesWithShifts(
+        room._id,
+        subRoom?._id // null nếu không chọn subroom cụ thể
+      );
+      
+      if (response.success && response.data) {
+        // 🐛 DEBUG: Log backend response
+        console.log('🔍 Backend Response - Room:', room.name, 'hasSubRooms:', room.hasSubRooms);
+        console.log('🔍 Schedules từ backend:', response.data.schedules?.map(s => ({
+          month: s.month,
+          year: s.year,
+          subRoom: s.subRoom?.name || 'NO_SUBROOM',
+          startDate: s.startDate,
+          endDate: s.endDate
+        })));
         
-        // Gộp tất cả schedules lại và thêm thông tin subRoom vào mỗi schedule
-        const allSchedules = [];
-        subRoomSchedules.forEach(item => {
-          if (item.schedules?.schedules) {
-            item.schedules.schedules.forEach(schedule => {
-              allSchedules.push({
-                ...schedule,
-                subRoom: item.subRoom // Thêm thông tin subRoom
-              });
-            });
-          }
-        });
+        setScheduleListData(response.data);
+        setSelectedSubRoom(subRoom);
         
-        // Gộp các schedule có cùng startDate-endDate
-        const groupedSchedules = {};
-        allSchedules.forEach(schedule => {
-          const key = `${schedule.startDate}_${schedule.endDate}`;
-          
-          if (!groupedSchedules[key]) {
-            groupedSchedules[key] = {
-              ...schedule,
-              subRooms: [schedule.subRoom], // Array các subrooms có schedule này
-              scheduleIds: [schedule.scheduleId] // Array các scheduleId
-            };
-          } else {
-            // Gộp subroom vào
-            groupedSchedules[key].subRooms.push(schedule.subRoom);
-            groupedSchedules[key].scheduleIds.push(schedule.scheduleId);
-            
-            // Merge missingShifts - lấy ca thiếu chung của tất cả subrooms
-            const existingMissingKeys = groupedSchedules[key].missingShifts.map(s => s.key);
-            schedule.missingShifts.forEach(shift => {
-              if (!existingMissingKeys.includes(shift.key)) {
-                groupedSchedules[key].missingShifts.push(shift);
-              }
-            });
-            
-            // Update hasMissingShifts
-            groupedSchedules[key].hasMissingShifts = groupedSchedules[key].missingShifts.length > 0;
-          }
-        });
-        
-        // Convert object to array
-        const mergedSchedules = Object.values(groupedSchedules);
-        
-        // Sort by startDate
-        mergedSchedules.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-        
-        // Tính toán summary chung
-        const allLastCreatedDates = subRoomSchedules
-          .map(item => item.schedules?.summary?.lastCreatedDate)
-          .filter(Boolean);
-        const latestCreatedDate = allLastCreatedDates.length > 0
-          ? allLastCreatedDates.sort((a, b) => new Date(b) - new Date(a))[0]
-          : null;
-        
-        const totalSchedules = mergedSchedules.length;
-        const hasGap = subRoomSchedules.some(item => item.schedules?.summary?.hasGap);
-        
-        // Lấy suggested start date sớm nhất
-        const allSuggestedDates = subRoomSchedules
-          .map(item => item.schedules?.summary?.suggestedStartDate)
-          .filter(Boolean);
-        const earliestSuggestedDate = allSuggestedDates.length > 0
-          ? allSuggestedDates.sort((a, b) => new Date(a) - new Date(b))[0]
-          : null;
-        
-        const combinedData = {
-          schedules: mergedSchedules,
-          summary: {
-            totalSchedules,
-            lastCreatedDate: latestCreatedDate,
-            hasGap,
-            suggestedStartDate: earliestSuggestedDate
-          }
-        };
-        
-        setScheduleListData(combinedData);
+        // Show schedule list modal
         setShowScheduleListModal(true);
       } else {
-        // Phòng không có subroom HOẶC đã chọn subroom cụ thể
-        const response = await scheduleService.getRoomSchedulesWithShifts(
-          room._id,
-          subRoom?._id
-        );
-        
-        if (response.success && response.data) {
-          setScheduleListData(response.data);
-          setSelectedSubRoom(subRoom);
-          
-          // Show schedule list modal
-          setShowScheduleListModal(true);
-        } else {
-          // No schedules, go straight to create
-          setSelectedSubRoom(subRoom);
-          await handleOpenCreateModal(room, subRoom, null);
-        }
+        // No schedules, go straight to create
+        setSelectedSubRoom(subRoom);
+        await handleOpenCreateModal(room, subRoom, null);
       }
     } catch (error) {
       console.error('Error loading schedules:', error);
@@ -496,13 +381,14 @@ const CreateScheduleForRoom = () => {
         setSlotDuration(scheduleMeta.unitDuration);
       }
       
-      // Nếu existingSchedule có subRooms array, lưu lại để thêm ca cho tất cả
-      if (existingSchedule.subRooms && existingSchedule.subRooms.length > 0) {
-        setSelectedSubRooms(existingSchedule.subRooms);
-      } else if (existingSchedule.subRoom) {
-        setSelectedSubRooms([existingSchedule.subRoom]);
+      // 🆕 Khi thêm ca thiếu, KHÔNG lấy từ existingSchedule vì nó chỉ chứa 1 buồng
+      // Thay vào đó, lấy TẤT CẢ buồng từ selectedRoom để user có thể chọn
+      if (selectedRoom?.hasSubRooms && selectedRoom.subRooms?.length > 0) {
+        setSelectedSubRooms(selectedRoom.subRooms);
+        console.log(`📦 Set selectedSubRooms to ALL ${selectedRoom.subRooms.length} subrooms from room`);
       } else {
         setSelectedSubRooms([]);
+        console.log(`📦 Room has NO subrooms`);
       }
       
       const scheduleStart = dayjs(existingSchedule.startDate);
@@ -511,15 +397,50 @@ const CreateScheduleForRoom = () => {
       setFromMonth(existingSchedule.month);
       setToMonth(existingSchedule.month);
       setSelectedYear(existingSchedule.year);
+      setToYear(existingSchedule.year); // 🔧 FIX: Phải set toYear khi thêm ca thiếu
       setStartDate(scheduleStart);
       setEndDate(scheduleEnd);
       
-      // Pre-select only missing shifts
+      // ⚠️ Lưu danh sách ca thiếu NHƯNG KHÔNG tự động chọn
       const missingShiftKeys = existingSchedule.missingShifts
-        .map(s => s.key)
-        .filter((key) => SHIFT_KEYS.includes(key));
-      setSelectedShifts(missingShiftKeys);
+        .filter(s => {
+          // Check nếu ca này isActive trong shiftConfig của lịch
+          const shiftKey = s.key; // 'morning', 'afternoon', 'evening'
+          const shiftConfigForKey = existingSchedule.shiftConfig?.[shiftKey];
+          
+          // Nếu shiftConfig tồn tại và isActive === false → Không chọn
+          if (shiftConfigForKey && shiftConfigForKey.isActive === false) {
+            return false;
+          }
+          
+          return SHIFT_KEYS.includes(shiftKey);
+        })
+        .map(s => s.key);
+      
+      // ❌ KHÔNG tự động chọn ca - Để người dùng tự chọn
+      setSelectedShifts([]);
       setInitialMissingShifts(missingShiftKeys); // Save original missing shifts
+      
+      // 🔧 FIX: Lấy subRoomShiftStatus từ existingSchedule (đã được filter theo tháng) thay vì scheduleListData (tất cả tháng)
+      const subRoomStatus = existingSchedule.subRoomShiftStatus || scheduleListData?.subRoomShiftStatus || [];
+      const missingSubRooms = scheduleListData?.missingSubRooms || [];
+      
+      setSubRoomShiftStatus(subRoomStatus);
+      
+      // 🆕 Log để debug
+      console.log('📊 SubRoom Shift Status (from existingSchedule):', subRoomStatus);
+      console.log('🏥 Missing SubRooms:', missingSubRooms);
+      
+      // 🆕 Init selectedSubRoomIds - chọn các buồng có isActiveSubRoom = true
+      if (subRoomStatus && subRoomStatus.length > 0) {
+        const activeSubRoomIds = subRoomStatus
+          .filter(sr => sr.isActiveSubRoom === false)
+          .map(sr => sr.subRoomId);
+        setSelectedSubRoomIds(activeSubRoomIds);
+        console.log(`🏥 Thêm ca thiếu - Mặc định chọn ${activeSubRoomIds.length}/${subRoomStatus.length} buồng có isActiveSubRoom=true`);
+      } else {
+        setSelectedSubRoomIds([]);
+      }
       
       toast.info(
         `Thêm ca thiếu: ${existingSchedule.missingShifts.map(s => s.name).join(', ')}`
@@ -534,14 +455,79 @@ const CreateScheduleForRoom = () => {
       setShiftMeta(effectiveMeta);
       setSlotDuration(effectiveSlotDuration || DEFAULT_SLOT_DURATION);
       
+      // 🆕 Init selectedSubRoomIds - mặc định chọn all active subrooms
+      if (room.hasSubRooms && room.subRooms && room.subRooms.length > 0) {
+        const activeSubRoomIds = room.subRooms
+          .filter(sr => sr.isActiveSubRoom === true)
+          .map(sr => sr._id);
+        setSelectedSubRoomIds(activeSubRoomIds);
+        console.log(`🏥 Mặc định chọn ${activeSubRoomIds.length}/${room.subRooms.length} buồng active`);
+      } else {
+        setSelectedSubRoomIds([]);
+      }
+      
+      // 🆕 Reset partial start date
+      setPartialStartDate(null);
+      
       // Use suggested start date from API
       const suggestedStart = scheduleListData?.summary?.suggestedStartDate;
       const startDateToUse = suggestedStart ? dayjs(suggestedStart) : dayjs().add(1, 'day');
       
-      setFromMonth(startDateToUse.month() + 1);
-      setToMonth(startDateToUse.month() + 1);
-      setSelectedYear(startDateToUse.year());
-      setStartDate(startDateToUse);
+      // 🆕 Tìm tháng đầu tiên chưa có lịch
+      const currentYear = dayjs().year();
+      const currentMonth = dayjs().month() + 1;
+      let firstAvailableMonth = null;
+      let firstAvailableYear = startDateToUse.year();
+      
+      // Bắt đầu từ tháng suggested hoặc tháng hiện tại
+      for (let year = firstAvailableYear; year <= firstAvailableYear + 2; year++) {
+        const startMonth = year === startDateToUse.year() ? (startDateToUse.month() + 1) : 1;
+        
+        for (let m = startMonth; m <= 12; m++) {
+          const isPastMonth = year === currentYear && m < currentMonth;
+          const hasSchedule = isMonthScheduled(m, year);
+          
+          if (!isPastMonth && !hasSchedule) {
+            firstAvailableMonth = m;
+            firstAvailableYear = year;
+            break;
+          }
+        }
+        
+        if (firstAvailableMonth) break;
+      }
+      
+      if (firstAvailableMonth) {
+        setFromMonth(firstAvailableMonth);
+        setSelectedYear(firstAvailableYear);
+        
+        // 🆕 AUTO-FILL START DATE khi mở modal
+        const today = dayjs().startOf('day');
+        const currentMonth = today.month() + 1; // 1-12
+        const currentYear = today.year();
+        const isFirstMonthCurrent = firstAvailableMonth === currentMonth && firstAvailableYear === currentYear;
+        
+        let autoStartDate;
+        if (isFirstMonthCurrent) {
+          // Tháng hiện tại → Chọn ngày mai
+          autoStartDate = today.add(1, 'day');
+          console.log(`🎯 Modal mở (tháng hiện tại): Tự động chọn ngày ${autoStartDate.format('DD/MM/YYYY')}`);
+        } else {
+          // Tháng tương lai → Chọn ngày 1
+          autoStartDate = dayjs().year(firstAvailableYear).month(firstAvailableMonth - 1).date(1);
+          console.log(`🎯 Modal mở (tháng tương lai): Tự động chọn ngày ${autoStartDate.format('DD/MM/YYYY')}`);
+        }
+        
+        setStartDate(autoStartDate);
+      } else {
+        setFromMonth(startDateToUse.month() + 1);
+        setSelectedYear(startDateToUse.year());
+        setStartDate(startDateToUse);
+      }
+      
+      // Reset toMonth và toYear - chỉ cho chọn sau khi chọn fromMonth
+      setToMonth(null);
+      setToYear(null);
       setEndDate(null);
       setSelectedShifts(defaultShiftKeys);
 
@@ -558,19 +544,24 @@ const CreateScheduleForRoom = () => {
       }
     }
     
+    // 🔧 FIX: Đóng modal danh sách trước, đợi một chút để tránh overlay chồng lên nhau
     setShowScheduleListModal(false);
-    setShowCreateModal(true);
+    
+    // Đợi modal cũ đóng xong mới mở modal mới
+    setTimeout(() => {
+      setShowCreateModal(true);
+    }, 100);
   };
 
   // 🆕 Load holiday preview khi thay đổi tháng hoặc ngày bắt đầu
   const loadHolidayPreview = useCallback(async () => {
-    if (!fromMonth || !toMonth || !selectedYear || !startDate) {
+    if (!fromMonth || !toMonth || !selectedYear || !toYear || !startDate) {
       setHolidayPreview(null);
       return;
     }
 
-    // Tính ngày kết thúc dựa trên toMonth
-    const calculatedEndDate = dayjs(new Date(selectedYear, toMonth, 0)); // Last day of toMonth
+    // Tính ngày kết thúc dựa trên toMonth và toYear
+    const calculatedEndDate = dayjs(new Date(toYear, toMonth, 0)); // Last day of toMonth in toYear
     
     setLoadingHolidayPreview(true);
     try {
@@ -588,7 +579,7 @@ const CreateScheduleForRoom = () => {
     } finally {
       setLoadingHolidayPreview(false);
     }
-  }, [fromMonth, toMonth, selectedYear, startDate]);
+  }, [fromMonth, toMonth, selectedYear, toYear, startDate]);
 
   // Trigger load holiday preview khi các dependencies thay đổi
   useEffect(() => {
@@ -599,36 +590,89 @@ const CreateScheduleForRoom = () => {
 
   // Handle submit create schedule - Tạo cho TẤT CẢ buồng nếu phòng có buồng
   const handleSubmitCreateSchedule = async () => {
-    if (!fromMonth || !toMonth || !selectedYear || !startDate || selectedShifts.length === 0) {
+    if (!fromMonth || !toMonth || !selectedYear || !toYear || !startDate || selectedShifts.length === 0) {
       toast.error('Vui lòng điền đầy đủ thông tin');
       return;
     }
 
-    // Validate: toMonth >= fromMonth
-    if (toMonth < fromMonth) {
-      toast.error('Tháng kết thúc phải >= Tháng bắt đầu');
+    // 🆕 Validate: Nếu room có subrooms và đang tạo mới, phải chọn ít nhất 1
+    if (!isEditingExistingSchedule && selectedRoom?.hasSubRooms && selectedRoom?.subRooms?.length > 0) {
+      if (selectedSubRoomIds.length === 0) {
+        toast.error('Phải chọn ít nhất 1 buồng để tạo lịch');
+        return;
+      }
+    }
+
+    // Validate: toYear >= selectedYear, và nếu cùng năm thì toMonth >= fromMonth
+    if (toYear < selectedYear || (toYear === selectedYear && toMonth < fromMonth)) {
+      toast.error('Thời gian kết thúc phải sau hoặc bằng thời gian bắt đầu');
       return;
+    }
+    
+    // 🆕 Validate: Không được chọn tháng đã có lịch - CHỈ KHI TẠO MỚI
+    // Khi thêm ca thiếu (isEditingExistingSchedule), không cần check vì đang thêm vào lịch có sẵn
+    if (!isEditingExistingSchedule) {
+      if (isMonthScheduled(fromMonth, selectedYear)) {
+        toast.error(`Tháng ${fromMonth}/${selectedYear} đã có lịch. Vui lòng chọn tháng khác.`);
+        return;
+      }
+      
+      if (isMonthScheduled(toMonth, toYear)) {
+        toast.error(`Tháng ${toMonth}/${toYear} đã có lịch. Vui lòng chọn tháng khác.`);
+        return;
+      }
+      
+      // 🆕 Validate: Kiểm tra không có tháng đã có lịch trong khoảng thời gian chọn
+      let currentCheckMonth = dayjs().year(selectedYear).month(fromMonth - 1);
+      const endCheckMonth = dayjs().year(toYear).month(toMonth - 1);
+      
+      while (currentCheckMonth.isBefore(endCheckMonth) || currentCheckMonth.isSame(endCheckMonth, 'month')) {
+        const checkMonth = currentCheckMonth.month() + 1;
+        const checkYear = currentCheckMonth.year();
+        
+        if (isMonthScheduled(checkMonth, checkYear)) {
+          toast.error(`Tháng ${checkMonth}/${checkYear} trong khoảng thời gian đã có lịch. Vui lòng chọn lại.`);
+          return;
+        }
+        
+        currentCheckMonth = currentCheckMonth.add(1, 'month');
+      }
     }
 
     // Validate: Không được chọn năm/tháng trong quá khứ
     const currentYear = dayjs().year();
     const currentMonth = dayjs().month() + 1;
     const currentDate = dayjs().startOf('day');
+    const today = dayjs().startOf('day');
+    const tomorrow = today.add(1, 'day');
     
     if (selectedYear < currentYear) {
       toast.error('Không thể tạo lịch cho năm đã qua');
       return;
     }
     
-    if (selectedYear === currentYear && toMonth < currentMonth) {
-      toast.error('Không thể tạo lịch cho tháng đã qua');
+    if (toYear < currentYear || (toYear === currentYear && toMonth < currentMonth)) {
+      toast.error('Không thể tạo lịch kết thúc ở tháng đã qua');
       return;
     }
     
-    // Validate: Ngày bắt đầu không được trong quá khứ
-    if (startDate.isBefore(currentDate)) {
-      toast.error('Ngày bắt đầu phải từ hôm nay trở đi');
-      return;
+    // 🆕 Validate: Ngày bắt đầu - Logic mới
+    const selectedMonth = startDate.month() + 1;
+    const startDateYear = startDate.year(); // 🔧 Đổi tên để tránh conflict với state selectedYear
+    const isCurrentMonth = selectedMonth === currentMonth && startDateYear === currentYear;
+    
+    // Nếu chọn tháng HIỆN TẠI → Ngày bắt đầu phải >= TOMORROW
+    if (isCurrentMonth) {
+      if (startDate.isBefore(tomorrow)) {
+        toast.error('Ngày bắt đầu phải sau ngày hiện tại ít nhất 1 ngày (vì lịch tạo sau 1 ngày)');
+        return;
+      }
+    } else {
+      // Nếu chọn tháng TƯƠNG LAI → Ngày bắt đầu chỉ cần >= TODAY
+      if (startDate.isBefore(today)) {
+        toast.error('Ngày bắt đầu không được trong quá khứ');
+        return;
+      }
     }
     
     // Validate: Nếu có suggested start date, phải tuân theo
@@ -644,98 +688,171 @@ const CreateScheduleForRoom = () => {
 
     setCreatingSchedule(true);
     try {
-      // Trường hợp THÊM CA THIẾU cho nhiều buồng (từ grouped schedule)
-      if (isEditingExistingSchedule && selectedSubRooms.length > 0) {
-        const results = [];
-        let successCount = 0;
+      // 🆕 Trường hợp THÊM CA THIẾU - Dùng API mới addMissingShifts
+      if (isEditingExistingSchedule) {
+        console.log('🔧 Adding missing shifts to existing schedule...');
+        console.log('   Selected shifts:', selectedShifts);
+        console.log('   Selected subRoom IDs (from checkboxes):', selectedSubRoomIds);
         
-        for (const subRoom of selectedSubRooms) {
-          try {
-            const response = await scheduleService.generateRoomSchedule({
-              roomId: selectedRoom._id,
-              subRoomId: subRoom._id,
-              fromMonth,
-              toMonth,
-              year: selectedYear,
-              startDate: startDate.format('YYYY-MM-DD'),
-              shifts: selectedShifts
-            });
-
-            if (response.success) {
-              const updatedMonths = response.data?.results?.filter(r => r.status === 'updated') || [];
-              const totalAddedSlots = updatedMonths.reduce((sum, m) => sum + (m.addedSlots || 0), 0);
-              
-              results.push({ 
-                subRoom: subRoom.name, 
-                status: 'success',
-                addedSlots: totalAddedSlots
-              });
-              successCount++;
-            } else {
-              results.push({ subRoom: subRoom.name, status: 'failed', message: response.message });
-            }
-          } catch (error) {
-            results.push({ subRoom: subRoom.name, status: 'error', message: error.message });
-          }
+        // 🆕 Dùng selectedSubRoomIds (danh sách buồng được CHỌN) thay vì selectedSubRooms (toàn bộ)
+        let subRoomIdsToSend = [];
+        if (selectedRoom?.hasSubRooms) {
+          // Nếu có chọn buồng cụ thể → Gửi danh sách đó
+          // Nếu KHÔNG chọn gì (selectedSubRoomIds = []) → Gửi [] để backend tạo cho TẤT CẢ
+          subRoomIdsToSend = selectedSubRoomIds;
+          console.log('   SubRoom IDs to send:', subRoomIdsToSend.length > 0 ? subRoomIdsToSend : 'ALL (empty array)');
         }
         
-        // Hiển thị kết quả
-        const totalAddedSlots = results.reduce((sum, r) => sum + (r.addedSlots || 0), 0);
-        const successSubRooms = results.filter(r => r.status === 'success').map(r => r.subRoom).join(', ');
-        const failedResults = results.filter(r => r.status === 'failed' || r.status === 'error');
-        const addedShifts = selectedShifts.map(s => {
-          const shiftNames = { morning: 'Ca Sáng', afternoon: 'Ca Chiều', evening: 'Ca Tối' };
-          return shiftNames[s] || s;
-        }).join(', ');
+        try {
+          // 🐛 DEBUG: Log giá trị trước khi gửi request
+          console.log('🔍 Preparing addMissingShifts request:');
+          console.log('   fromMonth:', fromMonth);
+          console.log('   selectedYear:', selectedYear);
+          console.log('   toMonth:', toMonth);
+          console.log('   toYear:', toYear);
+          console.log('   roomId:', selectedRoom._id);
+          
+          const response = await scheduleService.addMissingShifts({
+            roomId: selectedRoom._id,
+            month: fromMonth,
+            year: selectedYear,
+            subRoomIds: subRoomIdsToSend,
+            selectedShifts: selectedShifts,
+            partialStartDate: null // Luôn tạo từ ngày bắt đầu của lịch
+          });
+
+          console.log('✅ Add missing shifts response:', response);
+
+          if (response.success) {
+            const { totalAddedSlots, results } = response.data;
+            
+            const successResults = results.filter(r => r.status === 'success');
+            const addedShifts = selectedShifts.map(s => {
+              const shiftNames = { morning: 'Ca Sáng', afternoon: 'Ca Chiều', evening: 'Ca Tối' };
+              return shiftNames[s] || s;
+            }).join(', ');
+            
+            // Show success message
+            message.success({
+              content: `✅ Đã thêm ca thiếu thành công! ${addedShifts} - ${successResults.length} buồng - Tổng: ${totalAddedSlots} slots`,
+              duration: 5
+            });
+            
+            // 🔧 FIX: Refresh room list để cập nhật hasBeenUsed
+            fetchRooms();
+            
+            // Refresh schedule list
+            if (selectedRoom && selectedSubRoom) {
+              await fetchScheduleList(selectedRoom, selectedSubRoom);
+            }
+            
+            // Close modal and reset
+            handleCancelModal();
+          } else {
+            message.error(response.message || 'Không thể thêm ca thiếu');
+          }
+        } catch (error) {
+          console.error('❌ Error adding missing shifts:', error);
+          message.error(error.response?.data?.message || error.message || 'Lỗi khi thêm ca thiếu');
+        }
         
-        Modal.success({
-          title: '✅ Đã thêm ca thiếu thành công!',
-          content: (
-            <div>
-              <Text strong style={{ fontSize: 16, color: '#52c41a' }}>
-                Đã thêm {addedShifts}
-              </Text>
-              <br />
-              <br />
-              <Text>Đã thêm thành công cho <Text strong>{successCount}/{selectedSubRooms.length}</Text> buồng</Text>
-              <br />
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                Các buồng: {successSubRooms}
-              </Text>
-              <Divider style={{ margin: '12px 0' }} />
-              <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                Tổng số slots thêm vào: {totalAddedSlots}
-              </Text>
-              {failedResults.length > 0 && (
-                <>
-                  <Divider style={{ margin: '12px 0' }} />
-                  <Alert
-                    type="warning"
-                    message={`${failedResults.length} buồng thất bại`}
-                    description={failedResults.map(r => `${r.subRoom}: ${r.message}`).join(', ')}
-                    showIcon
-                  />
-                </>
-              )}
-            </div>
-          )
-        });
+        setCreatingSchedule(false);
+        return;
       }
-      // Nếu phòng có buồng, tạo lịch cho TẤT CẢ buồng
-      else if (selectedRoom.hasSubRooms && selectedRoom.subRooms && selectedRoom.subRooms.length > 0) {
+      
+      // TẠO LỊCH MỚI - Dùng API generateRoomSchedule như cũ
+      console.log('🔧 Creating new schedule...');
+      
+      // 🆕 Nếu phòng có buồng VÀ đang tạo mới, chỉ tạo cho buồng được chọn
+      if (selectedRoom.hasSubRooms && selectedRoom.subRooms && selectedRoom.subRooms.length > 0 && !isEditingExistingSchedule) {
+        // 🆕 Chỉ tạo cho các subrooms được chọn (selectedSubRoomIds)
+        const subRoomsToCreate = selectedRoom.subRooms.filter(sr => 
+          selectedSubRoomIds.includes(sr._id)
+        );
+        
+        console.log(`🏥 Tạo lịch mới cho ${subRoomsToCreate.length} buồng được chọn:`, subRoomsToCreate.map(sr => sr.name));
+        
+        // 🆕 Call API once with all selected subroom IDs
+        try {
+          const response = await scheduleService.generateRoomSchedule({
+            roomId: selectedRoom._id,
+            selectedSubRoomIds, // 🆕 Pass array of subroom IDs
+            fromMonth,
+            toMonth,
+            fromYear: selectedYear,
+            toYear: toYear,
+            startDate: startDate.format('YYYY-MM-DD'),
+            partialStartDate: partialStartDate ? partialStartDate.format('YYYY-MM-DD') : null,
+            shifts: selectedShifts
+          });
+
+          if (response.success) {
+            // Group results by subroom
+            const resultsBySubRoom = {};
+            let totalSlots = 0;
+            
+            response.data?.results?.forEach(result => {
+              const subRoomId = result.subRoomId;
+              if (!resultsBySubRoom[subRoomId]) {
+                resultsBySubRoom[subRoomId] = {
+                  slots: 0,
+                  status: result.status
+                };
+              }
+              if (result.status === 'success') {
+                resultsBySubRoom[subRoomId].slots += (result.slots || 0);
+                totalSlots += (result.slots || 0);
+              }
+            });
+            
+            const successSubRooms = subRoomsToCreate
+              .filter(sr => resultsBySubRoom[sr._id]?.status === 'success')
+              .map(sr => sr.name)
+              .join(', ');
+            
+            // Show success message
+            message.success({
+              content: `✅ Tạo lịch thành công cho ${Object.keys(resultsBySubRoom).length}/${subRoomsToCreate.length} buồng. Tổng: ${totalSlots} slots`,
+              duration: 5
+            });
+            
+            // Close modal
+            setShowCreateModal(false);
+          } else {
+            message.error(response.message || 'Không thể tạo lịch');
+          }
+        } catch (error) {
+          console.error('Error creating schedules:', error);
+          message.error(error.message || 'Lỗi khi tạo lịch');
+        }
+        
+        setCreatingSchedule(false);
+        return;
+      }
+      
+      // OLD LOOP CODE - Disabled
+      if (false) {
         const results = [];
         let successCount = 0;
-        let skipCount = 0;
         
-        for (const subRoom of selectedRoom.subRooms) {
+        // 🆕 Chỉ tạo cho các subrooms được chọn (selectedSubRoomIds)
+        const subRoomsToCreate = selectedRoom.subRooms.filter(sr => 
+          selectedSubRoomIds.includes(sr._id)
+        );
+        
+        console.log(`🏥 Tạo lịch cho ${subRoomsToCreate.length} buồng được chọn:`, subRoomsToCreate.map(sr => sr.name));
+        
+        for (const subRoom of subRoomsToCreate) {
           try {
             const response = await scheduleService.generateRoomSchedule({
               roomId: selectedRoom._id,
               subRoomId: subRoom._id,
               fromMonth,
               toMonth,
-              year: selectedYear,
+              fromYear: selectedYear,
+              toYear: toYear,
               startDate: startDate.format('YYYY-MM-DD'),
+              partialStartDate: partialStartDate ? partialStartDate.format('YYYY-MM-DD') : null, // 🆕
               shifts: selectedShifts
             });
 
@@ -750,22 +867,24 @@ const CreateScheduleForRoom = () => {
           }
         }
         
-        // Đếm số buồng bị skip (inactive)
-        skipCount = selectedRoom.subRooms.filter(sr => !sr.isActive).length;
+        // 🆕 Cập nhật message hiển thị
+        const notSelectedCount = selectedRoom.subRooms.length - subRoomsToCreate.length;
         
         toast.success(
-          `Tạo lịch thành công cho ${successCount}/${selectedRoom.subRooms.length} buồng` +
-          (skipCount > 0 ? ` (${skipCount} buồng không hoạt động bị bỏ qua)` : '')
+          `Tạo lịch thành công cho ${successCount}/${subRoomsToCreate.length} buồng được chọn` +
+          (notSelectedCount > 0 ? ` (${notSelectedCount} buồng không được chọn)` : '')
         );
       } else {
-        // Phòng không có buồng
+        // Phòng không có buồng HOẶC đang edit existing
         const response = await scheduleService.generateRoomSchedule({
           roomId: selectedRoom._id,
           subRoomId: selectedSubRoom?._id,
           fromMonth,
           toMonth,
-          year: selectedYear,
+          fromYear: selectedYear,
+          toYear: toYear,
           startDate: startDate.format('YYYY-MM-DD'),
+          partialStartDate: partialStartDate ? partialStartDate.format('YYYY-MM-DD') : null, // 🆕
           shifts: selectedShifts
         });
 
@@ -893,6 +1012,8 @@ const CreateScheduleForRoom = () => {
   const handleCancelModal = () => {
     setShowCreateModal(false);
     setShowScheduleListModal(false);
+    setShowEditModal(false); // 🆕 Close edit modal
+    setEditingSchedule(null); // 🆕 Reset editing schedule
     setSelectedRoom(null);
     setSelectedSubRoom(null);
     setSelectedSubRooms([]);
@@ -901,16 +1022,106 @@ const CreateScheduleForRoom = () => {
     setExistingScheduleId(null);
     setStartDate(null);
     setEndDate(null);
+    setFromMonth(dayjs().month() + 1);
+    setToMonth(dayjs().month() + 1);
+    setSelectedYear(dayjs().year());
+    setToYear(dayjs().year());
     setSelectedShifts(['morning', 'afternoon', 'evening']);
     // Reset schedule list filters
     setScheduleListFilterType('all');
-    setScheduleListSearchDate(null);
+    setScheduleListSearchMonth(null);
   };
 
+  // 🆕 Open Edit Schedule Modal
+  const handleOpenEditModal = (roomId, month, year, scheduleListData) => {
+    console.log('📝 Opening edit modal for room:', roomId, 'month:', month, 'year:', year);
+    console.log('📊 Schedule list data:', scheduleListData);
+    
+    setEditingSchedule({
+      roomId,
+      month,
+      year,
+      scheduleListData
+    });
+    setShowEditModal(true);
+  };
+
+  // 🆕 Handle Edit Schedule Success
+    const handleEditSuccess = async (result) => {
+  console.log('✅ Edit schedule success:', result);
+  toast.success('Cập nhật lịch thành công');
+  
+  // 🔧 Đóng modal edit
+  setShowEditModal(false);
+  setEditingSchedule(null);
+  
+  // 🔧 Reload schedule list (giữ modal danh sách lịch mở)
+  if (selectedRoom) {
+    setLoading(true); // 🔧 Hiển thị loading khi đang refresh
+    try {
+      const response = await scheduleService.getRoomSchedulesWithShifts(
+        selectedRoom._id,
+        selectedSubRoom?._id
+      );
+      
+      if (response.success && response.data) {
+        console.log('🔄 Refreshing schedule list data...', response.data);
+        
+        // 🔧 Force update bằng cách set null trước rồi mới set data mới
+        setScheduleListData(null);
+        setTimeout(() => {
+          setScheduleListData(response.data);
+          console.log('✅ Schedule list data updated');
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error reloading schedules:', error);
+      toast.error('Không thể tải lại danh sách lịch');
+    } finally {
+      setLoading(false); // 🔧 Tắt loading
+    }
+  }
+};
+    // 🆕 Handle Cancel Edit Modal (chỉ đóng modal edit, giữ modal danh sách lịch)
+  const handleCancelEditModal = () => {
+    console.log('❌ Cancel edit modal');
+    setShowEditModal(false);
+    setEditingSchedule(null);
+    // Không đóng showScheduleListModal - giữ modal danh sách lịch mở
+  };
+  // 🆕 Helper: Lấy danh sách các tháng/năm đã có lịch
+  const getScheduledMonths = useCallback(() => {
+    if (!scheduleListData?.schedules || scheduleListData.schedules.length === 0) {
+      return new Set();
+    }
+
+    const scheduledMonths = new Set();
+    scheduleListData.schedules.forEach(schedule => {
+      const start = dayjs(schedule.startDate);
+      const end = dayjs(schedule.endDate);
+      
+      // Lặp qua tất cả tháng từ startDate đến endDate
+      let current = start.startOf('month');
+      while (current.isBefore(end) || current.isSame(end, 'month')) {
+        const monthYear = `${current.year()}-${current.month() + 1}`;
+        scheduledMonths.add(monthYear);
+        current = current.add(1, 'month');
+      }
+    });
+
+    return scheduledMonths;
+  }, [scheduleListData]);
+
+  // 🆕 Helper: Kiểm tra tháng/năm đã có lịch chưa
+  const isMonthScheduled = useCallback((month, year) => {
+    const scheduledMonths = getScheduledMonths();
+    return scheduledMonths.has(`${year}-${month}`);
+  }, [getScheduledMonths]);
+
   // Calculate date range for selected months
-  const getDateRange = (fromMonth, toMonth, year) => {
-    const start = dayjs().year(year).month(fromMonth - 1).date(1);
-    const end = dayjs().year(year).month(toMonth - 1).endOf('month');
+  const getDateRange = (fromMonth, toMonth, fromYear, toYear) => {
+    const start = dayjs().year(fromYear).month(fromMonth - 1).date(1);
+    const end = dayjs().year(toYear).month(toMonth - 1).endOf('month');
     
     return { start, end };
   };
@@ -919,16 +1130,47 @@ const CreateScheduleForRoom = () => {
   // If current month is selected, start date must be >= tomorrow
   // For new schedules: Must be continuous from last schedule's end date
   const disabledDate = (current) => {
-    if (!fromMonth || !toMonth || !selectedYear) return false;
+    if (!current) return false;
     
-    const { start, end } = getDateRange(fromMonth, toMonth, selectedYear);
     const today = dayjs().startOf('day');
-    const currentMonth = dayjs().month() + 1; // 1-12
-    const currentYear = dayjs().year();
+    const tomorrow = today.add(1, 'day');
+    const currentMonth = today.month() + 1; // 1-12
+    const currentYear = today.year();
     
     // If editing existing schedule (adding missing shifts), dates are fixed
     if (isEditingExistingSchedule) {
       return true; // Disable all dates - can't change
+    }
+    
+    // 🆕 CRITICAL: Chỉ cho chọn ngày trong THÁNG/NĂM BẮT ĐẦU đã chọn
+    if (!fromMonth || !selectedYear) {
+      // Chưa chọn tháng/năm → Cho phép chọn tất cả (sẽ tự động update fromMonth sau)
+      return false;
+    }
+    
+    // 🆕 Giới hạn: Chỉ cho chọn ngày trong tháng/năm bắt đầu
+    const selectedDateMonth = current.month() + 1; // 1-12
+    const selectedDateYear = current.year();
+    
+    // Nếu ngày được chọn KHÔNG PHẢI tháng/năm bắt đầu → Disable
+    if (selectedDateMonth !== fromMonth || selectedDateYear !== selectedYear) {
+      return true; // Disable dates outside fromMonth/selectedYear
+    }
+    
+    // 🆕 Nếu tháng/năm bắt đầu = tháng/năm HIỆN TẠI
+    const isStartMonthCurrent = fromMonth === currentMonth && selectedYear === currentYear;
+    
+    if (isStartMonthCurrent) {
+      // Chỉ cho chọn từ NGÀY MAI trở đi
+      if (current < tomorrow) {
+        return true; // Disable hôm nay và quá khứ
+      }
+    } else {
+      // Tháng/năm bắt đầu là TƯƠNG LAI → Cho chọn từ ngày 1
+      // Nhưng vẫn không cho chọn quá khứ (nếu có)
+      if (current < today) {
+        return true; // Disable past dates
+      }
     }
     
     // For new schedules with existing data, validate continuity
@@ -936,7 +1178,7 @@ const CreateScheduleForRoom = () => {
       const suggestedStart = dayjs(scheduleListData.summary.suggestedStartDate).startOf('day');
       
       // Must start from suggested date (no gaps allowed)
-      if (current && current < suggestedStart) {
+      if (current < suggestedStart) {
         return true;
       }
       
@@ -947,20 +1189,13 @@ const CreateScheduleForRoom = () => {
         
         // Must select the gap month
         if (fromMonth !== suggestedMonth || selectedYear !== suggestedYear) {
-          return current && current > suggestedStart.endOf('month');
+          return current > suggestedStart.endOf('month');
         }
       }
     }
     
-    // Nếu chọn tháng hiện tại và năm hiện tại, phải chọn sau ngày hiện tại 1 ngày (ngày mai trở đi)
-    const isCurrentMonth = fromMonth === currentMonth && selectedYear === currentYear;
-    const minDate = isCurrentMonth ? today.add(1, 'day') : today;
-    
-    return current && (
-      current < start.startOf('day') || 
-      current > end.endOf('day') ||
-      current < minDate  // Không cho chọn ngày trong quá khứ, hoặc hôm nay nếu là tháng hiện tại
-    );
+    // Tất cả checks đã pass → Cho phép chọn
+    return false;
   };
 
   // Table columns
@@ -1007,39 +1242,31 @@ const CreateScheduleForRoom = () => {
     },
     {
       title: 'Trạng thái lịch',
-      dataIndex: 'hasSchedule',
-      key: 'hasSchedule',
+      dataIndex: 'hasBeenUsed',
+      key: 'hasBeenUsed',
       width: 150,
-      render: (hasSchedule) => (
+      render: (hasBeenUsed) => (
         <Tag 
-          color={hasSchedule ? 'success' : 'default'}
-          icon={hasSchedule ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+          color={hasBeenUsed ? 'success' : 'default'}
+          icon={hasBeenUsed ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
         >
-          {hasSchedule ? 'Đã có lịch' : 'Chưa có lịch'}
+          {hasBeenUsed ? 'Đã tạo lịch' : 'Chưa tạo lịch'}
         </Tag>
       )
     },
     {
       title: 'Lần tạo cuối',
-      dataIndex: 'lastCreatedDate',
-      key: 'lastCreatedDate',
+      dataIndex: 'lastScheduleGenerated',
+      key: 'lastScheduleGenerated',
       width: 150,
-      render: (date, record) => {
-        // Use lastCreatedDate from API if available, fallback to lastScheduleGenerated
-        const dateToShow = date || record.lastScheduleGenerated;
-        return dateToShow ? (
+      render: (date) => {
+        return date ? (
           <div>
-            <Text type="secondary">{dayjs(dateToShow).format('DD/MM/YYYY')}</Text>
+            <Text type="secondary">{dayjs(date).format('DD/MM/YYYY')}</Text>
             <br />
             <Text type="secondary" style={{ fontSize: 11 }}>
-              {dayjs(dateToShow).format('HH:mm')}
+              {dayjs(date).format('HH:mm')}
             </Text>
-            {record.scheduleCount > 0 && (
-              <>
-                <br />
-                <Tag color="blue" style={{ fontSize: 10 }}>{record.scheduleCount} lịch</Tag>
-              </>
-            )}
           </div>
         ) : (
           <Text type="secondary">Chưa có</Text>
@@ -1051,7 +1278,7 @@ const CreateScheduleForRoom = () => {
       key: 'action',
       width: 250,
       render: (_, record) => {
-        const isDisabled = !record.isActive;
+        const isDisabled = record.isActiveSubRoom === false;
         
         if (!record.hasSubRooms) {
           // Phòng không có buồng
@@ -1064,7 +1291,7 @@ const CreateScheduleForRoom = () => {
                 disabled={isDisabled}
                 block
               >
-                {record.hasSchedule ? 'Xem & tạo lịch' : 'Tạo lịch mới'}
+                {record.hasBeenUsed ? 'Xem & tạo lịch' : 'Tạo lịch mới'}
               </Button>
             </Tooltip>
           );
@@ -1079,7 +1306,7 @@ const CreateScheduleForRoom = () => {
                 disabled={isDisabled}
                 block
               >
-                {record.hasSchedule ? 'Xem & tạo lịch' : 'Tạo lịch'} ({record.subRooms?.length || 0} buồng)
+                {record.hasBeenUsed ? 'Xem & tạo lịch' : 'Tạo lịch'} ({record.subRooms?.length || 0} buồng)
               </Button>
             </Tooltip>
           );
@@ -1201,8 +1428,15 @@ const CreateScheduleForRoom = () => {
           </Button>
         ]}
         width={800}
-      >
-        {scheduleListData && (
+            >
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>
+              <Text type="secondary">Đang tải dữ liệu...</Text>
+            </div>
+          </div>
+        ) : scheduleListData && (
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             {/* Summary Info */}
             <Card size="small" style={{ backgroundColor: '#f0f5ff' }}>
@@ -1252,18 +1486,40 @@ const CreateScheduleForRoom = () => {
                   </Radio.Group>
                 </div>
                 <div>
-                  <Text strong style={{ marginRight: 12 }}>Tìm theo ngày:</Text>
-                  <DatePicker
-                    value={scheduleListSearchDate}
-                    onChange={(date) => setScheduleListSearchDate(date)}
-                    format="DD/MM/YYYY"
-                    placeholder="Chọn ngày để tìm lịch"
+                  <Text strong style={{ marginRight: 12 }}>Tìm theo tháng/năm:</Text>
+                  <Select
+                    value={scheduleListSearchMonth}
+                    onChange={(value) => setScheduleListSearchMonth(value)}
+                    placeholder="Chọn tháng/năm để tìm lịch"
                     style={{ width: 200 }}
                     allowClear
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                    options={
+                      scheduleListData?.schedules
+                        ? Array.from(
+                            new Set(
+                              scheduleListData.schedules.map(
+                                (s) => `${s.year}-${String(s.month).padStart(2, '0')}`
+                              )
+                            )
+                          )
+                            .sort((a, b) => b.localeCompare(a)) // Sort desc (newest first)
+                            .map((monthYear) => {
+                              const [year, month] = monthYear.split('-');
+                              return {
+                                value: monthYear,
+                                label: `Tháng ${parseInt(month)}/${year}`
+                              };
+                            })
+                        : []
+                    }
                   />
-                  {scheduleListSearchDate && (
+                  {scheduleListSearchMonth && (
                     <Text type="secondary" style={{ marginLeft: 12 }}>
-                      (Tìm lịch có phạm vi chứa ngày này)
+                      (Tìm lịch của tháng này)
                     </Text>
                   )}
                 </div>
@@ -1276,8 +1532,11 @@ const CreateScheduleForRoom = () => {
                 {scheduleListFilterType === 'missing' && 'Các lịch còn thiếu ca'}
                 {scheduleListFilterType === 'complete' && 'Các lịch đầy đủ'}
                 {scheduleListFilterType === 'all' && 'Lịch'}
-                {scheduleListSearchDate && ` (chứa ngày ${scheduleListSearchDate.format('DD/MM/YYYY')})`}
-                {!scheduleListSearchDate && ':'}
+                {scheduleListSearchMonth && (() => {
+                  const [year, month] = scheduleListSearchMonth.split('-');
+                  return ` (Tháng ${parseInt(month)}/${year})`;
+                })()}
+                {!scheduleListSearchMonth && ':'}
               </Text>
               {(() => {
                 try {
@@ -1293,45 +1552,168 @@ const CreateScheduleForRoom = () => {
                     );
                   }
 
-                  // Filter schedules based on selected filter type and search date
-                  let filteredSchedules = [...scheduleListData.schedules];
+                  // 🆕 NHÓM schedules theo month/year
+                  const scheduleGroups = scheduleListData.schedules.reduce((groups, schedule) => {
+                    const key = `${schedule.month}-${schedule.year}`;
+                    if (!groups[key]) {
+                      groups[key] = {
+                        month: schedule.month,
+                        year: schedule.year,
+                        startDate: null, // 🔧 FIX: Sẽ được set sau khi collect tất cả schedules
+                        endDate: null,   // 🔧 FIX: Sẽ được set sau khi collect tất cả schedules
+                        schedules: [],
+                        subRooms: []
+                      };
+                    }
+                    groups[key].schedules.push(schedule);
+                    
+                    // 🔧 FIX: Update startDate/endDate từ schedule có cùng month/year
+                    // Vì tất cả schedules trong group đều cùng month/year, nên startDate/endDate giống nhau
+                    if (!groups[key].startDate) {
+                      groups[key].startDate = schedule.startDate;
+                      groups[key].endDate = schedule.endDate;
+                    }
+                    
+                    // Thu thập subroom info
+                    if (schedule.subRoom) {
+                      groups[key].subRooms.push({
+                        _id: schedule.subRoom._id,
+                        name: schedule.subRoom.name,
+                        scheduleId: schedule.scheduleId,
+                        hasMissingShifts: schedule.hasMissingShifts,
+                        isExpired: schedule.isExpired,
+                        generatedShifts: schedule.generatedShifts,
+                        missingShifts: schedule.missingShifts
+                      });
+                    }
+                    return groups;
+                  }, {});
 
-                  // Apply type filter
+                  // Convert to array và sort theo month/year
+                  let groupedSchedules = Object.values(scheduleGroups).sort((a, b) => {
+                    if (a.year !== b.year) return a.year - b.year;
+                    return a.month - b.month;
+                  });
+
+                  // 🆕 Thêm thông tin từ subRoomShiftStatus và missingSubRooms
+                  groupedSchedules = groupedSchedules.map(group => {
+                    const allSubRooms = [];
+                    
+                    // 🔧 FIX: Build subRoomShiftStatus RIÊNG cho group này từ schedules
+                    const groupSubRoomShiftStatus = [];
+                    group.schedules.forEach(schedule => {
+                      if (schedule.subRoom) {
+                        // 🔧 Build shifts object từ generatedShifts và missingShifts
+                        const shifts = { morning: false, afternoon: false, evening: false };
+                        const generatedShifts = { morning: false, afternoon: false, evening: false };
+                        
+                        // Set shifts = true nếu ca đã tạo hoặc còn thiếu (tức là ca active)
+                        if (schedule.generatedShifts) {
+                          schedule.generatedShifts.forEach(shift => {
+                            if (shift.key) {
+                              shifts[shift.key] = true;
+                              generatedShifts[shift.key] = true;
+                            }
+                          });
+                        }
+                        
+                        if (schedule.missingShifts) {
+                          schedule.missingShifts.forEach(shift => {
+                            if (shift.key) {
+                              shifts[shift.key] = true; // Ca thiếu cũng là ca active
+                            }
+                          });
+                        }
+                        
+                        groupSubRoomShiftStatus.push({
+                          subRoomId: schedule.subRoom._id,
+                          subRoomName: schedule.subRoom.name,
+                          isActive: schedule.subRoom.isActive,
+                          isActiveSubRoom: schedule.isActiveSubRoom,
+                          shifts: shifts,
+                          generatedShifts: generatedShifts,
+                          month: schedule.month,
+                          year: schedule.year
+                        });
+                      }
+                    });
+                    
+                    // Lấy TẤT CẢ subroom của phòng (từ backend)
+                    if (selectedRoom?.subRooms) {
+                      selectedRoom.subRooms.forEach(roomSubRoom => {
+                        // 🔧 FIX: Lấy từ groupSubRoomShiftStatus thay vì scheduleListData.subRoomShiftStatus
+                        const statusData = groupSubRoomShiftStatus.find(
+                          sr => sr.subRoomId.toString() === roomSubRoom._id.toString()
+                        );
+                        
+                        const scheduleForThisSubRoom = group.schedules.find(
+                          s => s.subRoom?._id.toString() === roomSubRoom._id.toString()
+                        );
+
+                        allSubRooms.push({
+                          _id: roomSubRoom._id,
+                          name: roomSubRoom.name,
+                          isActive: roomSubRoom.isActive,
+                          hasSchedule: !!scheduleForThisSubRoom,
+                          scheduleId: scheduleForThisSubRoom?.scheduleId,
+                          hasMissingShifts: scheduleForThisSubRoom?.hasMissingShifts,
+                          generatedShifts: scheduleForThisSubRoom?.generatedShifts || [],
+                          missingShifts: scheduleForThisSubRoom?.missingShifts || [],
+                          disabledShifts: scheduleForThisSubRoom?.disabledShifts || [], // 🆕 Ca đã tắt
+                          isExpired: scheduleForThisSubRoom?.isExpired,
+                          shifts: statusData?.shifts || { morning: false, afternoon: false, evening: false },
+                          isActiveSubRoom: statusData?.isActiveSubRoom
+                        });
+                      });
+                    }
+
+                    // Tính toán trạng thái nhóm
+                    const hasAnyMissingShifts = group.schedules.some(s => s.hasMissingShifts);
+                    const isExpired = group.schedules.every(s => s.isExpired);
+                    const canCreate = group.schedules.some(s => s.canCreate);
+
+                    return {
+                      ...group,
+                      allSubRooms,
+                      groupSubRoomShiftStatus, // 🔧 ADD: Thêm subRoomShiftStatus riêng của group
+                      hasMissingShifts: hasAnyMissingShifts,
+                      isExpired,
+                      canCreate
+                    };
+                  });
+
+                  // Apply filters
                   if (scheduleListFilterType === 'missing') {
-                    filteredSchedules = filteredSchedules.filter(s => s.hasMissingShifts);
+                    groupedSchedules = groupedSchedules.filter(g => g.hasMissingShifts);
                   } else if (scheduleListFilterType === 'complete') {
-                    filteredSchedules = filteredSchedules.filter(s => !s.hasMissingShifts);
+                    groupedSchedules = groupedSchedules.filter(g => !g.hasMissingShifts);
                   }
 
                   // Apply date search filter
-                  if (scheduleListSearchDate) {
-                    filteredSchedules = filteredSchedules.filter(s => {
-                      if (!s.startDate || !s.endDate) return false;
+                  if (scheduleListSearchMonth) {
+                    groupedSchedules = groupedSchedules.filter(g => {
                       try {
-                        const searchDate = scheduleListSearchDate.format('YYYY-MM-DD');
-                        const start = dayjs(s.startDate).format('YYYY-MM-DD');
-                        const end = dayjs(s.endDate).format('YYYY-MM-DD');
-                        
-                        // Debug log
-                        console.log('Search:', searchDate, 'Range:', start, '-', end, 'Result:', searchDate >= start && searchDate <= end);
-                        
-                        return searchDate >= start && searchDate <= end;
+                        const [searchYear, searchMonth] = scheduleListSearchMonth.split('-');
+                        return g.year === parseInt(searchYear) && g.month === parseInt(searchMonth);
                       } catch (err) {
-                        console.error('Error parsing schedule dates:', err, s);
+                        console.error('Error parsing month/year:', err);
                         return false;
                       }
                     });
                   }
 
-                  if (filteredSchedules.length === 0) {
+                  if (groupedSchedules.length === 0) {
                     return (
                       <Alert
                         type="info"
                         showIcon
                         message="Không tìm thấy lịch"
                         description={
-                          scheduleListSearchDate 
-                            ? `Không có lịch nào ${scheduleListFilterType === 'missing' ? 'còn thiếu ca ' : scheduleListFilterType === 'complete' ? 'đầy đủ ' : ''}chứa ngày ${scheduleListSearchDate.format('DD/MM/YYYY')}`
+                          scheduleListSearchMonth 
+                            ? (() => {
+                                const [year, month] = scheduleListSearchMonth.split('-');
+                                return `Không có lịch nào ${scheduleListFilterType === 'missing' ? 'còn thiếu ca ' : scheduleListFilterType === 'complete' ? 'đầy đủ ' : ''}tháng ${parseInt(month)}/${year}`;
+                              })()
                             : `Không có lịch nào ${scheduleListFilterType === 'missing' ? 'còn thiếu ca' : 'đầy đủ'}`
                         }
                         style={{ marginTop: 12 }}
@@ -1342,74 +1724,237 @@ const CreateScheduleForRoom = () => {
                   return (
                     <List
                       bordered
-                      dataSource={filteredSchedules}
-                      renderItem={(schedule, index) => (
+                      dataSource={groupedSchedules}
+                      renderItem={(group, index) => (
                         <List.Item
                           actions={
-                            schedule.hasMissingShifts 
+                            group.hasMissingShifts 
                               ? [
-                                  <Button
-                                    type="link"
-                                    icon={<PlusOutlined />}
-                                    onClick={async () => {
-                                      await handleOpenCreateModal(selectedRoom, null, schedule);
-                                    }}
-                                    style={{ color: '#faad14' }}
+                                  <Tooltip 
+                                    title={
+                                      group.isExpired 
+                                        ? `Lịch đã kết thúc vào ${dayjs(group.endDate).format('DD/MM/YYYY')}`
+                                        : !group.canCreate
+                                        ? 'Tất cả ca thiếu đang tắt hoạt động'
+                                        : 'Thêm các ca chưa tạo vào lịch này'
+                                    }
                                   >
-                                    Thêm ca thiếu
-                                  </Button>
+                                    <Button
+                                      type="link"
+                                      icon={<PlusOutlined />}
+                                      onClick={async () => {
+                                        // 🔧 FIX: Tạo object đại diện cho group với month/year chính xác
+                                        // 🐛 DEBUG: Log để kiểm tra
+                                        console.log('🔍 Group clicked:', {
+                                          month: group.month,
+                                          year: group.year,
+                                          schedulesCount: group.schedules.length,
+                                          firstSchedule: group.schedules[0] ? {
+                                            month: group.schedules[0].month,
+                                            year: group.schedules[0].year,
+                                            subRoom: group.schedules[0].subRoom?.name
+                                          } : null,
+                                          allSchedules: group.schedules.map(s => ({
+                                            month: s.month,
+                                            year: s.year,
+                                            subRoom: s.subRoom?.name
+                                          }))
+                                        });
+                                        
+                                        const groupRepresent = {
+                                          month: group.month,
+                                          year: group.year,
+                                          startDate: group.startDate,
+                                          endDate: group.endDate,
+                                          missingShifts: group.schedules[0]?.missingShifts || [],
+                                          shiftConfig: group.schedules[0]?.shiftConfig, // 🔧 Thêm shiftConfig
+                                          subRoomShiftStatus: group.groupSubRoomShiftStatus || [] // 🔧 ADD: Thêm subRoomShiftStatus của tháng này
+                                        };
+                                        await handleOpenCreateModal(selectedRoom, null, groupRepresent);
+                                      }}
+                                      disabled={group.isExpired || !group.canCreate}
+                                      style={group.isExpired || !group.canCreate ? { color: '#d9d9d9' } : { color: '#faad14' }}
+                                    >
+                                      {group.isExpired ? 'Đã quá hạn' : 
+                                       !group.canCreate ? 'Không thể tạo' : 
+                                       'Thêm ca thiếu'}
+                                    </Button>
+                                  </Tooltip>,
+                                  <Tooltip title={group.isExpired ? 'Lịch đã quá hạn, không thể chỉnh sửa' : 'Chỉnh sửa cấu hình lịch'}>
+                                    <Button
+                                      type="link"
+                                      onClick={() => {
+                                        // Open edit modal với toàn bộ schedules của tháng này
+                                        handleOpenEditModal(
+                                          selectedRoom._id,
+                                          group.month,
+                                          group.year,
+                                          scheduleListData
+                                        );
+                                      }}
+                                      disabled={group.isExpired}
+                                      style={group.isExpired ? { color: '#d9d9d9' } : { color: '#1890ff' }}
+                                    >
+                                      Chỉnh sửa
+                                    </Button>
+                                  </Tooltip>
                                 ]
                             : [
                                 <Tag icon={<CheckCircleOutlined />} color="success">
                                   Đầy đủ
-                                </Tag>
+                                </Tag>,
+                                <Tooltip title={group.isExpired ? 'Lịch đã quá hạn, không thể chỉnh sửa' : 'Chỉnh sửa cấu hình lịch'}>
+                                  <Button
+                                    type="link"
+                                    onClick={() => {
+                                      handleOpenEditModal(
+                                        selectedRoom._id,
+                                        group.month,
+                                        group.year,
+                                        scheduleListData
+                                      );
+                                    }}
+                                    disabled={group.isExpired}
+                                    style={group.isExpired ? { color: '#d9d9d9' } : { color: '#1890ff' }}
+                                  >
+                                    Chỉnh sửa
+                                  </Button>
+                                </Tooltip>
                               ]
                         }
                       >
                         <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                          {/* Header */}
                           <div>
-                            <Tag color="blue">Lịch #{scheduleListData.schedules.indexOf(schedule) + 1}</Tag>
-                            {schedule.subRooms && schedule.subRooms.length > 0 && (
-                              <>
-                                {schedule.subRooms.map((sr, idx) => (
-                                  <Tag key={idx} color="cyan">{sr.name}</Tag>
-                                ))}
-                              </>
-                            )}
-                            {schedule.subRoom && !schedule.subRooms && (
-                              <Tag color="cyan">{schedule.subRoom.name}</Tag>
-                            )}
+                            <Tag color="blue">Lịch #{index + 1}</Tag>
                             <Text strong style={{ marginLeft: 8 }}>
-                              Tháng {schedule.month}/{schedule.year}
+                              Tháng {group.month}/{group.year}
                             </Text>
+                            
+                            {/* Expired Badge */}
+                            {group.isExpired && (
+                              <Tag color="red" icon={<CloseCircleOutlined />} style={{ marginLeft: 8 }}>
+                                Đã hết hạn
+                              </Tag>
+                            )}
+                            
+                            {/* Complete Badge */}
+                            {!group.hasMissingShifts && !group.isExpired && (
+                              <Tag color="success" icon={<CheckCircleOutlined />} style={{ marginLeft: 8 }}>
+                                Đầy đủ
+                              </Tag>
+                            )}
                           </div>
+
+                          {/* Date Range */}
                           <div>
                             <Text type="secondary">
-                              {dayjs(schedule.startDate).format('DD/MM/YYYY')} - {dayjs(schedule.endDate).format('DD/MM/YYYY')}
+                              {dayjs(group.startDate).format('DD/MM/YYYY')} - {dayjs(group.endDate).format('DD/MM/YYYY')}
                             </Text>
                           </div>
-                          <div>
-                            <Text>Ca đã tạo: </Text>
-                            {schedule.generatedShifts && schedule.generatedShifts.length > 0 ? (
-                              schedule.generatedShifts.map(shift => (
-                                <Tag key={shift.key} color={shift.color} style={{ marginRight: 4 }}>
-                                  {shift.name}
-                                </Tag>
-                              ))
-                            ) : (
-                              <Text type="secondary" italic>Chưa có ca nào</Text>
-                            )}
-                          </div>
-                          {schedule.hasMissingShifts && (
-                            <div>
-                              <Text type="warning">Ca còn thiếu: </Text>
-                              {schedule.missingShifts.map(shift => (
-                                <Tag key={shift.key} color="default" style={{ marginRight: 4 }}>
-                                  {shift.name}
-                                </Tag>
-                              ))}
-                            </div>
+                          
+                          {/* Expired Warning */}
+                          {group.isExpired && (
+                            <Alert
+                              type="error"
+                              showIcon
+                              message="Lịch đã quá ngày có thể tạo"
+                              description={`Lịch này đã kết thúc vào ${dayjs(group.endDate).format('DD/MM/YYYY')}. Không thể thêm ca thiếu.`}
+                              style={{ fontSize: 12, marginTop: 4 }}
+                            />
                           )}
+                          
+                          {/* Cannot Create Warning */}
+                          {!group.isExpired && group.hasMissingShifts && group.canCreate === false && (
+                            <Alert
+                              type="warning"
+                              showIcon
+                              message="Không thể tạo ca thiếu"
+                              description="Tất cả các ca còn thiếu đều đang tắt hoạt động. Vui lòng bật lại ca trong cấu hình trước khi tạo."
+                              style={{ fontSize: 12, marginTop: 4 }}
+                            />
+                          )}
+                          
+                          {/* 🆕 Hiển thị TẤT CẢ subroom với chi tiết ca */}
+                          <div style={{ marginTop: 8 }}>
+                            <Text strong>Buồng:</Text>
+                            <div style={{ marginTop: 4 }}>
+                              {group.allSubRooms && group.allSubRooms.length > 0 ? (
+                                group.allSubRooms.map((subRoom, idx) => (
+                                  <Card 
+                                    key={idx} 
+                                    size="small" 
+                                    style={{ 
+                                      marginBottom: 8,
+                                      backgroundColor: !subRoom.hasSchedule ? '#fff7e6' : '#f6ffed'
+                                    }}
+                                  >
+                                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                      <div>
+                                        <Tag color="cyan">{subRoom.name}</Tag>
+                                        {subRoom.isActiveSubRoom === false && <Tag color="gray">Đã tắt trong lịch này</Tag>}
+                                        {!subRoom.hasSchedule && <Tag color="orange">Chưa có lịch</Tag>}
+                                        {subRoom.isActiveSubRoom === false && <Tag color="red">Đang tắt trong lịch</Tag>}
+                                        {subRoom.hasSchedule && !subRoom.hasMissingShifts && (
+                                          <Tag color="success" icon={<CheckCircleOutlined />}>Đầy đủ</Tag>
+                                        )}
+                                      </div>
+                                      
+                                      {subRoom.hasSchedule && (
+                                        <>
+                                          <div>
+                                            <Text type="secondary" style={{ fontSize: 12 }}>Ca đã tạo: </Text>
+                                            {subRoom.generatedShifts && subRoom.generatedShifts.length > 0 ? (
+                                              subRoom.generatedShifts.map(shift => (
+                                                <Tag key={shift.key} color={shift.color} style={{ fontSize: 11 }}>
+                                                  {shift.name}
+                                                </Tag>
+                                              ))
+                                            ) : (
+                                              <Text type="secondary" italic style={{ fontSize: 11 }}>Chưa có ca</Text>
+                                            )}
+                                          </div>
+                                          
+                                          {subRoom.hasMissingShifts && (
+                                            <div>
+                                              <Text type="warning" style={{ fontSize: 12 }}>Ca còn thiếu: </Text>
+                                              {subRoom.missingShifts.map(shift => (
+                                                <Tag 
+                                                  key={shift.key} 
+                                                  color={shift.color}
+                                                  style={{ fontSize: 11 }}
+                                                >
+                                                  {shift.name}
+                                                </Tag>
+                                              ))}
+                                            </div>
+                                          )}
+                                          
+                                          {/* 🆕 Ca đã tắt */}
+                                          {subRoom.disabledShifts && subRoom.disabledShifts.length > 0 && (
+                                            <div>
+                                              <Text type="secondary" style={{ fontSize: 12 }}>Ca đã tắt: </Text>
+                                              {subRoom.disabledShifts.map(shift => (
+                                                <Tag 
+                                                  key={shift.key} 
+                                                  color="default"
+                                                  style={{ fontSize: 11, opacity: 0.6 }}
+                                                >
+                                                  {shift.name}
+                                                </Tag>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </>
+                                      )}
+                                    </Space>
+                                  </Card>
+                                ))
+                              ) : (
+                                <Text type="secondary" italic>Không có thông tin buồng</Text>
+                              )}
+                            </div>
+                          </div>
                         </Space>
                       </List.Item>
                     )}
@@ -1471,7 +2016,7 @@ const CreateScheduleForRoom = () => {
         onCancel={handleCancelModal}
         okText={isEditingExistingSchedule ? "Thêm ca" : "Tạo lịch"}
         cancelText="Hủy"
-        width={600}
+        width={900}
         confirmLoading={creatingSchedule}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
@@ -1513,67 +2058,507 @@ const CreateScheduleForRoom = () => {
             )}
           </Card>
 
-          {/* SubRooms List - Hiển thị nếu phòng có buồng */}
-          {selectedRoom?.hasSubRooms && selectedRoom.subRooms && selectedRoom.subRooms.length > 0 && (
-            <div>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                Danh sách buồng sẽ được tạo lịch:
-              </Text>
-              <List
-                size="small"
-                bordered
-                dataSource={selectedRoom.subRooms}
-                renderItem={(subRoom) => (
-                  <List.Item>
-                    <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                      <Space>
-                        <Text>{subRoom.name}</Text>
-                        <Tag 
-                          color={subRoom.isActive ? 'green' : 'default'}
-                          icon={subRoom.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-                        >
-                          {subRoom.isActive ? 'Hoạt động' : 'Không hoạt động'}
-                        </Tag>
-                      </Space>
-                      {!subRoom.isActive && (
-                        <Tag color="warning">Sẽ không tạo lịch</Tag>
-                      )}
-                      {subRoom.isActive && (
-                        <Tag color="success">Sẽ tạo lịch</Tag>
-                      )}
+          {/* 🆕 Subroom & Shift Selection - Cho TẠO MỚI */}
+          {!isEditingExistingSchedule && selectedRoom?.hasSubRooms && selectedRoom?.subRooms?.length > 0 ? (
+            <Row gutter={16} style={{ marginTop: 16 }}>
+              {/* Left: Subroom Selection */}
+              <Col span={12}>
+                <div>
+                  <Text strong>
+                    Chọn buồng tạo lịch <Text type="danger">*</Text>
+                  </Text>
+                  {/* <Alert
+                    type="info"
+                    showIcon
+                    message="Chọn buồng cần tạo lịch"
+                    description="Buồng đã tắt hoạt động không thể chọn (màu xám). Phải chọn ít nhất 1 buồng."
+                    style={{ marginTop: 8, marginBottom: 8, fontSize: 12 }}
+                  /> */}
+                  <Space direction="vertical" style={{ marginTop: 8, width: '100%' }}>
+                    {selectedRoom.subRooms.map(subRoom => (
+                      <Checkbox
+                        key={subRoom._id}
+                        value={subRoom._id}
+                        checked={selectedSubRoomIds.includes(subRoom._id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedSubRoomIds([...selectedSubRoomIds, subRoom._id]);
+                            console.log(`✅ Chọn buồng: ${subRoom.name}`);
+                          } else {
+                            setSelectedSubRoomIds(selectedSubRoomIds.filter(id => id !== subRoom._id));
+                            console.log(`❌ Bỏ chọn buồng: ${subRoom.name}`);
+                          }
+                        }}
+                        disabled={!subRoom.isActive}
+                      >
+                        <Space>
+                          <Tag color={subRoom.isActive ? 'green' : 'gray'}>{subRoom.name}</Tag>
+                          {!subRoom.isActive && <Tag color="gray">Đang tắt hoạt động</Tag>}
+                        </Space>
+                      </Checkbox>
+                    ))}
+                  </Space>
+                  
+                  {selectedSubRoomIds.length === 0 && (
+                    <Alert
+                      type="warning"
+                      message="⚠️ Phải chọn ít nhất 1 buồng"
+                      showIcon
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )}
+                  
+                  {selectedSubRoomIds.length > 0 && (
+                    <Alert
+                      type="success"
+                      showIcon
+                      message={`Đã chọn ${selectedSubRoomIds.length}/${subRoomShiftStatus.length} buồng`}
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )}
+                </div>
+              </Col>
+
+              {/* Right: Shift Selection */}
+              <Col span={12}>
+                <div>
+                  <Text strong>Chọn ca làm việc <Text type="danger">*</Text></Text>
+                  {/* <Alert
+                    type="info"
+                    showIcon
+                    message="Lưu ý"
+                    description="Hệ thống sẽ lưu cấu hình CẢ 3 CA. Ca không chọn có thể tạo sau với cấu hình cũ nếu trùng khoảng thời gian."
+                    style={{ marginTop: 8, marginBottom: 8, fontSize: 12 }}
+                  /> */}
+                  <Spin spinning={configLoading}>
+                    <Space direction="vertical" style={{ marginTop: 8 }}>
+                      <Checkbox 
+                        value="morning"
+                        checked={selectedShifts.includes('morning')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedShifts([...selectedShifts, 'morning']);
+                          } else {
+                            setSelectedShifts(selectedShifts.filter(s => s !== 'morning'));
+                          }
+                        }}
+                        disabled={!shiftMeta.morning?.isActive}
+                      >
+                        <Space>
+                          <Tag color={SHIFT_COLORS.morning}>{shiftMeta.morning?.name}</Tag>
+                          <Text type="secondary">({shiftMeta.morning?.startTime ?? '--:--'} - {shiftMeta.morning?.endTime ?? '--:--'})</Text>
+                          {!shiftMeta.morning?.isActive && <Tag color="gray">Đang tắt</Tag>}
+                        </Space>
+                      </Checkbox>
+                      <Checkbox 
+                        value="afternoon"
+                        checked={selectedShifts.includes('afternoon')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedShifts([...selectedShifts, 'afternoon']);
+                          } else {
+                            setSelectedShifts(selectedShifts.filter(s => s !== 'afternoon'));
+                          }
+                        }}
+                        disabled={!shiftMeta.afternoon?.isActive}
+                      >
+                        <Space>
+                          <Tag color={SHIFT_COLORS.afternoon}>{shiftMeta.afternoon?.name}</Tag>
+                          <Text type="secondary">({shiftMeta.afternoon?.startTime ?? '--:--'} - {shiftMeta.afternoon?.endTime ?? '--:--'})</Text>
+                          {!shiftMeta.afternoon?.isActive && <Tag color="gray">Đang tắt</Tag>}
+                        </Space>
+                      </Checkbox>
+                      <Checkbox 
+                        value="evening"
+                        checked={selectedShifts.includes('evening')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedShifts([...selectedShifts, 'evening']);
+                          } else {
+                            setSelectedShifts(selectedShifts.filter(s => s !== 'evening'));
+                          }
+                        }}
+                        disabled={!shiftMeta.evening?.isActive}
+                      >
+                        <Space>
+                          <Tag color={SHIFT_COLORS.evening}>{shiftMeta.evening?.name}</Tag>
+                          <Text type="secondary">({shiftMeta.evening?.startTime ?? '--:--'} - {shiftMeta.evening?.endTime ?? '--:--'})</Text>
+                          {!shiftMeta.evening?.isActive && <Tag color="gray">Đang tắt</Tag>}
+                        </Space>
+                      </Checkbox>
                     </Space>
-                  </List.Item>
-                )}
-                style={{ maxHeight: 200, overflow: 'auto' }}
-              />
-              <Alert
-                type="info"
-                message="Lưu ý"
-                description="Chỉ các buồng đang hoạt động mới được tạo lịch. Buồng không hoạt động sẽ tự động bỏ qua."
-                showIcon
-                style={{ marginTop: 8 }}
-              />
-            </div>
-          )}
+                  </Spin>
+                  
+                  {selectedShifts.length === 0 && (
+                    <Alert
+                      type="warning"
+                      message="⚠️ Phải chọn ít nhất 1 ca"
+                      showIcon
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )}
+                  
+                  {/* {selectedShifts.length === 3 && (
+                    <Alert
+                      type="success"
+                      showIcon
+                      message="Tốm tắt"
+                      description="Sẽ tạo lịch cho tất cả 3 ca làm việc"
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )} */}
+                </div>
+              </Col>
+            </Row>
+          ) : null}
+
+          {/* 🆕 Subroom & Shift Selection - Cho THÊM CA THIẾU (editing existing schedule) */}
+          {isEditingExistingSchedule && selectedRoom?.hasSubRooms && selectedRoom?.subRooms?.length > 0 ? (
+            <Row gutter={16} style={{ marginTop: 16 }}>
+              {/* Left: Subroom Selection (chỉ hiển thị buồng thiếu nếu có) */}
+              <Col span={12}>
+                <div>
+                  <Text strong>
+                    Chọn buồng thêm ca <Text type="secondary">(Tùy chọn)</Text>
+                  </Text>
+                  {/* <Alert
+                    type="info"
+                    showIcon
+                    message="Thêm ca cho buồng"
+                    description="Nếu không chọn buồng nào, sẽ thêm ca cho tất cả buồng đã tạo trong lịch này."
+                    style={{ marginTop: 8, marginBottom: 8, fontSize: 11 }}
+                  /> */}
+                  <Space direction="vertical" style={{ marginTop: 8, width: '100%' }}>
+                    {(() => {
+                      // ✅ CHỈ hiển thị subroom ĐÃ CÓ LỊCH (từ scheduleListData.subRoomShiftStatus)
+                      // KHÔNG lấy từ selectedRoom.subRooms (room-service)
+                      if (!subRoomShiftStatus || subRoomShiftStatus.length === 0) {
+                        return (
+                          <Alert
+                            type="warning"
+                            showIcon
+                            message="Không tìm thấy buồng đã có lịch"
+                            description="Modal này chỉ dùng để thêm ca thiếu vào lịch đã tạo. Vui lòng dùng modal 'Tạo lịch mới' để tạo lịch cho buồng mới."
+                          />
+                        );
+                      }
+
+                      return subRoomShiftStatus.map(subRoom => {
+                        // 🆕 Tính toán: Buồng đã đủ ca nếu TẤT CẢ ca active đều đã tạo
+                        const allActiveShifts = ['morning', 'afternoon', 'evening'].filter(shift => 
+                          subRoom.shifts[shift] === true
+                        );
+                        const allGeneratedShifts = ['morning', 'afternoon', 'evening'].filter(shift =>
+                          subRoom.generatedShifts[shift] === true
+                        );
+                        
+                        // Buồng đã đủ = số ca đã tạo === số ca active (không tính ca đã tắt)
+                        const isComplete = allActiveShifts.length > 0 && allActiveShifts.length === allGeneratedShifts.length;
+                        
+                        // Build generatedShifts và missingShifts để hiển thị
+                        const generatedShiftsList = [];
+                        const missingShiftsList = [];
+                        const disabledShiftsList = [];
+                        
+                        ['morning', 'afternoon', 'evening'].forEach(shiftKey => {
+                          const shiftNames = { morning: 'Ca Sáng', afternoon: 'Ca Chiều', evening: 'Ca Tối' };
+                          const shiftColors = { morning: 'gold', afternoon: 'blue', evening: 'purple' };
+                          
+                          if (subRoom.generatedShifts[shiftKey]) {
+                            generatedShiftsList.push({ key: shiftKey, name: shiftNames[shiftKey], color: shiftColors[shiftKey] });
+                          } else if (subRoom.shifts[shiftKey]) {
+                            missingShiftsList.push({ key: shiftKey, name: shiftNames[shiftKey], color: shiftColors[shiftKey] });
+                          } else {
+                            disabledShiftsList.push({ key: shiftKey, name: shiftNames[shiftKey], color: shiftColors[shiftKey] });
+                          }
+                        });
+                        
+                        return (
+                          <Checkbox
+                            key={subRoom.subRoomId}
+                            value={subRoom.subRoomId}
+                            checked={selectedSubRoomIds.includes(subRoom.subRoomId.toString())}
+                            onChange={(e) => {
+                              const subRoomIdStr = subRoom.subRoomId.toString();
+                              const newSelectedIds = e.target.checked
+                                ? [...selectedSubRoomIds, subRoomIdStr]
+                                : selectedSubRoomIds.filter(id => id !== subRoomIdStr);
+                              
+                              setSelectedSubRoomIds(newSelectedIds);
+                              console.log(e.target.checked ? `✅ Chọn buồng: ${subRoom.subRoomName}` : `❌ Bỏ chọn buồng: ${subRoom.subRoomName}`);
+                              
+                              // 🆕 Recalculate available shifts khi chọn/bỏ chọn buồng
+                              recalculateAvailableShifts(newSelectedIds);
+                            }}
+                            disabled={(subRoom.isActiveSubRoom === false) || isComplete}
+                          >
+                            <Card size="small" style={{ width: '100%', marginBottom: 8 }}>
+                              <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <Tag color={subRoom.isActiveSubRoom !== false ? 'green' : 'gray'}>
+                                    {subRoom.subRoomName}
+                                  </Tag>
+                                  {!subRoom.hasSchedule && <Tag color="orange">Chưa có lịch</Tag>}
+                                  {subRoom.isActiveSubRoom === false && <Tag color="red">Đã tắt lịch làm việc</Tag>}
+                                  {subRoom.hasSchedule && isComplete && (
+                                    <Tag color="success" icon={<CheckCircleOutlined />}>Đầy đủ</Tag>
+                                  )}
+                                </div>
+                                
+                                {subRoom.hasSchedule && (
+                                  <>
+                                    <div>
+                                      <Text type="secondary" style={{ fontSize: 12 }}>Ca đã tạo: </Text>
+                                      {generatedShiftsList.length > 0 ? (
+                                        generatedShiftsList.map(shift => (
+                                          <Tag key={shift.key} color={shift.color} style={{ fontSize: 11 }}>
+                                            {shift.name}
+                                          </Tag>
+                                        ))
+                                      ) : (
+                                        <Text type="secondary" italic style={{ fontSize: 11 }}>Chưa có ca</Text>
+                                      )}
+                                    </div>
+                                    
+                                    {missingShiftsList.length > 0 && (
+                                      <div>
+                                        <Text type="warning" style={{ fontSize: 12 }}>Ca còn thiếu: </Text>
+                                        {missingShiftsList.map(shift => (
+                                          <Tag 
+                                            key={shift.key} 
+                                            color={shift.color}
+                                            style={{ fontSize: 11 }}
+                                          >
+                                            {shift.name}
+                                          </Tag>
+                                        ))}
+                                      </div>
+                                    )}
+                                    
+                                    {disabledShiftsList.length > 0 && (
+                                      <div>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>Ca đã tắt: </Text>
+                                        {disabledShiftsList.map(shift => (
+                                          <Tag 
+                                            key={shift.key} 
+                                            color="default"
+                                            style={{ fontSize: 11, opacity: 0.6 }}
+                                          >
+                                            {shift.name}
+                                          </Tag>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </Space>
+                            </Card>
+                          </Checkbox>
+                        );
+                      });
+                    })()}
+                  </Space>
+                  
+                  {/* {selectedSubRoomIds.length === 0 && (
+                    <Alert
+                      type="info"
+                      message="Sẽ thêm cho tất cả buồng đã tạo"
+                      showIcon
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )} */}
+                  
+                  {selectedSubRoomIds.length > 0 && (
+                    <Alert
+                      type="success"
+                      showIcon
+                      message={`Đã chọn ${selectedSubRoomIds.length} buồng`}
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )}
+                </div>
+              </Col>
+
+              {/* Right: Shift Selection (ca thiếu) */}
+              <Col span={12}>
+                <div>
+                  <Text strong>Chọn ca làm việc <Text type="danger">*</Text></Text>
+                  {/* <Alert
+                    type="info"
+                    showIcon
+                    message="Lưu ý chọn ca thông minh"
+                    description="Ca hiển thị nếu CÓ ÍT NHẤT 1 buồng chưa tạo ca đó. Hệ thống sẽ tự động bỏ qua buồng đã có lịch ca đó."
+                    style={{ marginTop: 8, marginBottom: 8, fontSize: 11 }}
+                  /> */}
+                  
+                  <Spin spinning={configLoading}>
+                    <Space direction="vertical" style={{ marginTop: 8 }}>
+                      {(() => {
+                        // 🆕 Kiểm tra shiftConfig.isActive từ existingSchedule
+                        let morningActive = true;
+                        let afternoonActive = true;
+                        let eveningActive = true;
+                        
+                        // Nếu đang thêm ca thiếu, kiểm tra isActive trong shiftConfig của lịch
+                        if (isEditingExistingSchedule && scheduleListData?.schedules?.[0]?.shiftConfig) {
+                          const scheduleShiftConfig = scheduleListData.schedules[0].shiftConfig;
+                          morningActive = scheduleShiftConfig.morning?.isActive !== false;
+                          afternoonActive = scheduleShiftConfig.afternoon?.isActive !== false;
+                          eveningActive = scheduleShiftConfig.evening?.isActive !== false;
+                        }
+                        
+                        // 🆕 Logic thông minh: Ca có thể chọn dựa vào CÁC BUỒNG ĐÃ CHỌN
+                        // 1. isActive === true trong shiftConfig (ca đang bật)
+                        // 2. CÓ ÍT NHẤT 1 buồng (trong danh sách đã chọn) có ca active NHƯNG chưa generate
+                        
+                        let selectedSubRoomStatuses = subRoomShiftStatus;
+                        if (selectedSubRoomIds.length > 0) {
+                          // Chỉ check các buồng được chọn
+                          selectedSubRoomStatuses = subRoomShiftStatus.filter(sr =>
+                            selectedSubRoomIds.includes(sr.subRoomId.toString())
+                          );
+                        }
+                        
+                        // ✅ Ca có thể chọn = ca đang bật (isActive) VÀ có ít nhất 1 buồng chưa tạo ca đó
+                        const canSelectMorning = morningActive && (
+                          selectedSubRoomStatuses.length === 0 
+                            ? initialMissingShifts.includes('morning')
+                            : selectedSubRoomStatuses.some(sr => 
+                                sr.shifts.morning === true && sr.generatedShifts.morning === false
+                              )
+                        );
+                        
+                        const canSelectAfternoon = afternoonActive && (
+                          selectedSubRoomStatuses.length === 0
+                            ? initialMissingShifts.includes('afternoon')
+                            : selectedSubRoomStatuses.some(sr => 
+                                sr.shifts.afternoon === true && sr.generatedShifts.afternoon === false
+                              )
+                        );
+                        
+                        const canSelectEvening = eveningActive && (
+                          selectedSubRoomStatuses.length === 0
+                            ? initialMissingShifts.includes('evening')
+                            : selectedSubRoomStatuses.some(sr => 
+                                sr.shifts.evening === true && sr.generatedShifts.evening === false
+                              )
+                        );
+                        
+                        return (
+                          <>
+                            <Checkbox 
+                              value="morning"
+                              checked={selectedShifts.includes('morning')}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedShifts([...selectedShifts, 'morning']);
+                                } else {
+                                  setSelectedShifts(selectedShifts.filter(s => s !== 'morning'));
+                                }
+                              }}
+                              disabled={!canSelectMorning}
+                            >
+                              <Space>
+                                <Tag color={SHIFT_COLORS.morning}>{shiftMeta.morning?.name}</Tag>
+                                <Text type="secondary">({shiftMeta.morning?.startTime ?? '--:--'} - {shiftMeta.morning?.endTime ?? '--:--'})</Text>
+                                {!morningActive && <Tag color="gray">Đang tắt trong lịch</Tag>}
+                                {morningActive && !canSelectMorning && (
+                                  <Tag color="success">Các buồng được chọn đã tạo ca này</Tag>
+                                )}
+                              </Space>
+                            </Checkbox>
+                            <Checkbox 
+                              value="afternoon"
+                              checked={selectedShifts.includes('afternoon')}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedShifts([...selectedShifts, 'afternoon']);
+                                } else {
+                                  setSelectedShifts(selectedShifts.filter(s => s !== 'afternoon'));
+                                }
+                              }}
+                              disabled={!canSelectAfternoon}
+                            >
+                              <Space>
+                                <Tag color={SHIFT_COLORS.afternoon}>{shiftMeta.afternoon?.name}</Tag>
+                                <Text type="secondary">({shiftMeta.afternoon?.startTime ?? '--:--'} - {shiftMeta.afternoon?.endTime ?? '--:--'})</Text>
+                                {!afternoonActive && <Tag color="gray">Đang tắt trong lịch</Tag>}
+                                {afternoonActive && !canSelectAfternoon && (
+                                  <Tag color="success">Tất cả buồng đã tạo</Tag>
+                                )}
+                              </Space>
+                            </Checkbox>
+                            <Checkbox 
+                              value="evening"
+                              checked={selectedShifts.includes('evening')}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedShifts([...selectedShifts, 'evening']);
+                                } else {
+                                  setSelectedShifts(selectedShifts.filter(s => s !== 'evening'));
+                                }
+                              }}
+                              disabled={!canSelectEvening}
+                            >
+                              <Space>
+                                <Tag color={SHIFT_COLORS.evening}>{shiftMeta.evening?.name}</Tag>
+                                <Text type="secondary">({shiftMeta.evening?.startTime ?? '--:--'} - {shiftMeta.evening?.endTime ?? '--:--'})</Text>
+                                {!eveningActive && <Tag color="gray">Đang tắt trong lịch</Tag>}
+                                {eveningActive && !canSelectEvening && (
+                                  <Tag color="success">Tất cả buồng đã tạo</Tag>
+                                )}
+                              </Space>
+                            </Checkbox>
+                          </>
+                        );
+                      })()}
+                    </Space>
+                  </Spin>
+                  
+                  {selectedShifts.length === 0 && (
+                    <Alert
+                      type="warning"
+                      message="⚠️ Phải chọn ít nhất 1 ca"
+                      showIcon
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )}
+                </div>
+              </Col>
+            </Row>
+          ) : null}
 
           {/* Month Range & Year Selection */}
           <Row gutter={16}>
-            <Col span={8}>
+            <Col span={6}>
               <Text strong>Từ tháng <Text type="danger">*</Text></Text>
               <Select
                 placeholder="Chọn tháng bắt đầu"
                 value={fromMonth}
                 onChange={(val) => {
                   setFromMonth(val);
-                  // Tự động update toMonth nếu < fromMonth
-                  if (toMonth < val) {
-                    setToMonth(val);
+                  // Reset toMonth và toYear khi thay đổi fromMonth
+                  setToMonth(null);
+                  setToYear(null);
+                  
+                  // 🆕 Update start date - Tự động chọn ngày đầu tiên có thể chọn
+                  const today = dayjs().startOf('day');
+                  const currentMonth = today.month() + 1; // 1-12
+                  const currentYear = today.year();
+                  const isSelectingCurrentMonth = val === currentMonth && selectedYear === currentYear;
+                  
+                  let autoStartDate;
+                  if (isSelectingCurrentMonth) {
+                    // Tháng hiện tại → Chọn ngày mai
+                    autoStartDate = today.add(1, 'day');
+                    console.log(`📅 Tháng hiện tại: Tự động chọn ngày ${autoStartDate.format('DD/MM/YYYY')}`);
+                  } else {
+                    // Tháng tương lai → Chọn ngày 1
+                    autoStartDate = dayjs().year(selectedYear).month(val - 1).date(1);
+                    console.log(`📅 Tháng tương lai: Tự động chọn ngày ${autoStartDate.format('DD/MM/YYYY')}`);
                   }
-                  // Chỉ update start date nếu chưa có hoặc không hợp lệ cho tháng mới
-                  if (!startDate || startDate.month() + 1 !== val || startDate.year() !== selectedYear) {
-                    const monthStartDate = dayjs().year(selectedYear).month(val - 1).date(1);
-                    setStartDate(monthStartDate);
-                  }
+                  
+                  setStartDate(autoStartDate);
                 }}
                 style={{ width: '100%', marginTop: 8 }}
                 disabled={isEditingExistingSchedule}
@@ -1581,58 +2566,72 @@ const CreateScheduleForRoom = () => {
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
                   const currentYear = dayjs().year();
                   const currentMonth = dayjs().month() + 1;
-                  const isDisabled = selectedYear === currentYear && m < currentMonth;
+                  
+                  // Disable nếu là tháng trong quá khứ
+                  const isPastMonth = selectedYear === currentYear && m < currentMonth;
+                  
+                  // Disable nếu tháng đã có lịch
+                  const hasSchedule = isMonthScheduled(m, selectedYear);
+                  
+                  const isDisabled = isPastMonth || hasSchedule;
                   
                   return (
                     <Option key={m} value={m} disabled={isDisabled}>
-                      Tháng {m} {isDisabled && '(Đã qua)'}
+                      Tháng {m} {isPastMonth && '(Đã qua)'} {hasSchedule && '(Đã có lịch)'}
                     </Option>
                   );
                 })}
               </Select>
             </Col>
-            <Col span={8}>
-              <Text strong>Đến tháng <Text type="danger">*</Text></Text>
-              <Select
-                placeholder="Chọn tháng kết thúc"
-                value={toMonth}
-                onChange={setToMonth}
-                style={{ width: '100%', marginTop: 8 }}
-                disabled={isEditingExistingSchedule}
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => (
-                  <Option 
-                    key={m} 
-                    value={m}
-                    disabled={m < fromMonth}
-                  >
-                    Tháng {m}
-                  </Option>
-                ))}
-              </Select>
-            </Col>
-            <Col span={8}>
-              <Text strong>Năm <Text type="danger">*</Text></Text>
+            <Col span={6}>
+              <Text strong>Năm bắt đầu <Text type="danger">*</Text></Text>
               <Select
                 placeholder="Chọn năm"
                 value={selectedYear}
                 onChange={(year) => {
+                  const currentMonth = dayjs().month() + 1;
+                  const currentYear = dayjs().year();
+                  
                   setSelectedYear(year);
-                  // Reset start date khi đổi năm
-                  if (!startDate || startDate.year() !== year) {
-                    const currentMonth = dayjs().month() + 1;
-                    const currentYear = dayjs().year();
+                  
+                  // Reset fromMonth, toMonth, toYear khi đổi năm
+                  setToMonth(null);
+                  setToYear(null);
+                  
+                  // Tìm tháng đầu tiên chưa có lịch và chưa qua
+                  let firstAvailableMonth = null;
+                  for (let m = 1; m <= 12; m++) {
+                    const isPastMonth = year === currentYear && m < currentMonth;
+                    const hasSchedule = isMonthScheduled(m, year);
                     
-                    // Nếu chọn năm hiện tại và tháng đã chọn < tháng hiện tại, đặt về tháng hiện tại
-                    if (year === currentYear && fromMonth < currentMonth) {
-                      setFromMonth(currentMonth);
-                      setToMonth(currentMonth);
-                      const monthStartDate = dayjs().year(year).month(currentMonth - 1).add(1, 'day').startOf('day');
-                      setStartDate(monthStartDate);
-                    } else {
-                      const monthStartDate = dayjs().year(year).month(fromMonth - 1).date(1);
-                      setStartDate(monthStartDate);
+                    if (!isPastMonth && !hasSchedule) {
+                      firstAvailableMonth = m;
+                      break;
                     }
+                  }
+                  
+                  if (firstAvailableMonth) {
+                    setFromMonth(firstAvailableMonth);
+                    
+                    // 🆕 Tự động chọn ngày đầu tiên có thể chọn
+                    const today = dayjs().startOf('day');
+                    const isSelectingCurrentMonth = firstAvailableMonth === currentMonth && year === currentYear;
+                    
+                    let autoStartDate;
+                    if (isSelectingCurrentMonth) {
+                      // Tháng hiện tại → Chọn ngày mai
+                      autoStartDate = today.add(1, 'day');
+                      console.log(`📅 Năm ${year}, tháng hiện tại ${firstAvailableMonth}: Tự động chọn ngày ${autoStartDate.format('DD/MM/YYYY')}`);
+                    } else {
+                      // Tháng tương lai → Chọn ngày 1
+                      autoStartDate = dayjs().year(year).month(firstAvailableMonth - 1).date(1);
+                      console.log(`📅 Năm ${year}, tháng ${firstAvailableMonth}: Tự động chọn ngày ${autoStartDate.format('DD/MM/YYYY')}`);
+                    }
+                    
+                    setStartDate(autoStartDate);
+                  } else {
+                    setFromMonth(null);
+                    setStartDate(null);
                   }
                 }}
                 style={{ width: '100%', marginTop: 8 }}
@@ -1683,16 +2682,123 @@ const CreateScheduleForRoom = () => {
                 })()}
               </Select>
             </Col>
+            <Col span={6}>
+              <Text strong>Đến tháng <Text type="danger">*</Text></Text>
+              <Select
+                placeholder={fromMonth && selectedYear ? "Chọn tháng kết thúc" : "Chọn tháng bắt đầu trước"}
+                value={toMonth}
+                onChange={(val) => {
+                  setToMonth(val);
+                  // 🆕 Tự động set toYear = selectedYear nếu chưa chọn năm kết thúc
+                  if (!toYear && selectedYear) {
+                    setToYear(selectedYear);
+                    console.log(`📅 Tự động set năm kết thúc = ${selectedYear}`);
+                  }
+                }}
+                style={{ width: '100%', marginTop: 8 }}
+                disabled={isEditingExistingSchedule || !fromMonth || !selectedYear}
+              >
+                {(() => {
+                  if (!fromMonth || !selectedYear) return [];
+                  
+                  const options = [];
+                  const currentYear = dayjs().year();
+                  const currentMonth = dayjs().month() + 1;
+                  
+                  // 🆕 Nếu chưa chọn năm kết thúc, mặc định dùng năm bắt đầu
+                  const effectiveToYear = toYear || selectedYear;
+                  
+                  // Tạo danh sách tháng có thể chọn
+                  // Bắt đầu từ fromMonth nếu cùng năm, hoặc từ tháng 1 nếu năm sau
+                  const startMonth = effectiveToYear === selectedYear ? fromMonth : 1;
+                  
+                  for (let m = startMonth; m <= 12; m++) {
+                    const yearToCheck = effectiveToYear;
+                    
+                    // Disable nếu tháng đã có lịch
+                    const hasSchedule = isMonthScheduled(m, yearToCheck);
+                    
+                    // Disable nếu cùng năm và tháng < fromMonth
+                    const isBeforeStart = yearToCheck === selectedYear && m < fromMonth;
+                    
+                    const isDisabled = hasSchedule || isBeforeStart;
+                    
+                    options.push(
+                      <Option 
+                        key={m} 
+                        value={m}
+                        disabled={isDisabled}
+                      >
+                        Tháng {m} {hasSchedule && '(Đã có lịch)'}
+                      </Option>
+                    );
+                    
+                    // Nếu gặp tháng có lịch, dừng lại (không cho chọn tháng sau tháng có lịch)
+                    if (hasSchedule) {
+                      break;
+                    }
+                  }
+                  
+                  return options;
+                })()}
+              </Select>
+            </Col>
+            <Col span={6}>
+              <Text strong>Năm kết thúc <Text type="danger">*</Text></Text>
+              <Select
+                placeholder={fromMonth && selectedYear ? "Chọn năm kết thúc" : "Chọn tháng bắt đầu trước"}
+                value={toYear}
+                onChange={(year) => {
+                  setToYear(year);
+                  setToMonth(null); // Reset toMonth khi đổi năm
+                }}
+                style={{ width: '100%', marginTop: 8 }}
+                disabled={isEditingExistingSchedule || !fromMonth || !selectedYear}
+              >
+                {(() => {
+                  if (!fromMonth || !selectedYear) return [];
+                  
+                  const years = [];
+                  const currentYear = dayjs().year();
+                  
+                  // Cho phép chọn từ năm bắt đầu đến +2 năm
+                  for (let i = 0; i <= 2; i++) {
+                    const year = selectedYear + i;
+                    
+                    // Kiểm tra xem năm này còn tháng nào chưa có lịch không
+                    let hasAvailableMonth = false;
+                    const startMonth = year === selectedYear ? fromMonth : 1;
+                    
+                    for (let m = startMonth; m <= 12; m++) {
+                      if (!isMonthScheduled(m, year)) {
+                        hasAvailableMonth = true;
+                        break;
+                      }
+                    }
+                    
+                    const isDisabled = !hasAvailableMonth;
+                    
+                    years.push(
+                      <Option key={year} value={year} disabled={isDisabled}>
+                        {year} {isDisabled && '(Không có tháng khả dụng)'}
+                      </Option>
+                    );
+                  }
+                  
+                  return years;
+                })()}
+              </Select>
+            </Col>
           </Row>
 
           {/* Info về khoảng thời gian */}
-          {fromMonth && toMonth && selectedYear && startDate && (
+          {fromMonth && toMonth && selectedYear && toYear && startDate && (
             <Alert
               type="info"
               showIcon
-              message={`Tạo lịch liên tục: Tháng ${String(fromMonth).padStart(2, '0')} → Tháng ${String(toMonth).padStart(2, '0')}/${selectedYear}`}
+              message={`Tạo lịch liên tục: Tháng ${String(fromMonth).padStart(2, '0')}/${selectedYear} → Tháng ${String(toMonth).padStart(2, '0')}/${toYear}`}
               description={`Từ ${startDate.format('DD/MM/YYYY')} 
-                đến ${getDateRange(fromMonth, toMonth, selectedYear).end.format('DD/MM/YYYY')}`}
+                đến ${getDateRange(fromMonth, toMonth, selectedYear, toYear).end.format('DD/MM/YYYY')}`}
               style={{ fontSize: 12 }}
             />
           )}
@@ -1825,6 +2931,23 @@ const CreateScheduleForRoom = () => {
               disabledDate={disabledDate}
               disabled={isEditingExistingSchedule}
               style={{ width: '100%', marginTop: 8 }}
+              defaultPickerValue={(() => {
+                // 🆕 Tự động mở tháng và hiển thị ngày đầu tiên có thể chọn
+                if (!fromMonth || !selectedYear) return dayjs();
+                
+                const today = dayjs().startOf('day');
+                const currentMonth = today.month() + 1;
+                const currentYear = today.year();
+                const isStartMonthCurrent = fromMonth === currentMonth && selectedYear === currentYear;
+                
+                if (isStartMonthCurrent) {
+                  // Tháng hiện tại → Hiển thị ngày mai
+                  return today.add(1, 'day');
+                } else {
+                  // Tháng tương lai → Hiển thị ngày 1 của tháng đó
+                  return dayjs().year(selectedYear).month(fromMonth - 1).date(1);
+                }
+              })()}
             />
             {isEditingExistingSchedule && endDate && (
               <>
@@ -1846,103 +2969,126 @@ const CreateScheduleForRoom = () => {
             </Text>
           </div>
 
-          <Divider style={{ margin: '12px 0' }} />
-
-          {/* Shift Selection */}
-          <div>
-            <Text strong>Chọn ca làm việc <Text type="danger">*</Text></Text>
-            <Alert
-              type="info"
-              showIcon
-              message="Lưu ý"
-              description={isEditingExistingSchedule 
-                ? "Chỉ có thể chọn các ca còn thiếu. Ca đã tạo không thể sửa đổi."
-                : "Hệ thống sẽ lưu cấu hình CẢ 3 CA. Ca không chọn có thể tạo sau với cấu hình cũ nếu trùng khoảng thời gian."}
-              style={{ marginTop: 8, marginBottom: 8, fontSize: 12 }}
-            />
-            <Spin spinning={configLoading}>
-              <Space direction="vertical" style={{ marginTop: 8 }}>
-                <Checkbox 
-                  value="morning"
-                  checked={selectedShifts.includes('morning')}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedShifts([...selectedShifts, 'morning']);
-                    } else {
-                      setSelectedShifts(selectedShifts.filter(s => s !== 'morning'));
-                    }
-                  }}
-                  disabled={
-                    (isEditingExistingSchedule && !initialMissingShifts.includes('morning')) ||
-                    (!isEditingExistingSchedule && !shiftMeta.morning?.isActive)
-                  }
-                >
-                  <Space>
-                    <Tag color={SHIFT_COLORS.morning}>{shiftMeta.morning?.name}</Tag>
-                    <Text type="secondary">({shiftMeta.morning?.startTime ?? '--:--'} - {shiftMeta.morning?.endTime ?? '--:--'})</Text>
-                    {!isEditingExistingSchedule && !shiftMeta.morning?.isActive && (
-                      <Tag color="gray">Đang tắt</Tag>
-                    )}
-                    {isEditingExistingSchedule && !selectedShifts.includes('morning') && (
-                      <Tag color="success">Đã tạo</Tag>
-                    )}
-                  </Space>
-                </Checkbox>
-                <Checkbox 
-                  value="afternoon"
-                  checked={selectedShifts.includes('afternoon')}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedShifts([...selectedShifts, 'afternoon']);
-                    } else {
-                      setSelectedShifts(selectedShifts.filter(s => s !== 'afternoon'));
-                    }
-                  }}
-                  disabled={
-                    (isEditingExistingSchedule && !initialMissingShifts.includes('afternoon')) ||
-                    (!isEditingExistingSchedule && !shiftMeta.afternoon?.isActive)
-                  }
-                >
-                  <Space>
-                    <Tag color={SHIFT_COLORS.afternoon}>{shiftMeta.afternoon?.name}</Tag>
-                    <Text type="secondary">({shiftMeta.afternoon?.startTime ?? '--:--'} - {shiftMeta.afternoon?.endTime ?? '--:--'})</Text>
-                    {!isEditingExistingSchedule && !shiftMeta.afternoon?.isActive && (
-                      <Tag color="gray">Đang tắt</Tag>
-                    )}
-                    {isEditingExistingSchedule && !selectedShifts.includes('afternoon') && (
-                      <Tag color="success">Đã tạo</Tag>
-                    )}
-                  </Space>
-                </Checkbox>
-                <Checkbox 
-                  value="evening"
-                  checked={selectedShifts.includes('evening')}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedShifts([...selectedShifts, 'evening']);
-                    } else {
-                      setSelectedShifts(selectedShifts.filter(s => s !== 'evening'));
-                    }
-                  }}
-                  disabled={
-                    (isEditingExistingSchedule && !initialMissingShifts.includes('evening')) ||
-                    (!isEditingExistingSchedule && !shiftMeta.evening?.isActive)
-                  }
-                >
-                  <Space>
-                    <Tag color={SHIFT_COLORS.evening}>{shiftMeta.evening?.name}</Tag>
-                    <Text type="secondary">({shiftMeta.evening?.startTime ?? '--:--'} - {shiftMeta.evening?.endTime ?? '--:--'})</Text>
-                    {!isEditingExistingSchedule && !shiftMeta.evening?.isActive && (
-                      <Tag color="gray">Đang tắt</Tag>
-                    )}
-                    {isEditingExistingSchedule && !selectedShifts.includes('evening') && (
-                      <Tag color="success">Đã tạo</Tag>
-                    )}
-                  </Space>
-                </Checkbox>
-              </Space>
-            </Spin>
-          </div>
+          {/* 🆕 Shift Selection - Phòng KHÔNG có subroom (layout giống có subroom) */}
+          {!selectedRoom?.hasSubRooms && (
+            <Row gutter={16} style={{ marginTop: 16 }}>
+              <Col span={24}>
+                <div>
+                  <Text strong>Chọn ca làm việc <Text type="danger">*</Text></Text>
+                  {/* <Alert
+                    type="info"
+                    showIcon
+                    message="Lưu ý"
+                    description={isEditingExistingSchedule 
+                      ? "Chỉ có thể chọn các ca còn thiếu. Ca đã tạo không thể sửa đổi."
+                      : "Hệ thống sẽ lưu cấu hình CẢ 3 CA. Ca không chọn có thể tạo sau với cấu hình cũ nếu trùng khoảng thời gian."}
+                    style={{ marginTop: 8, marginBottom: 8, fontSize: 11 }}
+                  /> */}
+                  <Spin spinning={configLoading}>
+                    <Space direction="vertical" style={{ marginTop: 8, width: '100%' }}>
+                      <Checkbox 
+                        value="morning"
+                        checked={selectedShifts.includes('morning')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedShifts([...selectedShifts, 'morning']);
+                          } else {
+                            setSelectedShifts(selectedShifts.filter(s => s !== 'morning'));
+                          }
+                        }}
+                        disabled={
+                          (isEditingExistingSchedule && !initialMissingShifts.includes('morning')) ||
+                          (!isEditingExistingSchedule && !shiftMeta.morning?.isActive)
+                        }
+                      >
+                        <Space>
+                          <Tag color={SHIFT_COLORS.morning}>{shiftMeta.morning?.name}</Tag>
+                          <Text type="secondary">({shiftMeta.morning?.startTime ?? '--:--'} - {shiftMeta.morning?.endTime ?? '--:--'})</Text>
+                          {!isEditingExistingSchedule && !shiftMeta.morning?.isActive && (
+                            <Tag color="gray">Đang tắt</Tag>
+                          )}
+                          {isEditingExistingSchedule && !initialMissingShifts.includes('morning') && (
+                            <Tag color="success">Đã tạo</Tag>
+                          )}
+                        </Space>
+                      </Checkbox>
+                      <Checkbox 
+                        value="afternoon"
+                        checked={selectedShifts.includes('afternoon')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedShifts([...selectedShifts, 'afternoon']);
+                          } else {
+                            setSelectedShifts(selectedShifts.filter(s => s !== 'afternoon'));
+                          }
+                        }}
+                        disabled={
+                          (isEditingExistingSchedule && !initialMissingShifts.includes('afternoon')) ||
+                          (!isEditingExistingSchedule && !shiftMeta.afternoon?.isActive)
+                        }
+                      >
+                        <Space>
+                          <Tag color={SHIFT_COLORS.afternoon}>{shiftMeta.afternoon?.name}</Tag>
+                          <Text type="secondary">({shiftMeta.afternoon?.startTime ?? '--:--'} - {shiftMeta.afternoon?.endTime ?? '--:--'})</Text>
+                          {!isEditingExistingSchedule && !shiftMeta.afternoon?.isActive && (
+                            <Tag color="gray">Đang tắt</Tag>
+                          )}
+                          {isEditingExistingSchedule && !initialMissingShifts.includes('afternoon') && (
+                            <Tag color="success">Đã tạo</Tag>
+                          )}
+                        </Space>
+                      </Checkbox>
+                      <Checkbox 
+                        value="evening"
+                        checked={selectedShifts.includes('evening')}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedShifts([...selectedShifts, 'evening']);
+                          } else {
+                            setSelectedShifts(selectedShifts.filter(s => s !== 'evening'));
+                          }
+                        }}
+                        disabled={
+                          (isEditingExistingSchedule && !initialMissingShifts.includes('evening')) ||
+                          (!isEditingExistingSchedule && !shiftMeta.evening?.isActive)
+                        }
+                      >
+                        <Space>
+                          <Tag color={SHIFT_COLORS.evening}>{shiftMeta.evening?.name}</Tag>
+                          <Text type="secondary">({shiftMeta.evening?.startTime ?? '--:--'} - {shiftMeta.evening?.endTime ?? '--:--'})</Text>
+                          {!isEditingExistingSchedule && !shiftMeta.evening?.isActive && (
+                            <Tag color="gray">Đang tắt</Tag>
+                          )}
+                          {isEditingExistingSchedule && !initialMissingShifts.includes('evening') && (
+                            <Tag color="success">Đã tạo</Tag>
+                          )}
+                        </Space>
+                      </Checkbox>
+                    </Space>
+                  </Spin>
+                  
+                  {selectedShifts.length === 0 && (
+                    <Alert
+                      type="warning"
+                      message="⚠️ Phải chọn ít nhất 1 ca"
+                      showIcon
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )}
+                  
+                  {/* {selectedShifts.length === 3 && !isEditingExistingSchedule && (
+                    <Alert
+                      type="success"
+                      showIcon
+                      message="Tóm tắt"
+                      description="Sẽ tạo lịch cho tất cả 3 ca làm việc"
+                      style={{ marginTop: 8, fontSize: 11 }}
+                    />
+                  )} */}
+                </div>
+              </Col>
+            </Row>
+          )}
 
           {/* Summary */}
           {selectedShifts.length > 0 && (
@@ -1963,6 +3109,17 @@ const CreateScheduleForRoom = () => {
           )}
         </Space>
       </Modal>
+
+      {/* 🆕 Edit Schedule Modal */}
+      <EditScheduleModal
+        visible={showEditModal}
+        onCancel={handleCancelEditModal}
+        onSuccess={handleEditSuccess}
+        roomId={editingSchedule?.roomId}
+        month={editingSchedule?.month}
+        year={editingSchedule?.year}
+        scheduleListData={editingSchedule?.scheduleListData}
+      />
     </div>
   );
 };
