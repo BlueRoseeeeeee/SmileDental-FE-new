@@ -1698,8 +1698,29 @@ const CreateScheduleForRoom = () => {
                       });
                     });
 
-                    // Tính toán trạng thái nhóm
-                    const hasAnyMissingShifts = group.schedules.some(s => s.hasMissingShifts);
+                    // ⭐ Tính toán trạng thái nhóm - LOGIC MỚI
+                    // Kiểm tra xem TẤT CẢ các buồng ACTIVE có đầy đủ hay không
+                    const activeSubRooms = allSubRooms.filter(sr => sr.isActiveSubRoom === true);
+                    
+                    let allActiveSubRoomsComplete = false;
+                    if (activeSubRooms.length > 0) {
+                      // Có buồng active → check từng buồng
+                      allActiveSubRoomsComplete = activeSubRooms.every(subRoom => {
+                        const activeShifts = ['morning', 'afternoon', 'evening'].filter(
+                          shift => subRoom.shifts && subRoom.shifts[shift] === true
+                        );
+                        const generatedShiftKeys = (subRoom.generatedShifts || []).map(s => s.key);
+                        
+                        // Buồng đầy đủ = tất cả ca active đều đã tạo
+                        return activeShifts.length > 0 && 
+                               activeShifts.every(shift => generatedShiftKeys.includes(shift));
+                      });
+                    }
+                    
+                    // Nếu TẤT CẢ buồng active đều đầy đủ → group đầy đủ
+                    // Ngược lại → group còn thiếu
+                    const hasAnyMissingShifts = !allActiveSubRoomsComplete;
+                    
                     const isExpired = group.schedules.every(s => s.isExpired);
                     const canCreate = group.schedules.some(s => s.canCreate);
 
@@ -1708,6 +1729,7 @@ const CreateScheduleForRoom = () => {
                       allSubRooms,
                       groupSubRoomShiftStatus, // 🔧 ADD: Thêm subRoomShiftStatus riêng của group
                       hasMissingShifts: hasAnyMissingShifts,
+                      allActiveSubRoomsComplete, // ⭐ NEW: Đánh dấu tất cả buồng active đã đầy đủ
                       isExpired,
                       canCreate
                     };
@@ -1896,15 +1918,15 @@ const CreateScheduleForRoom = () => {
                           )}
                           
                           {/* Cannot Create Warning */}
-                          {!group.isExpired && group.hasMissingShifts && group.canCreate === false && (
-                            <Alert
-                              type="warning"
-                              showIcon
-                              message="Không thể tạo ca thiếu"
-                              description="Tất cả các ca còn thiếu đều đang tắt hoạt động. Vui lòng bật lại ca trong cấu hình trước khi tạo."
-                              style={{ fontSize: 12, marginTop: 4 }}
-                            />
-                          )}
+                          {/* {!group.isExpired && group.hasMissingShifts && group.canCreate === false && (
+                            // <Alert
+                            //   type="warning"
+                            //   showIcon
+                            //   message="Không thể tạo ca thiếu"
+                            //   description="Tất cả các ca còn thiếu đều đang tắt hoạt động. Vui lòng bật lại ca trong cấu hình trước khi tạo."
+                            //   style={{ fontSize: 12, marginTop: 4 }}
+                            // />
+                          )} */}
                           
                           {/* 🆕 Hiển thị thông tin ca */}
                           <div style={{ marginTop: 8 }}>
@@ -1912,7 +1934,26 @@ const CreateScheduleForRoom = () => {
                               <>
                                 <Text strong>Buồng:</Text>
                                 <div style={{ marginTop: 4 }}>
-                                  {group.allSubRooms.map((subRoom, idx) => (
+                                  {group.allSubRooms.map((subRoom, idx) => {
+                                    // ⭐ Tính toán trạng thái "Đầy đủ"
+                                    // Nếu isActiveSubroom = true → check tất cả ca đã có lịch
+                                    let isComplete = false;
+                                    if (subRoom.isActiveSubRoom === true) {
+                                      // Buồng đang BẬT → check ca active có đủ chưa
+                                      const activeShifts = ['morning', 'afternoon', 'evening'].filter(
+                                        shift => subRoom.shifts && subRoom.shifts[shift] === true
+                                      );
+                                      const generatedShiftKeys = (subRoom.generatedShifts || []).map(s => s.key);
+                                      
+                                      // Đầy đủ = tất cả ca active đều đã tạo
+                                      isComplete = activeShifts.length > 0 && 
+                                                   activeShifts.every(shift => generatedShiftKeys.includes(shift));
+                                    } else {
+                                      // Buồng đang TẮT → không check đầy đủ
+                                      isComplete = false;
+                                    }
+                                    
+                                    return (
                                     <Card 
                                       key={idx} 
                                       size="small" 
@@ -1925,7 +1966,7 @@ const CreateScheduleForRoom = () => {
                                         <div>
                                           <Tag color="cyan">{subRoom.name}</Tag>
                                           {subRoom.isActiveSubRoom === false && <Tag color="red">Đang tắt</Tag>}
-                                          {!subRoom.hasMissingShifts && (
+                                          {isComplete && (
                                             <Tag color="success" icon={<CheckCircleOutlined />}>Đầy đủ</Tag>
                                           )}
                                         </div>
@@ -1977,7 +2018,8 @@ const CreateScheduleForRoom = () => {
                                           </>
                                       </Space>
                                     </Card>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               </>
                             ) : (
