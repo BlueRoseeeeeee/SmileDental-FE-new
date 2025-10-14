@@ -138,27 +138,34 @@ const EditScheduleModal = ({
   
   const inactiveShifts = Array.from(inactiveShiftsMap.values());
 
-  // ✅ Get inactive subrooms (isActiveSubRoom=false)
+  // ✅ Get inactive subrooms (isActiveSubRoom=false) - CHỈ LẤY CỦA THÁNG NÀY
   const inactiveSubRooms = [];
-  if (scheduleListData?.subRoomShiftStatus) {
-    scheduleListData.subRoomShiftStatus.forEach(sr => {
-      if (sr.isActiveSubRoom === false) {
-        // Tìm schedule tương ứng
-        const schedule = scheduleListData.schedules?.find(sch => 
-          sch.subRoom && sch.subRoom._id.toString() === sr.subRoomId.toString()
-        );
-        
-        if (schedule) {
+  
+  if (scheduleListData?.schedules) {
+    // 🔧 FIX: Lấy trực tiếp từ schedules.subRoom.isActiveSubRoom thay vì subRoomShiftStatus
+    scheduleListData.schedules.forEach(schedule => {
+      // Filter theo tháng/năm
+      if (schedule.month === month && schedule.year === year && schedule.subRoom) {
+        if (schedule.subRoom.isActiveSubRoom === false) {
           inactiveSubRooms.push({
             scheduleId: schedule.scheduleId,
-            subRoomId: sr.subRoomId,
-            subRoomName: sr.subRoomName,
-            shifts: sr.shifts
+            subRoomId: schedule.subRoom._id,
+            subRoomName: schedule.subRoom.name,
+            shifts: {
+              morning: schedule.shiftConfig?.morning?.isActive ?? false,
+              afternoon: schedule.shiftConfig?.afternoon?.isActive ?? false,
+              evening: schedule.shiftConfig?.evening?.isActive ?? false
+            }
           });
         }
       }
     });
   }
+  
+  console.log(`📊 Modal "Chỉnh sửa lịch" - Tháng ${month}/${year}:`, {
+    totalSchedules: scheduleListData?.schedules?.length,
+    inactiveSubRooms: inactiveSubRooms.map(sr => sr.subRoomName)
+  });
 
   return (
     <Modal
@@ -177,7 +184,7 @@ const EditScheduleModal = ({
           type="info"
           showIcon
           message={`Lịch tháng ${month}/${year}`}
-          description={`${scheduleListData?.schedules?.length || 0} lịch cho ${scheduleListData?.subRoomShiftStatus?.length || 0} buồng`}
+          description={`${scheduleListData?.schedules?.filter(s => s.month === month && s.year === year).length || 0} lịch trong tháng này`}
         />
 
         {/* Toggle Schedule Active */}
