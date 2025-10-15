@@ -40,6 +40,14 @@ import CreateScheduleForRoom from './pages/Schedule/CreateScheduleForRoom.jsx';
 import StaffAssignmentUnified from './pages/Schedule/StaffAssignmentUnified.jsx';
 import StaffReplacement from './pages/Schedule/StaffReplacement.jsx';
 
+// Patient Pages
+import HomePage from './pages/Patient/HomePage.jsx';
+import BookingSelectService from './pages/Patient/BookingSelectService.jsx';
+import BookingSelectDentist from './pages/Patient/BookingSelectDentist.jsx';
+import BookingSelectDate from './pages/Patient/BookingSelectDate.jsx';
+import BookingSelectTime from './pages/Patient/BookingSelectTime.jsx';
+import CreateAppointment from './pages/Patient/CreateAppointment.jsx';
+
 import { Result, Button } from 'antd';
 import { 
   HomeOutlined, 
@@ -99,10 +107,41 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes */}
+          {/* Public routes - Patient Homepage */}
+          <Route path="/home" element={<HomePage />} />
+          
+          {/* Public routes - Auth */}
           <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          
+          {/* Patient Booking Flow - Public until create appointment */}
+          <Route path="/patient/booking">
+            <Route index element={<Navigate to="/patient/booking/select-service" replace />} />
+            <Route path="select-service" element={<BookingSelectService />} />
+            <Route path="select-dentist" element={<BookingSelectDentist />} />
+            <Route path="select-date" element={<BookingSelectDate />} />
+            <Route path="select-time" element={<BookingSelectTime />} />
+            <Route path="create-appointment" element={
+              <ProtectedRoute roles={['patient']}>
+                <CreateAppointment />
+              </ProtectedRoute>
+            } />
+          </Route>
+          
+          {/* Patient Dashboard */}
+          <Route path="/patient/appointments" element={
+            <ProtectedRoute roles={['patient']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={
+              <div style={{ padding: '24px' }}>
+                <h1>Lịch khám của tôi</h1>
+                <p>Đang phát triển...</p>
+              </div>
+            } />
+          </Route>
           
           {/* Protected routes */}
           <Route path="/" element={

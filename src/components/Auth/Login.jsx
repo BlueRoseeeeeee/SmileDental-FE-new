@@ -119,7 +119,9 @@ const Login = () => {
         localStorage.removeItem('rememberLogin');
       }
       
-      navigate('/dashboard');
+      // Redirect to previous page or dashboard
+      const from = location.state?.from || '/dashboard';
+      navigate(from);
     } catch {
       // Error is handled by AuthContext
     }

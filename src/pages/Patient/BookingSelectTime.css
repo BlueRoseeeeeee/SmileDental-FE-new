@@ -1,0 +1,77 @@
+.booking-select-time-page {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.breadcrumb-section {
+  background-color: white;
+  padding: 16px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.breadcrumb-section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.breadcrumb-section a {
+  color: #1890ff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-section a:hover {
+  text-decoration: underline;
+}
+
+.main-content {
+  padding: 40px 0;
+}
+
+.booking-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.summary-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 24px;
+}
+
+.time-slot-button {
+  height: 50px;
+  border-radius: 8px;
+  border: 2px solid #d9d9d9;
+  background: white;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.time-slot-button:hover {
+  border-color: #2c5f4f;
+  color: #2c5f4f;
+  background: #e6f4f1;
+}
+
+.time-slot-button.selected {
+  border-color: #2c5f4f;
+  background: #2c5f4f;
+  color: white;
+}
+
+.time-slot-button.selected:hover {
+  border-color: #1c4a3f;
+  background: #1c4a3f;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .time-slot-button {
+    height: 45px;
+    font-size: 13px;
+  }
+}
