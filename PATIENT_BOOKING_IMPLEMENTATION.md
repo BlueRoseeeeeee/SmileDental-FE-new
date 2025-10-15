@@ -6,11 +6,10 @@
 
 ## 🎯 Flow đặt lịch khám
 
-1. **Trang chủ** (`/home`) 
-   - Hiển thị hero section với nút "Đặt lịch khám"
+1. **Landing / Bắt đầu**
+   - UI trực tiếp mở vào flow đặt lịch (Chọn dịch vụ)
    - Nút "Đăng nhập" (hoặc "Lịch khám của tôi" nếu đã đăng nhập)
-   - Giới thiệu dịch vụ
-   - Footer với thông tin liên hệ
+   - Giới thiệu dịch vụ (có thể hiển thị ở trang khác nếu cần)
 
 2. **Chọn dịch vụ** (`/patient/booking/select-service`)
    - Danh sách dịch vụ đang hoạt động
@@ -46,8 +45,6 @@
 
 ```
 src/pages/Patient/
-├── HomePage.jsx              # Trang chủ
-├── HomePage.css
 ├── BookingSelectService.jsx  # Chọn dịch vụ
 ├── BookingSelectService.css
 ├── BookingSelectDentist.jsx  # Chọn bác sĩ
@@ -65,7 +62,6 @@ src/pages/Patient/
 ### Routes đã cấu hình:
 
 **Public (Không cần đăng nhập):**
-- `/home` - Trang chủ
 - `/login` - Đăng nhập
 - `/register` - Đăng ký
 - `/forgot-password` - Quên mật khẩu

@@ -41,7 +41,6 @@ import StaffAssignmentUnified from './pages/Schedule/StaffAssignmentUnified.jsx'
 import StaffReplacement from './pages/Schedule/StaffReplacement.jsx';
 
 // Patient Pages
-import HomePage from './pages/Patient/HomePage.jsx';
 import BookingSelectService from './pages/Patient/BookingSelectService.jsx';
 import BookingSelectDentist from './pages/Patient/BookingSelectDentist.jsx';
 import BookingSelectDate from './pages/Patient/BookingSelectDate.jsx';
@@ -107,8 +106,7 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes - Patient Homepage */}
-          <Route path="/home" element={<HomePage />} />
+          {/* Public routes - Patient Homepage removed - booking flow is primary entry */}
           
           {/* Public routes - Auth */}
           <Route path="/login" element={<Login />} />

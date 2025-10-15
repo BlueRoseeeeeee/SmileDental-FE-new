@@ -194,7 +194,7 @@ const BookingSelectTime = () => {
       <div className="breadcrumb-section">
         <div className="container">
           <Space split=">">
-            <a href="/home">Trang chủ</a>
+            <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
             <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
             <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn bác sĩ</a>
