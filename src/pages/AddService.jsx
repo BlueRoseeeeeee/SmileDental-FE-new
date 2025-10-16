@@ -538,7 +538,7 @@ const AddService = () => {
                               border: '1px solid #e2e8f0',
                               borderRadius: '8px',
                               overflow: 'hidden',
-                              background: '#ffffff'
+                              background: '#ffffff', height: '400px'
                             }}>
                               <TinyMCE
                                 value={addon.description || ''}
