@@ -157,6 +157,19 @@ const slotService = {
       role // 'dentist' or 'nurse'
     });
     return response.data;
+  },
+
+  // 🆕 PATIENT BOOKING APIs
+  // Lấy danh sách nha sỹ có slot gần nhất (> currentTime + 30 phút)
+  getDentistsWithNearestSlot: async () => {
+    const response = await scheduleApi.get('/slot/dentists-with-nearest-slot');
+    return response.data;
+  },
+
+  // Lấy danh sách ngày làm việc của nha sỹ trong maxBookingDays
+  getDentistWorkingDates: async (dentistId) => {
+    const response = await scheduleApi.get(`/slot/dentist/${dentistId}/working-dates`);
+    return response.data;
   }
 };
 

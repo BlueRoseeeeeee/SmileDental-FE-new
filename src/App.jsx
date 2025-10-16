@@ -13,6 +13,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 
 // Layout
 import DashboardLayout from './components/Layout/DashboardLayout.jsx';
+import PatientLayout from './components/Layout/PatientLayout.jsx';
 
 // Pages
 import Dashboard from './pages/Dashboard.jsx';
@@ -46,6 +47,9 @@ import BookingSelectDentist from './pages/Patient/BookingSelectDentist.jsx';
 import BookingSelectDate from './pages/Patient/BookingSelectDate.jsx';
 import BookingSelectTime from './pages/Patient/BookingSelectTime.jsx';
 import CreateAppointment from './pages/Patient/CreateAppointment.jsx';
+import PatientHomePage from './pages/Patient/HomePage.jsx';
+import PatientProfile from './pages/Patient/PatientProfile.jsx';
+import PatientAppointments from './pages/Patient/PatientAppointments.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -106,38 +110,44 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes - Patient Homepage removed - booking flow is primary entry */}
-          
           {/* Public routes - Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           
-          {/* Patient Booking Flow - Public until create appointment */}
-          <Route path="/patient/booking">
-            <Route index element={<Navigate to="/patient/booking/select-service" replace />} />
-            <Route path="select-service" element={<BookingSelectService />} />
-            <Route path="select-dentist" element={<BookingSelectDentist />} />
-            <Route path="select-date" element={<BookingSelectDate />} />
-            <Route path="select-time" element={<BookingSelectTime />} />
-            <Route path="create-appointment" element={
+          {/* Patient Public Routes with Layout */}
+          <Route path="/patient" element={<PatientLayout />}>
+            <Route index element={<PatientHomePage />} />
+            
+            {/* Patient Booking Flow */}
+            <Route path="booking">
+              <Route index element={<Navigate to="/patient/booking/select-service" replace />} />
+              <Route path="select-service" element={<BookingSelectService />} />
+              <Route path="select-dentist" element={<BookingSelectDentist />} />
+              <Route path="select-date" element={<BookingSelectDate />} />
+              <Route path="select-time" element={<BookingSelectTime />} />
+              <Route path="create-appointment" element={
+                <ProtectedRoute>
+                  <CreateAppointment />
+                </ProtectedRoute>
+              } />
+            </Route>
+            
+            {/* Patient Protected Routes */}
+            <Route path="profile" element={
               <ProtectedRoute roles={['patient']}>
-                <CreateAppointment />
+                <PatientProfile />
               </ProtectedRoute>
             } />
-          </Route>
-          
-          {/* Patient Dashboard */}
-          <Route path="/patient/appointments" element={
-            <ProtectedRoute roles={['patient']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={
-              <div style={{ padding: '24px' }}>
-                <h1>Lịch khám của tôi</h1>
-                <p>Đang phát triển...</p>
-              </div>
+            <Route path="appointments" element={
+              <ProtectedRoute roles={['patient']}>
+                <PatientAppointments />
+              </ProtectedRoute>
+            } />
+            <Route path="settings" element={
+              <ProtectedRoute roles={['patient']}>
+                <Settings />
+              </ProtectedRoute>
             } />
           </Route>
           

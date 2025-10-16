@@ -10,7 +10,8 @@ import {
   Alert,
   Badge,
   Row,
-  Col
+  Col,
+  message
 } from 'antd';
 import { 
   ArrowLeftOutlined,
@@ -19,6 +20,7 @@ import {
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import slotService from '../../services/slotService.js';
 import { mockServices, mockDentists } from '../../services/mockData.js';
 import './BookingSelectDate.css';
 
@@ -28,7 +30,7 @@ dayjs.extend(isSameOrBefore);
 const { Title, Text } = Typography;
 
 // Toggle this to use mock data for testing
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 const BookingSelectDate = () => {
   const navigate = useNavigate();
@@ -36,6 +38,7 @@ const BookingSelectDate = () => {
   const [selectedDentist, setSelectedDentist] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
+  const [workingDates, setWorkingDates] = useState([]);
 
   useEffect(() => {
     // Pre-populate localStorage with mock data if using mocks
@@ -59,7 +62,31 @@ const BookingSelectDate = () => {
     
     setSelectedService(JSON.parse(service));
     setSelectedDentist(JSON.parse(dentist));
+    
+    // Fetch working dates
+    fetchWorkingDates(JSON.parse(dentist)._id);
   }, []);
+
+  const fetchWorkingDates = async (dentistId) => {
+    try {
+      const response = await slotService.getDentistWorkingDates(dentistId);
+      console.log('📅 Working dates API response:', response);
+      
+      if (response.success && response.data.workingDates) {
+        setWorkingDates(response.data.workingDates);
+        
+        if (response.data.workingDates.length === 0) {
+          message.warning('Nha sỹ này hiện chưa có lịch làm việc trong thời gian tới');
+        }
+      } else {
+        console.error('Invalid API response format:', response);
+        message.error('Không thể tải lịch làm việc');
+      }
+    } catch (error) {
+      console.error('Error fetching working dates:', error);
+      message.error('Lỗi kết nối: ' + (error.message || 'Không thể kết nối đến server'));
+    }
+  };
 
   const disabledDate = (current) => {
     // Không cho chọn ngày trong quá khứ
@@ -67,14 +94,10 @@ const BookingSelectDate = () => {
       return true;
     }
     
-    // Nếu bác sĩ có workingDays, chỉ cho chọn ngày trong workingDays
-    if (selectedDentist?.workingDays && selectedDentist.workingDays.length > 0) {
-      // Lấy index ngày trong tuần (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-      const dayIndex = current.day();
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const currentDayName = dayNames[dayIndex];
-      
-      return !selectedDentist.workingDays.includes(currentDayName);
+    // Nếu có workingDates từ API, chỉ cho chọn ngày có trong danh sách
+    if (workingDates && workingDates.length > 0) {
+      const currentDateStr = current.format('YYYY-MM-DD');
+      return !workingDates.some(d => d.date === currentDateStr);
     }
     
     return false;

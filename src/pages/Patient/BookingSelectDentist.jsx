@@ -11,7 +11,8 @@ import {
   Spin,
   Tag,
   Avatar,
-  Rate
+  Rate,
+  message
 } from 'antd';
 import { 
   SearchOutlined, 
@@ -19,14 +20,14 @@ import {
   UserOutlined,
   StarFilled
 } from '@ant-design/icons';
-import { userService } from '../../services';
+import slotService from '../../services/slotService.js';
 import { mockDentists, mockServices } from '../../services/mockData.js';
 import './BookingSelectDentist.css';
 
 const { Title, Text, Paragraph } = Typography;
 
 // Toggle this to use mock data for testing
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 const BookingSelectDentist = () => {
   const navigate = useNavigate();
@@ -63,18 +64,24 @@ const BookingSelectDentist = () => {
         setDentists(mockDentists);
         setFilteredDentists(mockDentists);
       } else {
-        const response = await userService.getAllStaff(1, 1000);
-        if (response.success) {
-          // Lọc chỉ lấy nha sĩ (dentist) và đang active
-          const activeDentists = response.users.filter(
-            user => user.assignmentRole === 'dentist' && user.isActive
-          );
-          setDentists(activeDentists);
-          setFilteredDentists(activeDentists);
+        const response = await slotService.getDentistsWithNearestSlot();
+        console.log('👨‍⚕️ Dentists API response:', response);
+        
+        if (response.success && response.data.dentists) {
+          setDentists(response.data.dentists);
+          setFilteredDentists(response.data.dentists);
+          
+          if (response.data.dentists.length === 0) {
+            message.warning('Hiện tại chưa có nha sỹ nào có lịch khám');
+          }
+        } else {
+          console.error('Invalid API response format:', response);
+          message.error('Không thể tải danh sách nha sỹ');
         }
       }
     } catch (error) {
       console.error('Error fetching dentists:', error);
+      message.error('Lỗi kết nối: ' + (error.message || 'Không thể kết nối đến server'));
     } finally {
       setLoading(false);
     }
@@ -192,6 +199,13 @@ const BookingSelectDentist = () => {
                                 <Text type="secondary">
                                   Kinh nghiệm: {dentist.experience} năm
                                 </Text>
+                              )}
+                              {dentist.nearestSlot && (
+                                <div style={{ marginTop: 8 }}>
+                                  <Tag color="green" style={{ fontSize: 13 }}>
+                                    Slot gần nhất: {dentist.nearestSlot.date} {dentist.nearestSlot.startTime} - {dentist.nearestSlot.endTime}
+                                  </Tag>
+                                </div>
                               )}
                               <Space>
                                 <Text>Lịch làm việc:</Text>

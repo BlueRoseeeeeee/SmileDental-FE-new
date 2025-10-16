@@ -51,7 +51,7 @@
   font-weight: 500;
 }
 
-.time-slot-button:hover {
+.time-slot-button:hover:not(:disabled) {
   border-color: #2c5f4f;
   color: #2c5f4f;
   background: #e6f4f1;
@@ -67,6 +67,14 @@
   border-color: #1c4a3f;
   background: #1c4a3f;
   color: white;
+}
+
+.time-slot-button:disabled {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  color: #999;
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

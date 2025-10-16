@@ -168,6 +168,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update user info
+  const updateUser = async (userData) => {
+    try {
+      // Update user in localStorage and state
+      const updatedUser = { ...user, ...userData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return updatedUser;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const value = {
     isAuthenticated,
     user,
@@ -180,7 +193,8 @@ export const AuthProvider = ({ children }) => {
     verifyOtp,
     register,
     sendOtpResetPassword,
-    resetPassword
+    resetPassword,
+    updateUser
   };
 
   return (

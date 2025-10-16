@@ -1,0 +1,19 @@
+.patient-appointments-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.appointments-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.ant-table-wrapper {
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .ant-table {
+    font-size: 12px;
+  }
+}

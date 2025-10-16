@@ -10,7 +10,8 @@ import {
   Row,
   Col,
   Spin,
-  Empty
+  Empty,
+  message
 } from 'antd';
 import { 
   ArrowLeftOutlined,
@@ -18,7 +19,7 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { slotService } from '../../services';
+import slotService from '../../services/slotService.js';
 import { mockSlots, mockServices, mockDentists } from '../../services/mockData.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import './BookingSelectTime.css';
@@ -26,7 +27,7 @@ import './BookingSelectTime.css';
 const { Title, Text } = Typography;
 
 // Toggle this to use mock data for testing
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 const BookingSelectTime = () => {
   const navigate = useNavigate();
@@ -83,46 +84,66 @@ const BookingSelectTime = () => {
         await new Promise(resolve => setTimeout(resolve, 500));
         setAvailableSlots(mockSlots);
       } else {
-        // Call API to get available slots for dentist on selected date
-        const response = await slotService.getAvailableSlots({
-          dentistId,
-          date,
-          status: 'available' // Chỉ lấy slot còn trống
+        // Call API to get dentist's slots on selected date
+        // Use getDentistSlotsFuture to get only future slots
+        const response = await slotService.getDentistSlotsFuture(dentistId, {
+          date: date,
+          shiftName: '' // Get all shifts
         });
         
-        if (response.success) {
-          // Nhóm slots theo ca
-          const groupedSlots = {
+        console.log('⏰ Slots API response:', response);
+        
+        if (response.success && response.data) {
+          let groupedSlots = {
             morning: [],
             afternoon: [],
             evening: []
           };
           
-          response.data.forEach(slot => {
-            const slotTime = dayjs(slot.startTime);
-            const hour = slotTime.hour();
-            
-            if (hour >= 8 && hour < 12) {
-              groupedSlots.morning.push(slot);
-            } else if (hour >= 12 && hour < 17) {
-              groupedSlots.afternoon.push(slot);
-            } else if (hour >= 17 && hour < 20) {
-              groupedSlots.evening.push(slot);
-            }
-          });
-          
-          // Sort slots by time
-          Object.keys(groupedSlots).forEach(shift => {
-            groupedSlots[shift].sort((a, b) => 
-              dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf()
-            );
-          });
+          // Check if API returns grouped shifts (new format)
+          if (response.data.shifts) {
+            console.log('📦 Using grouped shifts from API');
+            groupedSlots = {
+              morning: response.data.shifts['Ca Sáng'] || [],
+              afternoon: response.data.shifts['Ca Chiều'] || [],
+              evening: response.data.shifts['Ca Tối'] || []
+            };
+          } 
+          // Fallback: Group manually from slots array (old format)
+          else if (response.data.slots) {
+            console.log('📋 Manually grouping slots by shiftName');
+            response.data.slots.forEach(slot => {
+              // Determine shift based on shiftName
+              const shiftName = slot.shiftName;
+              if (shiftName === 'Ca Sáng') {
+                groupedSlots.morning.push(slot);
+              } else if (shiftName === 'Ca Chiều') {
+                groupedSlots.afternoon.push(slot);
+              } else if (shiftName === 'Ca Tối') {
+                groupedSlots.evening.push(slot);
+              }
+            });
+          }
           
           setAvailableSlots(groupedSlots);
+          
+          const totalSlots = groupedSlots.morning.length + 
+                            groupedSlots.afternoon.length + 
+                            groupedSlots.evening.length;
+          
+          console.log('📊 Total slots found:', totalSlots, groupedSlots);
+          
+          if (totalSlots === 0) {
+            message.warning('Không có slot khám nào trong ngày này');
+          }
+        } else {
+          console.error('Invalid API response format:', response);
+          message.error('Không thể tải danh sách giờ khám');
         }
       }
     } catch (error) {
       console.error('Error fetching available slots:', error);
+      message.error('Lỗi kết nối: ' + (error.message || 'Không thể kết nối đến server'));
     } finally {
       setLoading(false);
     }
@@ -152,34 +173,73 @@ const BookingSelectTime = () => {
   };
 
   const renderShiftSlots = (shift, shiftName, slots) => {
-    if (slots.length === 0) {
-      return null;
-    }
-
     return (
       <div key={shift} style={{ marginBottom: 24 }}>
-        <Title level={5} style={{ marginBottom: 12 }}>
-          <CheckCircleOutlined style={{ color: '#52c41a' }} /> {shiftName}
+        <Title level={5} style={{ marginBottom: 12, color: '#2c5f4f' }}>
+          <ClockCircleOutlined /> {shiftName}
         </Title>
-        <Row gutter={[12, 12]}>
-          {slots.map((slot) => {
-            const startTime = dayjs(slot.startTime).format('HH:mm');
-            const endTime = dayjs(slot.endTime).format('HH:mm');
-            const isSelected = selectedSlot?._id === slot._id;
-            
-            return (
-              <Col xs={12} sm={8} md={6} key={slot._id}>
-                <Button
-                  className={`time-slot-button ${isSelected ? 'selected' : ''}`}
-                  onClick={() => handleSelectSlot(slot)}
-                  block
-                >
-                  <ClockCircleOutlined /> {startTime} - {endTime}
-                </Button>
-              </Col>
-            );
-          })}
-        </Row>
+        {slots.length === 0 ? (
+          <div style={{ 
+            padding: '16px', 
+            textAlign: 'center', 
+            background: '#f5f5f5', 
+            borderRadius: 8,
+            color: '#999'
+          }}>
+            Không có slot khám trong ca này
+          </div>
+        ) : (
+          <Row gutter={[12, 12]}>
+            {slots.map((slot) => {
+              // Handle both Date objects and time strings (HH:mm)
+              let startTime, endTime;
+              if (typeof slot.startTimeVN === 'string') {
+                // Use VN time if available
+                startTime = slot.startTimeVN;
+                endTime = slot.endTimeVN;
+              } else if (typeof slot.startTime === 'string' && slot.startTime.includes(':')) {
+                // Already formatted as HH:mm
+                startTime = slot.startTime;
+                endTime = slot.endTime;
+              } else {
+                // Convert Date to HH:mm
+                startTime = dayjs(slot.startTime).format('HH:mm');
+                endTime = dayjs(slot.endTime).format('HH:mm');
+              }
+              
+              const isSelected = selectedSlot?._id === slot._id;
+              const isBooked = slot.isBooked === true;
+              const availableCount = slot.availableAppointments || (slot.maxAppointments ? slot.maxAppointments - slot.appointmentCount : 1);
+              
+              return (
+                <Col xs={12} sm={8} md={6} key={slot._id || slot.slotId}>
+                  <Button
+                    className={`time-slot-button ${isSelected ? 'selected' : ''}`}
+                    onClick={() => !isBooked && handleSelectSlot(slot)}
+                    block
+                    disabled={isBooked}
+                    style={{
+                      height: 'auto',
+                      padding: '12px 8px',
+                      backgroundColor: isBooked ? '#f0f0f0' : (isSelected ? '#2c5f4f' : 'white'),
+                      borderColor: isBooked ? '#d9d9d9' : (isSelected ? '#2c5f4f' : '#d9d9d9'),
+                      color: isBooked ? '#999' : (isSelected ? 'white' : '#333'),
+                      opacity: isBooked ? 0.6 : 1,
+                      cursor: isBooked ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <div style={{ fontWeight: 500, fontSize: 14 }}>
+                      {startTime} - {endTime}
+                    </div>
+                    <div style={{ fontSize: 11, marginTop: 4 }}>
+                      {isBooked ? 'Đã được đặt' : `Còn ${availableCount} chỗ`}
+                    </div>
+                  </Button>
+                </Col>
+              );
+            })}
+          </Row>
+        )}
       </div>
     );
   };
@@ -260,33 +320,29 @@ const BookingSelectTime = () => {
                 </Title>
 
                 <Spin spinning={loading}>
-                  {totalSlots === 0 ? (
-                    <Empty
-                      description="Không có khung giờ trống trong ngày này"
-                      style={{ padding: '40px 0' }}
+                  <div style={{ marginBottom: 24 }}>
+                    <Alert
+                      type="info"
+                      showIcon
+                      message={totalSlots > 0 
+                        ? `Có ${totalSlots} khung giờ khả dụng trong ngày ${selectedDate?.format('DD/MM/YYYY')}`
+                        : `Ngày ${selectedDate?.format('DD/MM/YYYY')} - Chọn khung giờ phù hợp`
+                      }
                     />
-                  ) : (
-                    <>
-                      <Alert
-                        type="info"
-                        showIcon
-                        message={`Có ${totalSlots} khung giờ khả dụng trong ngày ${selectedDate?.format('DD/MM/YYYY')}`}
-                        style={{ marginBottom: 24 }}
-                      />
+                  </div>
 
-                      {renderShiftSlots('morning', 'Buổi sáng', availableSlots.morning)}
-                      {renderShiftSlots('afternoon', 'Buổi chiều', availableSlots.afternoon)}
-                      {renderShiftSlots('evening', 'Buổi tối', availableSlots.evening)}
+                  {/* Always show all 3 shifts */}
+                  {renderShiftSlots('morning', 'Ca sáng', availableSlots.morning)}
+                  {renderShiftSlots('afternoon', 'Ca chiều', availableSlots.afternoon)}
+                  {renderShiftSlots('evening', 'Ca tối', availableSlots.evening)}
 
-                      {selectedSlot && (
-                        <Alert
-                          type="success"
-                          showIcon
-                          message={`Đã chọn: ${dayjs(selectedSlot.startTime).format('HH:mm')} - ${dayjs(selectedSlot.endTime).format('HH:mm')}`}
-                          style={{ marginTop: 16 }}
-                        />
-                      )}
-                    </>
+                  {selectedSlot && (
+                    <Alert
+                      type="success"
+                      showIcon
+                      message={`Đã chọn: ${selectedSlot.startTimeVN || selectedSlot.startTime} - ${selectedSlot.endTimeVN || selectedSlot.endTime}`}
+                      style={{ marginTop: 16 }}
+                    />
                   )}
                 </Spin>
 

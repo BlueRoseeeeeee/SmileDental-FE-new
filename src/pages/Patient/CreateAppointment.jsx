@@ -23,6 +23,8 @@ import {
   FileTextOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import appointmentService from '../../services/appointmentService.js';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import { mockPatient, mockServices, mockDentists, mockSlots } from '../../services/mockData.js';
 import './CreateAppointment.css';
 
@@ -30,10 +32,11 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 // Toggle this to use mock data for testing
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 const CreateAppointment = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form] = Form.useForm();
   const [selectedService, setSelectedService] = useState(null);
   const [selectedDentist, setSelectedDentist] = useState(null);
@@ -84,6 +87,13 @@ const CreateAppointment = () => {
         patientPhone: mockPatient.phone,
         patientDOB: dayjs(mockPatient.dateOfBirth).format('DD/MM/YYYY')
       });
+    } else if (user) {
+      // Pre-fill from logged in user
+      form.setFieldsValue({
+        patientName: user.fullName || '',
+        patientPhone: user.phone || '',
+        patientDOB: user.dateOfBirth ? dayjs(user.dateOfBirth).format('DD/MM/YYYY') : ''
+      });
     }
   }, []);
 
@@ -128,51 +138,41 @@ const CreateAppointment = () => {
         
         message.success('Đặt lịch khám thành công!');
       } else {
-        // Gọi API tạo appointment
+        // Call real API to create appointment
         const appointmentData = {
-          serviceId: selectedService._id,
-          dentistId: selectedDentist._id,
           slotId: selectedSlot._id,
-          date: selectedDate.format('YYYY-MM-DD'),
+          patientId: user._id,
+          serviceId: selectedService._id,
+          addOnIds: [], // TODO: Add add-ons selection if needed
           notes: values.notes || '',
           paymentMethod: paymentMethod
         };
         
-        // TODO: Call API create appointment
-        // const response = await appointmentService.createAppointment(appointmentData);
+        console.log('📝 Creating appointment with data:', appointmentData);
         
-        // Mock response for now
-        const mockResponse = {
-          success: true,
-          data: {
-            _id: 'APP' + Date.now(),
-            appointmentCode: 'BN001',
-            patientName: 'Nguyễn Linh', // Get from auth context
-            patientPhone: '0123456789',
-            dateOfBirth: '01/02/2003',
-            service: selectedService,
-            dentist: selectedDentist,
-            date: selectedDate.format('YYYY-MM-DD'),
-            startTime: selectedSlot.startTime,
-            endTime: selectedSlot.endTime,
-            totalAmount: selectedService.price,
-            paymentMethod: paymentMethod,
-            status: 'pending',
-            createdAt: new Date().toISOString()
-          }
-        };
+        const response = await appointmentService.createAppointment(appointmentData);
         
-        if (mockResponse.success) {
-          setCreatedAppointment(mockResponse.data);
+        console.log('✅ Appointment API response:', response);
+        
+        if (response.success || response.appointment) {
+          setCreatedAppointment(response.appointment || response.data);
           setShowSuccessModal(true);
-        
+          
           // Clear localStorage
           localStorage.removeItem('booking_service');
           localStorage.removeItem('booking_dentist');
           localStorage.removeItem('booking_date');
           localStorage.removeItem('booking_slot');
           
-          message.success('Tạo phiếu khám thành công!');
+          message.success('Đặt lịch khám thành công!');
+          
+          // Redirect to payment if needed
+          if (response.payment && response.payment.paymentUrl) {
+            window.location.href = response.payment.paymentUrl;
+          }
+        } else {
+          console.error('Invalid API response format:', response);
+          message.error('Có lỗi xảy ra khi tạo lịch khám');
         }
       }
     } catch (error) {
@@ -282,16 +282,16 @@ const CreateAppointment = () => {
               >
                 <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered>
                   <Descriptions.Item label="Họ và tên">
-                    Nguyễn Linh
+                    {user?.fullName || 'Chưa cập nhật'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Mã bệnh nhân">
-                    <Text code>BN001</Text>
+                    <Text code>{user?.employeeCode || 'Chưa có'}</Text>
                   </Descriptions.Item>
                   <Descriptions.Item label="Số điện thoại">
-                    0123456789
+                    {user?.phone || 'Chưa cập nhật'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Ngày sinh">
-                    01/02/2003
+                    {user?.dateOfBirth ? dayjs(user.dateOfBirth).format('DD/MM/YYYY') : 'Chưa cập nhật'}
                   </Descriptions.Item>
                 </Descriptions>
               </Card>

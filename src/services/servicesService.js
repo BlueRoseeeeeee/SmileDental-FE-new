@@ -4,6 +4,12 @@
 import { serviceApi } from './apiFactory.js';
 
 export const servicesService = {
+  // Lấy tất cả services (không phân trang)
+  async getAllServices() {
+    const response = await serviceApi.get('/service?page=1&limit=1000');
+    return response.data;
+  },
+
   // Lấy danh sách services
   async getServices(page = 1, limit = 10) {
     const response = await serviceApi.get(`/service?page=${page}&limit=${limit}`);
