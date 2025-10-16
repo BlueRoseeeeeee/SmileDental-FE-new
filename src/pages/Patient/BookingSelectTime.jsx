@@ -208,31 +208,31 @@ const BookingSelectTime = () => {
               }
               
               const isSelected = selectedSlot?._id === slot._id;
-              const isBooked = slot.isBooked === true;
+              const isAvailable = slot.status === 'available';
               const availableCount = slot.availableAppointments || (slot.maxAppointments ? slot.maxAppointments - slot.appointmentCount : 1);
               
               return (
                 <Col xs={12} sm={8} md={6} key={slot._id || slot.slotId}>
                   <Button
                     className={`time-slot-button ${isSelected ? 'selected' : ''}`}
-                    onClick={() => !isBooked && handleSelectSlot(slot)}
+                    onClick={() => isAvailable && handleSelectSlot(slot)}
                     block
-                    disabled={isBooked}
+                    disabled={!isAvailable}
                     style={{
                       height: 'auto',
                       padding: '12px 8px',
-                      backgroundColor: isBooked ? '#f0f0f0' : (isSelected ? '#2c5f4f' : 'white'),
-                      borderColor: isBooked ? '#d9d9d9' : (isSelected ? '#2c5f4f' : '#d9d9d9'),
-                      color: isBooked ? '#999' : (isSelected ? 'white' : '#333'),
-                      opacity: isBooked ? 0.6 : 1,
-                      cursor: isBooked ? 'not-allowed' : 'pointer'
+                      backgroundColor: !isAvailable ? '#f0f0f0' : (isSelected ? '#2c5f4f' : 'white'),
+                      borderColor: !isAvailable ? '#d9d9d9' : (isSelected ? '#2c5f4f' : '#d9d9d9'),
+                      color: !isAvailable ? '#999' : (isSelected ? 'white' : '#333'),
+                      opacity: !isAvailable ? 0.6 : 1,
+                      cursor: !isAvailable ? 'not-allowed' : 'pointer'
                     }}
                   >
                     <div style={{ fontWeight: 500, fontSize: 14 }}>
                       {startTime} - {endTime}
                     </div>
                     <div style={{ fontSize: 11, marginTop: 4 }}>
-                      {isBooked ? 'Đã được đặt' : `Còn ${availableCount} chỗ`}
+                      {!isAvailable ? (slot.status === 'locked' ? 'Đang giữ chỗ' : 'Đã được đặt') : `Còn ${availableCount} chỗ`}
                     </div>
                   </Button>
                 </Col>

@@ -39,10 +39,10 @@ const CreateAppointment = () => {
   const { user } = useAuth();
   const [form] = Form.useForm();
   const [selectedService, setSelectedService] = useState(null);
+  const [selectedServiceAddOn, setSelectedServiceAddOn] = useState(null);
   const [selectedDentist, setSelectedDentist] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
   const [createdAppointment, setCreatedAppointment] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -66,6 +66,7 @@ const CreateAppointment = () => {
 
     // Kiểm tra xem đã chọn đủ thông tin chưa
     const service = localStorage.getItem('booking_service');
+    const serviceAddOn = localStorage.getItem('booking_serviceAddOn'); // Get selected addon
     const dentist = localStorage.getItem('booking_dentist');
     const date = localStorage.getItem('booking_date');
     const slot = localStorage.getItem('booking_slot');
@@ -76,6 +77,9 @@ const CreateAppointment = () => {
     }
     
     setSelectedService(JSON.parse(service));
+    if (serviceAddOn) {
+      setSelectedServiceAddOn(JSON.parse(serviceAddOn));
+    }
     setSelectedDentist(JSON.parse(dentist));
     setSelectedDate(dayjs(date));
     setSelectedSlot(JSON.parse(slot));
@@ -101,83 +105,57 @@ const CreateAppointment = () => {
     try {
       setLoading(true);
       
-      if (USE_MOCK_DATA) {
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get selected addon from localStorage
+      const serviceAddOnData = localStorage.getItem('booking_serviceAddOn');
+      const serviceAddOn = serviceAddOnData ? JSON.parse(serviceAddOnData) : null;
+      
+      // Call API to reserve appointment (create temporary reservation)
+      const reservationData = {
+        patientId: user._id,
+        patientInfo: {
+          fullName: user.fullName,
+          phone: user.phone,
+          dateOfBirth: user.dateOfBirth
+        },
+        serviceId: selectedService._id,
+        serviceAddOnId: serviceAddOn?._id || null, // Use selected addon ID or null
+        dentistId: selectedDentist._id,
+        slotIds: Array.isArray(selectedSlot) ? selectedSlot.map(s => s._id) : [selectedSlot._id],
+        date: selectedDate.format('YYYY-MM-DD'),
+        notes: values.notes || ''
+      };
+      
+      console.log('📝 Creating reservation with data:', reservationData);
+      
+      const response = await appointmentService.reserveAppointment(reservationData);
+      
+      console.log('✅ Reservation API response:', response);
+      console.log('🔵 [Debug] Response structure:', JSON.stringify(response, null, 2));
+      
+      if (response.success && response.data) {
+        message.success('Đặt chỗ thành công! Vui lòng thanh toán trong 15 phút.');
         
-        // Mock response
-        const mockResponse = {
-          success: true,
-          data: {
-            _id: 'APP' + Date.now(),
-            appointmentCode: 'BN' + String(Math.floor(Math.random() * 1000)).padStart(3, '0'),
-            patientName: mockPatient.fullName,
-            patientPhone: mockPatient.phone,
-            dateOfBirth: dayjs(mockPatient.dateOfBirth).format('DD/MM/YYYY'),
-            service: selectedService,
-            dentist: selectedDentist,
-            date: selectedDate.format('YYYY-MM-DD'),
-            startTime: selectedSlot.startTime,
-            endTime: selectedSlot.endTime,
-            totalAmount: selectedService.price,
-            paymentMethod: paymentMethod,
-            status: 'pending',
-            notes: values.notes || '',
-            createdAt: new Date().toISOString()
-          }
-        };
-        
-        setCreatedAppointment(mockResponse.data);
-        setShowSuccessModal(true);
-        
-        // Clear localStorage
-        localStorage.removeItem('booking_service');
-        localStorage.removeItem('booking_dentist');
-        localStorage.removeItem('booking_date');
-        localStorage.removeItem('booking_slot');
-        
-        message.success('Đặt lịch khám thành công!');
-      } else {
-        // Call real API to create appointment
-        const appointmentData = {
-          slotId: selectedSlot._id,
-          patientId: user._id,
-          serviceId: selectedService._id,
-          addOnIds: [], // TODO: Add add-ons selection if needed
-          notes: values.notes || '',
-          paymentMethod: paymentMethod
-        };
-        
-        console.log('📝 Creating appointment with data:', appointmentData);
-        
-        const response = await appointmentService.createAppointment(appointmentData);
-        
-        console.log('✅ Appointment API response:', response);
-        
-        if (response.success || response.appointment) {
-          setCreatedAppointment(response.appointment || response.data);
-          setShowSuccessModal(true);
-          
-          // Clear localStorage
-          localStorage.removeItem('booking_service');
-          localStorage.removeItem('booking_dentist');
-          localStorage.removeItem('booking_date');
-          localStorage.removeItem('booking_slot');
-          
-          message.success('Đặt lịch khám thành công!');
-          
-          // Redirect to payment if needed
-          if (response.payment && response.payment.paymentUrl) {
-            window.location.href = response.payment.paymentUrl;
-          }
+        // Check if backend returns paymentUrl (redirect URL)
+        if (response.data.paymentUrl) {
+          console.log('🔄 Redirecting to payment URL:', response.data.paymentUrl);
+          // Use window.location.href for external redirect
+          window.location.href = response.data.paymentUrl;
         } else {
-          console.error('Invalid API response format:', response);
-          message.error('Có lỗi xảy ra khi tạo lịch khám');
+          // Fallback: Navigate to payment selection with reservation data
+          console.log('📍 Navigating to payment selection page');
+          navigate('/patient/payment/select', {
+            state: { 
+              reservation: response.data 
+            }
+          });
         }
+      } else {
+        console.error('❌ Invalid API response format:', response);
+        message.error(response.message || 'Có lỗi xảy ra khi đặt chỗ');
       }
     } catch (error) {
-      console.error('Error creating appointment:', error);
-      message.error('Có lỗi xảy ra khi tạo phiếu khám');
+      console.error('Error creating reservation:', error);
+      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi đặt chỗ');
     } finally {
       setLoading(false);
     }
@@ -188,14 +166,9 @@ const CreateAppointment = () => {
   };
 
   const handlePayment = () => {
-    if (paymentMethod === 'online') {
-      // Redirect to payment gateway
-      message.info('Chuyển đến cổng thanh toán...');
-      // window.location.href = paymentUrl;
-    } else {
-      message.success('Vui lòng thanh toán tại quầy khi đến khám');
-      navigate('/patient/appointments');
-    }
+    // Always redirect to payment (online only)
+    message.info('Đang chuyển đến trang thanh toán...');
+    navigate('/patient/payment/select');
   };
 
   const handleViewAppointment = () => {
@@ -249,11 +222,27 @@ const CreateAppointment = () => {
                   <Descriptions.Item label="Dịch vụ">
                     <Tag color="blue">{selectedService?.name}</Tag>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Giá dịch vụ">
-                    <Text strong style={{ color: '#2c5f4f', fontSize: 16 }}>
-                      {selectedService?.price?.toLocaleString('vi-VN')} VNĐ
-                    </Text>
-                  </Descriptions.Item>
+                  {selectedServiceAddOn ? (
+                    <>
+                      <Descriptions.Item label="Gói dịch vụ">
+                        <Tag color="green">{selectedServiceAddOn.name}</Tag>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Giá gói">
+                        <Text strong style={{ color: '#2c5f4f', fontSize: 16 }}>
+                          {selectedServiceAddOn.price?.toLocaleString('vi-VN')} VNĐ / {selectedServiceAddOn.unit}
+                        </Text>
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Thời gian dự kiến">
+                        <Text>~{selectedServiceAddOn.durationMinutes} phút</Text>
+                      </Descriptions.Item>
+                    </>
+                  ) : (
+                    <Descriptions.Item label="Giá dịch vụ">
+                      <Text strong style={{ color: '#2c5f4f', fontSize: 16 }}>
+                        {selectedService?.price?.toLocaleString('vi-VN')} VNĐ
+                      </Text>
+                    </Descriptions.Item>
+                  )}
                   <Descriptions.Item label="Bác sĩ">
                     {selectedDentist?.title || 'BS'} {selectedDentist?.fullName}
                   </Descriptions.Item>
@@ -309,38 +298,6 @@ const CreateAppointment = () => {
                 />
               </Form.Item>
 
-              {/* Payment Method */}
-              <Card 
-                type="inner" 
-                title={<Text strong><DollarOutlined /> Phương thức thanh toán</Text>}
-                style={{ marginBottom: 24 }}
-              >
-                <Radio.Group 
-                  value={paymentMethod} 
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  style={{ width: '100%' }}
-                >
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <Radio value="cash">
-                      <Space direction="vertical" size={0}>
-                        <Text strong>Thanh toán tại quầy</Text>
-                        <Text type="secondary" style={{ fontSize: 13 }}>
-                          Thanh toán bằng tiền mặt hoặc chuyển khoản tại phòng khám
-                        </Text>
-                      </Space>
-                    </Radio>
-                    <Radio value="online">
-                      <Space direction="vertical" size={0}>
-                        <Text strong>Thanh toán trực tuyến</Text>
-                        <Text type="secondary" style={{ fontSize: 13 }}>
-                          Thanh toán qua VNPay, MoMo, ZaloPay
-                        </Text>
-                      </Space>
-                    </Radio>
-                  </Space>
-                </Radio.Group>
-              </Card>
-
               {/* Total Amount */}
               <Alert
                 type="success"
@@ -349,10 +306,21 @@ const CreateAppointment = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text strong>Tổng tiền:</Text>
                     <Text strong style={{ fontSize: 20, color: '#2c5f4f' }}>
-                      {selectedService?.price?.toLocaleString('vi-VN')} VNĐ
+                      {selectedServiceAddOn 
+                        ? selectedServiceAddOn.price?.toLocaleString('vi-VN') 
+                        : selectedService?.price?.toLocaleString('vi-VN')} VNĐ
                     </Text>
                   </div>
                 }
+                style={{ marginBottom: 24 }}
+              />
+
+              {/* Payment Notice */}
+              <Alert
+                type="info"
+                showIcon
+                message="Thanh toán trực tuyến"
+                description="Sau khi xác nhận, bạn sẽ được chuyển đến trang chọn phương thức thanh toán (Visa/MasterCard). Vui lòng hoàn tất thanh toán trong 15 phút."
                 style={{ marginBottom: 24 }}
               />
 
@@ -372,13 +340,14 @@ const CreateAppointment = () => {
                     size="large"
                     htmlType="submit"
                     loading={loading}
+                    icon={<CheckCircleOutlined />}
                     style={{ 
                       backgroundColor: '#2c5f4f',
                       borderColor: '#2c5f4f',
                       borderRadius: 6
                     }}
                   >
-                    Xác nhận đặt khám
+                    Xác nhận & Thanh toán
                   </Button>
                 </Space>
               </div>
@@ -429,8 +398,8 @@ const CreateAppointment = () => {
                   </Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Thanh toán">
-                  <Tag color={paymentMethod === 'online' ? 'green' : 'blue'}>
-                    {paymentMethod === 'online' ? 'Thanh toán trực tuyến' : 'Thanh toán tại quầy'}
+                  <Tag color="green">
+                    Thanh toán trực tuyến
                   </Tag>
                 </Descriptions.Item>
               </Descriptions>
@@ -450,7 +419,7 @@ const CreateAppointment = () => {
                 borderColor: '#2c5f4f'
               }}
             >
-              {paymentMethod === 'online' ? 'Thanh toán ngay' : 'Hoàn tất'}
+              Thanh toán ngay
             </Button>
           </Space>
         </div>

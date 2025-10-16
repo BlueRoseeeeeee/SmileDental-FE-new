@@ -111,7 +111,16 @@ const BookingSelectService = () => {
   const handleSelectService = (service) => {
     // Lưu service vào localStorage
     localStorage.setItem('booking_service', JSON.stringify(service));
-    navigate('/patient/booking/select-dentist');
+    
+    // Nếu service có addons -> navigate đến select-addon
+    // Nếu không có addons -> skip sang select-dentist
+    if (service.serviceAddOns && service.serviceAddOns.length > 0) {
+      navigate('/patient/booking/select-addon');
+    } else {
+      // Clear addon data
+      localStorage.removeItem('booking_serviceAddOn');
+      navigate('/patient/booking/select-dentist');
+    }
   };
 
   const handleBack = () => {

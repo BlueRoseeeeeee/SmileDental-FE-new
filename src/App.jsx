@@ -14,6 +14,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 // Layout
 import DashboardLayout from './components/Layout/DashboardLayout.jsx';
 import PatientLayout from './components/Layout/PatientLayout.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 // Pages
 import Dashboard from './pages/Dashboard.jsx';
@@ -43,6 +44,7 @@ import StaffReplacement from './pages/Schedule/StaffReplacement.jsx';
 
 // Patient Pages
 import BookingSelectService from './pages/Patient/BookingSelectService.jsx';
+import BookingSelectAddOn from './pages/Patient/BookingSelectAddOn.jsx';
 import BookingSelectDentist from './pages/Patient/BookingSelectDentist.jsx';
 import BookingSelectDate from './pages/Patient/BookingSelectDate.jsx';
 import BookingSelectTime from './pages/Patient/BookingSelectTime.jsx';
@@ -50,6 +52,11 @@ import CreateAppointment from './pages/Patient/CreateAppointment.jsx';
 import PatientHomePage from './pages/Patient/HomePage.jsx';
 import PatientProfile from './pages/Patient/PatientProfile.jsx';
 import PatientAppointments from './pages/Patient/PatientAppointments.jsx';
+import PaymentSelection from './pages/Patient/PaymentSelection.jsx';
+import PaymentResult from './pages/Patient/PaymentResult.jsx';
+import VisaPayment from './pages/Patient/VisaPayment.jsx';
+import PaymentSuccess from './pages/Patient/PaymentSuccess.jsx';
+import PaymentFailed from './pages/Patient/PaymentFailed.jsx';
 
 import { Result, Button } from 'antd';
 import { 
@@ -123,12 +130,48 @@ function App() {
             <Route path="booking">
               <Route index element={<Navigate to="/patient/booking/select-service" replace />} />
               <Route path="select-service" element={<BookingSelectService />} />
+              <Route path="select-addon" element={<BookingSelectAddOn />} />
               <Route path="select-dentist" element={<BookingSelectDentist />} />
               <Route path="select-date" element={<BookingSelectDate />} />
               <Route path="select-time" element={<BookingSelectTime />} />
               <Route path="create-appointment" element={
                 <ProtectedRoute>
-                  <CreateAppointment />
+                  <ErrorBoundary>
+                    <CreateAppointment />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+            </Route>
+            
+            {/* Payment Flow */}
+            <Route path="payment">
+              <Route path="select" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <PaymentSelection />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="result" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <PaymentResult />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="visa" element={
+                <ProtectedRoute>
+                  <VisaPayment />
+                </ProtectedRoute>
+              } />
+              <Route path="success" element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              } />
+              <Route path="failed" element={
+                <ProtectedRoute>
+                  <PaymentFailed />
                 </ProtectedRoute>
               } />
             </Route>

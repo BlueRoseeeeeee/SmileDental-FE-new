@@ -45,7 +45,13 @@ appointmentApi.interceptors.response.use(
 );
 
 const appointmentService = {
-  // Tạo appointment mới (reserve/book)
+  // Reserve appointment (tạo reservation tạm thời)
+  reserveAppointment: async (reservationData) => {
+    const response = await appointmentApi.post('/appointment/reserve', reservationData);
+    return response.data;
+  },
+
+  // Tạo appointment mới (reserve/book) - Legacy method
   createAppointment: async (appointmentData) => {
     const response = await appointmentApi.post('/appointment/reserve', appointmentData);
     return response.data;
