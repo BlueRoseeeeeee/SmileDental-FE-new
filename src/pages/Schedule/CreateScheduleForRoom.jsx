@@ -522,7 +522,16 @@ const CreateScheduleForRoom = () => {
       // Creating new schedule
       setIsEditingExistingSchedule(false);
       setExistingScheduleId(null);
-      setSelectedSubRooms([]);
+      
+      // ✅ FIX: Load danh sách subroom từ room được chọn
+      if (room?.hasSubRooms && room.subRooms?.length > 0) {
+        setSelectedSubRooms(room.subRooms);
+        console.log(`📦 Tạo lịch mới - Set selectedSubRooms to ${room.subRooms.length} subrooms from room:`, room.name);
+      } else {
+        setSelectedSubRooms([]);
+        console.log(`📦 Tạo lịch mới - Room has NO subrooms`);
+      }
+      
       setInitialMissingShifts([]); // Clear for new schedule
 
       setShiftMeta(effectiveMeta);
@@ -903,8 +912,9 @@ const CreateScheduleForRoom = () => {
               duration: 5
             });
             
-            // Close modal
+            // Close modal and refresh room list
             setShowCreateModal(false);
+            fetchRooms(); // ✅ Reload danh sách phòng để cập nhật trạng thái
           } else {
             message.error(response.message || 'Không thể tạo lịch');
           }

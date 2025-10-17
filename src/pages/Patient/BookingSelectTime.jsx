@@ -95,10 +95,15 @@ const BookingSelectTime = () => {
         await new Promise(resolve => setTimeout(resolve, 500));
         setAvailableSlotGroups(mockSlots);
       } else {
-        // Call API to get dentist's slots on selected date
+        // 🏥 Log service info for debugging
+        console.log('🏥 Service ID:', serviceData?._id);
+        console.log('🏥 Allowed RoomTypes:', serviceData?.allowedRoomTypes);
+        
+        // Call API to get dentist's slots on selected date with serviceId
         const response = await slotService.getDentistSlotsFuture(dentistId, {
           date: date,
-          shiftName: '' // Get all shifts
+          shiftName: '', // Get all shifts
+          serviceId: serviceData?._id // 🏥 Pass serviceId for roomType filtering
         });
         
         console.log('⏰ Slots API response:', response);

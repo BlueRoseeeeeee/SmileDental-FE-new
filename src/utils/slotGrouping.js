@@ -151,12 +151,49 @@ export const groupConsecutiveSlots = (slots, serviceDurationMinutes, slotDuratio
  * Check if two slots are consecutive (endTime of slot1 === startTime of slot2)
  */
 const areSlotsConsecutive = (slot1, slot2) => {
-  // Prioritize VN time format
+  // ✅ VALIDATE 1: Must be from the same room
+  const room1Id = slot1.room?.id || slot1.room?._id || null;
+  const room2Id = slot2.room?.id || slot2.room?._id || null;
+  
+  // If room info exists, they must match
+  if (room1Id && room2Id) {
+    if (room1Id.toString() !== room2Id.toString()) {
+      console.log(`❌ Slots not in same room: ${room1Id} vs ${room2Id}`);
+      return false;
+    }
+  }
+  
+  // ✅ VALIDATE 2: Must be in the same subRoom (if exists)
+  const subRoom1Id = slot1.room?.subRoom?.id || slot1.room?.subRoom?._id || null;
+  const subRoom2Id = slot2.room?.subRoom?.id || slot2.room?.subRoom?._id || null;
+  
+  // Both must have same subRoom status (both null or both have value)
+  if (subRoom1Id !== subRoom2Id) {
+    // Convert to string for comparison if both exist
+    if (subRoom1Id && subRoom2Id) {
+      if (subRoom1Id.toString() !== subRoom2Id.toString()) {
+        console.log(`❌ Slots not in same subRoom: ${subRoom1Id} vs ${subRoom2Id}`);
+        return false;
+      }
+    } else {
+      // One has subRoom, one doesn't
+      console.log(`❌ SubRoom mismatch: one has subRoom, one doesn't`);
+      return false;
+    }
+  }
+  
+  // ✅ VALIDATE 3: Time must be consecutive
   const endTime1 = parseTimeToMinutes(slot1.endTimeVN || slot1.endTime);
   const startTime2 = parseTimeToMinutes(slot2.startTimeVN || slot2.startTime);
   
   // Allow 0-1 minute gap for rounding errors
-  return Math.abs(endTime1 - startTime2) <= 1;
+  const isTimeConsecutive = Math.abs(endTime1 - startTime2) <= 1;
+  
+  if (!isTimeConsecutive) {
+    console.log(`❌ Slots not time-consecutive: gap = ${Math.abs(endTime1 - startTime2)} minutes`);
+  }
+  
+  return isTimeConsecutive;
 };
 
 /**
