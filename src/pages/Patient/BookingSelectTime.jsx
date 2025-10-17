@@ -288,11 +288,11 @@ const BookingSelectTime = () => {
                         </Tag>
                       )}
                       
-                      {isAvailable && slotCount > 1 && (
+                      {/* {isAvailable && slotCount > 1 && (
                         <Tag color="blue" style={{ marginTop: 4, fontSize: 11 }}>
                           {slotCount} slot
                         </Tag>
-                      )}
+                      )} */}
                     </div>
                   </Tooltip>
                 </Col>
