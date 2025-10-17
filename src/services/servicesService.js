@@ -50,13 +50,31 @@ export const servicesService = {
 
   // Thêm add-on cho dịch vụ
   async addServiceAddOn(serviceId, addOnData) {
-    const response = await serviceApi.post(`/service/${serviceId}/addons`, addOnData);
+    // Kiểm tra nếu addOnData là FormData (có ảnh)
+    const isFormData = addOnData instanceof FormData;
+    
+    const config = isFormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    } : {};
+
+    const response = await serviceApi.post(`/service/${serviceId}/addons`, addOnData, config);
     return response.data;
   },
 
   // Cập nhật add-on
   async updateServiceAddOn(serviceId, addOnId, addOnData) {
-    const response = await serviceApi.put(`/service/${serviceId}/addons/${addOnId}`, addOnData);
+    // Kiểm tra nếu addOnData là FormData (có ảnh)
+    const isFormData = addOnData instanceof FormData;
+    
+    const config = isFormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    } : {};
+
+    const response = await serviceApi.put(`/service/${serviceId}/addons/${addOnId}`, addOnData, config);
     return response.data;
   },
 

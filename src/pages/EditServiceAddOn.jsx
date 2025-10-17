@@ -14,17 +14,21 @@ import {
   Form,
   Input,
   InputNumber,
+  Select,
+  Upload,
   message
 } from 'antd';
 import { 
   ArrowLeftOutlined, 
-  SaveOutlined
+  SaveOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const EditServiceAddOn = () => {
   const navigate = useNavigate();
@@ -36,6 +40,9 @@ const EditServiceAddOn = () => {
   const [form] = Form.useForm();
   const [addOnDescription, setAddOnDescription] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState('');
 
   // Auto-save key for localStorage
   const AUTO_SAVE_KEY = `addon_edit_draft_${addOnId}`;
@@ -93,9 +100,12 @@ const EditServiceAddOn = () => {
         // Load actual data
         form.setFieldsValue({
           name: addOnResponse.addOn.name,
-          price: addOnResponse.addOn.price
+          price: addOnResponse.addOn.price,
+          durationMinutes: addOnResponse.addOn.durationMinutes,
+          unit: addOnResponse.addOn.unit
         });
         setAddOnDescription(addOnResponse.addOn.description || '');
+        setCurrentImageUrl(addOnResponse.addOn.imageUrl || '');
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -148,19 +158,25 @@ const EditServiceAddOn = () => {
     setHasUnsavedChanges(true);
   };
 
+
   // Handle save add-on
   const handleSaveAddOn = async () => {
     try {
       setSaving(true);
       const values = await form.validateFields();
       
-      const addOnData = {
-        name: values.name,
-        price: values.price,
-        description: addOnDescription
-      };
+      const formData = new FormData();
+      formData.append('name', values.name);
+      formData.append('price', values.price);
+      formData.append('durationMinutes', values.durationMinutes);
+      formData.append('unit', values.unit);
+      formData.append('description', addOnDescription);
+      
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
 
-      await servicesService.updateServiceAddOn(serviceId, addOnId, addOnData);
+      await servicesService.updateServiceAddOn(serviceId, addOnId, formData);
       setHasUnsavedChanges(false);
       clearDraft();
       toastService.success('Cập nhật tùy chọn dịch vụ thành công!');
@@ -261,11 +277,13 @@ const EditServiceAddOn = () => {
           onValuesChange={handleFormChange}
           initialValues={{
             name: addOn?.name || '',
-            price: addOn?.price || 0
+            price: addOn?.price || 0,
+            durationMinutes: addOn?.durationMinutes || 30,
+            unit: addOn?.unit || 'Răng'
           }}
         >
           <Row gutter={[16, 16]}>
-            {/* Row 1: Tên cấp độ + Giá */}
+            {/* Row 1: Tên tùy chọn + Giá */}
             <Col span={12}>
               <Form.Item
                 name="name"
@@ -298,7 +316,128 @@ const EditServiceAddOn = () => {
           </Row>
 
           <Row gutter={[16, 16]}>
-            {/* Row 2: Mô tả - Full width */}
+            {/* Row 2: Thời gian + Đơn vị */}
+            <Col span={12}>
+              <Form.Item
+                name="durationMinutes"
+                label="Thời gian (phút)"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập thời gian' },
+                  { type: 'number', min: 1, message: 'Thời gian phải lớn hơn 0' }
+                ]}
+              >
+                <InputNumber
+                  placeholder="Nhập thời gian"
+                  style={{ width: '100%' }}
+                  min={1}
+                  addonAfter="phút"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="unit"
+                label="Đơn vị"
+                rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
+              >
+                <Select placeholder="Chọn đơn vị">
+                  <Option value="Răng">Răng</Option>
+                  <Option value="Hàm">Hàm</Option>
+                  <Option value="Trụ">Trụ</Option>
+                  <Option value="Cái">Cái</Option>
+                  <Option value="Lần">Lần</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]}>
+            {/* Row 3: Upload ảnh */}
+            <Col span={24}>
+              <Form.Item
+                label="Hình ảnh"
+              >
+                <Upload
+                  customRequest={({ file, onSuccess }) => {
+                    setImageFile(file);
+                    setHasUnsavedChanges(true);
+                    
+                    // Tạo preview URL
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setImagePreview(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    onSuccess("ok");
+                  }}
+                  showUploadList={false}
+                  maxCount={1}
+                  accept="image/*"
+                >
+                  <div style={{
+                    width: '100%',
+                    height: '120px',
+                    border: '2px dashed #d9d9d9',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    backgroundColor: '#fafafa',
+                    transition: 'border-color 0.3s',
+                    ':hover': {
+                      borderColor: '#1890ff'
+                    }
+                  }}>
+                    {imagePreview ? (
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '100%', 
+                          objectFit: 'cover',
+                          borderRadius: '6px'
+                        }} 
+                      />
+                    ) : currentImageUrl ? (
+                      <img 
+                        src={currentImageUrl} 
+                        alt="Current" 
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '100%', 
+                          objectFit: 'cover',
+                          borderRadius: '6px'
+                        }} 
+                      />
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '24px', color: '#8c8c8c', marginBottom: '8px' }}>
+                          <UploadOutlined />
+                        </div>
+                        <div style={{ color: '#ff6b35', fontSize: '14px', fontWeight: '500' }}>
+                          Thêm hình ảnh
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Upload>
+                {currentImageUrl && !imageFile && (
+                  <div style={{ marginTop: '8px', textAlign: 'center' }}>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      Ảnh hiện tại - Click để thay đổi
+                    </Text>
+                  </div>
+                )}
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]}>
+            {/* Row 4: Mô tả - Full width */}
             <Col span={24}>
               <Form.Item
                 label="Mô tả"
@@ -309,7 +448,7 @@ const EditServiceAddOn = () => {
                   placeholder="Nhập mô tả tùy chọn dịch vụ (tùy chọn)..."
                   containerStyle={{ 
                     width: '100%',
-                    height: '600px'
+                    height: '400px'
                   }}
                 />
               </Form.Item>
