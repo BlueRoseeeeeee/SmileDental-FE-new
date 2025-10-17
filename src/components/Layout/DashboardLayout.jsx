@@ -23,6 +23,9 @@ import {
   MenuUnfoldOutlined,
   EnvironmentOutlined,
   MedicineBoxOutlined,
+  UserAddOutlined,
+  DollarOutlined,
+  FileDoneOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import logo from '../../assets/image/smile-dental-logo.png';
@@ -93,6 +96,21 @@ const DashboardLayout = () => {
           key: '/services',
           icon: <MedicineBoxOutlined />,
           label: 'Quản lý dịch vụ',
+        },
+        {
+          key: '/walk-in-appointments',
+          icon: <UserAddOutlined />,
+          label: 'Lịch hẹn Walk-in',
+        },
+        {
+          key: '/records',
+          icon: <FileDoneOutlined />,
+          label: 'Hồ sơ bệnh án',
+        },
+        {
+          key: '/invoices',
+          icon: <DollarOutlined />,
+          label: 'Quản lý hóa đơn',
         }
       );
     }
@@ -103,6 +121,11 @@ const DashboardLayout = () => {
           key: '/certificates',
           icon: <FileTextOutlined />,
           label: 'Quản lý chứng chỉ',
+        },
+        {
+          key: '/records',
+          icon: <FileDoneOutlined />,
+          label: 'Hồ sơ bệnh án',
         }
       );
     }

@@ -33,6 +33,22 @@ import AddService from './pages/AddService.jsx';
 // Admin - Patient Appointments Management
 import AdminPatientAppointments from './pages/Admin/PatientAppointments.jsx';
 
+// Cash Payment & Walk-in
+import CashPaymentModal from './components/CashPayment/CashPaymentModal.jsx';
+import WalkInAppointmentForm from './components/CashPayment/WalkInAppointmentForm.jsx';
+
+// Medical Records Management
+import RecordList from './pages/Records/RecordList.jsx';
+import RecordFormModal from './pages/Records/RecordFormModal.jsx';
+import PrescriptionForm from './pages/Records/PrescriptionForm.jsx';
+import RecordDetailDrawer from './pages/Records/RecordDetailDrawer.jsx';
+
+// Invoice Management
+import InvoiceList from './pages/Invoices/InvoiceList.jsx';
+import InvoiceFormModal from './pages/Invoices/InvoiceFormModal.jsx';
+import InvoiceDetailDrawer from './pages/Invoices/InvoiceDetailDrawer.jsx';
+import InvoiceTemplate from './pages/Invoices/InvoiceTemplate.jsx';
+
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
 import HolidayManagementPage from './pages/Schedule/HolidayManagementPage.jsx';
@@ -224,6 +240,27 @@ function App() {
             <Route path="patient-appointments" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <AdminPatientAppointments />
+              </ProtectedRoute>
+            } />
+            
+            {/* Walk-in Appointments & Cash Payment (Admin/Manager only) */}
+            <Route path="walk-in-appointments" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <WalkInAppointmentForm />
+              </ProtectedRoute>
+            } />
+            
+            {/* Medical Records Management (Admin/Manager/Dentist) */}
+            <Route path="records" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist']}>
+                <RecordList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Invoice Management (Admin/Manager) */}
+            <Route path="invoices" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <InvoiceList />
               </ProtectedRoute>
             } />
             
