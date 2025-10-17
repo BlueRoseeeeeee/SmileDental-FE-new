@@ -70,7 +70,7 @@ const PublicServiceAddOns = () => {
 
   // Format giá tiền
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + '₫';
+    return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
   };
 
   // Xử lý click vào serviceAddOn
@@ -190,7 +190,7 @@ const PublicServiceAddOns = () => {
                 bodyStyle={{ padding: '0' }}
                 cover={
                   <div style={{
-                    height: '240px',
+                    height: '200px',
                     backgroundColor: '#fafafa',
                     display: 'flex',
                     alignItems: 'center',
@@ -199,25 +199,37 @@ const PublicServiceAddOns = () => {
                     overflow: 'hidden',
                     position: 'relative'
                   }}>
-                    <MedicineBoxOutlined 
-                      style={{ 
-                        fontSize: '80px', 
-                        color: '#d9d9d9',
-                        opacity: 0.6
-                      }} 
-                    />
+                    {addOn.imageUrl ? (
+                      <img 
+                        src={addOn.imageUrl} 
+                        alt={addOn.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    ) : (
+                      <MedicineBoxOutlined 
+                        style={{ 
+                          fontSize: '60px', 
+                          color: '#d9d9d9',
+                          opacity: 0.6
+                        }} 
+                      />
+                    )}
                   </div>
                 }
               >
                 <div style={{ 
-                  padding: '20px',
+                  padding: '16px',
                   textAlign: 'center'
                 }}>
                   {/* AddOn Name */}
                   <Title 
                     level={4} 
                     style={{ 
-                      marginBottom: '12px',
+                      marginBottom: '8px',
                       color: '#1a1a1a',
                       fontSize: '16px',
                       fontWeight: 'bold',
@@ -228,18 +240,18 @@ const PublicServiceAddOns = () => {
                       WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
                       textAlign: 'center',
-                      margin: '0 0 12px 0'
+                      margin: '0 0 8px 0'
                     }}
                   >
                     {addOn.name}
                   </Title>
 
                   {/* Category Tag */}
-                  <div style={{ marginBottom: '16px' }}>
+                  <div style={{ marginBottom: '10px' }}>
                     <Tag 
                       style={{ 
                         borderRadius: '16px',
-                        padding: '6px 16px',
+                        padding: '4px 12px',
                         fontSize: '12px',
                         backgroundColor: '#f5f5f5',
                         color: '#666',
@@ -254,7 +266,7 @@ const PublicServiceAddOns = () => {
                   </div>
 
                   {/* Price */}
-                  <div style={{ marginBottom: '20px' }}>
+                  <div style={{ marginBottom: '16px' }}>
                     <Text style={{ 
                       color: '#52c41a', 
                       fontSize: '20px',
