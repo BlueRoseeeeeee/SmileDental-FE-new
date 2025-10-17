@@ -65,11 +65,12 @@ const BookingSelectDentist = () => {
     
     console.log('🎯 Fetching dentists with duration:', serviceDuration, 'minutes');
     console.log('📦 Service:', serviceData.name, '| AddOn:', serviceAddOnData?.name || 'none');
+    console.log('🏥 Service ID:', serviceData._id, '| Allowed RoomTypes:', serviceData.allowedRoomTypes);
     
-    fetchDentists(serviceDuration);
+    fetchDentists(serviceDuration, serviceData._id);
   }, []);
 
-  const fetchDentists = async (serviceDuration = 15) => {
+  const fetchDentists = async (serviceDuration = 15, serviceId = null) => {
     try {
       setLoading(true);
       
@@ -79,7 +80,7 @@ const BookingSelectDentist = () => {
         setDentists(mockDentists);
         setFilteredDentists(mockDentists);
       } else {
-        const response = await slotService.getDentistsWithNearestSlot(serviceDuration);
+        const response = await slotService.getDentistsWithNearestSlot(serviceDuration, serviceId);
         console.log('👨‍⚕️ Dentists API response:', response);
         
         if (response.success && response.data.dentists) {
@@ -87,7 +88,7 @@ const BookingSelectDentist = () => {
           setFilteredDentists(response.data.dentists);
           
           if (response.data.dentists.length === 0) {
-            message.warning('Hiện tại chưa có nha sỹ nào có lịch khám');
+            message.warning('Hiện tại chưa có nha sỹ nào có lịch khám phù hợp với dịch vụ này');
           }
         } else {
           console.error('Invalid API response format:', response);

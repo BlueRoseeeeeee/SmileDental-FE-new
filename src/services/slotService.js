@@ -160,10 +160,14 @@ const slotService = {
   },
 
   // 🆕 PATIENT BOOKING APIs
-  // Lấy danh sách nha sỹ và slot gần nhất
-  getDentistsWithNearestSlot: async (serviceDuration = 15) => {
+  // Lấy danh sách nha sỹ và slot gần nhất (với lọc theo service roomType nếu có)
+  getDentistsWithNearestSlot: async (serviceDuration = 15, serviceId = null) => {
+    const params = { serviceDuration };
+    if (serviceId) {
+      params.serviceId = serviceId;
+    }
     const response = await scheduleApi.get('/slot/dentists-with-nearest-slot', {
-      params: { serviceDuration }
+      params
     });
     return response.data;
   },
