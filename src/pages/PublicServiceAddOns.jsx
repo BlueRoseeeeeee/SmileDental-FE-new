@@ -22,6 +22,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined
 } from '@ant-design/icons';
+import smileDentalLogo from '../assets/image/smile-dental-logo.png';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService } from '../services';
 
@@ -171,9 +172,9 @@ const PublicServiceAddOns = () => {
 
       {/* Service AddOns Grid */}
       {activeAddOns.length > 0 ? (
-        <Row gutter={[24, 24]}>
+        <Row gutter={[16, 16]}>
           {activeAddOns.map((addOn) => (
-            <Col xs={24} sm={12} lg={6} xl={6} key={addOn._id}>
+            <Col xs={24} sm={12} md={8} lg={6} xl={6} key={addOn._id}>
               <Card
                 hoverable
                 onClick={() => handleAddOnClick(addOn)}
@@ -210,12 +211,15 @@ const PublicServiceAddOns = () => {
                         }}
                       />
                     ) : (
-                      <MedicineBoxOutlined 
-                        style={{ 
-                          fontSize: '60px', 
-                          color: '#d9d9d9',
-                          opacity: 0.6
-                        }} 
+                      <img 
+                        src={smileDentalLogo} 
+                        alt="SmileDental Logo"
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          objectFit: 'contain',
+                          opacity: 0.7
+                        }}
                       />
                     )}
                   </div>
@@ -223,38 +227,39 @@ const PublicServiceAddOns = () => {
               >
                 <div style={{ 
                   padding: '16px',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%'
                 }}>
                   {/* AddOn Name */}
-                  <Title 
-                    level={4} 
+                  <h3 
                     style={{ 
-                      marginBottom: '8px',
-                      color: '#1a1a1a',
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      lineHeight: '1.4',
-                      height: '44px',
+                      fontSize: '1.2rem',
+                      color: '#313b79',
+                      fontWeight: '600',
+                      lineHeight: '1.3',
+                      textAlign: 'center',
+                      margin: '0 0 4px 0',
+                      minHeight: '48px',
                       overflow: 'hidden',
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      textAlign: 'center',
-                      margin: '0 0 8px 0'
+                      WebkitBoxOrient: 'vertical'
                     }}
                   >
                     {addOn.name}
-                  </Title>
+                  </h3>
 
                   {/* Category Tag */}
-                  <div style={{ marginBottom: '10px' }}>
+                  <div style={{ marginBottom: '8px' }}>
                     <Tag 
                       style={{ 
-                        borderRadius: '16px',
+                        borderRadius: '12px',
                         padding: '4px 12px',
                         fontSize: '12px',
-                        backgroundColor: '#f5f5f5',
-                        color: '#666',
+                        backgroundColor: '#f0f0f0',
+                        color: '#313b79',
                         border: 'none',
                         fontWeight: '500',
                         height: 'auto',
@@ -266,14 +271,15 @@ const PublicServiceAddOns = () => {
                   </div>
 
                   {/* Price */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <Text style={{ 
-                      color: '#52c41a', 
-                      fontSize: '20px',
+                  <div style={{ marginBottom: '16px', flex: 1 }}>
+                    <h3 style={{ 
+                      color: '#1D7646', 
+                      fontSize: '18px',
                       fontWeight: 'bold'
+
                     }}>
                       {formatPrice(addOn.price)}
-                    </Text>
+                    </h3>
                   </div>
 
                    {/* View Details Button */}
@@ -281,11 +287,10 @@ const PublicServiceAddOns = () => {
                      type="primary"
                      style={{
                        width: '100%',
-                       borderRadius: '8px',
+                       borderRadius: '6px',
                        height: '36px',
-                       backgroundColor: '#1890ff',
+                       backgroundColor: '#e6f7ff',
                        borderColor: '#1890ff',
-                       color: 'white',
                        fontSize: '13px',
                        fontWeight: '500',
                        boxShadow: 'none'

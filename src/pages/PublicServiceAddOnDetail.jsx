@@ -20,6 +20,7 @@ import {
   MedicineBoxOutlined,
   CalendarOutlined
 } from '@ant-design/icons';
+import smileDentalLogo from '../assets/image/smile-dental-logo.png';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService } from '../services';
 
@@ -159,7 +160,7 @@ const PublicServiceAddOnDetail = () => {
       <div style={{ marginBottom: '24px' }}>
         <Button 
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate(`/services/pl/${encodeURIComponent(service.name)}`)}
+          onClick={() => navigate(`/services/pl/${encodeURIComponent(service.name)}/addons`)}
           style={{
             border: '1px solid #d9d9d9',
             borderRadius: '8px',
@@ -210,12 +211,15 @@ const PublicServiceAddOnDetail = () => {
                 }}
               />
             ) : (
-              <MedicineBoxOutlined 
-                style={{ 
-                  fontSize: '120px', 
-                  color: '#d9d9d9',
-                  opacity: 0.6
-                }} 
+              <img 
+                src={smileDentalLogo} 
+                alt="SmileDental Logo"
+                style={{
+                  width: '200px',
+                  height: '200px',
+                  objectFit: 'contain',
+                  opacity: 0.7
+                }}
               />
             )}
           </div>
