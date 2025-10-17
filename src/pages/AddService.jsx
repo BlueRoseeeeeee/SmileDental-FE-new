@@ -16,7 +16,9 @@ import {
   Typography,
   Space,
   Divider,
-  Switch
+  Switch,
+  Upload,
+  Image
 } from 'antd';
 import {
   MedicineBoxOutlined,
@@ -24,7 +26,8 @@ import {
   ArrowLeftOutlined,
   PlusOutlined,
   DeleteOutlined,
-  EyeOutlined
+  EyeOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
@@ -33,13 +36,53 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
+// Helper function to get room type label
+const getRoomTypeLabel = (roomType) => {
+  const labels = {
+    CONSULTATION: 'Phòng tư vấn/khám',
+    GENERAL_TREATMENT: 'Phòng điều trị TQ',
+    SURGERY: 'Phòng phẫu thuật',
+    ORTHODONTIC: 'Phòng chỉnh nha',
+    COSMETIC: 'Phòng thẩm mỹ',
+    PEDIATRIC: 'Phòng nha nhi',
+    X_RAY: 'Phòng X-quang',
+    STERILIZATION: 'Phòng tiệt trùng',
+    LAB: 'Phòng labo',
+    RECOVERY: 'Phòng hồi sức',
+    SUPPORT: 'Phòng phụ trợ'
+  };
+  return labels[roomType] || roomType;
+};
+
 const AddService = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [roomTypes, setRoomTypes] = useState({});
   const [serviceAddOns, setServiceAddOns] = useState([
-    { name: '', price: 0, description: '', isActive: true }
+    { 
+      name: '', 
+      price: 0, 
+      durationMinutes: 0, 
+      unit: '', 
+      description: '', 
+      isActive: true,
+      imageFile: null 
+    }
   ]);
+
+  // Fetch room types on mount
+  React.useEffect(() => {
+    const fetchRoomTypes = async () => {
+      try {
+        const types = await servicesService.getRoomTypes();
+        setRoomTypes(types);
+      } catch (error) {
+        console.error('Error fetching room types:', error);
+      }
+    };
+    fetchRoomTypes();
+  }, []);
 
   // Handle form submit
   const handleSubmit = async () => {
@@ -47,31 +90,53 @@ const AddService = () => {
       const values = await form.validateFields();
       setSubmitLoading(true);
 
-      // Filter valid add-ons (có ít nhất name và price)
+      // Filter valid add-ons (có đầy đủ fields bắt buộc)
       const validAddOns = serviceAddOns.filter(addon => 
-        addon.name && addon.name.trim() && addon.price > 0
+        addon.name && 
+        addon.name.trim() && 
+        addon.price > 0 &&
+        addon.durationMinutes > 0 && 
+        addon.unit && 
+        addon.unit.trim()
       );
       
       if (validAddOns.length === 0) {
-        toastService.error('Vui lòng thêm ít nhất 1 tùy chọn dịch vụ!');
+        toastService.error('Vui lòng thêm ít nhất 1 tùy chọn dịch vụ hợp lệ (có đầy đủ tên, giá, thời gian và đơn vị)!');
         return;
       }
 
-      const serviceData = {
-        name: values.name,
-        durationMinutes: values.durationMinutes,
-        type: values.type,
-        description: values.description,
-        requireExamFirst: values.requireExamFirst || false,
-        serviceAddOns: validAddOns.map(addon => ({
-          name: addon.name.trim(),
-          price: addon.price,
-          description: addon.description || '', // Cho phép description rỗng
-          isActive: addon.isActive !== false
-        }))
-      };
+      // Prepare FormData for multipart/form-data (hỗ trợ upload ảnh)
+      const formData = new FormData();
+      
+      // Add service basic data
+      formData.append('name', values.name);
+      formData.append('type', values.type);
+      formData.append('description', values.description || '');
+      formData.append('requireExamFirst', values.requireExamFirst || false);
+      
+      // Add allowedRoomTypes as JSON string
+      formData.append('allowedRoomTypes', JSON.stringify(values.allowedRoomTypes || []));
+      
+      // Prepare serviceAddOns data (without imageFile)
+      const addOnsData = validAddOns.map(addon => ({
+        name: addon.name.trim(),
+        price: addon.price,
+        durationMinutes: addon.durationMinutes,
+        unit: addon.unit,
+        description: addon.description || '',
+        isActive: addon.isActive !== false
+      }));
+      
+      formData.append('serviceAddOns', JSON.stringify(addOnsData));
+      
+      // Add image files (if any)
+      validAddOns.forEach((addon, index) => {
+        if (addon.imageFile && addon.imageFile.originFileObj) {
+          formData.append('images', addon.imageFile.originFileObj);
+        }
+      });
 
-      await servicesService.createService(serviceData);
+      await servicesService.createService(formData);
       toastService.success('Thêm dịch vụ thành công!');
       
       // Quay về trang danh sách
@@ -102,7 +167,15 @@ const AddService = () => {
 
   // Add new addon
   const addServiceAddOn = () => {
-    setServiceAddOns([...serviceAddOns, { name: '', price: 0, description: '' }]);
+    setServiceAddOns([...serviceAddOns, { 
+      name: '', 
+      price: 0, 
+      durationMinutes: 0,
+      unit: '',
+      description: '',
+      isActive: true,
+      imageFile: null
+    }]);
     // Scroll to the new addon after a short delay
     setTimeout(() => {
       const addonCards = document.querySelectorAll('[data-addon-card]');
@@ -184,7 +257,7 @@ const AddService = () => {
                  background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)'
                }}>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col span={24}>
                   <Form.Item
                     name="name"
                     label="Tên dịch vụ"
@@ -195,29 +268,10 @@ const AddService = () => {
                   >
                     <Input 
                       size="large"
+                      placeholder="VD: Trám răng Composite"
                       style={{
                         borderRadius: '8px'
                       }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="durationMinutes"
-                    label="Thời gian (phút)"
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập thời gian!' },
-                      { type: 'number', min: 1, message: 'Thời gian phải lớn hơn 0!' }
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ 
-                        width: '100%',
-                        borderRadius: '8px'
-                      }}
-                      size="large"
-                      min={1}
-                      addonAfter="phút"
                     />
                   </Form.Item>
                 </Col>
@@ -260,6 +314,31 @@ const AddService = () => {
                         Dịch vụ này có yêu cầu bệnh nhân phải khám trước khi thực hiện
                       </Text>
                     </div>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={24}>
+                  <Form.Item
+                    name="allowedRoomTypes"
+                    label="Loại phòng cho phép"
+                    rules={[
+                      { required: true, message: 'Vui lòng chọn ít nhất 1 loại phòng!' }
+                    ]}
+                  >
+                    <Select
+                      mode="multiple"
+                      size="large"
+                      placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
+                      style={{ width: '100%' }}
+                    >
+                      {Object.entries(roomTypes).map(([key, value]) => (
+                        <Option key={value} value={value}>
+                          {getRoomTypeLabel(value)}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
               </Row>
@@ -382,7 +461,7 @@ const AddService = () => {
                           <Text strong style={{ color: '#262626' }}>Tên tùy chọn *</Text>
                         </div>
                          <Input
-                           placeholder="VD: Cấp độ 1 - Cơ bản"
+                           placeholder="VD: Trám Composite - Cấp 1"
                            value={addon.name}
                            onChange={(e) => updateServiceAddOn(index, 'name', e.target.value)}
                            size="large"
@@ -414,12 +493,51 @@ const AddService = () => {
                     </Row>
 
                     <Row gutter={[16, 16]}>
+                      <Col xs={24} md={12}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ color: '#262626' }}>Thời gian (phút) *</Text>
+                        </div>
+                        <InputNumber
+                          style={{ 
+                            width: '100%',
+                            borderRadius: '8px'
+                          }}
+                          placeholder="30"
+                          value={addon.durationMinutes}
+                          onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
+                          min={1}
+                          size="large"
+                          addonAfter="phút"
+                        />
+                      </Col>
+                      
+                      <Col xs={24} md={12}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ color: '#262626' }}>Đơn vị *</Text>
+                        </div>
+                        <Select
+                          style={{ width: '100%' }}
+                          placeholder="Chọn đơn vị"
+                          value={addon.unit || undefined}
+                          onChange={(value) => updateServiceAddOn(index, 'unit', value)}
+                          size="large"
+                        >
+                          <Option value="Răng">Răng</Option>
+                          <Option value="Hàm">Hàm</Option>
+                          <Option value="Trụ">Trụ</Option>
+                          <Option value="Cái">Cái</Option>
+                          <Option value="Lần">Lần</Option>
+                        </Select>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={[16, 16]}>
                         <Col xs={24}>
                           <div style={{ marginBottom: '8px' }}>
                             <Text strong style={{ color: '#262626' }}>Mô tả chi tiết</Text>
                           </div>
                           <TextArea
-                            rows={6}
+                            rows={4}
                             placeholder="Mô tả chi tiết về tùy chọn này..."
                             value={addon.description}
                             onChange={(e) => updateServiceAddOn(index, 'description', e.target.value)}
@@ -427,6 +545,32 @@ const AddService = () => {
                           />
                         </Col>
                       </Row>
+
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ color: '#262626' }}>Hình ảnh (Tùy chọn)</Text>
+                        </div>
+                        <Upload
+                          listType="picture-card"
+                          fileList={addon.imageFile ? [addon.imageFile] : []}
+                          onChange={(info) => {
+                            const file = info.fileList[0];
+                            updateServiceAddOn(index, 'imageFile', file);
+                          }}
+                          beforeUpload={() => false}
+                          maxCount={1}
+                          accept="image/*"
+                        >
+                          {!addon.imageFile && (
+                            <div>
+                              <UploadOutlined />
+                              <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                            </div>
+                          )}
+                        </Upload>
+                      </Col>
+                    </Row>
 
                   </Card>
                 ))}

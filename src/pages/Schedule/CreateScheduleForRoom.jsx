@@ -406,11 +406,48 @@ const CreateScheduleForRoom = () => {
       const scheduleStart = dayjs(existingSchedule.startDate);
       const scheduleEnd = dayjs(existingSchedule.endDate);
       
+      console.log('🔍 [handleOpenCreateModal] existingSchedule:', {
+        month: existingSchedule.month,
+        year: existingSchedule.year,
+        startDate: existingSchedule.startDate,
+        endDate: existingSchedule.endDate,
+        scheduleStart: scheduleStart.format('DD/MM/YYYY'),
+        scheduleEnd: scheduleEnd.format('DD/MM/YYYY'),
+        hasSubRoom: !!existingSchedule.subRoom,
+        subRoomName: existingSchedule.subRoom?.name
+      });
+      
+      // ✅ KIỂM TRA: Nếu là tháng hiện tại và startDate <= hôm nay → Lấy ngày mai
+      const today = dayjs().startOf('day');
+      const tomorrow = today.add(1, 'day');
+      const currentMonth = today.month() + 1; // 1-12 (để so với backend trả về month: 1-12)
+      const currentYear = today.year();
+      const isCurrentMonth = existingSchedule.month === currentMonth && existingSchedule.year === currentYear;
+      
+      console.log('🔍 [Month comparison]:', {
+        'existingSchedule.month': existingSchedule.month,
+        'currentMonth (today.month() + 1)': currentMonth,
+        'isCurrentMonth': isCurrentMonth,
+        'scheduleStart': scheduleStart.format('DD/MM/YYYY'),
+        'today': today.format('DD/MM/YYYY')
+      });
+      
+      let effectiveStartDate = scheduleStart;
+      
+      // ✅ FIX: Dùng .isSameOrBefore() thay vì <=
+      if (isCurrentMonth && scheduleStart.isSameOrBefore(today, 'day')) {
+        // Tháng hiện tại và ngày bắt đầu <= hôm nay → Bắt buộc chọn ngày mai
+        effectiveStartDate = tomorrow;
+        console.log(`⚠️ Tháng hiện tại, startDate (${scheduleStart.format('DD/MM/YYYY')}) <= hôm nay → Đổi sang ngày mai (${tomorrow.format('DD/MM/YYYY')})`);
+      } else {
+        console.log(`✅ Giữ nguyên startDate: ${scheduleStart.format('DD/MM/YYYY')}`);
+      }
+      
       setFromMonth(existingSchedule.month);
       setToMonth(existingSchedule.month);
       setSelectedYear(existingSchedule.year);
       setToYear(existingSchedule.year); // 🔧 FIX: Phải set toYear khi thêm ca thiếu
-      setStartDate(scheduleStart);
+      setStartDate(effectiveStartDate); // ✅ Sử dụng effectiveStartDate đã kiểm tra
       setEndDate(scheduleEnd);
       
       // ⚠️ Lưu danh sách ca thiếu NHƯNG KHÔNG tự động chọn
@@ -556,9 +593,22 @@ const CreateScheduleForRoom = () => {
         
         setStartDate(autoStartDate);
       } else {
+        // ⚠️ Fallback: Không tìm thấy tháng available
+        const today = dayjs().startOf('day');
+        const isCurrentMonth = startDateToUse.month() + 1 === today.month() + 1 && startDateToUse.year() === today.year();
+        
         setFromMonth(startDateToUse.month() + 1);
         setSelectedYear(startDateToUse.year());
-        setStartDate(startDateToUse);
+        
+        // ✅ Đảm bảo startDate luôn >= ngày mai nếu là tháng hiện tại
+        // ✅ FIX: Dùng .isSameOrBefore() thay vì <=
+        if (isCurrentMonth && startDateToUse.isSameOrBefore(today, 'day')) {
+          setStartDate(today.add(1, 'day'));
+          console.log(`🎯 Fallback (tháng hiện tại): Tự động chọn ngày mai ${today.add(1, 'day').format('DD/MM/YYYY')}`);
+        } else {
+          setStartDate(startDateToUse);
+          console.log(`🎯 Fallback: Sử dụng suggested start date ${startDateToUse.format('DD/MM/YYYY')}`);
+        }
       }
       
       // Reset toMonth và toYear - chỉ cho chọn sau khi chọn fromMonth
@@ -583,10 +633,11 @@ const CreateScheduleForRoom = () => {
     // 🔧 FIX: Đóng modal danh sách trước, đợi một chút để tránh overlay chồng lên nhau
     setShowScheduleListModal(false);
     
-    // Đợi modal cũ đóng xong mới mở modal mới
+    // ✅ Đợi modal cũ đóng xong + state sync xong mới mở modal mới
+    // Tăng delay lên 200ms để đảm bảo React re-render startDate đúng
     setTimeout(() => {
       setShowCreateModal(true);
-    }, 100);
+    }, 200);
   };
 
   // 🆕 Load holiday preview khi thay đổi tháng hoặc ngày bắt đầu
@@ -1197,33 +1248,34 @@ const CreateScheduleForRoom = () => {
     const isStartMonthCurrent = fromMonth === currentMonth && selectedYear === currentYear;
     
     if (isStartMonthCurrent) {
-      // Chỉ cho chọn từ NGÀY MAI trở đi
+      // ✅ Tháng hiện tại: Bắt buộc chọn từ ngày mai
       if (current < tomorrow) {
         return true; // Disable hôm nay và quá khứ
       }
     } else {
-      // Tháng/năm bắt đầu là TƯƠNG LAI → Cho chọn từ ngày 1
+      // ✅ Tháng/năm bắt đầu là TƯƠNG LAI → Cho chọn từ ngày 1
       // Nhưng vẫn không cho chọn quá khứ (nếu có)
       if (current < today) {
         return true; // Disable past dates
       }
     }
     
-    // For new schedules with existing data, validate continuity
+    // 🆕 VALIDATION BỔ SUNG: Đảm bảo tính liên tục (không có khoảng trống)
+    // Chỉ áp dụng khi có lịch cũ và đang tạo lịch mới (không phải thêm ca thiếu)
     if (scheduleListData?.summary?.suggestedStartDate) {
       const suggestedStart = dayjs(scheduleListData.summary.suggestedStartDate).startOf('day');
       
-      // Must start from suggested date (no gaps allowed)
-      if (current < suggestedStart) {
-        return true;
-      }
-      
-      // If there's a gap, only allow filling that gap (same month as suggested start)
+      // Nếu có khoảng trống, phải bắt đầu từ ngày được đề xuất (lấp khoảng trống)
       if (scheduleListData.summary.hasGap) {
+        // Must start from suggested date to fill the gap
+        if (current < suggestedStart) {
+          return true;
+        }
+        
+        // If filling a gap, must be in the same month as suggested start
         const suggestedMonth = suggestedStart.month() + 1;
         const suggestedYear = suggestedStart.year();
         
-        // Must select the gap month
         if (fromMonth !== suggestedMonth || selectedYear !== suggestedYear) {
           return current > suggestedStart.endOf('month');
         }
@@ -1828,31 +1880,42 @@ const CreateScheduleForRoom = () => {
                                       onClick={async () => {
                                         // 🔧 FIX: Tạo object đại diện cho group với month/year chính xác
                                         // 🐛 DEBUG: Log để kiểm tra
-                                        console.log('🔍 Group clicked:', {
+                                        console.log('🔍 [Group clicked]:', {
                                           month: group.month,
                                           year: group.year,
+                                          startDate: group.startDate,
+                                          endDate: group.endDate,
                                           schedulesCount: group.schedules.length,
                                           firstSchedule: group.schedules[0] ? {
                                             month: group.schedules[0].month,
                                             year: group.schedules[0].year,
+                                            startDate: group.schedules[0].startDate,
+                                            endDate: group.schedules[0].endDate,
                                             subRoom: group.schedules[0].subRoom?.name
                                           } : null,
                                           allSchedules: group.schedules.map(s => ({
                                             month: s.month,
                                             year: s.year,
+                                            startDate: s.startDate,
+                                            endDate: s.endDate,
                                             subRoom: s.subRoom?.name
                                           }))
                                         });
                                         
                                         const groupRepresent = {
+                                          scheduleId: group.schedules[0]?.scheduleId, // 🔧 Thêm scheduleId
                                           month: group.month,
                                           year: group.year,
                                           startDate: group.startDate,
                                           endDate: group.endDate,
                                           missingShifts: group.schedules[0]?.missingShifts || [],
                                           shiftConfig: group.schedules[0]?.shiftConfig, // 🔧 Thêm shiftConfig
+                                          subRoom: group.schedules[0]?.subRoom, // 🔧 Thêm subRoom info
                                           subRoomShiftStatus: group.groupSubRoomShiftStatus || [] // 🔧 ADD: Thêm subRoomShiftStatus của tháng này
                                         };
+                                        
+                                        console.log('✅ [groupRepresent]:', groupRepresent);
+                                        
                                         await handleOpenCreateModal(selectedRoom, null, groupRepresent);
                                       }}
                                       disabled={group.isExpired || !group.canCreate}
@@ -3085,7 +3148,18 @@ const CreateScheduleForRoom = () => {
           <div>
             <Text strong>Ngày bắt đầu <Text type="danger">*</Text></Text>
             <DatePicker
-              placeholder="Chọn ngày bắt đầu"
+              placeholder={(() => {
+                const today = dayjs();
+                const currentMonth = today.month() + 1;
+                const currentYear = today.year();
+                const isCurrentMonth = fromMonth === currentMonth && selectedYear === currentYear;
+                
+                if (isCurrentMonth) {
+                  return `Từ ${today.add(1, 'day').format('DD/MM/YYYY')} trở đi`;
+                } else {
+                  return 'Chọn ngày bắt đầu';
+                }
+              })()}
               value={startDate}
               onChange={(date) => {
                 setStartDate(date);

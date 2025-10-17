@@ -232,17 +232,17 @@ const ServiceList = () => {
         </Text>
       ),
     },
-    {
-      title: 'Thời gian',
-      dataIndex: 'durationMinutes',
-      key: 'durationMinutes',
-      width: 100,
-      render: (minutes) => (
-        <Tag color="blue">
-          {minutes} phút
-        </Tag>
-      ),
-    },
+    // {
+    //   title: 'Thời gian',
+    //   dataIndex: 'durationMinutes',
+    //   key: 'durationMinutes',
+    //   width: 100,
+    //   render: (minutes) => (
+    //     <Tag color="blue">
+    //       {minutes} phút
+    //     </Tag>
+    //   ),
+    // },
     {
       title: 'Giá dịch vụ',
       dataIndex: 'serviceAddOns',

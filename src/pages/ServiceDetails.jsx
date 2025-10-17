@@ -40,11 +40,30 @@ import { servicesService, toast as toastService } from '../services';
 
 const { Title, Text } = Typography;
 
+// Helper function to get room type label
+const getRoomTypeLabel = (roomType) => {
+  const labels = {
+    CONSULTATION: 'Phòng tư vấn/khám',
+    GENERAL_TREATMENT: 'Phòng điều trị TQ',
+    SURGERY: 'Phòng phẫu thuật',
+    ORTHODONTIC: 'Phòng chỉnh nha',
+    COSMETIC: 'Phòng thẩm mỹ',
+    PEDIATRIC: 'Phòng nha nhi',
+    X_RAY: 'Phòng X-quang',
+    STERILIZATION: 'Phòng tiệt trùng',
+    LAB: 'Phòng labo',
+    RECOVERY: 'Phòng hồi sức',
+    SUPPORT: 'Phòng phụ trợ'
+  };
+  return labels[roomType] || roomType;
+};
+
 const ServiceDetails = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [roomTypes, setRoomTypes] = useState({});
   
   // Update modal states
   const [showUpdateModal, setShowUpdateModal] = useState(false);
@@ -70,6 +89,18 @@ const ServiceDetails = () => {
       fetchServiceDetails();
     }
   }, [serviceId]);
+
+  useEffect(() => {
+    const fetchRoomTypes = async () => {
+      try {
+        const types = await servicesService.getRoomTypes();
+        setRoomTypes(types);
+      } catch (error) {
+        console.error('Error fetching room types:', error);
+      }
+    };
+    fetchRoomTypes();
+  }, []);
 
   const fetchServiceDetails = async () => {
     setLoading(true);
@@ -106,7 +137,8 @@ const ServiceDetails = () => {
       type: service.type,
       duration: service.durationMinutes,
       description: service.description,
-      requireExamFirst: service.requireExamFirst
+      requireExamFirst: service.requireExamFirst,
+      allowedRoomTypes: service.allowedRoomTypes || []
     });
   };
 
@@ -121,7 +153,8 @@ const ServiceDetails = () => {
         type: values.type,
         duration: values.duration,
         description: values.description,
-        requireExamFirst: values.requireExamFirst
+        requireExamFirst: values.requireExamFirst,
+        allowedRoomTypes: values.allowedRoomTypes
       };
 
       const updatedService = await servicesService.updateService(serviceId, updateData);
@@ -593,6 +626,26 @@ const ServiceDetails = () => {
               checkedChildren="Có"
               unCheckedChildren="Không"
             />
+          </Form.Item>
+
+          <Form.Item
+            name="allowedRoomTypes"
+            label="Loại phòng cho phép"
+            rules={[
+              { required: true, message: 'Vui lòng chọn ít nhất 1 loại phòng!' }
+            ]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
+              style={{ width: '100%' }}
+            >
+              {Object.entries(roomTypes).map(([key, value]) => (
+                <Select.Option key={value} value={value}>
+                  {getRoomTypeLabel(value)}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
         </Form>
       </Modal>

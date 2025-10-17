@@ -24,7 +24,11 @@ export const servicesService = {
 
   // Tạo service mới
   async createService(serviceData) {
-    const response = await serviceApi.post('/service', serviceData);
+    const response = await serviceApi.post('/service', serviceData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return response.data;
   },
 
@@ -76,5 +80,11 @@ export const servicesService = {
   async getServiceAddOnById(serviceId, addOnId) {
     const response = await serviceApi.get(`/service/${serviceId}/addons/${addOnId}`);
     return response.data;
+  },
+
+  // Get room types enum
+  async getRoomTypes() {
+    const response = await serviceApi.get('/service/enums/room-types');
+    return response.data?.data || {};
   }
 };

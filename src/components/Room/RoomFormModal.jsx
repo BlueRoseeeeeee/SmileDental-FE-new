@@ -6,6 +6,7 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   Switch,
   Button,
   Space,
@@ -31,11 +32,30 @@ import roomService from '../../services/roomService';
 
 const {Text } = Typography;
 
+// Helper function to get room type label in Vietnamese
+const getRoomTypeLabel = (roomType) => {
+  const labels = {
+    CONSULTATION: 'Phòng tư vấn/khám tổng quát',
+    GENERAL_TREATMENT: 'Phòng điều trị tổng quát',
+    SURGERY: 'Phòng phẫu thuật/tiểu phẫu',
+    ORTHODONTIC: 'Phòng chỉnh nha/niềng',
+    COSMETIC: 'Phòng thẩm mỹ nha',
+    PEDIATRIC: 'Phòng nha nhi',
+    X_RAY: 'Phòng X-quang/CT',
+    STERILIZATION: 'Phòng tiệt trùng',
+    LAB: 'Phòng labo/kỹ thuật viên',
+    RECOVERY: 'Phòng hồi sức',
+    SUPPORT: 'Phòng phụ trợ/nhân viên'
+  };
+  return labels[roomType] || roomType;
+};
+
 const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [hasSubRooms, setHasSubRooms] = useState(false);
   const [subRoomTogglingMap, setSubRoomTogglingMap] = useState({});
+  const [roomTypes, setRoomTypes] = useState({});
   
   // Support both visible and open props (visible is deprecated)
   const isOpen = open ?? visible;
@@ -74,6 +94,7 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
           // Set form values với dữ liệu đầy đủ
           form.setFieldsValue({
             name: roomData.name,
+            roomType: roomData.roomType,
             hasSubRooms: roomData.hasSubRooms,
             subRoomCount: roomData.subRooms?.length || 1,
             maxDoctors: roomData.maxDoctors ?? 1, // 🔧 Cho phép giá trị 0
@@ -86,6 +107,7 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
           // Fallback to room prop data
           form.setFieldsValue({
             name: room.name,
+            roomType: room.roomType,
             hasSubRooms: room.hasSubRooms,
             subRoomCount: room.subRooms?.length || 1,
             maxDoctors: room.maxDoctors ?? 1, // 🔧 Cho phép giá trị 0
@@ -107,12 +129,26 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
     fetchRoomData();
   }, [isOpen, room, form]);
 
+  // Fetch room types
+  useEffect(() => {
+    const fetchRoomTypes = async () => {
+      try {
+        const types = await roomService.getRoomTypes();
+        setRoomTypes(types);
+      } catch (error) {
+        console.error('Error fetching room types:', error);
+      }
+    };
+    fetchRoomTypes();
+  }, []);
+
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
       if (room) {
         const updateData = {
           name: values.name,
+          roomType: values.roomType,
           isActive: values.isActive
         };
 
@@ -138,6 +174,7 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
       } else {
         const roomData = {
           name: values.name,
+          roomType: values.roomType,
           hasSubRooms: values.hasSubRooms,
           isActive: values.isActive
         };
@@ -347,10 +384,28 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
         </Row>
 
         <Row gutter={16}>
+          <Col span={24}>
+            <Form.Item
+              name="roomType"
+              label="Loại phòng"
+              rules={[{ required: true, message: 'Vui lòng chọn loại phòng' }]}
+            >
+              <Select placeholder="Chọn loại phòng">
+                {Object.entries(roomTypes).map(([key, value]) => (
+                  <Select.Option key={value} value={value}>
+                    {getRoomTypeLabel(value)}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
           <Col span={12}>
             <Form.Item
               name="hasSubRooms"
-              label="Loại phòng"
+              label="Cấu trúc phòng"
               valuePropName="checked"
             >
               <Switch

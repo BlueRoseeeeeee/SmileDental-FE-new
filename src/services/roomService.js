@@ -61,6 +61,12 @@ const roomService = {
       params
     });
     return response.data;
+  },
+
+  // Get room types enum
+  getRoomTypes: async () => {
+    const response = await roomApi.get('/room/enums/room-types');
+    return response.data?.data || {};
   }
 
 };
