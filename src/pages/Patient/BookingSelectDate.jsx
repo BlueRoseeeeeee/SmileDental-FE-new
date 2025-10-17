@@ -53,6 +53,7 @@ const BookingSelectDate = () => {
 
     // Kiểm tra xem đã chọn service và dentist chưa
     const service = localStorage.getItem('booking_service');
+    const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
     const dentist = localStorage.getItem('booking_dentist');
     
     if (!service || !dentist) {
@@ -60,16 +61,28 @@ const BookingSelectDate = () => {
       return;
     }
     
-    setSelectedService(JSON.parse(service));
-    setSelectedDentist(JSON.parse(dentist));
+    const serviceData = JSON.parse(service);
+    const serviceAddOnData = serviceAddOn ? JSON.parse(serviceAddOn) : null;
+    const dentistData = JSON.parse(dentist);
     
-    // Fetch working dates
-    fetchWorkingDates(JSON.parse(dentist)._id);
+    setSelectedService(serviceData);
+    setSelectedDentist(dentistData);
+    
+    // Calculate service duration (prioritize addon)
+    const serviceDuration = serviceAddOnData?.durationMinutes 
+                         || serviceData?.durationMinutes 
+                         || 15;
+    
+    console.log('🎯 Fetching working dates with duration:', serviceDuration, 'minutes');
+    console.log('📦 Service:', serviceData.name, '| AddOn:', serviceAddOnData?.name || 'none');
+    
+    // Fetch working dates with service duration
+    fetchWorkingDates(dentistData._id, serviceDuration);
   }, []);
 
-  const fetchWorkingDates = async (dentistId) => {
+  const fetchWorkingDates = async (dentistId, serviceDuration = 15) => {
     try {
-      const response = await slotService.getDentistWorkingDates(dentistId);
+      const response = await slotService.getDentistWorkingDates(dentistId, serviceDuration);
       console.log('📅 Working dates API response:', response);
       
       if (response.success && response.data.workingDates) {

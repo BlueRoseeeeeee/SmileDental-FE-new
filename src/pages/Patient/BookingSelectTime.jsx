@@ -11,17 +11,20 @@ import {
   Col,
   Spin,
   Empty,
-  message
+  message,
+  Tooltip
 } from 'antd';
 import { 
   ArrowLeftOutlined,
   ClockCircleOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import slotService from '../../services/slotService.js';
 import { mockSlots, mockServices, mockDentists } from '../../services/mockData.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { groupConsecutiveSlots, groupSlotsByShift, formatCurrency } from '../../utils/slotGrouping.js';
 import './BookingSelectTime.css';
 
 const { Title, Text } = Typography;
@@ -33,15 +36,17 @@ const BookingSelectTime = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [selectedService, setSelectedService] = useState(null);
+  const [selectedServiceAddOn, setSelectedServiceAddOn] = useState(null); // 🆕 Store selected addon
   const [selectedDentist, setSelectedDentist] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [availableSlots, setAvailableSlots] = useState({
+  const [selectedSlotGroup, setSelectedSlotGroup] = useState(null); // 🆕 Change from single slot to group
+  const [availableSlotGroups, setAvailableSlotGroups] = useState({
     morning: [],
     afternoon: [],
     evening: []
   });
   const [loading, setLoading] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState(null); // 🆕 Store config for deposit calculation
 
   useEffect(() => {
     // Pre-populate localStorage with mock data if using mocks
@@ -59,6 +64,7 @@ const BookingSelectTime = () => {
 
     // Kiểm tra xem đã chọn đủ thông tin chưa
     const service = localStorage.getItem('booking_service');
+    const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
     const dentist = localStorage.getItem('booking_dentist');
     const date = localStorage.getItem('booking_date');
     
@@ -67,25 +73,29 @@ const BookingSelectTime = () => {
       return;
     }
     
-    setSelectedService(JSON.parse(service));
-    setSelectedDentist(JSON.parse(dentist));
+    const serviceData = JSON.parse(service);
+    const serviceAddOnData = serviceAddOn ? JSON.parse(serviceAddOn) : null;
+    const dentistData = JSON.parse(dentist);
+    
+    setSelectedService(serviceData);
+    setSelectedServiceAddOn(serviceAddOnData);
+    setSelectedDentist(dentistData);
     setSelectedDate(dayjs(date));
     
-    // Fetch available slots
-    fetchAvailableSlots(JSON.parse(dentist)._id, date);
+    // Fetch available slots with service info
+    fetchAvailableSlots(dentistData._id, date, serviceData);
   }, []);
 
-  const fetchAvailableSlots = async (dentistId, date) => {
+  const fetchAvailableSlots = async (dentistId, date, serviceData) => {
     try {
       setLoading(true);
       
       if (USE_MOCK_DATA) {
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 500));
-        setAvailableSlots(mockSlots);
+        setAvailableSlotGroups(mockSlots);
       } else {
         // Call API to get dentist's slots on selected date
-        // Use getDentistSlotsFuture to get only future slots
         const response = await slotService.getDentistSlotsFuture(dentistId, {
           date: date,
           shiftName: '' // Get all shifts
@@ -94,47 +104,78 @@ const BookingSelectTime = () => {
         console.log('⏰ Slots API response:', response);
         
         if (response.success && response.data) {
-          let groupedSlots = {
-            morning: [],
-            afternoon: [],
-            evening: []
-          };
+          // Load selectedServiceAddOn from localStorage (priority: addon duration > service duration)
+          const serviceAddOnData = localStorage.getItem('booking_serviceAddOn');
+          const selectedServiceAddOn = serviceAddOnData ? JSON.parse(serviceAddOnData) : null;
           
-          // Check if API returns grouped shifts (new format)
+          // Get duration: prioritize serviceAddOn, fallback to service, default to 15min
+          const serviceDuration = selectedServiceAddOn?.durationMinutes 
+                               || serviceData?.durationMinutes 
+                               || 15;
+          const slotDuration = 15; // Default slot duration (should match backend config)
+          
+          console.log('🎯 Using duration:', serviceDuration, 'minutes from', 
+                     selectedServiceAddOn ? `addon: ${selectedServiceAddOn.name}` : 'service');
+          console.log('🔍 Service:', serviceData?.name, '| AddOn:', selectedServiceAddOn?.name || 'none');
+          
+          let allSlots = [];
+          
+          // Collect all slots from API response
           if (response.data.shifts) {
-            console.log('📦 Using grouped shifts from API');
-            groupedSlots = {
-              morning: response.data.shifts['Ca Sáng'] || [],
-              afternoon: response.data.shifts['Ca Chiều'] || [],
-              evening: response.data.shifts['Ca Tối'] || []
-            };
-          } 
-          // Fallback: Group manually from slots array (old format)
-          else if (response.data.slots) {
-            console.log('📋 Manually grouping slots by shiftName');
-            response.data.slots.forEach(slot => {
-              // Determine shift based on shiftName
-              const shiftName = slot.shiftName;
-              if (shiftName === 'Ca Sáng') {
-                groupedSlots.morning.push(slot);
-              } else if (shiftName === 'Ca Chiều') {
-                groupedSlots.afternoon.push(slot);
-              } else if (shiftName === 'Ca Tối') {
-                groupedSlots.evening.push(slot);
-              }
+            allSlots = [
+              ...(response.data.shifts['Ca Sáng'] || []),
+              ...(response.data.shifts['Ca Chiều'] || []),
+              ...(response.data.shifts['Ca Tối'] || [])
+            ];
+          } else if (response.data.slots) {
+            allSlots = response.data.slots;
+          }
+          
+          console.log('📊 Total slots before grouping:', allSlots.length);
+          
+          // Debug: Log first few slots to check structure
+          if (allSlots.length > 0) {
+            console.log('🔍 Sample slot structure:', {
+              slot: allSlots[0],
+              startTime: allSlots[0].startTime,
+              startTimeVN: allSlots[0].startTimeVN,
+              endTime: allSlots[0].endTime,
+              endTimeVN: allSlots[0].endTimeVN
             });
           }
           
-          setAvailableSlots(groupedSlots);
+          // Group slots by shift first
+          const slotsByShift = {
+            morning: allSlots.filter(s => s.shiftName === 'Ca Sáng'),
+            afternoon: allSlots.filter(s => s.shiftName === 'Ca Chiều'),
+            evening: allSlots.filter(s => s.shiftName === 'Ca Tối')
+          };
           
-          const totalSlots = groupedSlots.morning.length + 
-                            groupedSlots.afternoon.length + 
-                            groupedSlots.evening.length;
+          console.log('📦 Slots by shift:', {
+            morning: slotsByShift.morning.length,
+            afternoon: slotsByShift.afternoon.length,
+            evening: slotsByShift.evening.length
+          });
           
-          console.log('📊 Total slots found:', totalSlots, groupedSlots);
+          // 🔥 Group consecutive slots for each shift
+          const groupedSlots = {
+            morning: groupConsecutiveSlots(slotsByShift.morning, serviceDuration, slotDuration),
+            afternoon: groupConsecutiveSlots(slotsByShift.afternoon, serviceDuration, slotDuration),
+            evening: groupConsecutiveSlots(slotsByShift.evening, serviceDuration, slotDuration)
+          };
           
-          if (totalSlots === 0) {
-            message.warning('Không có slot khám nào trong ngày này');
+          console.log('✨ Grouped slots:', groupedSlots);
+          
+          setAvailableSlotGroups(groupedSlots);
+          
+          const totalGroups = groupedSlots.morning.length + 
+                             groupedSlots.afternoon.length + 
+                             groupedSlots.evening.length;
+          
+          console.log('� Total slot groups created:', totalGroups);
+          
+          if (totalGroups === 0) {
+            message.warning(`Không có khung giờ phù hợp (cần ${Math.ceil(serviceDuration/slotDuration)} slot liên tục)`);
           }
         } else {
           console.error('Invalid API response format:', response);
@@ -149,14 +190,15 @@ const BookingSelectTime = () => {
     }
   };
 
-  const handleSelectSlot = (slot) => {
-    setSelectedSlot(slot);
+  const handleSelectSlot = (slotGroup) => {
+    setSelectedSlotGroup(slotGroup);
   };
 
   const handleContinue = () => {
-    if (selectedSlot) {
-      // Lưu slot đã chọn
-      localStorage.setItem('booking_slot', JSON.stringify(selectedSlot));
+    if (selectedSlotGroup) {
+      // 🆕 Lưu danh sách slot IDs và thông tin group
+      localStorage.setItem('booking_slotIds', JSON.stringify(selectedSlotGroup.slotIds));
+      localStorage.setItem('booking_slotGroup', JSON.stringify(selectedSlotGroup));
       
       // Check if user is authenticated
       if (!isAuthenticated) {
@@ -172,13 +214,20 @@ const BookingSelectTime = () => {
     navigate('/patient/booking/select-date');
   };
 
-  const renderShiftSlots = (shift, shiftName, slots) => {
+  const renderShiftSlots = (shift, shiftName, slotGroups) => {
+    const requiredSlots = Math.ceil((selectedService?.durationMinutes || 15) / 15);
+    
     return (
       <div key={shift} style={{ marginBottom: 24 }}>
-        <Title level={5} style={{ marginBottom: 12, color: '#2c5f4f' }}>
-          <ClockCircleOutlined /> {shiftName}
-        </Title>
-        {slots.length === 0 ? (
+        <Space style={{ marginBottom: 12 }}>
+          <Title level={5} style={{ margin: 0, color: '#2c5f4f' }}>
+            <ClockCircleOutlined /> {shiftName}
+          </Title>
+          <Tooltip title={`Mỗi khung giờ sẽ đặt ${requiredSlots} slot liên tục (${selectedService?.durationMinutes || 15} phút)`}>
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
+          </Tooltip>
+        </Space>
+        {slotGroups.length === 0 ? (
           <div style={{ 
             padding: '16px', 
             textAlign: 'center', 
@@ -186,55 +235,66 @@ const BookingSelectTime = () => {
             borderRadius: 8,
             color: '#999'
           }}>
-            Không có slot khám trong ca này
+            Không có khung giờ nào trong ca này (cần {requiredSlots} slot liên tục)
           </div>
         ) : (
           <Row gutter={[12, 12]}>
-            {slots.map((slot) => {
-              // Handle both Date objects and time strings (HH:mm)
-              let startTime, endTime;
-              if (typeof slot.startTimeVN === 'string') {
-                // Use VN time if available
-                startTime = slot.startTimeVN;
-                endTime = slot.endTimeVN;
-              } else if (typeof slot.startTime === 'string' && slot.startTime.includes(':')) {
-                // Already formatted as HH:mm
-                startTime = slot.startTime;
-                endTime = slot.endTime;
-              } else {
-                // Convert Date to HH:mm
-                startTime = dayjs(slot.startTime).format('HH:mm');
-                endTime = dayjs(slot.endTime).format('HH:mm');
-              }
-              
-              const isSelected = selectedSlot?._id === slot._id;
-              const isAvailable = slot.status === 'available';
-              const availableCount = slot.availableAppointments || (slot.maxAppointments ? slot.maxAppointments - slot.appointmentCount : 1);
+            {slotGroups.map((slotGroup) => {
+              const isSelected = selectedSlotGroup?.groupId === slotGroup.groupId;
+              const slotCount = slotGroup.slots.length;
+              const isAvailable = slotGroup.isAvailable !== false; // Default true if not set
               
               return (
-                <Col xs={12} sm={8} md={6} key={slot._id || slot.slotId}>
-                  <Button
-                    className={`time-slot-button ${isSelected ? 'selected' : ''}`}
-                    onClick={() => isAvailable && handleSelectSlot(slot)}
-                    block
-                    disabled={!isAvailable}
-                    style={{
-                      height: 'auto',
-                      padding: '12px 8px',
-                      backgroundColor: !isAvailable ? '#f0f0f0' : (isSelected ? '#2c5f4f' : 'white'),
-                      borderColor: !isAvailable ? '#d9d9d9' : (isSelected ? '#2c5f4f' : '#d9d9d9'),
-                      color: !isAvailable ? '#999' : (isSelected ? 'white' : '#333'),
-                      opacity: !isAvailable ? 0.6 : 1,
-                      cursor: !isAvailable ? 'not-allowed' : 'pointer'
-                    }}
+                <Col xs={12} sm={8} md={6} key={slotGroup.groupId}>
+                  <Tooltip 
+                    title={
+                      !isAvailable 
+                        ? slotGroup.unavailableReason || 'Khung giờ không khả dụng'
+                        : `${slotCount} slot - ${slotGroup.displayTime}`
+                    }
                   >
-                    <div style={{ fontWeight: 500, fontSize: 14 }}>
-                      {startTime} - {endTime}
+                    <div 
+                      className={`time-slot-wrapper ${!isAvailable ? 'unavailable' : ''} ${isSelected ? 'selected' : ''}`}
+                      onClick={() => isAvailable && handleSelectSlot(slotGroup)}
+                      style={{
+                        padding: '12px 8px',
+                        border: '2px solid',
+                        borderColor: isSelected ? '#2c5f4f' : '#d9d9d9',
+                        borderRadius: '8px',
+                        background: isSelected ? '#2c5f4f' : (!isAvailable ? '#fafafa' : 'white'),
+                        color: isSelected ? 'white' : (!isAvailable ? '#999' : '#333'),
+                        cursor: isAvailable ? 'pointer' : 'not-allowed',
+                        opacity: isAvailable ? 1 : 0.6,
+                        textAlign: 'center',
+                        transition: 'all 0.3s ease',
+                        minHeight: '80px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <ClockCircleOutlined style={{ fontSize: 18, marginBottom: 6 }} />
+                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+                        {slotGroup.displayTime}
+                      </div>
+                      
+                      {!isAvailable && slotGroup.unavailableReason && (
+                        <Tag 
+                          color={slotGroup.unavailableReason.includes('đã được đặt') ? 'red' : 'orange'} 
+                          style={{ marginTop: 4, fontSize: 11 }}
+                        >
+                          {slotGroup.unavailableReason.includes('đã được đặt') ? 'Đã đặt' : 'Đang giữ'}
+                        </Tag>
+                      )}
+                      
+                      {isAvailable && slotCount > 1 && (
+                        <Tag color="blue" style={{ marginTop: 4, fontSize: 11 }}>
+                          {slotCount} slot
+                        </Tag>
+                      )}
                     </div>
-                    <div style={{ fontSize: 11, marginTop: 4 }}>
-                      {!isAvailable ? (slot.status === 'locked' ? 'Đang giữ chỗ' : 'Đã được đặt') : `Còn ${availableCount} chỗ`}
-                    </div>
-                  </Button>
+                  </Tooltip>
                 </Col>
               );
             })}
@@ -244,9 +304,9 @@ const BookingSelectTime = () => {
     );
   };
 
-  const totalSlots = availableSlots.morning.length + 
-                     availableSlots.afternoon.length + 
-                     availableSlots.evening.length;
+  const totalGroups = availableSlotGroups.morning.length + 
+                      availableSlotGroups.afternoon.length + 
+                      availableSlotGroups.evening.length;
 
   return (
     <div className="booking-select-time-page">
@@ -277,6 +337,21 @@ const BookingSelectTime = () => {
                     <Tag color="blue" style={{ fontSize: 13 }}>
                       {selectedService?.name}
                     </Tag>
+                    {selectedServiceAddOn && (
+                      <div style={{ marginTop: 4 }}>
+                        <Tag color="green" style={{ fontSize: 12 }}>
+                          📦 {selectedServiceAddOn.name}
+                        </Tag>
+                        <Tag color="cyan" style={{ fontSize: 12 }}>
+                          ⏱️ {selectedServiceAddOn.durationMinutes} phút
+                        </Tag>
+                      </div>
+                    )}
+                    {!selectedServiceAddOn && selectedService?.durationMinutes && (
+                      <Tag color="cyan" style={{ fontSize: 12, marginTop: 4 }}>
+                        ⏱️ {selectedService.durationMinutes} phút
+                      </Tag>
+                    )}
                   </div>
                   
                   <div>
@@ -300,13 +375,28 @@ const BookingSelectTime = () => {
                     </Tag>
                   </div>
                   
-                  {selectedSlot && (
-                    <div>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Thời gian khám:</Text>
-                      <Tag color="orange" style={{ fontSize: 13 }}>
-                        {dayjs(selectedSlot.startTime).format('HH:mm')} - {dayjs(selectedSlot.endTime).format('HH:mm')}
-                      </Tag>
-                    </div>
+                  {selectedSlotGroup && (
+                    <>
+                      <div>
+                        <Text strong style={{ display: 'block', marginBottom: 8 }}>Thời gian khám:</Text>
+                        <Tag color="orange" style={{ fontSize: 13 }}>
+                          {selectedSlotGroup.displayTime}
+                        </Tag>
+                      </div>
+                      <div>
+                        <Text strong style={{ display: 'block', marginBottom: 8 }}>Số slot đặt:</Text>
+                        <Tag color="purple" style={{ fontSize: 13 }}>
+                          {selectedSlotGroup.slots.length} slot × 15 phút
+                        </Tag>
+                      </div>
+                      <Alert
+                        type="success"
+                        showIcon
+                        message="💰 Tiền cọc"
+                        description={`${formatCurrency(selectedSlotGroup.slots.length * 50000)} (50,000đ × ${selectedSlotGroup.slots.length} slot)`}
+                        style={{ marginTop: 8 }}
+                      />
+                    </>
                   )}
                 </Space>
               </Card>
@@ -324,23 +414,32 @@ const BookingSelectTime = () => {
                     <Alert
                       type="info"
                       showIcon
-                      message={totalSlots > 0 
-                        ? `Có ${totalSlots} khung giờ khả dụng trong ngày ${selectedDate?.format('DD/MM/YYYY')}`
+                      message={totalGroups > 0 
+                        ? `Có ${totalGroups} khung giờ phù hợp trong ngày ${selectedDate?.format('DD/MM/YYYY')}`
                         : `Ngày ${selectedDate?.format('DD/MM/YYYY')} - Chọn khung giờ phù hợp`
+                      }
+                      description={
+                        (() => {
+                          const duration = selectedServiceAddOn?.durationMinutes || selectedService?.durationMinutes || 15;
+                          const slotsNeeded = Math.ceil(duration / 15);
+                          const serviceName = selectedServiceAddOn ? `${selectedService?.name} - ${selectedServiceAddOn.name}` : selectedService?.name;
+                          return serviceName && `Dịch vụ "${serviceName}" cần ${slotsNeeded} slot liên tục (${duration} phút)`;
+                        })()
                       }
                     />
                   </div>
 
                   {/* Always show all 3 shifts */}
-                  {renderShiftSlots('morning', 'Ca sáng', availableSlots.morning)}
-                  {renderShiftSlots('afternoon', 'Ca chiều', availableSlots.afternoon)}
-                  {renderShiftSlots('evening', 'Ca tối', availableSlots.evening)}
+                  {renderShiftSlots('morning', 'Ca sáng', availableSlotGroups.morning)}
+                  {renderShiftSlots('afternoon', 'Ca chiều', availableSlotGroups.afternoon)}
+                  {renderShiftSlots('evening', 'Ca tối', availableSlotGroups.evening)}
 
-                  {selectedSlot && (
+                  {selectedSlotGroup && (
                     <Alert
                       type="success"
                       showIcon
-                      message={`Đã chọn: ${selectedSlot.startTimeVN || selectedSlot.startTime} - ${selectedSlot.endTimeVN || selectedSlot.endTime}`}
+                      message={`✅ Đã chọn: ${selectedSlotGroup.displayTime} (${selectedSlotGroup.slots.length} slot)`}
+                      description={`Tiền cọc: ${formatCurrency(selectedSlotGroup.slots.length * 50000)}`}
                       style={{ marginTop: 16 }}
                     />
                   )}
@@ -361,14 +460,14 @@ const BookingSelectTime = () => {
                       type="primary" 
                       size="large"
                       onClick={handleContinue}
-                      disabled={!selectedSlot}
+                      disabled={!selectedSlotGroup}
                       style={{ 
                         backgroundColor: '#2c5f4f',
                         borderColor: '#2c5f4f',
                         borderRadius: 6
                       }}
                     >
-                      Tiếp tục
+                      Tiếp tục {selectedSlotGroup && `(${formatCurrency(selectedSlotGroup.slots.length * 50000)})`}
                     </Button>
                   </Space>
                 </div>

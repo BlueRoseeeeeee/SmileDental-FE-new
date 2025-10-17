@@ -30,6 +30,9 @@ import ServiceList from './pages/ServiceList.jsx';
 import ServiceDetails from './pages/ServiceDetails.jsx';
 import AddService from './pages/AddService.jsx';
 
+// Admin - Patient Appointments Management
+import AdminPatientAppointments from './pages/Admin/PatientAppointments.jsx';
+
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
 import HolidayManagementPage from './pages/Schedule/HolidayManagementPage.jsx';
@@ -216,6 +219,13 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="users/edit/:id" element={<EditUser />} />
             <Route path="users/detail/:id" element={<DetailStaff />} />
+            
+            {/* Patient Appointments Management (Admin/Manager only) */}
+            <Route path="patient-appointments" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AdminPatientAppointments />
+              </ProtectedRoute>
+            } />
             
             {/* Room Management (Admin/Manager only) */}
             <Route path="rooms" element={

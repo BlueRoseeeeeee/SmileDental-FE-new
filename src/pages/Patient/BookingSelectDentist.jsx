@@ -46,15 +46,30 @@ const BookingSelectDentist = () => {
 
     // Lấy service đã chọn từ bước trước
     const service = localStorage.getItem('booking_service');
+    const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
+    
     if (!service) {
       navigate('/patient/booking/select-service');
       return;
     }
-    setSelectedService(JSON.parse(service));
-    fetchDentists();
+    
+    const serviceData = JSON.parse(service);
+    const serviceAddOnData = serviceAddOn ? JSON.parse(serviceAddOn) : null;
+    
+    setSelectedService(serviceData);
+    
+    // Calculate service duration (prioritize addon)
+    const serviceDuration = serviceAddOnData?.durationMinutes 
+                         || serviceData?.durationMinutes 
+                         || 15;
+    
+    console.log('🎯 Fetching dentists with duration:', serviceDuration, 'minutes');
+    console.log('📦 Service:', serviceData.name, '| AddOn:', serviceAddOnData?.name || 'none');
+    
+    fetchDentists(serviceDuration);
   }, []);
 
-  const fetchDentists = async () => {
+  const fetchDentists = async (serviceDuration = 15) => {
     try {
       setLoading(true);
       
@@ -64,7 +79,7 @@ const BookingSelectDentist = () => {
         setDentists(mockDentists);
         setFilteredDentists(mockDentists);
       } else {
-        const response = await slotService.getDentistsWithNearestSlot();
+        const response = await slotService.getDentistsWithNearestSlot(serviceDuration);
         console.log('👨‍⚕️ Dentists API response:', response);
         
         if (response.success && response.data.dentists) {

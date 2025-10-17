@@ -42,7 +42,7 @@ const CreateAppointment = () => {
   const [selectedServiceAddOn, setSelectedServiceAddOn] = useState(null);
   const [selectedDentist, setSelectedDentist] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [selectedSlotGroup, setSelectedSlotGroup] = useState(null); // 🆕 Changed from single slot
   const [loading, setLoading] = useState(false);
   const [createdAppointment, setCreatedAppointment] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -69,9 +69,9 @@ const CreateAppointment = () => {
     const serviceAddOn = localStorage.getItem('booking_serviceAddOn'); // Get selected addon
     const dentist = localStorage.getItem('booking_dentist');
     const date = localStorage.getItem('booking_date');
-    const slot = localStorage.getItem('booking_slot');
+    const slotGroup = localStorage.getItem('booking_slotGroup'); // 🆕 Changed from booking_slot
     
-    if (!service || !dentist || !date || !slot) {
+    if (!service || !dentist || !date || !slotGroup) {
       navigate('/patient/booking/select-service');
       return;
     }
@@ -82,7 +82,7 @@ const CreateAppointment = () => {
     }
     setSelectedDentist(JSON.parse(dentist));
     setSelectedDate(dayjs(date));
-    setSelectedSlot(JSON.parse(slot));
+    setSelectedSlotGroup(JSON.parse(slotGroup)); // 🆕 Set slot group
 
     // Pre-fill patient info from mock data if using mocks
     if (USE_MOCK_DATA) {
@@ -120,12 +120,13 @@ const CreateAppointment = () => {
         serviceId: selectedService._id,
         serviceAddOnId: serviceAddOn?._id || null, // Use selected addon ID or null
         dentistId: selectedDentist._id,
-        slotIds: Array.isArray(selectedSlot) ? selectedSlot.map(s => s._id) : [selectedSlot._id],
+        slotIds: selectedSlotGroup.slotIds, // 🆕 Use slotIds array from group
         date: selectedDate.format('YYYY-MM-DD'),
         notes: values.notes || ''
       };
       
       console.log('📝 Creating reservation with data:', reservationData);
+      console.log('📦 Slot group:', selectedSlotGroup);
       
       const response = await appointmentService.reserveAppointment(reservationData);
       
@@ -254,10 +255,15 @@ const CreateAppointment = () => {
                   </Descriptions.Item>
                   <Descriptions.Item label="Thời gian">
                     <Tag color="orange">
-                      {dayjs(selectedSlot?.startTime).format('HH:mm')} - {dayjs(selectedSlot?.endTime).format('HH:mm')}
+                      {selectedSlotGroup?.displayTime}
                     </Tag>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Mã phiếu khám" span={2}>
+                  <Descriptions.Item label="Số slot đặt">
+                    <Tag color="purple">
+                      {selectedSlotGroup?.slots.length} slot × 15 phút = {selectedSlotGroup?.slots.length * 15} phút
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Mã phiếu khám">
                     <Text code>TT01</Text>
                   </Descriptions.Item>
                 </Descriptions>
@@ -298,17 +304,28 @@ const CreateAppointment = () => {
                 />
               </Form.Item>
 
-              {/* Total Amount */}
+              {/* Total Amount - 🆕 Show deposit amount */}
               <Alert
                 type="success"
                 showIcon
                 message={
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text strong>Tổng tiền:</Text>
+                    <Text strong>💰 Tiền cọc (phải thanh toán):</Text>
                     <Text strong style={{ fontSize: 20, color: '#2c5f4f' }}>
-                      {selectedServiceAddOn 
+                      {(selectedSlotGroup?.slots.length * 50000).toLocaleString('vi-VN')} VNĐ
+                    </Text>
+                  </div>
+                }
+                description={
+                  <div style={{ marginTop: 8 }}>
+                    <Text type="secondary">
+                      = 50,000 VNĐ/slot × {selectedSlotGroup?.slots.length} slot
+                    </Text>
+                    <br />
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      (Giá dịch vụ: {selectedServiceAddOn 
                         ? selectedServiceAddOn.price?.toLocaleString('vi-VN') 
-                        : selectedService?.price?.toLocaleString('vi-VN')} VNĐ
+                        : selectedService?.price?.toLocaleString('vi-VN')} VNĐ - thanh toán sau khi khám)
                     </Text>
                   </div>
                 }

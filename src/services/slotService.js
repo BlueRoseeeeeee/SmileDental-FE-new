@@ -160,15 +160,19 @@ const slotService = {
   },
 
   // 🆕 PATIENT BOOKING APIs
-  // Lấy danh sách nha sỹ có slot gần nhất (> currentTime + 30 phút)
-  getDentistsWithNearestSlot: async () => {
-    const response = await scheduleApi.get('/slot/dentists-with-nearest-slot');
+  // Lấy danh sách nha sỹ và slot gần nhất
+  getDentistsWithNearestSlot: async (serviceDuration = 15) => {
+    const response = await scheduleApi.get('/slot/dentists-with-nearest-slot', {
+      params: { serviceDuration }
+    });
     return response.data;
   },
 
   // Lấy danh sách ngày làm việc của nha sỹ trong maxBookingDays
-  getDentistWorkingDates: async (dentistId) => {
-    const response = await scheduleApi.get(`/slot/dentist/${dentistId}/working-dates`);
+  getDentistWorkingDates: async (dentistId, serviceDuration = 15) => {
+    const response = await scheduleApi.get(`/slot/dentist/${dentistId}/working-dates`, {
+      params: { serviceDuration }
+    });
     return response.data;
   }
 };

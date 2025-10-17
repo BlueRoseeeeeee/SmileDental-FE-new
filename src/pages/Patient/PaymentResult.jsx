@@ -2,14 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Result, Button, Card, Descriptions, Spin } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, WarningOutlined } from '@ant-design/icons';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import './PaymentResult.css';
 
 const PaymentResult = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   
-  const status = searchParams.get('status');
+  const payment = searchParams.get('payment'); // VNPay uses 'payment' param
+  const status = searchParams.get('status') || payment; // Support both params
   const orderId = searchParams.get('orderId');
   const code = searchParams.get('code');
   const message = searchParams.get('message');
@@ -21,19 +24,29 @@ const PaymentResult = () => {
     }, 1000);
   }, []);
 
+  // Determine appointments page based on user role
+  const getAppointmentsPath = () => {
+    if (user?.role === 'admin' || user?.role === 'manager') {
+      return '/patient-appointments'; // Admin appointments management page
+    }
+    return '/patient/appointments'; // Patient appointments page
+  };
+
   const getResultConfig = () => {
+    const appointmentsPath = getAppointmentsPath();
+    
     switch (status) {
       case 'success':
         return {
           status: 'success',
           icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
           title: 'Thanh toán thành công!',
-          subTitle: 'Cảm ơn bạn đã thanh toán. Lịch khám của bạn đã được xác nhận.',
+          subTitle: 'Cảm ơn bạn đã thanh toán. Lịch khám đã được xác nhận.',
           extra: [
-            <Button type="primary" key="appointments" onClick={() => navigate('/patient/appointments')}>
+            <Button type="primary" key="appointments" onClick={() => navigate(appointmentsPath)}>
               Xem lịch khám
             </Button>,
-            <Button key="home" onClick={() => navigate('/patient/dashboard')}>
+            <Button key="home" onClick={() => navigate(user?.role === 'patient' ? '/patient' : '/dashboard')}>
               Về trang chủ
             </Button>,
           ],

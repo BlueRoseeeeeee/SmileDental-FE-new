@@ -80,6 +80,11 @@ const DashboardLayout = () => {
           label: 'Quản lý nhân viên',
         },
         {
+          key: '/patient-appointments',
+          icon: <CalendarOutlined />,
+          label: 'Lịch khám bệnh nhân',
+        },
+        {
           key: '/rooms',
           icon: <EnvironmentOutlined />,
           label: 'Quản lý phòng khám',
