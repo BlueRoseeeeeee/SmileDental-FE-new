@@ -1,13 +1,12 @@
 /**
- * PublicServiceAddOnDetail.jsx
- * Trang chi tiết dịch vụ con (serviceAddOn)
+ * Trang chi tiết serviceAddOn cho khách hàng
  * @author: HoTram  
  */
 import React, { useState, useEffect } from 'react';
 import { 
-  Card, 
   Row, 
   Col, 
+  Card, 
   Typography, 
   Button, 
   Tag, 
@@ -18,11 +17,7 @@ import {
 } from 'antd';
 import { 
   ArrowLeftOutlined,
-  HomeOutlined,
   MedicineBoxOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   CalendarOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -39,26 +34,27 @@ const PublicServiceAddOnDetail = () => {
 
   useEffect(() => {
     if (serviceName && addOnName) {
-      fetchServiceDetails();
+      fetchServiceAddOnDetail();
     }
   }, [serviceName, addOnName]);
 
-  const fetchServiceDetails = async () => {
+  const fetchServiceAddOnDetail = async () => {
     setLoading(true);
     try {
-      // Tìm service theo tên để lấy ID
-      const servicesResponse = await servicesService.getServices(1, 100);
-      const foundService = servicesResponse.services?.find(s => s.name === decodeURIComponent(serviceName));
+      // Tìm service theo tên
+      const response = await servicesService.getServices(1, 100);
+      const foundService = response.services?.find(s => s.name === decodeURIComponent(serviceName));
       
       if (foundService) {
         setService(foundService);
         
-        // Tìm addOn theo tên để lấy ID
-        const foundAddOn = foundService.serviceAddOns?.find(a => a.name === decodeURIComponent(addOnName));
+        // Tìm addOn theo tên
+        const foundAddOn = foundService.serviceAddOns?.find(
+          addon => addon.name === decodeURIComponent(addOnName)
+        );
+        
         if (foundAddOn) {
-          // Sử dụng API chi tiết để lấy thông tin addOn
-          const addOnResponse = await servicesService.getServiceAddOnById(foundService._id, foundAddOn._id);
-          setAddOn(addOnResponse.addOn);
+          setAddOn(foundAddOn);
         } else {
           navigate('/');
         }
@@ -66,7 +62,7 @@ const PublicServiceAddOnDetail = () => {
         navigate('/');
       }
     } catch (error) {
-      console.error('Error fetching service details:', error);
+      console.error('Error fetching service add-on detail:', error);
       navigate('/');
     } finally {
       setLoading(false);
@@ -84,7 +80,7 @@ const PublicServiceAddOnDetail = () => {
 
   // Format giá tiền
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + '₫';
+    return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
   };
 
   // Breadcrumb items
@@ -105,13 +101,13 @@ const PublicServiceAddOnDetail = () => {
     },
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(`/services/pl/${encodeURIComponent(service?.name || '')}/addons`)}>
+        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(`/services/pl/${encodeURIComponent(service?.name || '')}`)}>
           {service?.name || 'Dịch vụ'}
         </span>
       ),
     },
     {
-      title: addOn?.name || 'Chi tiết dịch vụ',
+      title: addOn?.name || 'Chi tiết',
     },
   ];
 
@@ -133,10 +129,10 @@ const PublicServiceAddOnDetail = () => {
       <div style={{ 
         textAlign: 'center', 
         padding: '40px',
-        backgroundColor: 'white',
+        backgroundColor: '#f5f5f5',
         minHeight: '100vh'
       }}>
-        <Text type="secondary">Không tìm thấy dịch vụ</Text>
+        <Text type="secondary">Không tìm thấy thông tin dịch vụ</Text>
         <br />
         <Button onClick={() => navigate('/')} style={{ marginTop: 16 }}>
           Về trang chủ
@@ -160,173 +156,241 @@ const PublicServiceAddOnDetail = () => {
       />
 
       {/* Back Button */}
-      <Button 
-        icon={<ArrowLeftOutlined />} 
-        onClick={() => navigate(-1)}
-        style={{ marginBottom: 24 }}
-      >
-        Quay lại danh sách
-      </Button>
+      <div style={{ marginBottom: '24px' }}>
+        <Button 
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate(`/services/pl/${encodeURIComponent(service.name)}`)}
+          style={{
+            border: '1px solid #d9d9d9',
+            borderRadius: '8px',
+            height: '40px',
+            padding: '0 16px'
+          }}
+        >
+          Quay lại danh sách
+        </Button>
+      </div>
 
-      <Row gutter={[32, 32]} align="stretch">
-        {/* Service Image */}
-        <Col xs={24} lg={8}>
-          <Card
-            style={{
-              borderRadius: '12px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              border: 'none',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-            bodyStyle={{ 
-              padding: '20px',
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div style={{
-              height: '100%',
-              backgroundColor: '#fafafa',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '8px'
-            }}>
+      {/* Service Name */}
+      <div style={{ marginBottom: '16px' }}>
+        <h1 style={{
+         color: '#313b79',
+         fontSize: '2.4rem',
+         fontStyle: 'normal',
+         fontWeight: 600,
+         overflow: 'hidden',
+         margin: 0
+        }}>{addOn.name}</h1>
+      </div>
+
+      {/* Main Content */}
+      <Row gutter={[32, 32]}>
+        {/* Left Column - Image */}
+        <Col xs={24} lg={14}>
+          <div style={{
+            height: '500px',
+            backgroundColor: '#fafafa',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            position: 'relative',
+            border: '1px solid #e8e8e8'
+          }}>
+            {addOn.imageUrl ? (
+              <img 
+                src={addOn.imageUrl} 
+                alt={addOn.name}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '12px'
+                }}
+              />
+            ) : (
               <MedicineBoxOutlined 
                 style={{ 
-                  fontSize: '80px', 
+                  fontSize: '120px', 
                   color: '#d9d9d9',
                   opacity: 0.6
                 }} 
               />
-            </div>
-          </Card>
+            )}
+          </div>
         </Col>
 
-        {/* Service Information */}
-        <Col xs={24} lg={16}>
-          <Card
-            style={{
+        {/* Right Column - Service Info */}
+        <Col xs={24} lg={10}>
+          <div style={{ padding: '0 16px' }}>
+            {/* Price Box */}
+            <div style={{
+              backgroundColor: '#f8f9fa',
+              border: '1px solid #e8e8e8',
               borderRadius: '12px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              border: 'none',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-            bodyStyle={{ 
-              padding: '24px',
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}
-          >
-            <div style={{ flex: 1 }}>
-              {/* Service Name */}
-              <Title level={2} style={{ 
-                marginBottom: '16px',
-                color: '#262626'
+              padding: '10px',
+              marginBottom: '24px',
+              position: 'relative'
+            }}>
+              {/* Orange Banner */}
+              <div style={{
+                backgroundColor: '#ff6b35',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: '600',
+                display: 'inline-block',
+                marginBottom: '16px'
               }}>
-                {addOn.name}
-              </Title>
-
+                Giá dịch vụ
+              </div>
+              
               {/* Price */}
-              <div style={{ marginBottom: '24px' }}>
-                <Text style={{ 
-                  color: '#52c41a', 
-                  fontSize: '28px',
-                  fontWeight: 'bold'
+              <div style={{ marginBottom: '8px' }}>
+                <span style={{ 
+                  color: '#313B79',
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  lineHeight: '28px'
                 }}>
-                  {formatPrice(addOn.price)}
+                  {formatPrice(addOn.price || 0)}
+                </span>
+              </div>
+              
+            </div>
+
+            {/* Service Details */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <Text style={{ color: '#262626', fontSize: '16px', fontWeight: 'bold' }}>
+                  Đơn vị: <Text style={{ color: '#666', fontWeight: 'normal' }}>{addOn.unit || 'N/A'}</Text>
                 </Text>
               </div>
-
-              {/* Service Details */}
-              <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-                <Col span={12}>
-                  <div>
-                    <Text type="secondary">Thời gian thực hiện:</Text>
-                    <div style={{ marginTop: 4 }}>
-                      <Tag color="blue" style={{ fontSize: 14 }}>
-                        <ClockCircleOutlined /> {service.durationMinutes} phút
-                      </Tag>
-                    </div>
-                  </div>
-                </Col>
-                <Col span={12}>
-                  <div>
-                    <Text type="secondary">Yêu cầu khám trước:</Text>
-                    <div style={{ marginTop: 4 }}>
-                      {service.requireExamFirst ? (
-                        <Tag color="orange" style={{ fontSize: 14 }}>
-                          <CheckCircleOutlined /> Cần khám trước
-                        </Tag>
-                      ) : (
-                        <Tag color="green" style={{ fontSize: 14 }}>
-                          <CloseCircleOutlined /> Không cần khám trước
-                        </Tag>
-                      )}
-                    </div>
-                  </div>
-                </Col>
-              </Row>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <Text style={{ color: '#262626', fontSize: '16px', fontWeight: 'bold' }}>
+                  Thời gian: <Text style={{ color: '#666', fontWeight: 'normal' }}>{addOn.durationMinutes || 0} phút</Text>
+                </Text>
+              </div>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <Text style={{ color: '#262626', fontSize: '16px', fontWeight: 'bold' }}>
+                  Loại dịch vụ: <Text style={{ color: '#666', fontWeight: 'normal' }}>{translateServiceType(service.type)}</Text>
+                </Text>
+              </div>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <Text style={{ color: '#262626', fontSize: '16px', fontWeight: 'bold' }}>
+                  Yêu cầu khám trước: <Text style={{ color: '#666', fontWeight: 'normal' }}>{service.requireExamFirst ? 'Cần khám trước' : 'Không cần khám trước'}</Text>
+                </Text>
+              </div>
+              
             </div>
 
-            <div>
-              <Divider />
-
-              {/* Action Button */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              
+              {/* Book Button */}
               <Button
-                type="primary"
                 size="large"
-                icon={<CalendarOutlined />}
                 style={{
-                  height: '48px',
-                  padding: '0 32px',
-                  fontSize: '16px',
-                  borderRadius: '8px',
-                  backgroundColor: '#1890ff',
-                  borderColor: '#1890ff',
-                  fontWeight: '600',
-                  width: '100%'
+                  width: '100%',
+                  height: '60px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(90deg, rgb(49, 59, 121) 0%, rgb(69, 79, 141) 50%, rgb(49, 59, 121) 100%)',
+                  backgroundSize: '300% 100%',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '18px',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 6px 20px rgba(49, 59, 121, 0.4)',
+                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  padding: '20px 32px'
                 }}
-                onClick={() => {
-                  // Có thể chuyển đến trang đặt lịch
-                  console.log('Book appointment for:', addOn.name);
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-4px) scale(1.02)';
+                  e.target.style.boxShadow = '0 12px 30px rgba(49, 59, 121, 0.6)';
+                  e.target.style.backgroundPosition = '100% 0';
+                  e.target.style.filter = 'brightness(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0) scale(1)';
+                  e.target.style.boxShadow = '0 6px 20px rgba(49, 59, 121, 0.4)';
+                  e.target.style.backgroundPosition = '0% 0';
+                  e.target.style.filter = 'brightness(1)';
+                }}
+                onClick={(e) => {
+                  // Hiệu ứng click - gradient chạy nhanh
+                  e.target.style.backgroundPosition = '100% 0';
+                  setTimeout(() => {
+                    e.target.style.backgroundPosition = '0% 0';
+                  }, 300);
                 }}
               >
-                Đặt lịch ngay
+                <span style={{ 
+                  position: 'relative', 
+                  zIndex: 2,
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <CalendarOutlined />
+                  Đặt lịch ngay
+                </span>
               </Button>
             </div>
-          </Card>
+          </div>
         </Col>
       </Row>
 
-      {/* Service Description Section */}
+      {/* Description Section */}
       {addOn.description && (
-        <Card
-          style={{
-            marginTop: '32px',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            border: 'none'
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
+        <div style={{ marginTop: '48px' }}>
+          {/* Description Title */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            marginBottom: '24px'
+          }}>
+            <div style={{
+              width: '4px',
+              height: '24px',
+              backgroundColor: '#1890ff',
+              marginRight: '12px',
+              borderRadius: '2px'
+            }} />
+            <h2 style={{
+              margin: 0,
+              color: '#1890ff',
+              fontSize: '20px',
+              fontWeight: 'bold'
+            }}>
+              Mô tả
+            </h2>
+          </div>
+          
           <div 
-            style={{ 
-              color: '#666',
-              lineHeight: '1.6',
-              fontSize: '16px'
+            style={{
+              fontSize: '16px',
+              lineHeight: '1.8',
+              color: '#262626'
             }}
-            dangerouslySetInnerHTML={{ __html: addOn.description }}
+            dangerouslySetInnerHTML={{
+              __html: addOn.description
+            }}
           />
-        </Card>
+        </div>
       )}
     </div>
   );
