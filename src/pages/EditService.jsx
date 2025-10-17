@@ -104,7 +104,6 @@ const EditService = () => {
         form.setFieldsValue({
           name: response.name,
           type: response.type,
-          duration: response.durationMinutes,
           requireExamFirst: response.requireExamFirst
         });
         setServiceDescription(response.description || '');
@@ -170,7 +169,6 @@ const EditService = () => {
       const updateData = {
         name: values.name,
         type: values.type,
-        duration: values.duration,
         description: serviceDescription,
         requireExamFirst: values.requireExamFirst
       };
@@ -324,7 +322,6 @@ const EditService = () => {
           initialValues={{
             name: service?.name,
             type: service?.type,
-            duration: service?.durationMinutes,
             requireExamFirst: service?.requireExamFirst
           }}
         >
@@ -357,24 +354,8 @@ const EditService = () => {
           </Row>
 
           <Row gutter={[16, 16]}>
-            {/* Row 2: Thời gian + Yêu cầu khám trước */}
-            <Col span={12}>
-              <Form.Item
-                name="duration"
-                label="Thời gian thực hiện ước tính (phút)"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập thời gian' },
-                  { type: 'number', min: 1, message: 'Thời gian phải lớn hơn 0' }
-                ]}
-              >
-                <InputNumber
-                  placeholder="Nhập thời gian"
-                  style={{ width: '100%' }}
-                  min={1}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
+            {/* Row 2: Yêu cầu khám trước - Full width */}
+            <Col span={24}>
               <Form.Item
                 name="requireExamFirst"
                 label="Yêu cầu khám trước"
@@ -455,6 +436,22 @@ const EditService = () => {
                   <Text strong style={{ color: '#52c41a' }}>
                     {new Intl.NumberFormat('vi-VN').format(price)}đ
                   </Text>
+                ),
+              },
+              {
+                title: 'Thời gian',
+                dataIndex: 'durationMinutes',
+                key: 'durationMinutes',
+                render: (duration) => (
+                  <Text>{duration} phút</Text>
+                ),
+              },
+              {
+                title: 'Đơn vị',
+                dataIndex: 'unit',
+                key: 'unit',
+                render: (unit) => (
+                  <Tag color="blue">{unit}</Tag>
                 ),
               },
               {
