@@ -43,7 +43,7 @@ const AddService = () => {
   const [serviceDescription, setServiceDescription] = useState('');
   const [showDescriptionEditor, setShowDescriptionEditor] = useState(false);
   const [serviceAddOns, setServiceAddOns] = useState([
-    { name: '', price: 0, description: '', isActive: true, showEditor: false }
+    { name: '', price: 0, durationMinutes: 30, description: '', unit: 'Răng', isActive: true, showEditor: false }
   ]);
 
   // Handle form submit
@@ -52,26 +52,27 @@ const AddService = () => {
       const values = await form.validateFields();
       setSubmitLoading(true);
 
-      // Filter valid add-ons (có ít nhất name và price)
+      // Filter valid add-ons (có ít nhất name, price, durationMinutes và unit)
       const validAddOns = serviceAddOns.filter(addon => 
-        addon.name && addon.name.trim() && addon.price > 0
+        addon.name && addon.name.trim() && addon.price > 0 && addon.durationMinutes > 0 && addon.unit && addon.unit.trim()
       );
       
       if (validAddOns.length === 0) {
-        toastService.error('Vui lòng thêm ít nhất 1 tùy chọn dịch vụ!');
+        toastService.error('Vui lòng thêm ít nhất 1 tùy chọn dịch vụ với đầy đủ thông tin (tên, giá, thời gian, đơn vị)!');
         return;
       }
 
       const serviceData = {
         name: values.name,
-        durationMinutes: values.durationMinutes,
         type: values.type,
         description: serviceDescription,
         requireExamFirst: values.requireExamFirst || false,
         serviceAddOns: validAddOns.map(addon => ({
           name: addon.name.trim(),
           price: addon.price,
+          durationMinutes: addon.durationMinutes,
           description: addon.description || '', // Cho phép description rỗng
+          unit: addon.unit.trim(),
           isActive: addon.isActive !== false
         }))
       };
@@ -107,7 +108,7 @@ const AddService = () => {
 
   // Add new addon
   const addServiceAddOn = () => {
-    setServiceAddOns([...serviceAddOns, { name: '', price: 0, description: '', isActive: true, showEditor: false }]);
+    setServiceAddOns([...serviceAddOns, { name: '', price: 0, durationMinutes: 30, description: '', unit: 'Răng', isActive: true, showEditor: false }]);
     // Scroll to the new addon after a short delay
     setTimeout(() => {
       const addonCards = document.querySelectorAll('[data-addon-card]');
@@ -240,29 +241,6 @@ const AddService = () => {
                 </Col>
                 <Col span={12}>
                   <Form.Item
-                    name="durationMinutes"
-                    label="Thời gian (phút)"
-                    rules={[
-                      { required: true, message: 'Vui lòng nhập thời gian!' },
-                      { type: 'number', min: 1, message: 'Thời gian phải lớn hơn 0!' }
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ 
-                        width: '100%',
-                        borderRadius: '8px'
-                      }}
-                      size="large"
-                      min={1}
-                      addonAfter="phút"
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
                     name="type"
                     label="Loại dịch vụ"
                     rules={[
@@ -277,7 +255,10 @@ const AddService = () => {
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={24}>
                   <Form.Item
                     name="requireExamFirst"
                     label="Yêu cầu khám trước"
@@ -459,7 +440,7 @@ const AddService = () => {
                     </div>
 
                     <Row gutter={[16, 16]}>
-                      <Col xs={24} md={12}>
+                      <Col xs={24} sm={12} md={9}>
                         <div style={{ marginBottom: '8px' }}>
                           <Text strong style={{ color: '#262626' }}>Tên tùy chọn *</Text>
                         </div>
@@ -473,7 +454,7 @@ const AddService = () => {
                          />
                       </Col>
                       
-                      <Col xs={24} md={12}>
+                      <Col xs={24} sm={12} md={5}>
                         <div style={{ marginBottom: '8px' }}>
                           <Text strong style={{ color: '#262626' }}>Giá (VNĐ) *</Text>
                         </div>
@@ -491,6 +472,46 @@ const AddService = () => {
                            size="large"
                            addonAfter="VNĐ"
                          />
+                      </Col>
+
+                      <Col xs={24} sm={12} md={5}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ color: '#262626' }}>Thời gian (phút) *</Text>
+                        </div>
+                         <InputNumber
+                           style={{ 
+                             width: '100%',
+                             borderRadius: '8px'
+                           }}
+                           placeholder="30"
+                           value={addon.durationMinutes}
+                           onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
+                           min={1}
+                           size="large"
+                           addonAfter="phút"
+                         />
+                      </Col>
+
+                      <Col xs={24} sm={12} md={5}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ color: '#262626' }}>Đơn vị *</Text>
+                        </div>
+                         <Select
+                           value={addon.unit}
+                           onChange={(value) => updateServiceAddOn(index, 'unit', value)}
+                           size="large"
+                           style={{
+                             width: '100%',
+                             borderRadius: '8px'
+                           }}
+                           placeholder="Chọn đơn vị"
+                         >
+                           <Option value="Răng">Răng</Option>
+                           <Option value="Hàm">Hàm</Option>
+                           <Option value="Trụ">Trụ</Option>
+                           <Option value="Cái">Cái</Option>
+                           <Option value="Lần">Lần</Option>
+                         </Select>
                       </Col>
                     </Row>
 
