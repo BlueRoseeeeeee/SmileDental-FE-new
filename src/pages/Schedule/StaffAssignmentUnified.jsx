@@ -1117,7 +1117,7 @@ const StaffAssignmentUnified = () => {
     } else if (activeTab === 'staff-based') {
       fetchAllStaff();
     }
-  }, [roomActiveFilter, scheduleStatusFilter, activeTab, staffAssignmentFilter, staffRoleFilter]);
+  }, [roomActiveFilter, scheduleStatusFilter, activeTab, staffAssignmentFilter, staffRoleFilter, roomSearchTerm]); // 🔥 Add roomSearchTerm
 
   useEffect(() => {
     if (roomCalendarData?.shiftOverview) {
@@ -1198,7 +1198,12 @@ const StaffAssignmentUnified = () => {
   const fetchRooms = async () => {
     setLoading(true);
     try {
+      // 🔥 When searching, fetch ALL rooms to enable search across all data
+      const shouldFetchAll = roomSearchTerm.trim() !== '';
+      
       const response = await roomService.getRoomsForSchedule({
+        page: 1,
+        limit: shouldFetchAll ? 9999 : 20, // Fetch all when searching
         isActive: roomActiveFilter !== 'all' ? roomActiveFilter : undefined
       });
 

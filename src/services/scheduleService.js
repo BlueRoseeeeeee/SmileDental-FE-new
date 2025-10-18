@@ -285,6 +285,48 @@ const scheduleService = {
       }
       throw error;
     }
+  },
+
+  // 🆕 BULK OPERATIONS - Lấy thông tin lịch của nhiều phòng cùng lúc
+  getBulkRoomSchedulesInfo: async ({ roomIds, fromMonth, toMonth, fromYear, toYear }) => {
+    try {
+      const response = await scheduleApi.get('/schedule/rooms/bulk-shifts', {
+        params: {
+          roomIds: roomIds.join(','), // Convert array to comma-separated string
+          fromMonth,
+          toMonth,
+          fromYear,
+          toYear
+        }
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  //  BULK OPERATIONS - Tạo lịch cho nhiều phòng cùng lúc
+  generateBulkRoomSchedules: async ({ roomIds, fromMonth, toMonth, fromYear, toYear, startDate, shifts }) => {
+    try {
+      const response = await scheduleApi.post('/schedule/rooms/bulk-generate', {
+        roomIds,
+        fromMonth,
+        toMonth,
+        fromYear,
+        toYear,
+        startDate,
+        shifts
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   }
 };
 

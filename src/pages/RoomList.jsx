@@ -94,13 +94,19 @@ const RoomList = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [pagination.current, pagination.pageSize]); // Chỉ chạy khi trang hoặc kích thước trang thay đổi
+  }, [pagination.current, pagination.pageSize, searchTerm, statusFilter, typeFilter]); // 🔥 Add all filter dependencies
 
 
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      const response = await roomService.getRooms(pagination.current, pagination.pageSize);
+      // 🔥 When searching or filtering, fetch ALL rooms to enable search across all pages
+      const shouldFetchAll = searchTerm.trim() !== '' || statusFilter !== '' || typeFilter !== '';
+      
+      const response = await roomService.getRooms(
+        shouldFetchAll ? 1 : pagination.current, 
+        shouldFetchAll ? 9999 : pagination.pageSize
+      );
       
       setRooms(response.rooms || []);
       setPagination(prev => ({
@@ -418,6 +424,7 @@ const RoomList = () => {
                 current: page,
                 pageSize: pageSize || 10
               }));
+              fetchRooms(); // 🔥 This will be triggered by useEffect dependency
             }
           }}
         />

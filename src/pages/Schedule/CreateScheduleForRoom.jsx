@@ -29,7 +29,8 @@ import {
   ReloadOutlined,
   ArrowLeftOutlined,
   PlusOutlined,
-  SearchOutlined
+  SearchOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../../services/toastService';
@@ -39,6 +40,8 @@ import scheduleConfigService from '../../services/scheduleConfigService';
 import dayjs from 'dayjs';
 import { debounce } from '../../utils/searchUtils';
 import EditScheduleModal from '../../components/Schedule/EditScheduleModal';
+import BulkRoomScheduleModal from '../../components/Schedule/BulkRoomScheduleModal';
+import BulkCreateScheduleModal from '../../components/Schedule/BulkCreateScheduleModal';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -178,6 +181,16 @@ const CreateScheduleForRoom = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
 
+  // 🆕 Bulk operations - Tạo lịch cho nhiều phòng
+  const [selectedRoomIds, setSelectedRoomIds] = useState([]); // Array of room IDs for bulk operations
+  const [selectedRooms, setSelectedRooms] = useState([]); // 🆕 Array of full room objects (for modal display)
+  const [selectedRoomsMap, setSelectedRoomsMap] = useState({}); // 🆕 Map { roomId: roomObject } để giữ thông tin phòng khi chuyển trang
+  const [showBulkScheduleModal, setShowBulkScheduleModal] = useState(false);
+  const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
+  const [bulkSchedulesData, setBulkSchedulesData] = useState({}); // { roomId: scheduleData }
+  const [bulkSelectionMode, setBulkSelectionMode] = useState(false); // 🆕 Bật/tắt chế độ chọn nhiều
+  const [isViewingAllRooms, setIsViewingAllRooms] = useState(false); // 🆕 Flag để phân biệt xem tất cả vs xem các phòng đã chọn
+
   const loadScheduleConfig = useCallback(async () => {
     setConfigLoading(true);
     try {
@@ -253,7 +266,7 @@ const CreateScheduleForRoom = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [pagination.current, pagination.pageSize, roomActiveFilter, scheduleStatusFilter]); // Add roomActiveFilter
+  }, [pagination.current, pagination.pageSize, roomActiveFilter, scheduleStatusFilter, roomSearchTerm]); // 🔥 Add roomSearchTerm to trigger search
 
   const debouncedRoomSearch = useMemo(() => debounce((value) => {
     setRoomSearchTerm(value.trim().toLowerCase());
@@ -284,9 +297,12 @@ const CreateScheduleForRoom = () => {
   const fetchRooms = async () => {
     setLoading(true);
     try {
+      // 🔥 When searching, fetch ALL rooms to enable search across all pages
+      const shouldFetchAll = roomSearchTerm.trim() !== '';
+      
       const response = await roomService.getRoomsForSchedule({
-        page: pagination.current,
-        limit: pagination.pageSize,
+        page: shouldFetchAll ? 1 : pagination.current,
+        limit: shouldFetchAll ? 9999 : pagination.pageSize, // Fetch all when searching
         isActive: roomActiveFilter !== 'all' ? roomActiveFilter : undefined
       });
 
@@ -1296,8 +1312,150 @@ const CreateScheduleForRoom = () => {
     return false;
   };
 
+  // 🆕 Handle view bulk schedules
+  const handleViewBulkSchedules = async () => {
+    if (selectedRoomIds.length === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 phòng');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const schedulesData = {};
+      
+      // Fetch schedules cho từng phòng
+      for (const roomId of selectedRoomIds) {
+        const response = await scheduleService.getRoomSchedulesWithShifts(roomId);
+        if (response.success) {
+          schedulesData[roomId] = response.data;
+        }
+      }
+
+      // 🔥 Lấy thông tin đầy đủ của các phòng đã chọn từ selectedRoomsMap
+      const roomsToShow = selectedRoomIds
+        .map(id => selectedRoomsMap[id])
+        .filter(room => room !== undefined); // Filter out any missing rooms
+
+      setSelectedRooms(roomsToShow);
+      setBulkSchedulesData(schedulesData);
+      setIsViewingAllRooms(false); // 🆕 Đang xem các phòng đã chọn
+      setShowBulkScheduleModal(true);
+    } catch (error) {
+      console.error('Error fetching bulk schedules:', error);
+      toast.error('Lỗi khi lấy thông tin lịch');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🆕 Handle view ALL rooms schedules (lấy TẤT CẢ phòng từ BE, không phụ thuộc filter UI)
+  const handleViewAllRoomsSchedules = async () => {
+    setLoading(true);
+    try {
+      // 🔥 Gọi API để lấy TẤT CẢ phòng từ BE (không giới hạn bởi filter UI)
+      const allRoomsResponse = await roomService.getRooms(1, 1000); // Lấy max 1000 phòng
+      
+      // 🔧 FIX: getRooms() trả về trực tiếp { total, page, rooms }, không có wrapper success
+      if (!allRoomsResponse?.rooms || !Array.isArray(allRoomsResponse.rooms)) {
+        toast.error('Không thể lấy danh sách phòng');
+        return;
+      }
+
+      const allRooms = allRoomsResponse.rooms;
+      console.log(`📋 Fetched ${allRooms.length} rooms from BE for viewing all schedules`);
+      
+      const schedulesData = {};
+      
+      // Fetch schedules cho TẤT CẢ các phòng từ BE
+      for (const room of allRooms) {
+        const response = await scheduleService.getRoomSchedulesWithShifts(room._id);
+        if (response.success) {
+          schedulesData[room._id] = response.data;
+        }
+      }
+
+      // 🔥 Set selectedRooms để modal biết danh sách phòng
+      setSelectedRooms(allRooms);
+      setBulkSchedulesData(schedulesData);
+      setIsViewingAllRooms(true); // 🆕 Đang xem tất cả phòng
+      setShowBulkScheduleModal(true);
+    } catch (error) {
+      console.error('Error fetching all rooms schedules:', error);
+      toast.error('Lỗi khi lấy thông tin lịch');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🆕 Handle bulk create success
+  const handleBulkCreateSuccess = () => {
+    fetchRooms(); // Refresh rooms list
+    setSelectedRoomIds([]); // Clear selection
+  };
+
   // Table columns
   const columns = [
+    // 🆕 Checkbox column - chỉ hiển thị khi bật bulk selection mode
+    ...(bulkSelectionMode ? [{
+      title: (
+        <Checkbox
+          checked={
+            filteredRooms.length > 0 && 
+            filteredRooms.every(room => selectedRoomIds.includes(room._id))
+          }
+          indeterminate={
+            filteredRooms.some(room => selectedRoomIds.includes(room._id)) &&
+            !filteredRooms.every(room => selectedRoomIds.includes(room._id))
+          }
+          onChange={(e) => {
+            if (e.target.checked) {
+              // Thêm tất cả phòng của page hiện tại vào selection (không xóa phòng đã chọn từ page khác)
+              const currentPageRoomIds = filteredRooms.map(r => r._id);
+              const newSelection = [...new Set([...selectedRoomIds, ...currentPageRoomIds])];
+              setSelectedRoomIds(newSelection);
+              
+              // 🔥 Cập nhật selectedRoomsMap để giữ thông tin phòng
+              const newMap = { ...selectedRoomsMap };
+              filteredRooms.forEach(room => {
+                newMap[room._id] = room;
+              });
+              setSelectedRoomsMap(newMap);
+            } else {
+              // Bỏ chọn tất cả phòng của page hiện tại (giữ lại phòng đã chọn từ page khác)
+              const currentPageRoomIds = filteredRooms.map(r => r._id);
+              setSelectedRoomIds(selectedRoomIds.filter(id => !currentPageRoomIds.includes(id)));
+              
+              // 🔥 Xóa khỏi map
+              const newMap = { ...selectedRoomsMap };
+              currentPageRoomIds.forEach(id => {
+                delete newMap[id];
+              });
+              setSelectedRoomsMap(newMap);
+            }
+          }}
+        />
+      ),
+      key: 'checkbox',
+      width: 50,
+      render: (_, record) => (
+        <Checkbox
+          checked={selectedRoomIds.includes(record._id)}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSelectedRoomIds([...selectedRoomIds, record._id]);
+              // 🔥 Lưu room object vào map
+              setSelectedRoomsMap({ ...selectedRoomsMap, [record._id]: record });
+            } else {
+              setSelectedRoomIds(selectedRoomIds.filter(id => id !== record._id));
+              // 🔥 Xóa khỏi map
+              const newMap = { ...selectedRoomsMap };
+              delete newMap[record._id];
+              setSelectedRoomsMap(newMap);
+            }
+          }}
+        />
+      )
+    }] : []),
     {
       title: 'Tên phòng',
       dataIndex: 'name',
@@ -1375,19 +1533,34 @@ const CreateScheduleForRoom = () => {
       title: 'Hành động',
       key: 'action',
       width: 250,
+      fixed: 'right', // 🔥 Fix để button luôn hiển thị ở bên phải
       render: (_, record) => {
-        const isDisabled = !record.isActive;
+        const isDisabled = !record.isActive || bulkSelectionMode; // 🔥 Disable khi đang ở bulk mode
+        
+        // 🔥 Thông báo rõ ràng khi đang ở bulk mode
+        const tooltipTitle = bulkSelectionMode 
+          ? "Đang ở chế độ chọn nhiều phòng. Vui lòng tắt chế độ này để tạo lịch cho từng phòng riêng lẻ."
+          : (isDisabled ? "Phòng không hoạt động, không thể tạo lịch" : "");
         
         if (!record.hasSubRooms) {
           // Phòng không có buồng
           return (
-            <Tooltip title={isDisabled ? "Phòng không hoạt động, không thể tạo lịch" : ""}>
+            <Tooltip title={tooltipTitle}>
               <Button
                 type="primary"
                 icon={<CalendarOutlined />}
-                onClick={() => handleCreateSchedule(record)}
+                onClick={(e) => {
+                  e.stopPropagation(); // 🔥 Prevent event bubbling
+                  if (!bulkSelectionMode) {
+                    handleCreateSchedule(record);
+                  }
+                }}
                 disabled={isDisabled}
                 block
+                style={{ 
+                  pointerEvents: isDisabled ? 'none' : 'auto',
+                  opacity: bulkSelectionMode ? 0.5 : 1 // 🔥 Visual feedback
+                }}
               >
                 {record.hasBeenUsed ? 'Xem & tạo lịch' : 'Tạo lịch mới'}
               </Button>
@@ -1396,13 +1569,22 @@ const CreateScheduleForRoom = () => {
         } else {
           // Phòng có buồng - click để xem tất cả buồng
           return (
-            <Tooltip title={isDisabled ? "Phòng không hoạt động, không thể tạo lịch" : ""}>
+            <Tooltip title={tooltipTitle}>
               <Button
                 type="primary"
                 icon={<CalendarOutlined />}
-                onClick={() => handleCreateSchedule(record)}
+                onClick={(e) => {
+                  e.stopPropagation(); // 🔥 Prevent event bubbling
+                  if (!bulkSelectionMode) {
+                    handleCreateSchedule(record);
+                  }
+                }}
                 disabled={isDisabled}
                 block
+                style={{ 
+                  pointerEvents: isDisabled ? 'none' : 'auto',
+                  opacity: bulkSelectionMode ? 0.5 : 1 // 🔥 Visual feedback
+                }}
               >
                 {record.hasBeenUsed ? 'Xem & tạo lịch' : 'Tạo lịch'} ({record.subRooms?.length || 0} buồng)
               </Button>
@@ -1482,6 +1664,142 @@ const CreateScheduleForRoom = () => {
         </Col>
       </Row>
 
+      {/* 🆕 Bulk Operations - Multi-select rooms */}
+      <Card style={{ marginBottom: 16, background: '#f0f5ff', borderColor: '#adc6ff' }}>
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+              <CalendarOutlined /> Tạo lịch hàng loạt cho nhiều phòng
+            </Text>
+            <Space>
+              <Button
+                icon={<EyeOutlined />}
+                onClick={handleViewAllRoomsSchedules}
+                loading={loading}
+              >
+                Xem tất cả lịch các phòng
+              </Button>
+              <Button
+                type={bulkSelectionMode ? 'primary' : 'default'}
+                icon={bulkSelectionMode ? <CheckCircleOutlined /> : <PlusOutlined />}
+                onClick={() => {
+                  setBulkSelectionMode(!bulkSelectionMode);
+                  if (bulkSelectionMode) {
+                    // Tắt mode → Clear selections
+                    setSelectedRoomIds([]);
+                    setSelectedRoomsMap({}); // 🔥 Clear map
+                  }
+                }}
+              >
+                {bulkSelectionMode ? 'Đang chọn nhiều phòng' : 'Bật chọn nhiều phòng'}
+              </Button>
+            </Space>
+          </div>
+          
+          {bulkSelectionMode && (
+            <>
+              <Alert
+                type="info"
+                showIcon
+                message="Chế độ chọn nhiều phòng đã bật"
+                description="Bạn có thể chọn phòng bằng cách: (1) Tick vào checkbox bên trái mỗi phòng trong bảng, hoặc (2) Chọn trong ô tìm kiếm bên dưới"
+                closable
+              />
+              
+              <Select
+                mode="multiple"
+                style={{ width: '100%' }}
+                placeholder="🔍 Tìm và chọn các phòng cần tạo lịch..."
+                filterOption={(input, option) => {
+                  // 🔥 Tìm trong cả filteredRooms VÀ selectedRoomsMap
+                  let room = filteredRooms.find(r => r._id === option.value);
+                  if (!room) {
+                    room = selectedRoomsMap[option.value];
+                  }
+                  if (!room) return false;
+                  
+                  const searchText = input.toLowerCase();
+                  return (
+                    room.name?.toLowerCase().includes(searchText) ||
+                    room.roomNumber?.toLowerCase().includes(searchText) ||
+                    room.description?.toLowerCase().includes(searchText)
+                  );
+                }}
+                value={selectedRoomIds}
+                onChange={(newIds) => {
+                  setSelectedRoomIds(newIds);
+                  // 🔥 Khi bỏ chọn từ Select, cũng xóa khỏi map
+                  const removedIds = selectedRoomIds.filter(id => !newIds.includes(id));
+                  if (removedIds.length > 0) {
+                    const newMap = { ...selectedRoomsMap };
+                    removedIds.forEach(id => {
+                      delete newMap[id];
+                    });
+                    setSelectedRoomsMap(newMap);
+                  }
+                }}
+                maxTagCount="responsive"
+              >
+                {/* 🔥 Hiển thị cả phòng của page hiện tại VÀ các phòng đã chọn từ page khác */}
+                {Array.from(new Set([
+                  ...filteredRooms.map(r => r._id),
+                  ...Object.keys(selectedRoomsMap)
+                ])).map(roomId => {
+                  const room = filteredRooms.find(r => r._id === roomId) || selectedRoomsMap[roomId];
+                  if (!room) return null;
+                  
+                  return (
+                    <Option key={room._id} value={room._id}>
+                      <Space>
+                        <Text strong>{room.name}</Text>
+                        {room.roomNumber && (
+                          <Text type="secondary">({room.roomNumber})</Text>
+                        )}
+                        {room.hasSubRooms && (
+                          <Tag color="blue" style={{ fontSize: 11 }}>
+                            {room.subRooms?.length || 0} buồng
+                          </Tag>
+                        )}
+                      </Space>
+                    </Option>
+                  );
+                })}
+              </Select>
+
+              {selectedRoomIds.length > 0 && (
+                <div>
+                  <Space wrap>
+                    <Tag color="blue" icon={<CheckCircleOutlined />} style={{ fontSize: 14, padding: '4px 12px' }}>
+                      {selectedRoomIds.length} phòng đã chọn
+                    </Tag>
+                    <Button
+                      icon={<EyeOutlined />}
+                      onClick={handleViewBulkSchedules}
+                      loading={loading}
+                    >
+                      Xem lịch các phòng
+                    </Button>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => setShowBulkCreateModal(true)}
+                    >
+                      Tạo lịch cho tất cả
+                    </Button>
+                    <Button
+                      danger
+                      onClick={() => setSelectedRoomIds([])}
+                    >
+                      Bỏ chọn tất cả
+                    </Button>
+                  </Space>
+                </div>
+              )}
+            </>
+          )}
+        </Space>
+      </Card>
+
       {/* Rooms Table */}
       <Card>
         <Table
@@ -1489,6 +1807,7 @@ const CreateScheduleForRoom = () => {
           dataSource={filteredRooms}
           loading={loading}
           rowKey="_id"
+          scroll={{ x: bulkSelectionMode ? 1400 : 1200 }} // 🔥 Enable horizontal scroll khi có checkbox
           pagination={roomSearchTerm ? false : {
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -3402,6 +3721,23 @@ const CreateScheduleForRoom = () => {
         month={editingSchedule?.month}
         year={editingSchedule?.year}
         scheduleListData={editingSchedule?.scheduleListData}
+      />
+
+      {/* 🆕 Bulk Room Schedule Modal - View schedules for multiple rooms */}
+      <BulkRoomScheduleModal
+        visible={showBulkScheduleModal}
+        onCancel={() => setShowBulkScheduleModal(false)}
+        selectedRooms={selectedRooms} // 🔥 Dùng state selectedRooms thay vì tính toán
+        schedulesData={bulkSchedulesData}
+        isViewingAll={isViewingAllRooms} // 🆕 Pass flag để phân biệt
+      />
+
+      {/* 🆕 Bulk Create Schedule Modal - Create schedules for multiple rooms */}
+      <BulkCreateScheduleModal
+        visible={showBulkCreateModal}
+        onCancel={() => setShowBulkCreateModal(false)}
+        selectedRooms={rooms.filter(r => selectedRoomIds.includes(r._id))}
+        onSuccess={handleBulkCreateSuccess}
       />
     </div>
   );
