@@ -77,14 +77,14 @@ const DentistsSection = () => {
           textAlign: 'center',
           marginBottom: '30px'
         }}>
-          <Title level={2} style={{ 
-            color: '#313b79',
+          <h3 style={{ 
+            color: ' #313b79',
             fontSize: '36px',
             fontWeight: 'bold',
             marginBottom: '16px'
           }}>
             Đội ngũ nha sĩ chuyên nghiệp
-          </Title>
+          </h3>
           <Text style={{ 
             fontSize: '18px',
             color: '#666',

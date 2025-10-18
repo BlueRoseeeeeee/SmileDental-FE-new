@@ -22,58 +22,170 @@ const FeaturesSection = () => {
     'Giá cả hợp lý'
   ];
 
+  const featuresWithDetails = [
+    {
+      title: 'Đội ngũ nha sĩ chuyên nghiệp',
+      description: 'Đội ngũ nha sĩ giàu kinh nghiêm, được đào tạo chuyên sâu có tay nghề cao, chuyên sâu về niềng răng, cấy ghép implant, dán sứ veneer,... luôn tận tâm trong điều trị.'
+    },
+    {
+      title: 'Uy tín được xây dựng từ chất lượng và sự tận tâm',
+      description: 'SmileCare Dental luôn đặt lợi ích khách hàng lên hàng đầu, với đội ngũ bác sĩ giàu kinh nghiệm và quy trình điều trị chuyên nghiệp, mang đến dịch vụ nha khoa an toàn và hiệu quả.'
+    },
+    {
+      title: 'Công nghệ hiện đại',
+      description: 'Trang thiết bị hiện đại giúp chẩn đoán chính xác, điều trị không đau và nhanh chóng, đảm bảo an toàn và hiệu quả lâu dài.'
+    },
+    {
+      title: 'Cam kết minh bạch',
+      description: 'Tất cả dịch vụ đều có bảng giá công khai, tư vấn rõ ràng, hợp đồng minh bạch, không phát sinh chi phí ngoài báo giá ban đầu.'
+    },
+    {
+      title: 'Dịch vụ cá nhân hóa',
+      description: 'Mỗi khách hàng được thiết kế phác đồ điều trị riêng, phù hợp với tình trạng răng miệng và nhu cầu thẩm mỹ cá nhân.'
+    },
+    {
+      title: 'Dịch vụ hậu điều trị chu đáo',
+      description: 'Sau khi điều trị, khách hàng được theo dõi định kỳ, nhắc lịch tái khám và được hướng dẫn chăm sóc răng miệng đúng cách để duy trì kết quả lâu dài.'
+    }
+  ];
+
   return (
-    <div style={{ padding: '80px 24px', background: '#f5f5f5' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <Row gutter={[48, 48]} align="middle">
-          <Col xs={24} lg={12}>
-            <Title level={2} style={{ color: '#262626', marginBottom: '24px' }}>
-              Tại sao chọn SmileDental?
-            </Title>
-            <Text style={{ fontSize: '16px', color: '#8c8c8c', marginBottom: '32px', display: 'block' }}>
-              Chúng tôi cam kết mang đến dịch vụ nha khoa tốt nhất với những ưu điểm vượt trội:
-            </Text>
-            <Row gutter={[16, 16]}>
-              {features.map((feature, index) => (
-                <Col xs={24} sm={12} key={index}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <CheckCircleOutlined style={{ color: '#52c41a', marginRight: '12px' }} />
-                    <Text style={{ fontSize: '16px' }}>{feature}</Text>
+    <div style={{ padding: '80px 24px', background: '#ffffff' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <h3 level={2} style={{ color: ' #313b79', marginBottom: '16px', fontSize: '32px', fontWeight: '700' }}>
+            Tại sao chọn SmileDental?
+          </h3>
+        </div>
+        
+        <Row gutter={[32, 32]} align="middle">
+          {/* Cột 1: Features 01-02 */}
+          <Col xs={24} md={8}>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              {featuresWithDetails.slice(0, 2).map((feature, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '32px' }}>
+                  <div style={{
+                    background: '#2596be',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    marginRight: '20px',
+                    flexShrink: 0
+                  }}>
+                    {String(index + 1).padStart(2, '0')}
                   </div>
-                </Col>
+                  <div style={{ flex: 1 }}>
+                     <h4 style={{ 
+                       color: '#313b79', 
+                       marginBottom: '8px',
+                       fontSize: '18px',
+                       fontWeight: '600'
+                     }}>
+                      {feature.title}
+                    </h4>
+                    <Text style={{ 
+                      color: '#666', 
+                      fontSize: '14px',
+                      lineHeight: '1.6'
+                    }}>
+                      {feature.description}
+                    </Text>
+                  </div>
+                </div>
               ))}
-            </Row>
+            </Space>
           </Col>
-          <Col xs={24} lg={12}>
-            <div style={{ 
-              background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
-              borderRadius: '12px',
-              padding: '40px',
-              color: 'white',
-              textAlign: 'center'
-            }}>
-              <Title level={3} style={{ color: 'white', marginBottom: '24px' }}>
-                Liên hệ ngay
-              </Title>
-              <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <PhoneOutlined style={{ marginRight: '12px' }} />
-                  <Text style={{ color: 'white', fontSize: '18px' }}>190000010</Text>
+
+          {/* Cột 2: Features 03-04 */}
+          <Col xs={24} md={8}>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              {featuresWithDetails.slice(2, 4).map((feature, index) => (
+                <div key={index + 2} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '32px' }}>
+                  <div style={{
+                    background: '#2596be',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    marginRight: '20px',
+                    flexShrink: 0
+                  }}>
+                    {String(index + 3).padStart(2, '0')}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                     <h4 level={4} style={{ 
+                       color: '#313b79', 
+                       marginBottom: '8px',
+                       fontSize: '18px',
+                       fontWeight: '600'
+                     }}>
+                      {feature.title}
+                    </h4>
+                    <Text style={{ 
+                      color: '#666', 
+                      fontSize: '14px',
+                      lineHeight: '1.6'
+                    }}>
+                      {feature.description}
+                    </Text>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <EnvironmentOutlined style={{ marginRight: '12px' }} />
-                  <Text style={{ color: 'white', fontSize: '16px' }}>
-                    Nguyễn Văn Bảo, Gò Vấp, TP.HCM
-                  </Text>
+              ))}
+            </Space>
+          </Col>
+
+          {/* Cột 3: Features 05-06 */}
+          <Col xs={24} md={8}>
+            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+              {featuresWithDetails.slice(4, 6).map((feature, index) => (
+                <div key={index + 4} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '32px' }}>
+                  <div style={{
+                    background: '#2596be',
+                    color: 'white',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    marginRight: '20px',
+                    flexShrink: 0
+                  }}>
+                    {String(index + 5).padStart(2, '0')}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                     <h4 level={4} style={{ 
+                       color: '#313b79', 
+                       marginBottom: '8px',
+                       fontSize: '18px',
+                       fontWeight: '600'
+                     }}>
+                      {feature.title}
+                    </h4>
+                    <Text style={{ 
+                      color: '#666', 
+                      fontSize: '14px',
+                      lineHeight: '1.6'
+                    }}>
+                      {feature.description}
+                    </Text>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ClockCircleOutlined style={{ marginRight: '12px' }} />
-                  <Text style={{ color: 'white', fontSize: '16px' }}>
-                    8:30 - 18:30 (Tất cả các ngày)
-                  </Text>
-                </div>
-              </Space>
-            </div>
+              ))}
+            </Space>
           </Col>
         </Row>
       </div>
