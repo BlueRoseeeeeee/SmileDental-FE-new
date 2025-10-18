@@ -9,24 +9,14 @@ import {
   Col, 
   Typography, 
   Spin, 
-  Tag, 
-  Image,
   Empty
 } from 'antd';
 import { 
   UserOutlined, 
-  ManOutlined, 
-  WomanOutlined,
-  CalendarOutlined,
-  SafetyCertificateOutlined,
-  PhoneOutlined,
-  MailOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined
 } from '@ant-design/icons';
 import { userService } from '../services';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const PublicDentistDetail = () => {
   const { id } = useParams();
