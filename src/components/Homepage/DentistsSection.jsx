@@ -109,7 +109,8 @@ const DentistsSection = () => {
               backgroundImage: `url(${bannerDentist})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
+              backgroundRepeat: 'no-repeat',
+              height: '400px',
             }}>
               <Row gutter={[40, 40]} align="middle">
                 {/* Left - Dentist Info */}
@@ -147,13 +148,21 @@ const DentistsSection = () => {
                     <div style={{ marginBottom: '30px' }}>
                       {/* Description */}
                       {selectedDentist.description && (
-                        <div style={{ marginTop: '16px' }}>
+                        <div style={{ marginTop: '10px' }}>
                           <div 
                             style={{ 
                               color: '#262626',
                               fontSize: '16px',
                               lineHeight: '1.6',
-                              fontWeight: '400'
+                              fontWeight: '400',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 5,
+                              WebkitBoxOrient: 'vertical',
+                                // maxHeight nên phù hợp với line-height * số dòng (ví dụ lineHeight: 1.6 * 16px = ~26px)
+                              maxHeight: '130px', // ~ 5 dòng x 26px
+
                             }}
                             dangerouslySetInnerHTML={{
                               __html: selectedDentist.description
