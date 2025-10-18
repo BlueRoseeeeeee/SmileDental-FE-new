@@ -1,26 +1,35 @@
 /*
 * @author: HoTram
 */
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Row, Col, Typography, Space } from 'antd';
-import { 
-  PhoneOutlined,
-  EnvironmentOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined
-} from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const FeaturesSection = () => {
-  const features = [
-    'Đội ngũ bác sĩ chuyên nghiệp',
-    'Trang thiết bị hiện đại',
-    'Môi trường vô trùng tuyệt đối',
-    'Dịch vụ chăm sóc tận tâm',
-    'Bảo hành dài hạn',
-    'Giá cả hợp lý'
-  ];
+  const titleRef = useRef(null);
+  const featureRefs = useRef([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    if (titleRef.current) observer.observe(titleRef.current);
+    featureRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const featuresWithDetails = [
     {
@@ -52,8 +61,23 @@ const FeaturesSection = () => {
   return (
     <div style={{ padding: '80px 24px', background: '#ffffff' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-          <h3 level={2} style={{ color: ' #313b79', marginBottom: '16px', fontSize: '32px', fontWeight: '700' }}>
+        <div 
+          ref={titleRef}
+          style={{ 
+            textAlign: 'center', 
+            marginBottom: '60px',
+            opacity: '0',
+            transform: 'translateY(30px)',
+            transition: 'all 0.8s ease-out'
+          }}
+        >
+          <h3 style={{ 
+            color: '#313b79', 
+            marginBottom: '16px', 
+            fontSize: '32px', 
+            fontWeight: '700',
+            margin: 0
+          }}>
             Tại sao chọn SmileDental?
           </h3>
         </div>
@@ -63,7 +87,18 @@ const FeaturesSection = () => {
           <Col xs={24} md={8}>
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
               {featuresWithDetails.slice(0, 2).map((feature, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '32px' }}>
+                <div 
+                  key={index} 
+                  ref={(el) => featureRefs.current[index] = el}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'flex-start', 
+                    marginBottom: '32px',
+                    opacity: '0',
+                    transform: 'translateY(30px)',
+                    transition: `all 0.6s ease-out ${index * 0.2}s`
+                  }}
+                >
                   <div style={{
                     background: '#2596be',
                     color: 'white',
@@ -76,8 +111,19 @@ const FeaturesSection = () => {
                     fontSize: '16px',
                     fontWeight: 'bold',
                     marginRight: '20px',
-                    flexShrink: 0
-                  }}>
+                    flexShrink: 0,
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'scale(1.1)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(37, 150, 190, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  >
                     {String(index + 1).padStart(2, '0')}
                   </div>
                   <div style={{ flex: 1 }}>
@@ -106,7 +152,18 @@ const FeaturesSection = () => {
           <Col xs={24} md={8}>
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
               {featuresWithDetails.slice(2, 4).map((feature, index) => (
-                <div key={index + 2} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '32px' }}>
+                <div 
+                  key={index + 2} 
+                  ref={(el) => featureRefs.current[index + 2] = el}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'flex-start', 
+                    marginBottom: '32px',
+                    opacity: '0',
+                    transform: 'translateY(30px)',
+                    transition: `all 0.6s ease-out ${(index + 2) * 0.2}s`
+                  }}
+                >
                   <div style={{
                     background: '#2596be',
                     color: 'white',
@@ -119,16 +176,28 @@ const FeaturesSection = () => {
                     fontSize: '16px',
                     fontWeight: 'bold',
                     marginRight: '20px',
-                    flexShrink: 0
-                  }}>
+                    flexShrink: 0,
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'scale(1.1)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(37, 150, 190, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  >
                     {String(index + 3).padStart(2, '0')}
                   </div>
                   <div style={{ flex: 1 }}>
-                     <h4 level={4} style={{ 
+                     <h4 style={{ 
                        color: '#313b79', 
                        marginBottom: '8px',
                        fontSize: '18px',
-                       fontWeight: '600'
+                       fontWeight: '600',
+                       margin: 0
                      }}>
                       {feature.title}
                     </h4>
@@ -149,7 +218,18 @@ const FeaturesSection = () => {
           <Col xs={24} md={8}>
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
               {featuresWithDetails.slice(4, 6).map((feature, index) => (
-                <div key={index + 4} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '32px' }}>
+                <div 
+                  key={index + 4} 
+                  ref={(el) => featureRefs.current[index + 4] = el}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'flex-start', 
+                    marginBottom: '32px',
+                    opacity: '0',
+                    transform: 'translateY(30px)',
+                    transition: `all 0.6s ease-out ${(index + 4) * 0.2}s`
+                  }}
+                >
                   <div style={{
                     background: '#2596be',
                     color: 'white',
@@ -162,16 +242,28 @@ const FeaturesSection = () => {
                     fontSize: '16px',
                     fontWeight: 'bold',
                     marginRight: '20px',
-                    flexShrink: 0
-                  }}>
+                    flexShrink: 0,
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'scale(1.1)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(37, 150, 190, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  >
                     {String(index + 5).padStart(2, '0')}
                   </div>
                   <div style={{ flex: 1 }}>
-                     <h4 level={4} style={{ 
+                     <h4 style={{ 
                        color: '#313b79', 
                        marginBottom: '8px',
                        fontSize: '18px',
-                       fontWeight: '600'
+                       fontWeight: '600',
+                       margin: 0
                      }}>
                       {feature.title}
                     </h4>
