@@ -38,6 +38,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { toast } from '../services/toastService';
+import TinyMCE from '../components/TinyMCE/TinyMCE';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -71,6 +72,7 @@ const EditUser = () => {
   const [uploading, setUploading] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [previewCertificate, setPreviewCertificate] = useState(null);
+  const [description, setDescription] = useState('');
 
   useEffect(() => {
     loadUser();
@@ -112,9 +114,10 @@ const EditUser = () => {
         
         setUser(userData);
         setCertificates(userData.certificates || []);
+        setDescription(userData.description || '');
         
         // Set form values - loại bỏ certificates khỏi form
-        const { certificates, ...formData } = userData;
+        const { certificates, description: userDescription, ...formData } = userData;
         try {
           form.setFieldsValue({
             ...formData,
@@ -153,6 +156,7 @@ const EditUser = () => {
       // Loại bỏ certificates và employeeCode khỏi dữ liệu update
       const { certificates, employeeCode, ...updateData } = values;
       updateData.dateOfBirth = values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null;
+      updateData.description = description;
 
       const response = await fetch(`http://localhost:3001/api/user/${id}`, {
         method: 'PUT',
@@ -834,13 +838,18 @@ const EditUser = () => {
                         <Col xs={24}>
                           <Form.Item
                             name="description"
-                            label="Mô tả thêm"
+                            label="Mô tả"
                           >
-                            <TextArea
-                              rows={6}
-                              placeholder="Nhập mô tả về kinh nghiệm, thành tích hoặc thông tin bổ sung..."
-                              className="custom-textarea"
-                            />
+                            <div style={{
+                              height: '400px'
+                            }}>
+                              <TinyMCE
+                                value={description}
+                                onChange={setDescription}
+                                placeholder="Nhập mô tả về kinh nghiệm, thành tích hoặc thông tin bổ sung..."
+                                containerStyle={{ width: '100%'}}
+                              />
+                            </div>
                           </Form.Item>
                         </Col>
                       </Row>

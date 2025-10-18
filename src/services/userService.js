@@ -76,6 +76,12 @@ export const userService = {
     });
     return response.data;
   },
+
+  // Public dentists API - Used in DentistsSection
+  getPublicDentists: async () => {
+    const response = await userApi.get('/user/public/dentists');
+    return response.data;
+  },
 };
 
 export default userService;

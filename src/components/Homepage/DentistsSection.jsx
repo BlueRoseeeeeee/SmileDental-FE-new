@@ -5,9 +5,9 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Typography, Button, Tag, Avatar, Spin, Carousel } from 'antd';
 import { UserOutlined, StarOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { userService } from '../../services';
 import { useNavigate } from 'react-router-dom';
-import smileDentalLogo from '../../assets/image/smile-dental-logo.png';
+import { userService } from '../../services';
+import bannerDentist from '../../assets/image/banner-dentist.png';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -25,18 +25,14 @@ const DentistsSection = () => {
   const fetchDentists = async () => {
     try {
       setLoading(true);
-      const response = await userService.getAllStaff(1, 100); // Lấy nhiều hơn để có đủ nha sĩ
+      const data = await userService.getPublicDentists();
       
-      // Lọc chỉ lấy nha sĩ (role: 'dentist') và isActive = true
-      const dentistList = response.users?.filter(user => 
-        (user.role === 'dentist' || user.role === 'doctor' || user.role === 'bác sĩ') &&
-        user.isActive === true
-      ) || [];
-      
-      setDentists(dentistList);
-      // Set first dentist as selected by default
-      if (dentistList.length > 0) {
-        setSelectedDentist(dentistList[0]);
+      if (data.success && data.dentists) {
+        setDentists(data.dentists);
+        // Set first dentist as selected by default
+        if (data.dentists.length > 0) {
+          setSelectedDentist(data.dentists[0]);
+        }
       }
     } catch (error) {
       console.error('Error fetching dentists:', error);
@@ -79,7 +75,7 @@ const DentistsSection = () => {
         {/* Section Header */}
         <div style={{ 
           textAlign: 'center',
-          marginBottom: '60px'
+          marginBottom: '30px'
         }}>
           <Title level={2} style={{ 
             color: '#313b79',
@@ -92,7 +88,6 @@ const DentistsSection = () => {
           <Text style={{ 
             fontSize: '18px',
             color: '#666',
-            maxWidth: '600px',
             display: 'block',
             margin: '0 auto',
             lineHeight: '1.6'
@@ -111,7 +106,10 @@ const DentistsSection = () => {
               padding: '40px',
               marginBottom: '40px',
               boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-              background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)'
+              backgroundImage: `url(${bannerDentist})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
             }}>
               <Row gutter={[40, 40]} align="middle">
                 {/* Left - Dentist Info */}
@@ -147,53 +145,20 @@ const DentistsSection = () => {
 
                     {/* Dentist Details */}
                     <div style={{ marginBottom: '30px' }}>
-                      {selectedDentist.education && (
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text style={{ 
-                            color: '#262626',
-                            fontSize: '16px',
-                            fontWeight: '500'
-                          }}>
-                            • {selectedDentist.education}
-                          </Text>
-                        </div>
-                      )}
-                      
-                      {selectedDentist.certificate && (
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text style={{ 
-                            color: '#262626',
-                            fontSize: '16px',
-                            fontWeight: '500'
-                          }}>
-                            • Chứng chỉ hành nghề: {selectedDentist.certificate}
-                          </Text>
-                        </div>
-                      )}
-
-                      {selectedDentist.specialization && (
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text style={{ 
-                            color: '#262626',
-                            fontSize: '16px',
-                            fontWeight: '500'
-                          }}>
-                            • {selectedDentist.specialization}
-                          </Text>
-                        </div>
-                      )}
-
                       {/* Description */}
                       {selectedDentist.description && (
                         <div style={{ marginTop: '16px' }}>
-                          <Text style={{ 
-                            color: '#262626',
-                            fontSize: '16px',
-                            lineHeight: '1.6',
-                            fontWeight: '400'
-                          }}>
-                            {selectedDentist.description}
-                          </Text>
+                          <div 
+                            style={{ 
+                              color: '#262626',
+                              fontSize: '16px',
+                              lineHeight: '1.6',
+                              fontWeight: '400'
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: selectedDentist.description
+                            }}
+                          />
                         </div>
                       )}
                     </div>
@@ -226,7 +191,7 @@ const DentistsSection = () => {
                   {selectedDentist.avatar && (
                     <img 
                       src={selectedDentist.avatar} 
-                      alt={selectedDentist.fullName || selectedDentist.name}
+                      alt={selectedDentist.fullName}
                       style={{
                         width: '500px',
                         height: '300px',
@@ -335,13 +300,6 @@ const DentistsSection = () => {
                           }}>
                             {dentist.fullName}
                           </h3>
-                          <Text style={{ 
-                            color: '#666',
-                            fontSize: '12px'
-                          }}>
-                            {dentist.role === 'dentist' ? 'Nha sĩ' :  
-                             dentist.role || 'Nha sĩ'}
-                          </Text>
                         </div>
                       </div>
                     ))}
