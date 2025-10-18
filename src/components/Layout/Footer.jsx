@@ -78,7 +78,7 @@ const Footer = () => {
       <div style={footerStyles.content}>
         <Row gutter={[32, 32]}>
           {/* Company Info */}
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={6}>
             <Title level={4} style={footerStyles.title}>
               {companyInfo.name}
             </Title>
@@ -110,7 +110,7 @@ const Footer = () => {
           </Col>
 
           {/* Links */}
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={6}>
             <Title level={4} style={footerStyles.title}>
               GIỚI THIỆU
             </Title>
@@ -124,7 +124,7 @@ const Footer = () => {
           </Col>
 
           {/* Contact */}
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={6}>
             <Title level={4} style={footerStyles.title}>
               LIÊN HỆ
             </Title>
@@ -136,6 +136,31 @@ const Footer = () => {
                 </Text>
               </div>
             </Space>
+          </Col>
+
+          {/* Google Maps */}
+          <Col xs={24} sm={24} md={6}>
+            <Title level={4} style={footerStyles.title}>
+              VỊ TRÍ
+            </Title>
+            <div style={{
+              width: '100%',
+              height: '200px',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+            }}>
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3918.231!2d106.692!3d10.776!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f38b8c8c8c8%3A0x8c8c8c8c8c8c8c8c!2sNguy%E1%BB%85n%20V%C4%83n%20B%E1%BA%A3o%2C%20G%C3%B2%20V%E1%BA%A5p%2C%20Th%C3%A0nh%20ph%E1%BB%91%20H%E1%BB%93%20Ch%C3%AD%20Minh!5e0!3m2!1svi!2s!4v1234567890!5m2!1svi!2s"
+                width="100%"
+                height="200"
+                style={{ border: 0 }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="SmileDental Location"
+              />
+            </div>
           </Col>
         </Row>
       </div>
