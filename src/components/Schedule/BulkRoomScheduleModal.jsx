@@ -213,9 +213,17 @@ const BulkRoomScheduleModal = ({
         <Space direction="vertical" size={0}>
           <Text strong>{text}</Text>
           {record.subRoom && (
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {record.subRoom.name}
-            </Text>
+            <Space size={4} align="center">
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {record.subRoom.name}
+              </Text>
+              <Tag 
+                color={record.subRoom.isActiveSubRoom !== false ? 'green' : 'red'} 
+                style={{ fontSize: '10px', padding: '0 4px', margin: 0, lineHeight: '16px' }}
+              >
+                {record.subRoom.isActiveSubRoom !== false ? 'Bật' : 'Tắt'}
+              </Tag>
+            </Space>
           )}
           {record.roomNumber && (
             <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -349,6 +357,18 @@ const BulkRoomScheduleModal = ({
           return <Tag color="success">Hoàn thành</Tag>;
         }
         return <Tag color="warning">Chưa đầy đủ</Tag>;
+      }
+    },
+    {
+      title: 'Hoạt động',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      width: 100,
+      render: (isActive) => {
+        if (isActive === false) {
+          return <Tag color="error" icon={<CloseCircleOutlined />}>Đã tắt</Tag>;
+        }
+        return <Tag color="success" icon={<CheckCircleOutlined />}>Bật</Tag>;
       }
     }
   ];

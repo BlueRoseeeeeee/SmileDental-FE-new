@@ -50,6 +50,13 @@ const EditScheduleModal = ({
       return;
     }
 
+    console.log('📊 Debug before submit:', {
+      toggleSubRooms,
+      deactivateShifts,
+      scheduleActive,
+      schedulesCount: scheduleListData.schedules.length
+    });
+
     try {
       setLoading(true);
 
@@ -83,6 +90,9 @@ const EditScheduleModal = ({
             subRoomId: subRoomToggle.subRoomId,
             isActive: subRoomToggle.isActive
           };
+          console.log(`🔄 Schedule ${schedule.scheduleId} - Found toggle for subRoom ${subRoomToggle.subRoomId}:`, subRoomToggle);
+        } else {
+          console.log(`ℹ️ Schedule ${schedule.scheduleId} - No toggle found`);
         }
 
         console.log(`📤 Updating schedule ${schedule.scheduleId}:`, updateData);
@@ -193,11 +203,18 @@ const EditScheduleModal = ({
     scheduleListData.schedules.forEach(schedule => {
       // Filter theo tháng/năm VÀ có subRoom
       if (schedule.month === month && schedule.year === year && schedule.subRoom) {
+        console.log(`🔍 Schedule ${schedule.scheduleId}:`, {
+          subRoomName: schedule.subRoom.name,
+          'schedule.isActiveSubRoom': schedule.isActiveSubRoom,
+          'schedule.subRoom.isActiveSubRoom': schedule.subRoom.isActiveSubRoom,
+          'schedule.subRoom.isActive': schedule.subRoom.isActive
+        });
+        
         allSubRooms.push({
           scheduleId: schedule.scheduleId,
           subRoomId: schedule.subRoom._id,
           subRoomName: schedule.subRoom.name,
-          isActive: schedule.subRoom.isActiveSubRoom !== false // Current active status
+          isActive: schedule.isActiveSubRoom !== false // ✅ FIX: Lấy từ schedule.isActiveSubRoom, KHÔNG phải schedule.subRoom.isActiveSubRoom
         });
       }
     });
@@ -206,7 +223,8 @@ const EditScheduleModal = ({
   console.log(`📊 Modal "Chỉnh sửa lịch" - Tháng ${month}/${year}:`, {
     totalSchedules: scheduleListData?.schedules?.length,
     allShifts: allShifts.length,
-    allSubRooms: allSubRooms.length
+    allSubRooms: allSubRooms.length,
+    allSubRoomsDetails: allSubRooms // 🆕 Debug: Xem chi tiết subrooms
   });
 
   return (

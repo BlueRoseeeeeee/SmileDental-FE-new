@@ -34,6 +34,7 @@ import {
 import dayjs from 'dayjs';
 import { toast } from '../../services/toastService';
 import scheduleService from '../../services/scheduleService';
+import scheduleConfigService from '../../services/scheduleConfigService'; // 🆕 Import config service
 
 const { Title, Text } = Typography;
 
@@ -60,6 +61,7 @@ const BulkCreateScheduleModal = ({
   const [creating, setCreating] = useState(false);
   const [bulkInfo, setBulkInfo] = useState(null); // Data from getBulkRoomSchedulesInfo
   const [loadingBulkInfo, setLoadingBulkInfo] = useState(false);
+  const [configShifts, setConfigShifts] = useState(null); // 🆕 Config shifts with isActive status
 
   // Form values
   const [dateRange, setDateRange] = useState(null); // [startMonth, endMonth]
@@ -70,6 +72,24 @@ const BulkCreateScheduleModal = ({
 
   // Progress tracking
   const [progress, setProgress] = useState(null); // { current, total, results: [] }
+
+  // 🆕 Fetch schedule config to check shift isActive status
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await scheduleConfigService.getConfig();
+        if (response.success && response.data) {
+          setConfigShifts(response.data.workShifts);
+        }
+      } catch (error) {
+        console.error('Error fetching config:', error);
+      }
+    };
+    
+    if (visible) {
+      fetchConfig();
+    }
+  }, [visible]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -90,7 +110,12 @@ const BulkCreateScheduleModal = ({
 
   // 🆕 Fetch initial bulk info (24 tháng tiếp theo) để biết tháng nào có thể tạo
   const fetchInitialBulkInfo = async () => {
-    if (!selectedRooms || selectedRooms.length === 0) return;
+    if (!selectedRooms || selectedRooms.length === 0) {
+      console.warn('⚠️ selectedRooms is empty!', selectedRooms);
+      return;
+    }
+
+    console.log('📊 Fetching bulk info for rooms:', selectedRooms.length, selectedRooms.map(r => r.name || r._id));
 
     setLoadingBulkInfo(true);
     try {
@@ -113,6 +138,8 @@ const BulkCreateScheduleModal = ({
 
       if (response.success) {
         console.log('📊 Initial bulk info (24 months):', response.data);
+        console.log('📋 Available months:', response.data.availableMonths?.map(m => `${m.month}/${m.year}`).join(', '));
+        console.log('📋 Available shifts:', response.data.availableShifts);
         setBulkInfo(response.data);
         
         // 🎯 Tự động chọn tháng đầu tiên có thể tạo làm fromMonth
@@ -121,6 +148,16 @@ const BulkCreateScheduleModal = ({
           const firstMonth = dayjs().year(firstAvailable.year).month(firstAvailable.month - 1);
           setFromMonth(firstMonth);
           form.setFieldsValue({ fromMonth: firstMonth });
+          
+          // 🆕 Tự động chọn tháng cuối cùng có thể tạo làm toMonth
+          const lastAvailable = response.data.availableMonths[response.data.availableMonths.length - 1];
+          const lastMonth = dayjs().year(lastAvailable.year).month(lastAvailable.month - 1);
+          setToMonth(lastMonth);
+          form.setFieldsValue({ toMonth: lastMonth });
+          
+          console.log(`🎯 Auto-selected range: ${firstAvailable.month}/${firstAvailable.year} - ${lastAvailable.month}/${lastAvailable.year}`);
+        } else {
+          console.warn('⚠️ No available months found!');
         }
       } else {
         toast.error(response.message || 'Không thể lấy thông tin lịch');
@@ -140,6 +177,11 @@ const BulkCreateScheduleModal = ({
       return;
     }
 
+    console.log('🔄 useEffect triggered - fromMonth/toMonth changed');
+    console.log('  fromMonth:', fromMonth?.format('MM/YYYY'));
+    console.log('  toMonth:', toMonth?.format('MM/YYYY'));
+    console.log('  selectedRooms:', selectedRooms?.length, selectedRooms);
+
     const fetchBulkInfo = async () => {
       setLoadingBulkInfo(true);
       try {
@@ -148,7 +190,15 @@ const BulkCreateScheduleModal = ({
         const tMonth = toMonth.month() + 1;
         const tYear = toMonth.year();
 
-        const roomIds = selectedRooms.map(r => r._id);
+        const roomIds = selectedRooms?.map(r => r._id) || [];
+        console.log('📤 Calling API with roomIds:', roomIds);
+        
+        if (roomIds.length === 0) {
+          console.error('❌ ERROR: roomIds is empty! selectedRooms:', selectedRooms);
+          toast.error('Không có phòng được chọn');
+          setLoadingBulkInfo(false);
+          return;
+        }
 
         const response = await scheduleService.getBulkRoomSchedulesInfo({
           roomIds,
@@ -173,7 +223,7 @@ const BulkCreateScheduleModal = ({
     };
 
     fetchBulkInfo();
-  }, [fromMonth, toMonth, selectedRooms]);
+  }, [fromMonth, toMonth]); // 🔧 FIX: Remove selectedRooms (stable prop, không cần track)
 
   // 🆕 Auto-fill startDate when both fromMonth and toMonth are selected
   useEffect(() => {
@@ -222,7 +272,7 @@ const BulkCreateScheduleModal = ({
     return false;
   }, []);
 
-  // 🆕 Disable months for FROM picker - Ẩn tháng đã có lịch đầy đủ
+  // 🆕 Disable months for FROM picker - Chỉ cho chọn tháng có trong availableMonths
   const disabledFromMonth = useCallback((current) => {
     if (!current || !bulkInfo) return false;
 
@@ -232,27 +282,19 @@ const BulkCreateScheduleModal = ({
     const month = current.month() + 1;
     const year = current.year();
 
-    // Check if all rooms have complete schedule for this month
-    const allRoomsHaveSchedule = bulkInfo.roomsAnalysis.every(room => {
-      const monthAnalysis = room.monthsAnalysis.find(
-        m => m.month === month && m.year === year
-      );
+    // 🔥 FIX: Chỉ cho chọn tháng có trong availableMonths (backend đã tính logic đúng)
+    if (!bulkInfo.availableMonths || bulkInfo.availableMonths.length === 0) {
+      return true; // Nếu không có tháng nào → disable tất cả
+    }
 
-      if (!monthAnalysis) return false;
+    const isAvailable = bulkInfo.availableMonths.some(
+      m => m.month === month && m.year === year
+    );
 
-      // Nếu phòng có subrooms: check allSubRoomsHaveSchedule
-      // Nếu không có subrooms: check hasSchedule
-      if (room.hasSubRooms) {
-        return monthAnalysis.allSubRoomsHaveSchedule === true;
-      } else {
-        return monthAnalysis.hasSchedule === true;
-      }
-    });
-
-    return allRoomsHaveSchedule;
+    return !isAvailable; // Disable nếu KHÔNG có trong availableMonths
   }, [bulkInfo, disabledDate]);
 
-  // 🆕 Disable months for TO picker - Chỉ cho chọn >= fromMonth và chưa có lịch đầy đủ
+  // 🆕 Disable months for TO picker - Chỉ cho chọn >= fromMonth và có trong availableMonths
   const disabledToMonth = useCallback((current) => {
     if (!current || !bulkInfo) return false;
 
@@ -267,22 +309,16 @@ const BulkCreateScheduleModal = ({
     const month = current.month() + 1;
     const year = current.year();
 
-    // Check if all rooms have complete schedule for this month
-    const allRoomsHaveSchedule = bulkInfo.roomsAnalysis.every(room => {
-      const monthAnalysis = room.monthsAnalysis.find(
-        m => m.month === month && m.year === year
-      );
+    // 🔥 FIX: Chỉ cho chọn tháng có trong availableMonths
+    if (!bulkInfo.availableMonths || bulkInfo.availableMonths.length === 0) {
+      return true;
+    }
 
-      if (!monthAnalysis) return false;
+    const isAvailable = bulkInfo.availableMonths.some(
+      m => m.month === month && m.year === year
+    );
 
-      if (room.hasSubRooms) {
-        return monthAnalysis.allSubRoomsHaveSchedule === true;
-      } else {
-        return monthAnalysis.hasSchedule === true;
-      }
-    });
-
-    return allRoomsHaveSchedule;
+    return !isAvailable; // Disable nếu KHÔNG có trong availableMonths
   }, [bulkInfo, fromMonth, disabledDate]);
 
   // Available months (not disabled)
@@ -295,13 +331,38 @@ const BulkCreateScheduleModal = ({
     }));
   }, [bulkInfo]);
 
-  // Available shifts (not disabled)
+  // 🆕 Check if shift is active in config
+  const isShiftActive = useCallback((shiftKey) => {
+    if (!configShifts) return true; // If config not loaded yet, assume active
+    
+    const shift = configShifts.find(s => {
+      // Map shift names to keys
+      if (shiftKey === 'morning') return s.name === 'Ca Sáng' || s.shiftKey === 'morning';
+      if (shiftKey === 'afternoon') return s.name === 'Ca Chiều' || s.shiftKey === 'afternoon';
+      if (shiftKey === 'evening') return s.name === 'Ca Tối' || s.shiftKey === 'evening';
+      return false;
+    });
+    
+    return shift ? shift.isActive !== false : true;
+  }, [configShifts]);
+
+  // Available shifts (not disabled) - combines both bulk info and config isActive
   const availableShifts = useMemo(() => {
     if (!bulkInfo || !bulkInfo.availableShifts) {
-      return { morning: false, afternoon: false, evening: false };
+      return { 
+        morning: isShiftActive('morning'), 
+        afternoon: isShiftActive('afternoon'), 
+        evening: isShiftActive('evening') 
+      };
     }
-    return bulkInfo.availableShifts;
-  }, [bulkInfo]);
+    
+    // Combine: shift available in bulk info AND active in config
+    return {
+      morning: bulkInfo.availableShifts.morning && isShiftActive('morning'),
+      afternoon: bulkInfo.availableShifts.afternoon && isShiftActive('afternoon'),
+      evening: bulkInfo.availableShifts.evening && isShiftActive('evening')
+    };
+  }, [bulkInfo, isShiftActive]);
 
   // Handle form submit
   const handleSubmit = async () => {
@@ -351,13 +412,10 @@ const BulkCreateScheduleModal = ({
           results: response.results || []
         });
 
-        // Auto close after 3 seconds if all success
-        if (response.failCount === 0) {
-          setTimeout(() => {
-            handleClose();
-            if (onSuccess) onSuccess();
-          }, 3000);
-        }
+        // 🔧 Gọi onSuccess để refresh danh sách phòng, NHƯNG KHÔNG đóng modal
+        if (onSuccess) onSuccess();
+        
+        // ❌ REMOVED: Auto-close modal - Để người dùng tự đóng để xem kết quả
       } else {
         toast.error(response.message || 'Có lỗi xảy ra khi tạo lịch');
         if (response.results) {
@@ -421,7 +479,12 @@ const BulkCreateScheduleModal = ({
       onCancel={handleClose}
       width={800}
       footer={
-        progress ? null : [
+        progress ? [
+          // 🔧 Khi đã tạo xong, hiển thị button "Đóng" ở footer
+          <Button key="close" type="primary" onClick={handleClose}>
+            Đóng
+          </Button>
+        ] : [
           <Button key="cancel" onClick={handleClose}>
             Hủy
           </Button>,
@@ -494,10 +557,47 @@ const BulkCreateScheduleModal = ({
                       <div>
                         <Text type="success">{result.message}</Text>
                         {result.details && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>
-                            Đã tạo: {result.details.schedulesCreated || 0} lịch mới, 
-                            cập nhật: {result.details.schedulesUpdated || 0} lịch, 
-                            tổng: {result.details.totalSlots || 0} slots
+                          <div style={{ marginTop: 8 }}>
+                            {/* Tổng kết chung */}
+                            <div style={{ fontSize: '12px', color: '#666', marginBottom: 8 }}>
+                              {result.details.schedulesCreated > 0 && (
+                                <Tag color="green">Tạo mới: {result.details.schedulesCreated} lịch</Tag>
+                              )}
+                              {result.details.schedulesUpdated > 0 && (
+                                <Tag color="blue">Cập nhật: {result.details.schedulesUpdated} lịch</Tag>
+                              )}
+                              <Tag color="purple">Tổng: {result.details.totalSlots} slots</Tag>
+                            </div>
+                            
+                            {/* Chi tiết theo subroom và shift */}
+                            {result.details.subRoomBreakdown && result.details.subRoomBreakdown.length > 0 && (
+                              <div style={{ marginTop: 8, paddingLeft: 16, borderLeft: '2px solid #f0f0f0' }}>
+                                {result.details.subRoomBreakdown.map((subRoom, idx) => (
+                                  <div key={idx} style={{ fontSize: '12px', marginBottom: 4 }}>
+                                    <Text strong style={{ fontSize: '12px' }}>
+                                      {subRoom.subRoomName}:
+                                    </Text>
+                                    <Space size={4} style={{ marginLeft: 8 }}>
+                                      {subRoom.shifts.morning > 0 && (
+                                        <Tag color="gold" style={{ fontSize: '11px', margin: 0 }}>
+                                          Ca Sáng: {subRoom.shifts.morning} slots
+                                        </Tag>
+                                      )}
+                                      {subRoom.shifts.afternoon > 0 && (
+                                        <Tag color="orange" style={{ fontSize: '11px', margin: 0 }}>
+                                          Ca Chiều: {subRoom.shifts.afternoon} slots
+                                        </Tag>
+                                      )}
+                                      {subRoom.shifts.evening > 0 && (
+                                        <Tag color="purple" style={{ fontSize: '11px', margin: 0 }}>
+                                          Ca Tối: {subRoom.shifts.evening} slots
+                                        </Tag>
+                                      )}
+                                    </Space>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -510,11 +610,7 @@ const BulkCreateScheduleModal = ({
             )}
           />
 
-          <Divider />
-
-          <Button type="primary" block onClick={handleClose}>
-            Đóng
-          </Button>
+          {/* ❌ REMOVED: Button "Đóng" trùng lặp - Đã có ở footer */}
         </div>
       ) : (
         // Show form
@@ -655,7 +751,7 @@ const BulkCreateScheduleModal = ({
                     </Tag>
                     {!availableShifts.morning && (
                       <Text type="secondary" style={{ fontSize: '11px', marginLeft: 4 }}>
-                        (Đã đầy)
+                        {!isShiftActive('morning') ? '(Đã tắt)' : '(Đã đầy)'}
                       </Text>
                     )}
                   </Checkbox>
@@ -670,7 +766,7 @@ const BulkCreateScheduleModal = ({
                     </Tag>
                     {!availableShifts.afternoon && (
                       <Text type="secondary" style={{ fontSize: '11px', marginLeft: 4 }}>
-                        (Đã đầy)
+                        {!isShiftActive('afternoon') ? '(Đã tắt)' : '(Đã đầy)'}
                       </Text>
                     )}
                   </Checkbox>
@@ -685,7 +781,7 @@ const BulkCreateScheduleModal = ({
                     </Tag>
                     {!availableShifts.evening && (
                       <Text type="secondary" style={{ fontSize: '11px', marginLeft: 4 }}>
-                        (Đã đầy)
+                        {!isShiftActive('evening') ? '(Đã tắt)' : '(Đã đầy)'}
                       </Text>
                     )}
                   </Checkbox>

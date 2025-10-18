@@ -1393,6 +1393,7 @@ const CreateScheduleForRoom = () => {
   const handleBulkCreateSuccess = () => {
     fetchRooms(); // Refresh rooms list
     setSelectedRoomIds([]); // Clear selection
+    setSelectedRoomsMap({}); // 🔥 Clear map
   };
 
   // Table columns
@@ -1768,31 +1769,101 @@ const CreateScheduleForRoom = () => {
                 })}
               </Select>
 
+              {/* 🆕 Quick Actions - Always visible when bulk mode is on */}
+              <Space wrap style={{ marginTop: 12 }}>
+                <Button
+                  icon={<CheckCircleOutlined />}
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      // 🔥 Fetch ALL rooms (không phụ thuộc pagination)
+                      const response = await roomService.getRoomsForSchedule({
+                        page: 1,
+                        limit: 9999,
+                        isActive: roomActiveFilter !== 'all' ? roomActiveFilter : undefined
+                      });
+
+                      if (response.success) {
+                        let allRooms = response.data.rooms;
+                        
+                        // Apply schedule status filter
+                        if (scheduleStatusFilter === 'has-schedule') {
+                          allRooms = allRooms.filter(room => room.hasBeenUsed);
+                        } else if (scheduleStatusFilter === 'no-schedule') {
+                          allRooms = allRooms.filter(room => !room.hasBeenUsed);
+                        }
+                        
+                        // Select all
+                        const allRoomIds = allRooms.map(r => r._id);
+                        setSelectedRoomIds(allRoomIds);
+                        
+                        // Build map
+                        const newMap = {};
+                        allRooms.forEach(room => {
+                          newMap[room._id] = room;
+                        });
+                        setSelectedRoomsMap(newMap);
+                        
+                        message.success(`Đã chọn tất cả ${allRooms.length} phòng`);
+                      } else {
+                        message.error('Không thể lấy danh sách phòng');
+                      }
+                    } catch (error) {
+                      console.error('Error fetching all rooms:', error);
+                      message.error('Lỗi khi lấy danh sách phòng');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  loading={loading}
+                >
+                  Chọn tất cả phòng
+                </Button>
+                
+                <Button
+                  icon={<CloseCircleOutlined />}
+                  onClick={() => {
+                    setSelectedRoomIds([]);
+                    setSelectedRoomsMap({});
+                    message.info('Đã bỏ chọn tất cả');
+                  }}
+                  disabled={selectedRoomIds.length === 0}
+                >
+                  Bỏ chọn tất cả
+                </Button>
+              </Space>
+
+              {/* Selection Info & Actions - Only show when has selection */}
               {selectedRoomIds.length > 0 && (
-                <div>
-                  <Space wrap>
-                    <Tag color="blue" icon={<CheckCircleOutlined />} style={{ fontSize: 14, padding: '4px 12px' }}>
-                      {selectedRoomIds.length} phòng đã chọn
-                    </Tag>
-                    <Button
-                      icon={<EyeOutlined />}
-                      onClick={handleViewBulkSchedules}
-                      loading={loading}
-                    >
-                      Xem lịch các phòng
-                    </Button>
+                <div style={{ marginTop: 12 }}>
+                  <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+                    {/* Left side - Info & View */}
+                    <Space wrap>
+                      <Tag color="blue" icon={<CheckCircleOutlined />} style={{ fontSize: 14, padding: '4px 12px' }}>
+                        {selectedRoomIds.length} phòng đã chọn
+                      </Tag>
+                      <Button
+                        icon={<EyeOutlined />}
+                        onClick={handleViewBulkSchedules}
+                        loading={loading}
+                      >
+                        Xem lịch các phòng
+                      </Button>
+                    </Space>
+                    
+                    {/* Right side - Create button */}
                     <Button
                       type="primary"
                       icon={<PlusOutlined />}
-                      onClick={() => setShowBulkCreateModal(true)}
+                      onClick={() => {
+                        console.log('🚀 Opening Bulk Create Modal');
+                        console.log('📊 selectedRoomIds:', selectedRoomIds);
+                        console.log('📋 selectedRoomsMap keys:', Object.keys(selectedRoomsMap));
+                        console.log('🔍 selectedRooms to pass:', selectedRoomIds.map(id => selectedRoomsMap[id]).filter(Boolean));
+                        setShowBulkCreateModal(true);
+                      }}
                     >
                       Tạo lịch cho tất cả
-                    </Button>
-                    <Button
-                      danger
-                      onClick={() => setSelectedRoomIds([])}
-                    >
-                      Bỏ chọn tất cả
                     </Button>
                   </Space>
                 </div>
@@ -3794,7 +3865,7 @@ const CreateScheduleForRoom = () => {
       <BulkCreateScheduleModal
         visible={showBulkCreateModal}
         onCancel={() => setShowBulkCreateModal(false)}
-        selectedRooms={rooms.filter(r => selectedRoomIds.includes(r._id))}
+        selectedRooms={selectedRoomIds.map(id => selectedRoomsMap[id]).filter(Boolean)}
         onSuccess={handleBulkCreateSuccess}
       />
     </div>
