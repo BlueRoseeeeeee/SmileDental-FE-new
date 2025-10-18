@@ -5,14 +5,12 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Typography, Button, Tag, Avatar, Spin, Carousel } from 'antd';
 import { UserOutlined, StarOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
 import { userService } from '../../services';
 import bannerDentist from '../../assets/image/banner-dentist.png';
 
 const { Title, Text, Paragraph } = Typography;
 
 const DentistsSection = () => {
-  const navigate = useNavigate();
   const [dentists, setDentists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDentist, setSelectedDentist] = useState(null);
@@ -47,8 +45,9 @@ const DentistsSection = () => {
   };
 
   const handleViewDetail = (dentist) => {
-    // Navigate to dentist detail page
-    navigate(`/dentists/${encodeURIComponent(dentist._id)}`);
+    // Mở tab mới hiển thị thông tin chi tiết nha sĩ
+    const url = `/dentist-detail/${encodeURIComponent(dentist._id)}`;
+    window.open(url, '_blank');
   };
 
   if (loading && initialLoad) {

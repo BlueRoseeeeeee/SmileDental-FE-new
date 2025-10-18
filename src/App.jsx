@@ -34,6 +34,7 @@ import AddServiceAddOn from './pages/AddServiceAddOn.jsx';
 import EditServiceAddOn from './pages/EditServiceAddOn.jsx';
 import PublicServiceAddOnDetail from './pages/PublicServiceAddOnDetail.jsx';
 import PublicServiceAddOns from './pages/PublicServiceAddOns.jsx';
+import PublicDentistDetail from './pages/PublicDentistDetail.jsx';
 
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
@@ -134,6 +135,13 @@ function App() {
            <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
              <HomepageLayout>
                <PublicServiceAddOnDetail />
+             </HomepageLayout>
+           } />
+           
+           {/* Dentist Detail Route - Public */}
+           <Route path="/dentist-detail/:id" element={
+             <HomepageLayout>
+               <PublicDentistDetail />
              </HomepageLayout>
            } />
            

@@ -144,9 +144,8 @@ const Footer = () => {
               VỊ TRÍ
             </Title>
             <div style={{
-              width: '100%',
+              width: '350px',
               height: '200px',
-              borderRadius: '8px',
               overflow: 'hidden',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
             }}>
