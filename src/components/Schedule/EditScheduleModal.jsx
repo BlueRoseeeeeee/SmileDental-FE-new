@@ -27,7 +27,9 @@ const EditScheduleModal = ({
   const [loading, setLoading] = useState(false);
   const [scheduleActive, setScheduleActive] = useState(true);
   const [reactivateShifts, setReactivateShifts] = useState([]);
+  const [deactivateShifts, setDeactivateShifts] = useState([]); // 🆕 [{shiftKey, isActive}, ...]
   const [reactivateSubRooms, setReactivateSubRooms] = useState([]); // Array of {scheduleId, subRoomId}
+  const [toggleSubRooms, setToggleSubRooms] = useState([]); // 🆕 [{scheduleId, subRoomId, isActive}, ...]
 
   // Initialize state when modal opens
   useEffect(() => {
@@ -36,7 +38,9 @@ const EditScheduleModal = ({
       const firstSchedule = scheduleListData.schedules?.[0];
       setScheduleActive(firstSchedule?.isActive !== false);
       setReactivateShifts([]);
+      setDeactivateShifts([]); // 🆕 Reset deactivate shifts
       setReactivateSubRooms([]);
+      setToggleSubRooms([]); // 🆕 Reset toggle subrooms
     }
   }, [visible, scheduleListData]);
 
@@ -60,10 +64,25 @@ const EditScheduleModal = ({
           updateData.reactivateShifts = reactivateShifts;
         }
         
+        // 🆕 Deactivate shifts (toggle on/off)
+        if (deactivateShifts.length > 0) {
+          updateData.deactivateShifts = deactivateShifts;
+        }
+        
         // ✅ Reactivate subrooms (gửi array trong 1 request)
         if (reactivateSubRooms.length > 0) {
           const subRoomIdsToReactivate = reactivateSubRooms.map(item => item.subRoomId);
           updateData.reactivateSubRooms = subRoomIdsToReactivate;
+        }
+        
+        // 🆕 Toggle subrooms (bật/tắt isActiveSubRoom)
+        // Chỉ toggle nếu subroom này thuộc schedule hiện tại
+        const subRoomToggle = toggleSubRooms.find(item => item.scheduleId === schedule.scheduleId);
+        if (subRoomToggle) {
+          updateData.toggleSubRoom = {
+            subRoomId: subRoomToggle.subRoomId,
+            isActive: subRoomToggle.isActive
+          };
         }
 
         console.log(`📤 Updating schedule ${schedule.scheduleId}:`, updateData);
@@ -98,6 +117,15 @@ const EditScheduleModal = ({
       setReactivateShifts(reactivateShifts.filter(s => s !== shiftKey));
     }
   };
+  
+  // 🆕 Handle toggle shift (cho ca đã generate)
+  const handleShiftToggle = (shiftKey, currentIsActive) => {
+    // Remove existing entry if any
+    const filtered = deactivateShifts.filter(item => item.shiftKey !== shiftKey);
+    
+    // Add new entry with toggled state
+    setDeactivateShifts([...filtered, { shiftKey, isActive: !currentIsActive }]);
+  };
 
   const handleSubRoomCheckboxChange = (scheduleId, subRoomId, subRoomName, checked) => {
     if (checked) {
@@ -108,63 +136,77 @@ const EditScheduleModal = ({
       ));
     }
   };
+  
+  // 🆕 Handle toggle subroom (bật/tắt buồng)
+  const handleSubRoomToggle = (scheduleId, subRoomId, currentIsActive) => {
+    // Remove existing entry if any
+    const filtered = toggleSubRooms.filter(item => 
+      !(item.scheduleId === scheduleId && item.subRoomId === subRoomId)
+    );
+    
+    // Add new entry with toggled state
+    setToggleSubRooms([...filtered, { 
+      scheduleId, 
+      subRoomId, 
+      isActive: !currentIsActive 
+    }]);
+  };
 
   if (!scheduleListData || !scheduleListData.schedules || scheduleListData.schedules.length === 0) {
     return null;
   }
 
-  // ✅ Get inactive shifts từ TẤT CẢ schedules (tránh duplicate)
-  const inactiveShiftsMap = new Map(); // key: shiftKey, value: shift info
+  // 🆕 Get ALL SHIFTS (gộp tất cả ca lại: inactive + generated + missing)
+  const allShiftsMap = new Map(); // key: shiftKey, value: shift info with status
   
   scheduleListData.schedules.forEach(schedule => {
     if (schedule.shiftConfig) {
       ['morning', 'afternoon', 'evening'].forEach(shiftKey => {
         const shift = schedule.shiftConfig[shiftKey];
-        // Chỉ lấy ca: isActive=false VÀ isGenerated=false (chưa được tạo)
-        if (shift && shift.isActive === false && shift.isGenerated === false) {
-          if (!inactiveShiftsMap.has(shiftKey)) {
-            inactiveShiftsMap.set(shiftKey, {
-              key: shiftKey,
-              name: shift.name,
-              color: SHIFT_COLORS[shiftKey],
-              startTime: shift.startTime,
-              endTime: shift.endTime
-            });
-          }
+        
+        if (shift && !allShiftsMap.has(shiftKey)) {
+          allShiftsMap.set(shiftKey, {
+            key: shiftKey,
+            name: shift.name,
+            color: SHIFT_COLORS[shiftKey],
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            isActive: shift.isActive !== false, // Current active status
+            isGenerated: shift.isGenerated === true // Has slots or not
+          });
         }
       });
     }
   });
   
-  const inactiveShifts = Array.from(inactiveShiftsMap.values());
+  const allShifts = Array.from(allShiftsMap.values())
+    .sort((a, b) => {
+      // Sắp xếp theo thứ tự: morning -> afternoon -> evening
+      const order = { morning: 1, afternoon: 2, evening: 3 };
+      return order[a.key] - order[b.key];
+    });
 
-  // ✅ Get inactive subrooms (isActiveSubRoom=false) - CHỈ LẤY CỦA THÁNG NÀY
-  const inactiveSubRooms = [];
+  // 🆕 Get ALL SUBROOMS (gộp tất cả buồng: active + inactive)
+  const allSubRooms = [];
   
   if (scheduleListData?.schedules) {
-    // 🔧 FIX: Lấy trực tiếp từ schedules.subRoom.isActiveSubRoom thay vì subRoomShiftStatus
     scheduleListData.schedules.forEach(schedule => {
-      // Filter theo tháng/năm
+      // Filter theo tháng/năm VÀ có subRoom
       if (schedule.month === month && schedule.year === year && schedule.subRoom) {
-        if (schedule.subRoom.isActiveSubRoom === false) {
-          inactiveSubRooms.push({
-            scheduleId: schedule.scheduleId,
-            subRoomId: schedule.subRoom._id,
-            subRoomName: schedule.subRoom.name,
-            shifts: {
-              morning: schedule.shiftConfig?.morning?.isActive ?? false,
-              afternoon: schedule.shiftConfig?.afternoon?.isActive ?? false,
-              evening: schedule.shiftConfig?.evening?.isActive ?? false
-            }
-          });
-        }
+        allSubRooms.push({
+          scheduleId: schedule.scheduleId,
+          subRoomId: schedule.subRoom._id,
+          subRoomName: schedule.subRoom.name,
+          isActive: schedule.subRoom.isActiveSubRoom !== false // Current active status
+        });
       }
     });
   }
   
   console.log(`📊 Modal "Chỉnh sửa lịch" - Tháng ${month}/${year}:`, {
     totalSchedules: scheduleListData?.schedules?.length,
-    inactiveSubRooms: inactiveSubRooms.map(sr => sr.subRoomName)
+    allShifts: allShifts.length,
+    allSubRooms: allSubRooms.length
   });
 
   return (
@@ -213,109 +255,151 @@ const EditScheduleModal = ({
           )}
         </div>
 
-        {/* Reactivate Shifts */}
-        {inactiveShifts.length > 0 && (
+        {/* 🆕 Bật/Tắt ca làm việc - Gộp TẤT CẢ CA (inactive + generated + missing) */}
+        {allShifts.length > 0 && (
           <div>
             <div style={{ marginBottom: 8 }}>
-              <strong>Kích hoạt lại ca làm việc:</strong>
-              <Tag color="orange" style={{ marginLeft: 8 }}>Đã tắt, chưa tạo</Tag>
+              <strong>Bật/Tắt ca làm việc:</strong>
             </div>
-            {/* <Alert
+            <Alert
               type="info"
               showIcon
               message="Lưu ý"
-              description="Chỉ có thể kích hoạt lại ca đã tắt và chưa tạo slots. Sau khi kích hoạt, có thể tạo ca thiếu cho lịch này."
+              description="Tắt ca sẽ ẩn tất cả slots của ca đó khỏi hệ thống đặt lịch (hoặc không cho phép tạo nếu chưa có slots). Bật lại ca sẽ hiển thị lại các slots."
               style={{ marginBottom: 8, fontSize: 12 }}
-            /> */}
-            <Space direction="vertical">
-              {inactiveShifts.map(shift => (
-                <Checkbox
-                  key={shift.key}
-                  checked={reactivateShifts.includes(shift.key)}
-                  onChange={(e) => handleShiftCheckboxChange(shift.key, e.target.checked)}
-                >
-                  <Space>
-                    <Tag color={shift.color}>{shift.name}</Tag>
-                    <span style={{ color: '#8c8c8c' }}>
-                      ({shift.startTime} - {shift.endTime})
-                    </span>
-                    <Tag color="orange">Đang tắt</Tag>
-                  </Space>
-                </Checkbox>
-              ))}
-            </Space>
-            {reactivateShifts.length > 0 && (
-              <Alert
-                type="success"
-                showIcon
-                message={`Sẽ kích hoạt lại ${reactivateShifts.length} ca`}
-                style={{ marginTop: 8, fontSize: 11 }}
-              />
-            )}
-          </div>
-        )}
-
-        {/* ✅ Reactivate SubRooms (isActiveSubRoom: false → true) */}
-        {inactiveSubRooms.length > 0 && (
-          <div>
-            <div style={{ marginBottom: 8 }}>
-              <strong>Kích hoạt lại buồng:</strong>
-              <Tag color="orange" style={{ marginLeft: 8 }}>Đã tắt, chưa tạo</Tag>
-            </div>
-            {/* <Alert
-              type="info"
-              showIcon
-              message="Lưu ý"
-              description="Chỉ có thể kích hoạt lại buồng có isActiveSubRoom=false (đã bị tắt trong lịch). Sau khi kích hoạt, buồng này sẽ hiển thị lại."
-              style={{ marginBottom: 8, fontSize: 12 }}
-            /> */}
-            <Space direction="vertical">
-              {inactiveSubRooms.map(subRoom => (
-                <Checkbox
-                  key={`${subRoom.scheduleId}-${subRoom.subRoomId}`}
-                  checked={reactivateSubRooms.some(item => 
-                    item.scheduleId === subRoom.scheduleId && item.subRoomId === subRoom.subRoomId
-                  )}
-                  onChange={(e) => handleSubRoomCheckboxChange(
-                    subRoom.scheduleId, 
-                    subRoom.subRoomId, 
-                    subRoom.subRoomName, 
-                    e.target.checked
-                  )}
-                >
-                  <Space direction="vertical" size={0}>
-                    <Space>
-                      <Tag color="cyan">{subRoom.subRoomName}</Tag>
-                      <Tag color="orange">Đang tắt</Tag>
+            />
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {/* 🔥 Hiển thị TẤT CẢ CA (inactive + generated + missing) */}
+              {allShifts.map(shift => {
+                // Check if this shift has been toggled
+                const toggledShift = deactivateShifts.find(item => item.shiftKey === shift.key);
+                // Ưu tiên dùng toggled state, nếu không thì dùng shift.isActive
+                const currentIsActive = toggledShift ? toggledShift.isActive : shift.isActive;
+                
+                return (
+                  <div 
+                    key={shift.key} 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      width: '100%', 
+                      padding: '12px', 
+                      border: '1px solid #d9d9d9', 
+                      borderRadius: '4px',
+                      backgroundColor: shift.isGenerated ? '#fff' : '#fffbf0'
+                    }}
+                  >
+                    <Space size="middle">
+                      <Tag color={shift.color} style={{ fontSize: '13px', padding: '2px 8px' }}>
+                        {shift.name}
+                      </Tag>
+                      <span style={{ color: '#595959', fontSize: '13px' }}>
+                        {shift.startTime} - {shift.endTime}
+                      </span>
+                      <Tag color={shift.isGenerated ? 'blue' : 'orange'}>
+                        {shift.isGenerated ? 'Đã tạo slots' : 'Chưa tạo slots'}
+                      </Tag>
+                      <Tag color={currentIsActive ? 'green' : 'red'}>
+                        {currentIsActive ? 'Đang bật' : 'Đang tắt'}
+                      </Tag>
                     </Space>
-                    {/* <div style={{ marginLeft: 24, fontSize: 11, color: '#8c8c8c' }}>
-                      {subRoom.shifts.morning && '✅ Sáng '}
-                      {subRoom.shifts.afternoon && '✅ Chiều '}
-                      {subRoom.shifts.evening && '✅ Tối'}
-                    </div> */}
-                  </Space>
-                </Checkbox>
-              ))}
+                    <Switch
+                      checked={currentIsActive}
+                      onChange={() => handleShiftToggle(shift.key, currentIsActive)}
+                      checkedChildren="Bật"
+                      unCheckedChildren="Tắt"
+                    />
+                  </div>
+                );
+              })}
             </Space>
-            {reactivateSubRooms.length > 0 && (
+            {deactivateShifts.length > 0 && (
               <Alert
-                type="success"
+                type="warning"
                 showIcon
-                message={`Sẽ kích hoạt lại ${reactivateSubRooms.length} buồng`}
+                message={`Sẽ cập nhật ${deactivateShifts.length} ca`}
+                description={deactivateShifts.map(item => {
+                  // Tìm shift từ allShifts
+                  const shift = allShifts.find(s => s.key === item.shiftKey);
+                  return `${shift?.name}: ${item.isActive ? 'Bật' : 'Tắt'}`;
+                }).join(', ')}
                 style={{ marginTop: 8, fontSize: 11 }}
               />
             )}
           </div>
         )}
-
-        {/* No inactive items */}
-        {inactiveShifts.length === 0 && inactiveSubRooms.length === 0 && (
-          <Alert
-            type="success"
-            showIcon
-            message="Tất cả ca và buồng đang hoạt động"
-            description="Không có ca hoặc buồng nào cần kích hoạt lại."
-          />
+        
+        {/* 🆕 Bật/Tắt buồng - Gộp TẤT CẢ BUỒNG (active + inactive) */}
+        {allSubRooms.length > 0 && (
+          <div>
+            <div style={{ marginBottom: 8 }}>
+              <strong>Bật/Tắt buồng:</strong>
+            </div>
+            <Alert
+              type="info"
+              showIcon
+              message="Lưu ý"
+              description="Tắt buồng sẽ ẩn tất cả slots của buồng đó khỏi hệ thống đặt lịch. Bật lại buồng sẽ hiển thị lại các slots."
+              style={{ marginBottom: 8, fontSize: 12 }}
+            />
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {/* 🔥 Hiển thị TẤT CẢ BUỒNG (active + inactive) */}
+              {allSubRooms.map(subRoom => {
+                // Check if this subroom has been toggled
+                const toggledSubRoom = toggleSubRooms.find(item => 
+                  item.scheduleId === subRoom.scheduleId && item.subRoomId === subRoom.subRoomId
+                );
+                // Ưu tiên dùng toggled state, nếu không thì dùng subRoom.isActive
+                const currentIsActive = toggledSubRoom ? toggledSubRoom.isActive : subRoom.isActive;
+                
+                return (
+                  <div 
+                    key={`${subRoom.scheduleId}-${subRoom.subRoomId}`} 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      width: '100%', 
+                      padding: '12px', 
+                      border: '1px solid #d9d9d9', 
+                      borderRadius: '4px'
+                    }}
+                  >
+                    <Space size="middle">
+                      <Tag color="cyan" style={{ fontSize: '13px', padding: '2px 8px' }}>
+                        {subRoom.subRoomName}
+                      </Tag>
+                      <Tag color={currentIsActive ? 'green' : 'red'}>
+                        {currentIsActive ? 'Đang bật' : 'Đang tắt'}
+                      </Tag>
+                    </Space>
+                    <Switch
+                      checked={currentIsActive}
+                      onChange={() => handleSubRoomToggle(subRoom.scheduleId, subRoom.subRoomId, currentIsActive)}
+                      checkedChildren="Bật"
+                      unCheckedChildren="Tắt"
+                    />
+                  </div>
+                );
+              })}
+            </Space>
+            {toggleSubRooms.length > 0 && (
+              <Alert
+                type="warning"
+                showIcon
+                message={`Sẽ cập nhật ${toggleSubRooms.length} buồng`}
+                description={toggleSubRooms.map(item => {
+                  // Tìm subRoom từ allSubRooms
+                  const subRoom = allSubRooms.find(sr => 
+                    sr.scheduleId === item.scheduleId && sr.subRoomId === item.subRoomId
+                  );
+                  return `${subRoom?.subRoomName}: ${item.isActive ? 'Bật' : 'Tắt'}`;
+                }).join(', ')}
+                style={{ marginTop: 8, fontSize: 11 }}
+              />
+            )}
+          </div>
         )}
       </Space>
     </Modal>

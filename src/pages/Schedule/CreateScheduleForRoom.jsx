@@ -176,6 +176,7 @@ const CreateScheduleForRoom = () => {
   // Schedule list modal filters
   const [scheduleListFilterType, setScheduleListFilterType] = useState('all'); // 'all' | 'missing' | 'complete'
   const [scheduleListSearchMonth, setScheduleListSearchMonth] = useState(null); // For month/year search - Format: "YYYY-MM"
+  const [scheduleListActiveFilter, setScheduleListActiveFilter] = useState('all'); // 🆕 'all' | 'active' | 'inactive'
 
   // 🆕 Edit Schedule Modal
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1143,6 +1144,7 @@ const CreateScheduleForRoom = () => {
     // Reset schedule list filters
     setScheduleListFilterType('all');
     setScheduleListSearchMonth(null);
+    setScheduleListActiveFilter('all'); // 🆕 Reset active filter
   };
 
   // 🆕 Open Edit Schedule Modal
@@ -1892,7 +1894,7 @@ const CreateScheduleForRoom = () => {
             <Card size="small">
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 <div>
-                  <Text strong style={{ marginRight: 12 }}>Lọc lịch:</Text>
+                  <Text strong style={{ marginRight: 12 }}>Lọc theo ca:</Text>
                   <Radio.Group 
                     value={scheduleListFilterType} 
                     onChange={(e) => setScheduleListFilterType(e.target.value)}
@@ -1900,6 +1902,17 @@ const CreateScheduleForRoom = () => {
                     <Radio.Button value="all">Tất cả</Radio.Button>
                     <Radio.Button value="missing">Lịch còn thiếu ca</Radio.Button>
                     <Radio.Button value="complete">Lịch đầy đủ</Radio.Button>
+                  </Radio.Group>
+                </div>
+                <div>
+                  <Text strong style={{ marginRight: 12 }}>Lọc theo trạng thái:</Text>
+                  <Radio.Group 
+                    value={scheduleListActiveFilter} 
+                    onChange={(e) => setScheduleListActiveFilter(e.target.value)}
+                  >
+                    <Radio.Button value="all">Tất cả</Radio.Button>
+                    <Radio.Button value="active">Đang hoạt động</Radio.Button>
+                    <Radio.Button value="inactive">Đã tắt</Radio.Button>
                   </Radio.Group>
                 </div>
                 <div>
@@ -2134,7 +2147,10 @@ const CreateScheduleForRoom = () => {
                     const hasAnyMissingShifts = !allComplete;
                     
                     const isExpired = group.schedules.every(s => s.isExpired);
-                    const canCreate = group.schedules.some(s => s.canCreate);
+                    
+                    // 🔥 KHÔNG cho phép "Thêm ca thiếu" nếu TẤT CẢ schedules đều isActive=false
+                    const allInactive = group.schedules.every(s => s.isActive === false);
+                    const canCreate = group.schedules.some(s => s.canCreate) && !allInactive;
 
                     return {
                       ...group,
@@ -2142,7 +2158,8 @@ const CreateScheduleForRoom = () => {
                       groupSubRoomShiftStatus, // 🔧 ADD: Thêm subRoomShiftStatus riêng của group
                       hasMissingShifts: hasAnyMissingShifts,
                       isExpired,
-                      canCreate
+                      canCreate,
+                      allInactive // 🆕 Thêm flag này để hiển thị tooltip
                     };
                   });
 
@@ -2151,6 +2168,19 @@ const CreateScheduleForRoom = () => {
                     groupedSchedules = groupedSchedules.filter(g => g.hasMissingShifts);
                   } else if (scheduleListFilterType === 'complete') {
                     groupedSchedules = groupedSchedules.filter(g => !g.hasMissingShifts);
+                  }
+                  
+                  // 🆕 Apply active/inactive filter
+                  if (scheduleListActiveFilter === 'active') {
+                    groupedSchedules = groupedSchedules.filter(g => {
+                      // Lọc lịch đang hoạt động (có ít nhất 1 schedule isActive=true)
+                      return g.schedules.some(s => s.isActive !== false);
+                    });
+                  } else if (scheduleListActiveFilter === 'inactive') {
+                    groupedSchedules = groupedSchedules.filter(g => {
+                      // Lọc lịch đã tắt (TẤT CẢ schedules đều isActive=false)
+                      return g.schedules.every(s => s.isActive === false);
+                    });
                   }
 
                   // Apply date search filter
@@ -2198,6 +2228,8 @@ const CreateScheduleForRoom = () => {
                                     title={
                                       group.isExpired 
                                         ? `Lịch đã kết thúc vào ${dayjs(group.endDate).format('DD/MM/YYYY')}`
+                                        : group.allInactive
+                                        ? 'Lịch đã tắt, không thể thêm ca thiếu'
                                         : !group.canCreate
                                         ? 'Có ca thiếu hoặc buồng đang tắt hoạt động'
                                         : 'Thêm các ca chưa tạo vào lịch này'
@@ -2305,6 +2337,32 @@ const CreateScheduleForRoom = () => {
                             <Text strong style={{ marginLeft: 8 }}>
                               Tháng {group.month}/{group.year}
                             </Text>
+                            
+                            {/* 🆕 Active Status Badge */}
+                            {(() => {
+                              const allActive = group.schedules.every(s => s.isActive !== false);
+                              const allInactive = group.schedules.every(s => s.isActive === false);
+                              
+                              if (allInactive) {
+                                return (
+                                  <Tag color="red" style={{ marginLeft: 8 }}>
+                                    Đã tắt
+                                  </Tag>
+                                );
+                              } else if (allActive) {
+                                return (
+                                  <Tag color="green" style={{ marginLeft: 8 }}>
+                                    Đang hoạt động
+                                  </Tag>
+                                );
+                              } else {
+                                return (
+                                  <Tag color="orange" style={{ marginLeft: 8 }}>
+                                    Hoạt động một phần
+                                  </Tag>
+                                );
+                              }
+                            })()}
                             
                             {/* Expired Badge */}
                             {group.isExpired && (
