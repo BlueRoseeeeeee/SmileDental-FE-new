@@ -1,0 +1,250 @@
+/* ===================================
+   CREATE SCHEDULE FOR ROOM - ENHANCED STYLES
+   =================================== */
+
+/* Global animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Table row hover effects */
+.ant-table-tbody > tr.table-row-light,
+.ant-table-tbody > tr.table-row-dark {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ant-table-tbody > tr.table-row-light:hover,
+.ant-table-tbody > tr.table-row-dark:hover {
+  background-color: #f0f5ff !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.ant-table-tbody > tr.table-row-light {
+  background-color: #ffffff;
+}
+
+.ant-table-tbody > tr.table-row-dark {
+  background-color: #fafafa;
+}
+
+/* Card animations */
+.ant-card {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Button hover effects */
+.ant-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ant-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ant-btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4);
+}
+
+/* Tag animations */
+.ant-tag {
+  transition: all 0.3s ease;
+}
+
+.ant-tag:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Input focus effects */
+.ant-input:focus,
+.ant-input-focused,
+.ant-select-focused .ant-select-selector {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+}
+
+/* Alert animations */
+.ant-alert {
+  animation: slideInRight 0.4s ease-out;
+}
+
+/* Table header gradient */
+.ant-table-thead > tr > th {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6 !important;
+}
+
+/* Pagination styling */
+.ant-pagination-item-active {
+  border-color: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.ant-pagination-item-active a {
+  color: #fff !important;
+}
+
+/* Checkbox animations */
+.ant-checkbox-wrapper {
+  transition: all 0.3s ease;
+}
+
+.ant-checkbox-wrapper:hover {
+  transform: scale(1.05);
+}
+
+/* Select dropdown */
+.ant-select-dropdown {
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Radio button group */
+.ant-radio-button-wrapper {
+  transition: all 0.3s ease;
+}
+
+.ant-radio-button-wrapper:hover {
+  color: #667eea;
+}
+
+.ant-radio-button-wrapper-checked {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-color: #667eea !important;
+}
+
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled):hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+}
+
+/* Modal enhancements */
+.ant-modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px 8px 0 0;
+}
+
+.ant-modal-title {
+  color: #fff !important;
+  font-weight: 600;
+}
+
+.ant-modal-content {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading spinner */
+.ant-spin {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Tooltip styling */
+.ant-tooltip-inner {
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+/* Space between elements */
+.ant-space-item {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ant-card {
+    border-radius: 8px;
+  }
+  
+  .ant-table {
+    font-size: 13px;
+  }
+  
+  .ant-btn {
+    height: 36px;
+    font-size: 13px;
+  }
+}
+
+/* Success/Error message animations */
+.ant-message {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Calendar icon pulse effect for important actions */
+.anticon-calendar {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Card hover effect */
+.ant-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Tag with icon */
+.ant-tag-has-color {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 4px 12px;
+}

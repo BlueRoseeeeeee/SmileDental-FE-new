@@ -11,6 +11,7 @@ import {
   CalendarOutlined, UserOutlined,
   LeftOutlined, RightOutlined, MedicineBoxOutlined
 } from '@ant-design/icons';
+import smileCareTheme from '../../theme/smileCareTheme';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 
@@ -1003,19 +1004,58 @@ const ScheduleCalendar = () => {
   };
 
   return (
-    <div className="schedule-calendar">
-      {/* Header */}
-      <div className="calendar-header">
-        <Title level={3}>
-          <CalendarOutlined style={{ marginRight: 8 }} />
-          Lịch Làm Việc
-        </Title>
-      </div>
+    <div className="schedule-calendar" style={{
+      minHeight: 'calc(100vh - 64px)',
+      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+      padding: '32px 24px'
+    }}>
+      {/* Header Card */}
+      <Card
+        style={{
+          marginBottom: 24,
+          borderRadius: 16,
+          border: '2px solid #dbeafe',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          boxShadow: smileCareTheme.shadows.lg
+        }}
+        bodyStyle={{ padding: '20px 28px' }}
+      >
+        <Space size={16} align="center">
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            background: 'rgba(255, 255, 255, 0.2)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid rgba(255, 255, 255, 0.3)'
+          }}>
+            <CalendarOutlined style={{ fontSize: 24, color: '#fff' }} />
+          </div>
+          <div>
+            <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 700 }}>
+              Lịch Làm Việc
+            </Title>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
+              Xem lịch làm việc theo phòng, nha sĩ hoặc y tá
+            </Text>
+          </div>
+        </Space>
+      </Card>
 
       <Row gutter={16}>
         {/* Main Calendar */}
         <Col span={24}>
-          <Card>
+          <Card
+            style={{
+              borderRadius: 16,
+              border: '2px solid #dbeafe',
+              boxShadow: smileCareTheme.shadows.lg
+            }}
+            bodyStyle={{ padding: '24px 28px' }}
+          >
             {/* View Mode Segmented - chỉ hiển thị cho admin/manager */}
             {(user?.role === 'admin' || user?.role === 'manager') && (
               <Segmented

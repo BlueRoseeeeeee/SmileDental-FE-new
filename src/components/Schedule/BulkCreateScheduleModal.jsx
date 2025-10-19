@@ -149,13 +149,13 @@ const BulkCreateScheduleModal = ({
           setFromMonth(firstMonth);
           form.setFieldsValue({ fromMonth: firstMonth });
           
-          // 🆕 Tự động chọn tháng cuối cùng có thể tạo làm toMonth
-          const lastAvailable = response.data.availableMonths[response.data.availableMonths.length - 1];
-          const lastMonth = dayjs().year(lastAvailable.year).month(lastAvailable.month - 1);
-          setToMonth(lastMonth);
-          form.setFieldsValue({ toMonth: lastMonth });
+          // ❌ REMOVED: Không tự động chọn toMonth - Để user tự chọn
+          // const lastAvailable = response.data.availableMonths[response.data.availableMonths.length - 1];
+          // const lastMonth = dayjs().year(lastAvailable.year).month(lastAvailable.month - 1);
+          // setToMonth(lastMonth);
+          // form.setFieldsValue({ toMonth: lastMonth });
           
-          console.log(`🎯 Auto-selected range: ${firstAvailable.month}/${firstAvailable.year} - ${lastAvailable.month}/${lastAvailable.year}`);
+          console.log(`🎯 Auto-selected fromMonth: ${firstAvailable.month}/${firstAvailable.year}`);
         } else {
           console.warn('⚠️ No available months found!');
         }
@@ -272,7 +272,26 @@ const BulkCreateScheduleModal = ({
     return false;
   }, []);
 
-  // 🆕 Disable months for FROM picker - Chỉ cho chọn tháng có trong availableMonths
+  // 🔥 Available months (đã filter 7 tháng) - PHẢI ĐỊNH NGHĨA TRƯỚC disabledFromMonth và disabledToMonth
+  const availableMonths = useMemo(() => {
+    if (!bulkInfo || !bulkInfo.availableMonths) return [];
+    
+    // 🆕 Giới hạn: Chỉ hiển thị các tháng trong khoảng 7 tháng từ hiện tại
+    const maxDate = dayjs().add(7, 'months');
+    
+    return bulkInfo.availableMonths
+      .filter(m => {
+        const monthDate = dayjs().year(m.year).month(m.month - 1);
+        return !monthDate.isAfter(maxDate, 'month');
+      })
+      .map(m => ({
+        month: m.month,
+        year: m.year,
+        label: `${m.month}/${m.year}`
+      }));
+  }, [bulkInfo]);
+
+  // 🆕 Disable months for FROM picker - Chỉ cho chọn tháng có trong availableMonths (ĐÃ FILTER 7 THÁNG)
   const disabledFromMonth = useCallback((current) => {
     if (!current || !bulkInfo) return false;
 
@@ -282,19 +301,19 @@ const BulkCreateScheduleModal = ({
     const month = current.month() + 1;
     const year = current.year();
 
-    // 🔥 FIX: Chỉ cho chọn tháng có trong availableMonths (backend đã tính logic đúng)
-    if (!bulkInfo.availableMonths || bulkInfo.availableMonths.length === 0) {
+    // 🔥 FIX: Check theo availableMonths ĐÃ FILTER (7 tháng), KHÔNG phải bulkInfo.availableMonths gốc
+    if (!availableMonths || availableMonths.length === 0) {
       return true; // Nếu không có tháng nào → disable tất cả
     }
 
-    const isAvailable = bulkInfo.availableMonths.some(
+    const isAvailable = availableMonths.some(
       m => m.month === month && m.year === year
     );
 
-    return !isAvailable; // Disable nếu KHÔNG có trong availableMonths
-  }, [bulkInfo, disabledDate]);
+    return !isAvailable; // Disable nếu KHÔNG có trong availableMonths đã filter
+  }, [bulkInfo, disabledDate, availableMonths]);
 
-  // 🆕 Disable months for TO picker - Chỉ cho chọn >= fromMonth và có trong availableMonths
+  // 🆕 Disable months for TO picker - Chỉ cho chọn >= fromMonth và có trong availableMonths (ĐÃ FILTER 7 THÁNG)
   const disabledToMonth = useCallback((current) => {
     if (!current || !bulkInfo) return false;
 
@@ -309,27 +328,17 @@ const BulkCreateScheduleModal = ({
     const month = current.month() + 1;
     const year = current.year();
 
-    // 🔥 FIX: Chỉ cho chọn tháng có trong availableMonths
-    if (!bulkInfo.availableMonths || bulkInfo.availableMonths.length === 0) {
+    // 🔥 FIX: Check theo availableMonths ĐÃ FILTER (7 tháng), KHÔNG phải bulkInfo.availableMonths gốc
+    if (!availableMonths || availableMonths.length === 0) {
       return true;
     }
 
-    const isAvailable = bulkInfo.availableMonths.some(
+    const isAvailable = availableMonths.some(
       m => m.month === month && m.year === year
     );
 
-    return !isAvailable; // Disable nếu KHÔNG có trong availableMonths
-  }, [bulkInfo, fromMonth, disabledDate]);
-
-  // Available months (not disabled)
-  const availableMonths = useMemo(() => {
-    if (!bulkInfo || !bulkInfo.availableMonths) return [];
-    return bulkInfo.availableMonths.map(m => ({
-      month: m.month,
-      year: m.year,
-      label: `${m.month}/${m.year}`
-    }));
-  }, [bulkInfo]);
+    return !isAvailable; // Disable nếu KHÔNG có trong availableMonths đã filter
+  }, [bulkInfo, fromMonth, disabledDate, availableMonths]);
 
   // 🆕 Check if shift is active in config
   const isShiftActive = useCallback((shiftKey) => {
@@ -500,6 +509,7 @@ const BulkCreateScheduleModal = ({
         ]
       }
       destroyOnClose
+      bodyStyle={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}
     >
       {/* List selected rooms */}
       <Alert
@@ -640,6 +650,7 @@ const BulkCreateScheduleModal = ({
                 setStartDate(null);
                 form.setFieldsValue({ toMonth: null, startDate: null });
               }}
+              defaultPickerValue={dayjs()} // 🔥 Mặc định mở ở tháng hiện tại
             />
           </Form.Item>
 
@@ -663,6 +674,7 @@ const BulkCreateScheduleModal = ({
                   setStartDate(null);
                   form.setFieldsValue({ startDate: null });
                 }}
+                defaultPickerValue={fromMonth || dayjs()} // 🔥 Mặc định mở ở tháng bắt đầu hoặc tháng hiện tại
               />
             </Form.Item>
           )}

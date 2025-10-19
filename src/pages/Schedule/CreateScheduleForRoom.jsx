@@ -42,6 +42,7 @@ import { debounce } from '../../utils/searchUtils';
 import EditScheduleModal from '../../components/Schedule/EditScheduleModal';
 import BulkRoomScheduleModal from '../../components/Schedule/BulkRoomScheduleModal';
 import BulkCreateScheduleModal from '../../components/Schedule/BulkCreateScheduleModal';
+import './CreateScheduleForRoom.css'; // Import CSS file
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -1599,88 +1600,177 @@ const CreateScheduleForRoom = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Header */}
-      <Row align="middle" style={{ marginBottom: 8 }}>
-        <Col>
-          <Space align="center">
-            <Button
-              type="text"
-              icon={<ArrowLeftOutlined style={{ fontSize: 20 }} />}
-              onClick={() => navigate('/schedule')}
-              style={{ padding: '4px 8px' }}
+    <div style={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+      padding: '24px'
+    }}>
+      {/* Header with enhanced styling */}
+      <Card 
+        style={{ 
+          marginBottom: 24,
+          borderRadius: 16,
+          boxShadow: '0 4px 20px rgba(59, 130, 246, 0.15)',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          border: '2px solid rgba(59, 130, 246, 0.2)'
+        }}
+        bodyStyle={{ padding: '24px 32px' }}
+      >
+        <Row align="middle" justify="space-between">
+          <Col>
+            <Space align="center" size="large">
+              <Button
+                type="text"
+                icon={<ArrowLeftOutlined style={{ fontSize: 20, color: '#fff' }} />}
+                onClick={() => navigate('/schedule')}
+                style={{ 
+                  padding: '4px 8px',
+                  color: '#fff',
+                  transition: 'all 0.3s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              />
+              <div>
+                <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 600 }}>
+                  <CalendarOutlined style={{ marginRight: 12 }} />
+                  Tạo lịch làm việc cho phòng khám
+                </Title>
+                <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14 }}>
+                  Quản lý và tạo lịch làm việc cho các phòng khám
+                </Text>
+              </div>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Filters Section - Enhanced */}
+      <Card 
+        style={{ 
+          marginBottom: 16,
+          borderRadius: 12,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          border: '1px solid #e8e8e8'
+        }}
+        bodyStyle={{ padding: '16px 24px' }}
+      >
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} sm={24} md={8} lg={6}>
+            <Input
+              allowClear
+              placeholder="🔍 Tìm kiếm phòng..."
+              prefix={<SearchOutlined style={{ color: '#1890ff' }} />}
+              value={roomSearchValue}
+              onChange={(e) => {
+                const { value } = e.target;
+                setRoomSearchValue(value);
+                debouncedRoomSearch(value);
+              }}
+              size="large"
+              style={{ 
+                borderRadius: 8,
+                border: '2px solid #e8e8e8'
+              }}
             />
-            <Title level={3} style={{ margin: 0 }}>
-              Tạo lịch làm việc cho phòng khám
-            </Title>
-          </Space>
-        </Col>
-      </Row>
+          </Col>
+          <Col xs={24} sm={24} md={16} lg={18}>
+            <Space wrap style={{ float: 'right' }}>
+              {/* Active Filter */}
+              <Select
+                value={roomActiveFilter}
+                onChange={setRoomActiveFilter}
+                style={{ width: 180 }}
+                size="large"
+              >
+                <Option value={true}>✅ Phòng hoạt động</Option>
+                <Option value={false}>⛔ Phòng không hoạt động</Option>
+                <Option value="all">📋 Tất cả phòng</Option>
+              </Select>
+              
+              {/* Schedule Status Filter - Radio */}
+              <Radio.Group 
+                value={scheduleStatusFilter} 
+                onChange={(e) => setScheduleStatusFilter(e.target.value)}
+                buttonStyle="solid"
+                size="large"
+              >
+                <Radio.Button value="all">
+                  <span style={{ fontWeight: 500 }}>Tất cả</span>
+                </Radio.Button>
+                <Radio.Button value="no-schedule">
+                  <span style={{ fontWeight: 500 }}>Chưa có lịch</span>
+                </Radio.Button>
+                <Radio.Button value="has-schedule">
+                  <span style={{ fontWeight: 500 }}>Đã có lịch</span>
+                </Radio.Button>
+              </Radio.Group>
+              
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={fetchRooms}
+                loading={loading}
+                size="large"
+                style={{ 
+                  borderRadius: 8,
+                  fontWeight: 500
+                }}
+              >
+                Làm mới
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
 
-      {/* Filters Section */}
-      <Row gutter={16} style={{ marginTop: 24, marginBottom: 16 }}>
-        <Col flex="320px">
-          <Input
-            allowClear
-            placeholder="Tìm kiếm phòng..."
-            prefix={<SearchOutlined />}
-            value={roomSearchValue}
-            onChange={(e) => {
-              const { value } = e.target;
-              setRoomSearchValue(value);
-              debouncedRoomSearch(value);
-            }}
-          />
-        </Col>
-        <Col flex="auto">
-          <Space style={{ float: 'right' }}>
-            {/* Active Filter */}
-            <Select
-              value={roomActiveFilter}
-              onChange={setRoomActiveFilter}
-              style={{ width: 180 }}
-            >
-              <Option value={true}>Phòng hoạt động</Option>
-              <Option value={false}>Phòng không hoạt động</Option>
-              <Option value="all">Tất cả phòng</Option>
-            </Select>
-            
-            {/* Schedule Status Filter - Radio */}
-            <Radio.Group 
-              value={scheduleStatusFilter} 
-              onChange={(e) => setScheduleStatusFilter(e.target.value)}
-              buttonStyle="solid"
-            >
-              <Radio.Button value="all">Tất cả</Radio.Button>
-              <Radio.Button value="no-schedule">Chưa có lịch</Radio.Button>
-              <Radio.Button value="has-schedule">Đã có lịch</Radio.Button>
-            </Radio.Group>
-            
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchRooms}
-              loading={loading}
-            >
-              Làm mới
-            </Button>
-          </Space>
-        </Col>
-      </Row>
-
-      {/* 🆕 Bulk Operations - Multi-select rooms */}
-      <Card style={{ marginBottom: 16, background: '#f0f5ff', borderColor: '#adc6ff' }}>
-        <Space direction="vertical" style={{ width: '100%' }} size="middle">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-              <CalendarOutlined /> Tạo lịch hàng loạt cho nhiều phòng
-            </Text>
-            <Space>
+      {/* 🆕 Bulk Operations - Multi-select rooms - Enhanced */}
+      <Card 
+        style={{ 
+          marginBottom: 16,
+          background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+          borderRadius: 16,
+          border: '2px solid #bfdbfe',
+          boxShadow: '0 4px 16px rgba(59, 130, 246, 0.15)'
+        }}
+        bodyStyle={{ padding: '28px 32px' }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+            <Space align="center" size="middle">
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+              }}>
+                <CalendarOutlined style={{ fontSize: 24, color: '#fff' }} />
+              </div>
+              <div>
+                <Text strong style={{ fontSize: 18, color: '#1976d2', display: 'block' }}>
+                  Tạo lịch hàng loạt cho nhiều phòng
+                </Text>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  Chọn và tạo lịch cho nhiều phòng cùng lúc
+                </Text>
+              </div>
+            </Space>
+            <Space wrap>
               <Button
                 icon={<EyeOutlined />}
                 onClick={handleViewAllRoomsSchedules}
                 loading={loading}
+                size="large"
+                style={{ 
+                  borderRadius: 8,
+                  fontWeight: 500,
+                  height: 40
+                }}
               >
-                Xem tất cả lịch các phòng
+                Xem tất cả lịch
               </Button>
               <Button
                 type={bulkSelectionMode ? 'primary' : 'default'}
@@ -1693,8 +1783,16 @@ const CreateScheduleForRoom = () => {
                     setSelectedRoomsMap({}); // 🔥 Clear map
                   }
                 }}
+                size="large"
+                style={{ 
+                  borderRadius: 8,
+                  fontWeight: 500,
+                  height: 40,
+                  background: bulkSelectionMode ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : undefined,
+                  border: bulkSelectionMode ? 'none' : undefined
+                }}
               >
-                {bulkSelectionMode ? 'Đang chọn nhiều phòng' : 'Bật chọn nhiều phòng'}
+                {bulkSelectionMode ? '✓ Đang chọn nhiều phòng' : 'Bật chọn nhiều phòng'}
               </Button>
             </Space>
           </div>
@@ -1704,15 +1802,25 @@ const CreateScheduleForRoom = () => {
               <Alert
                 type="info"
                 showIcon
-                message="Chế độ chọn nhiều phòng đã bật"
-                description="Bạn có thể chọn phòng bằng cách: (1) Tick vào checkbox bên trái mỗi phòng trong bảng, hoặc (2) Chọn trong ô tìm kiếm bên dưới"
+                message={<Text strong>📌 Chế độ chọn nhiều phòng đã bật</Text>}
+                description={
+                  <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+                    <div><Text strong>Cách 1:</Text> Tick vào checkbox bên trái mỗi phòng trong bảng</div>
+                    <div><Text strong>Cách 2:</Text> Chọn trong ô tìm kiếm bên dưới</div>
+                  </div>
+                }
                 closable
+                style={{ 
+                  borderRadius: 8,
+                  border: '1px solid #91d5ff'
+                }}
               />
               
               <Select
                 mode="multiple"
                 style={{ width: '100%' }}
                 placeholder="🔍 Tìm và chọn các phòng cần tạo lịch..."
+                size="large"
                 filterOption={(input, option) => {
                   // 🔥 Tìm trong cả filteredRooms VÀ selectedRoomsMap
                   let room = filteredRooms.find(r => r._id === option.value);
@@ -1770,7 +1878,7 @@ const CreateScheduleForRoom = () => {
               </Select>
 
               {/* 🆕 Quick Actions - Always visible when bulk mode is on */}
-              <Space wrap style={{ marginTop: 12 }}>
+              <Space wrap>
                 <Button
                   icon={<CheckCircleOutlined />}
                   onClick={async () => {
@@ -1816,6 +1924,11 @@ const CreateScheduleForRoom = () => {
                     }
                   }}
                   loading={loading}
+                  size="large"
+                  style={{ 
+                    borderRadius: 8,
+                    fontWeight: 500
+                  }}
                 >
                   Chọn tất cả phòng
                 </Button>
@@ -1828,6 +1941,11 @@ const CreateScheduleForRoom = () => {
                     message.info('Đã bỏ chọn tất cả');
                   }}
                   disabled={selectedRoomIds.length === 0}
+                  size="large"
+                  style={{ 
+                    borderRadius: 8,
+                    fontWeight: 500
+                  }}
                 >
                   Bỏ chọn tất cả
                 </Button>
@@ -1835,17 +1953,39 @@ const CreateScheduleForRoom = () => {
 
               {/* Selection Info & Actions - Only show when has selection */}
               {selectedRoomIds.length > 0 && (
-                <div style={{ marginTop: 12 }}>
+                <Card
+                  style={{ 
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%)',
+                    borderRadius: 10,
+                    border: '2px dashed #1890ff',
+                    boxShadow: '0 2px 8px rgba(24, 144, 255, 0.15)'
+                  }}
+                  bodyStyle={{ padding: '16px 20px' }}
+                >
                   <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
                     {/* Left side - Info & View */}
                     <Space wrap>
-                      <Tag color="blue" icon={<CheckCircleOutlined />} style={{ fontSize: 14, padding: '4px 12px' }}>
+                      <Tag 
+                        color="blue" 
+                        icon={<CheckCircleOutlined />} 
+                        style={{ 
+                          fontSize: 15, 
+                          padding: '6px 16px',
+                          borderRadius: 8,
+                          fontWeight: 600
+                        }}
+                      >
                         {selectedRoomIds.length} phòng đã chọn
                       </Tag>
                       <Button
                         icon={<EyeOutlined />}
                         onClick={handleViewBulkSchedules}
                         loading={loading}
+                        size="large"
+                        style={{ 
+                          borderRadius: 8,
+                          fontWeight: 500
+                        }}
                       >
                         Xem lịch các phòng
                       </Button>
@@ -1862,25 +2002,69 @@ const CreateScheduleForRoom = () => {
                         console.log('🔍 selectedRooms to pass:', selectedRoomIds.map(id => selectedRoomsMap[id]).filter(Boolean));
                         setShowBulkCreateModal(true);
                       }}
+                      size="large"
+                      style={{ 
+                        borderRadius: 8,
+                        fontWeight: 600,
+                        height: 42,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+                      }}
                     >
-                      Tạo lịch cho tất cả
+                      🚀 Tạo lịch cho tất cả
                     </Button>
                   </Space>
-                </div>
+                </Card>
               )}
             </>
           )}
         </Space>
       </Card>
 
-      {/* Rooms Table */}
-      <Card>
+      {/* Rooms Table - Enhanced */}
+      <Card
+        style={{ 
+          borderRadius: 12,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+          overflow: 'hidden'
+        }}
+        bodyStyle={{ padding: 0 }}
+      >
+        <div style={{ 
+          padding: '16px 24px',
+          background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+          borderBottom: '2px solid #dee2e6'
+        }}>
+          <Space align="center">
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <CalendarOutlined style={{ fontSize: 18, color: '#fff' }} />
+            </div>
+            <Text strong style={{ fontSize: 16 }}>
+              Danh sách phòng khám
+            </Text>
+            <Tag color="blue" style={{ marginLeft: 8 }}>
+              {pagination.total} phòng
+            </Tag>
+          </Space>
+        </div>
         <Table
           columns={columns}
           dataSource={filteredRooms}
           loading={loading}
           rowKey="_id"
-          scroll={{ x: bulkSelectionMode ? 1400 : 1200 }} // 🔥 Enable horizontal scroll khi có checkbox
+          scroll={{ 
+            x: bulkSelectionMode ? 1400 : 1200,
+            y: 'calc(100vh - 520px)'
+          }}
           pagination={roomSearchTerm ? false : {
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -1889,7 +2073,11 @@ const CreateScheduleForRoom = () => {
             showTotal: (total) => `Tổng ${total} phòng`,
             onChange: (page, pageSize) => {
               setPagination({ ...pagination, current: page, pageSize });
-            }
+            },
+            style: { padding: '16px 24px' }
+          }}
+          rowClassName={(record, index) => {
+            return index % 2 === 0 ? 'table-row-light' : 'table-row-dark';
           }}
         />
       </Card>
@@ -1918,6 +2106,7 @@ const CreateScheduleForRoom = () => {
           </Button>
         ]}
         width={800}
+        bodyStyle={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}
             >
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -2704,6 +2893,7 @@ const CreateScheduleForRoom = () => {
         cancelText="Hủy"
         width={900}
         confirmLoading={creatingSchedule}
+        bodyStyle={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           {isEditingExistingSchedule && (
@@ -3263,17 +3453,25 @@ const CreateScheduleForRoom = () => {
                   const currentYear = dayjs().year();
                   const currentMonth = dayjs().month() + 1;
                   
+                  // 🆕 Giới hạn: Chỉ cho chọn tháng trong khoảng 7 tháng từ hiện tại
+                  const maxDate = dayjs().add(7, 'months');
+                  const maxYear = maxDate.year();
+                  const maxMonth = maxDate.month() + 1;
+                  
+                  const monthDate = dayjs().year(selectedYear).month(m - 1);
+                  const isAfterMaxDate = selectedYear > maxYear || (selectedYear === maxYear && m > maxMonth);
+                  
                   // Disable nếu là tháng trong quá khứ
                   const isPastMonth = selectedYear === currentYear && m < currentMonth;
                   
                   // Disable nếu tháng đã có lịch
                   const hasSchedule = isMonthScheduled(m, selectedYear);
                   
-                  const isDisabled = isPastMonth || hasSchedule;
+                  const isDisabled = isPastMonth || hasSchedule || isAfterMaxDate;
                   
                   return (
                     <Option key={m} value={m} disabled={isDisabled}>
-                      Tháng {m} {isPastMonth && '(Đã qua)'} {hasSchedule && '(Đã có lịch)'}
+                      Tháng {m} {isPastMonth && '(Đã qua)'} {hasSchedule && '(Đã có lịch)'} {isAfterMaxDate && '(Vượt quá 6 tháng)'}
                     </Option>
                   );
                 })}
@@ -3336,40 +3534,18 @@ const CreateScheduleForRoom = () => {
                 {(() => {
                   const currentYear = dayjs().year();
                   const currentMonth = dayjs().month() + 1;
-                  const suggestedStart = scheduleListData?.summary?.suggestedStartDate;
                   
-                  // Xác định năm tối thiểu có thể chọn
-                  let minYear = currentYear;
-                  
-                  // Nếu có lịch đề xuất, lấy năm từ ngày đề xuất
-                  if (suggestedStart && !isEditingExistingSchedule) {
-                    minYear = dayjs(suggestedStart).year();
-                  }
-                  
-                  // Nếu đang ở tháng cuối năm và đã tạo hết lịch năm nay
-                  // thì cho phép chọn năm sau
-                  const lastSchedule = scheduleListData?.schedules?.[scheduleListData.schedules.length - 1];
-                  if (lastSchedule) {
-                    const lastScheduleEnd = dayjs(lastSchedule.endDate);
-                    const lastScheduleYear = lastScheduleEnd.year();
-                    const lastScheduleMonth = lastScheduleEnd.month() + 1;
-                    
-                    // Nếu lịch cuối cùng là tháng 12 của năm hiện tại, cho phép chọn năm sau
-                    if (lastScheduleYear === currentYear && lastScheduleMonth === 12) {
-                      minYear = currentYear + 1;
-                    }
-                  }
+                  // 🆕 Giới hạn: Chỉ cho chọn năm trong khoảng 7 tháng từ hiện tại
+                  const maxDate = dayjs().add(7, 'months');
+                  const maxYear = maxDate.year();
                   
                   const years = [];
-                  // Tạo danh sách năm từ minYear đến minYear + 2
-                  for (let i = 0; i <= 2; i++) {
-                    const year = minYear + i;
-                    const isDisabled = year < currentYear || 
-                      (year === currentYear && currentMonth === 12 && fromMonth <= currentMonth);
-                    
+                  
+                  // Chỉ tạo danh sách năm từ năm hiện tại đến năm của maxDate
+                  for (let year = currentYear; year <= maxYear; year++) {
                     years.push(
-                      <Option key={year} value={year} disabled={isDisabled}>
-                        {year} {isDisabled && '(Đã qua)'}
+                      <Option key={year} value={year}>
+                        {year}
                       </Option>
                     );
                   }
@@ -3401,6 +3577,11 @@ const CreateScheduleForRoom = () => {
                   const currentYear = dayjs().year();
                   const currentMonth = dayjs().month() + 1;
                   
+                  // 🆕 Giới hạn: Chỉ cho chọn tháng trong khoảng 7 tháng từ hiện tại
+                  const maxDate = dayjs().add(7, 'months');
+                  const maxYear = maxDate.year();
+                  const maxMonth = maxDate.month() + 1;
+                  
                   // 🆕 Nếu chưa chọn năm kết thúc, mặc định dùng năm bắt đầu
                   const effectiveToYear = toYear || selectedYear;
                   
@@ -3411,13 +3592,16 @@ const CreateScheduleForRoom = () => {
                   for (let m = startMonth; m <= 12; m++) {
                     const yearToCheck = effectiveToYear;
                     
+                    // Kiểm tra vượt quá 6 tháng
+                    const isAfterMaxDate = yearToCheck > maxYear || (yearToCheck === maxYear && m > maxMonth);
+                    
                     // Disable nếu tháng đã có lịch
                     const hasSchedule = isMonthScheduled(m, yearToCheck);
                     
                     // Disable nếu cùng năm và tháng < fromMonth
                     const isBeforeStart = yearToCheck === selectedYear && m < fromMonth;
                     
-                    const isDisabled = hasSchedule || isBeforeStart;
+                    const isDisabled = hasSchedule || isBeforeStart || isAfterMaxDate;
                     
                     options.push(
                       <Option 
@@ -3425,12 +3609,12 @@ const CreateScheduleForRoom = () => {
                         value={m}
                         disabled={isDisabled}
                       >
-                        Tháng {m} {hasSchedule && '(Đã có lịch)'}
+                        Tháng {m} {hasSchedule && '(Đã có lịch)'} {isAfterMaxDate && '(Vượt quá 6 tháng)'}
                       </Option>
                     );
                     
-                    // Nếu gặp tháng có lịch, dừng lại (không cho chọn tháng sau tháng có lịch)
-                    if (hasSchedule) {
+                    // Nếu gặp tháng có lịch hoặc vượt quá 6 tháng, dừng lại
+                    if (hasSchedule || isAfterMaxDate) {
                       break;
                     }
                   }
@@ -3454,13 +3638,14 @@ const CreateScheduleForRoom = () => {
                 {(() => {
                   if (!fromMonth || !selectedYear) return [];
                   
-                  const years = [];
-                  const currentYear = dayjs().year();
+                  // 🆕 Giới hạn: Chỉ cho chọn năm trong khoảng 7 tháng từ hiện tại
+                  const maxDate = dayjs().add(7, 'months');
+                  const maxYear = maxDate.year();
                   
-                  // Cho phép chọn từ năm bắt đầu đến +2 năm
-                  for (let i = 0; i <= 2; i++) {
-                    const year = selectedYear + i;
-                    
+                  const years = [];
+                  
+                  // Cho phép chọn từ năm bắt đầu đến maxYear
+                  for (let year = selectedYear; year <= maxYear; year++) {
                     // Kiểm tra xem năm này còn tháng nào chưa có lịch không
                     let hasAvailableMonth = false;
                     const startMonth = year === selectedYear ? fromMonth : 1;

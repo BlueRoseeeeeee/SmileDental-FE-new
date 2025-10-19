@@ -237,6 +237,7 @@ const EditScheduleModal = ({
       cancelText="Hủy"
       confirmLoading={loading}
       width={600}
+      bodyStyle={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}
     >
       <Space direction="vertical" style={{ width: '100%' }} size="large">
         {/* Schedule Info */}

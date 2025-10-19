@@ -29,8 +29,12 @@ import {
   EditOutlined,
   DeleteOutlined,
   ClockCircleOutlined,
-  SearchOutlined
+  SearchOutlined,
+  InfoCircleOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
+import smileCareTheme from '../../theme/smileCareTheme';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
@@ -715,16 +719,55 @@ const HolidayManagement = () => {
   }, []);
 
   return (
-    <div>
+    <div style={{ 
+      minHeight: 'calc(100vh - 64px)',
+      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+      padding: '32px 24px'
+    }}>
+      {/* Header Card */}
+      <Card
+        style={{
+          marginBottom: 24,
+          borderRadius: 16,
+          border: '2px solid #dbeafe',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          boxShadow: smileCareTheme.shadows.lg
+        }}
+        bodyStyle={{ padding: '24px 32px' }}
+      >
+        <Space size={16} align="center">
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            background: 'rgba(255, 255, 255, 0.2)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid rgba(255, 255, 255, 0.3)'
+          }}>
+            <CalendarOutlined style={{ fontSize: 24, color: '#fff' }} />
+          </div>
+          <div>
+            <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 700 }}>
+              Quản lý Ngày nghỉ lễ
+            </Title>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
+              Quản lý các ngày nghỉ cố định và ngày nghỉ lễ của phòng khám
+            </Text>
+          </div>
+        </Space>
+      </Card>
 
-      <div style={{ marginBottom: '24px' }}>
-        <Title level={4}>
-          <CalendarOutlined style={{ marginRight: '8px' }} />
-          Quản lý Ngày nghỉ 
-        </Title>
-      </div>
-
-      <Card>
+      <Card
+        style={{
+          borderRadius: 16,
+          border: '2px solid #dbeafe',
+          boxShadow: smileCareTheme.shadows.lg
+        }}
+        bodyStyle={{ padding: '28px 32px' }}
+      >
         {/* Search và Filter */}
         <div style={{ marginBottom: '16px' }}>
           {/* Row 1: Bộ lọc */}
@@ -827,6 +870,25 @@ const HolidayManagement = () => {
                 icon={<PlusOutlined />}
                 onClick={handleAddHoliday}
                 size="large"
+                style={{
+                  height: 48,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  borderRadius: 12,
+                  padding: '0 32px',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  border: 'none',
+                  boxShadow: '0 4px 16px rgba(59, 130, 246, 0.4)',
+                  transition: 'all 0.3s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.4)';
+                }}
               >
                 Thêm ngày nghỉ lễ
               </Button>

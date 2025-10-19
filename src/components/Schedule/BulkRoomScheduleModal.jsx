@@ -401,6 +401,7 @@ const BulkRoomScheduleModal = ({
       width={1400}
       footer={null}
       destroyOnClose
+      bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
     >
       {/* Statistics */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -585,7 +586,10 @@ const BulkRoomScheduleModal = ({
             />
           )
         }}
-        scroll={{ x: 1200 }}
+        scroll={{ 
+          x: 1200,
+          y: 'calc(100vh - 550px)'
+        }}
       />
     </Modal>
   );
