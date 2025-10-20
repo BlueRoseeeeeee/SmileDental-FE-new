@@ -1,0 +1,488 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Card, 
+  Typography, 
+  Button, 
+  Space,
+  Tag,
+  Alert,
+  Row,
+  Col,
+  Spin,
+  Empty,
+  message,
+  Tooltip
+} from 'antd';
+import { 
+  ArrowLeftOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  InfoCircleOutlined
+} from '@ant-design/icons';
+import dayjs from 'dayjs';
+import slotService from '../../services/slotService.js';
+import { mockSlots, mockServices, mockDentists } from '../../services/mockData.js';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { groupConsecutiveSlots, groupSlotsByShift, formatCurrency } from '../../utils/slotGrouping.js';
+import './BookingSelectTime.css';
+
+const { Title, Text } = Typography;
+
+// Toggle this to use mock data for testing
+const USE_MOCK_DATA = false;
+
+const BookingSelectTime = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServiceAddOn, setSelectedServiceAddOn] = useState(null); // 🆕 Store selected addon
+  const [selectedDentist, setSelectedDentist] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedSlotGroup, setSelectedSlotGroup] = useState(null); // 🆕 Change from single slot to group
+  const [availableSlotGroups, setAvailableSlotGroups] = useState({
+    morning: [],
+    afternoon: [],
+    evening: []
+  });
+  const [loading, setLoading] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState(null); // 🆕 Store config for deposit calculation
+
+  useEffect(() => {
+    // Pre-populate localStorage with mock data if using mocks
+    if (USE_MOCK_DATA) {
+      if (!localStorage.getItem('booking_service')) {
+        localStorage.setItem('booking_service', JSON.stringify(mockServices[0]));
+      }
+      if (!localStorage.getItem('booking_dentist')) {
+        localStorage.setItem('booking_dentist', JSON.stringify(mockDentists[0]));
+      }
+      if (!localStorage.getItem('booking_date')) {
+        localStorage.setItem('booking_date', '2025-10-20'); // Mock date matching slots
+      }
+    }
+
+    // Kiểm tra xem đã chọn đủ thông tin chưa
+    const service = localStorage.getItem('booking_service');
+    const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
+    const dentist = localStorage.getItem('booking_dentist');
+    const date = localStorage.getItem('booking_date');
+    
+    if (!service || !dentist || !date) {
+      navigate('/patient/booking/select-service');
+      return;
+    }
+    
+    const serviceData = JSON.parse(service);
+    const serviceAddOnData = serviceAddOn ? JSON.parse(serviceAddOn) : null;
+    const dentistData = JSON.parse(dentist);
+    
+    setSelectedService(serviceData);
+    setSelectedServiceAddOn(serviceAddOnData);
+    setSelectedDentist(dentistData);
+    setSelectedDate(dayjs(date));
+    
+    // Fetch available slots with service info
+    fetchAvailableSlots(dentistData._id, date, serviceData);
+  }, []);
+
+  const fetchAvailableSlots = async (dentistId, date, serviceData) => {
+    try {
+      setLoading(true);
+      
+      if (USE_MOCK_DATA) {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setAvailableSlotGroups(mockSlots);
+      } else {
+        // 🏥 Log service info for debugging
+        console.log('🏥 Service ID:', serviceData?._id);
+        console.log('🏥 Allowed RoomTypes:', serviceData?.allowedRoomTypes);
+        
+        // Call API to get dentist's slots on selected date with serviceId
+        const response = await slotService.getDentistSlotsFuture(dentistId, {
+          date: date,
+          shiftName: '', // Get all shifts
+          serviceId: serviceData?._id // 🏥 Pass serviceId for roomType filtering
+        });
+        
+        console.log('⏰ Slots API response:', response);
+        
+        if (response.success && response.data) {
+          // Load selectedServiceAddOn from localStorage (priority: addon duration > service duration)
+          const serviceAddOnData = localStorage.getItem('booking_serviceAddOn');
+          const selectedServiceAddOn = serviceAddOnData ? JSON.parse(serviceAddOnData) : null;
+          
+          // Get duration: prioritize serviceAddOn, fallback to service, default to 15min
+          const serviceDuration = selectedServiceAddOn?.durationMinutes 
+                               || serviceData?.durationMinutes 
+                               || 15;
+          const slotDuration = 15; // Default slot duration (should match backend config)
+          
+          console.log('🎯 Using duration:', serviceDuration, 'minutes from', 
+                     selectedServiceAddOn ? `addon: ${selectedServiceAddOn.name}` : 'service');
+          console.log('🔍 Service:', serviceData?.name, '| AddOn:', selectedServiceAddOn?.name || 'none');
+          
+          let allSlots = [];
+          
+          // Collect all slots from API response
+          if (response.data.shifts) {
+            allSlots = [
+              ...(response.data.shifts['Ca Sáng'] || []),
+              ...(response.data.shifts['Ca Chiều'] || []),
+              ...(response.data.shifts['Ca Tối'] || [])
+            ];
+          } else if (response.data.slots) {
+            allSlots = response.data.slots;
+          }
+          
+          console.log('📊 Total slots before grouping:', allSlots.length);
+          
+          // Debug: Log first few slots to check structure
+          if (allSlots.length > 0) {
+            console.log('🔍 Sample slot structure:', {
+              slot: allSlots[0],
+              startTime: allSlots[0].startTime,
+              startTimeVN: allSlots[0].startTimeVN,
+              endTime: allSlots[0].endTime,
+              endTimeVN: allSlots[0].endTimeVN
+            });
+          }
+          
+          // Group slots by shift first
+          const slotsByShift = {
+            morning: allSlots.filter(s => s.shiftName === 'Ca Sáng'),
+            afternoon: allSlots.filter(s => s.shiftName === 'Ca Chiều'),
+            evening: allSlots.filter(s => s.shiftName === 'Ca Tối')
+          };
+          
+          console.log('📦 Slots by shift:', {
+            morning: slotsByShift.morning.length,
+            afternoon: slotsByShift.afternoon.length,
+            evening: slotsByShift.evening.length
+          });
+          
+          // 🔥 Group consecutive slots for each shift
+          const groupedSlots = {
+            morning: groupConsecutiveSlots(slotsByShift.morning, serviceDuration, slotDuration),
+            afternoon: groupConsecutiveSlots(slotsByShift.afternoon, serviceDuration, slotDuration),
+            evening: groupConsecutiveSlots(slotsByShift.evening, serviceDuration, slotDuration)
+          };
+          
+          console.log('✨ Grouped slots:', groupedSlots);
+          
+          setAvailableSlotGroups(groupedSlots);
+          
+          const totalGroups = groupedSlots.morning.length + 
+                             groupedSlots.afternoon.length + 
+                             groupedSlots.evening.length;
+          
+          console.log('� Total slot groups created:', totalGroups);
+          
+          if (totalGroups === 0) {
+            message.warning(`Không có khung giờ phù hợp (cần ${Math.ceil(serviceDuration/slotDuration)} slot liên tục)`);
+          }
+        } else {
+          console.error('Invalid API response format:', response);
+          message.error('Không thể tải danh sách giờ khám');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching available slots:', error);
+      message.error('Lỗi kết nối: ' + (error.message || 'Không thể kết nối đến server'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectSlot = (slotGroup) => {
+    setSelectedSlotGroup(slotGroup);
+  };
+
+  const handleContinue = () => {
+    if (selectedSlotGroup) {
+      // 🆕 Lưu danh sách slot IDs và thông tin group
+      localStorage.setItem('booking_slotIds', JSON.stringify(selectedSlotGroup.slotIds));
+      localStorage.setItem('booking_slotGroup', JSON.stringify(selectedSlotGroup));
+      
+      // Check if user is authenticated
+      if (!isAuthenticated) {
+        // Redirect to login with return path
+        navigate('/login', { state: { from: '/patient/booking/create-appointment' } });
+      } else {
+        navigate('/patient/booking/create-appointment');
+      }
+    }
+  };
+
+  const handleBack = () => {
+    navigate('/patient/booking/select-date');
+  };
+
+  const renderShiftSlots = (shift, shiftName, slotGroups) => {
+    const requiredSlots = Math.ceil((selectedService?.durationMinutes || 15) / 15);
+    
+    return (
+      <div key={shift} style={{ marginBottom: 24 }}>
+        <Space style={{ marginBottom: 12 }}>
+          <Title level={5} style={{ margin: 0, color: '#2c5f4f' }}>
+            <ClockCircleOutlined /> {shiftName}
+          </Title>
+          <Tooltip title={`Mỗi khung giờ sẽ đặt ${requiredSlots} slot liên tục (${selectedService?.durationMinutes || 15} phút)`}>
+            <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
+          </Tooltip>
+        </Space>
+        {slotGroups.length === 0 ? (
+          <div style={{ 
+            padding: '16px', 
+            textAlign: 'center', 
+            background: '#f5f5f5', 
+            borderRadius: 8,
+            color: '#999'
+          }}>
+            Không có khung giờ nào trong ca này (cần {requiredSlots} slot liên tục)
+          </div>
+        ) : (
+          <Row gutter={[12, 12]}>
+            {slotGroups.map((slotGroup) => {
+              const isSelected = selectedSlotGroup?.groupId === slotGroup.groupId;
+              const slotCount = slotGroup.slots.length;
+              const isAvailable = slotGroup.isAvailable !== false; // Default true if not set
+              
+              return (
+                <Col xs={12} sm={8} md={6} key={slotGroup.groupId}>
+                  <Tooltip 
+                    title={
+                      !isAvailable 
+                        ? slotGroup.unavailableReason || 'Khung giờ không khả dụng'
+                        : `${slotCount} slot - ${slotGroup.displayTime}`
+                    }
+                  >
+                    <div 
+                      className={`time-slot-wrapper ${!isAvailable ? 'unavailable' : ''} ${isSelected ? 'selected' : ''}`}
+                      onClick={() => isAvailable && handleSelectSlot(slotGroup)}
+                      style={{
+                        padding: '12px 8px',
+                        border: '2px solid',
+                        borderColor: isSelected ? '#2c5f4f' : '#d9d9d9',
+                        borderRadius: '8px',
+                        background: isSelected ? '#2c5f4f' : (!isAvailable ? '#fafafa' : 'white'),
+                        color: isSelected ? 'white' : (!isAvailable ? '#999' : '#333'),
+                        cursor: isAvailable ? 'pointer' : 'not-allowed',
+                        opacity: isAvailable ? 1 : 0.6,
+                        textAlign: 'center',
+                        transition: 'all 0.3s ease',
+                        minHeight: '80px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <ClockCircleOutlined style={{ fontSize: 18, marginBottom: 6 }} />
+                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+                        {slotGroup.displayTime}
+                      </div>
+                      
+                      {!isAvailable && slotGroup.unavailableReason && (
+                        <Tag 
+                          color={slotGroup.unavailableReason.includes('đã được đặt') ? 'red' : 'orange'} 
+                          style={{ marginTop: 4, fontSize: 11 }}
+                        >
+                          {slotGroup.unavailableReason.includes('đã được đặt') ? 'Đã đặt' : 'Đang giữ'}
+                        </Tag>
+                      )}
+                      
+                      {/* {isAvailable && slotCount > 1 && (
+                        <Tag color="blue" style={{ marginTop: 4, fontSize: 11 }}>
+                          {slotCount} slot
+                        </Tag>
+                      )} */}
+                    </div>
+                  </Tooltip>
+                </Col>
+              );
+            })}
+          </Row>
+        )}
+      </div>
+    );
+  };
+
+  const totalGroups = availableSlotGroups.morning.length + 
+                      availableSlotGroups.afternoon.length + 
+                      availableSlotGroups.evening.length;
+
+  return (
+    <div className="booking-select-time-page">
+      {/* Breadcrumb */}
+      <div className="breadcrumb-section">
+        <div className="container">
+          <Space split=">">
+            <a href="/patient/booking/select-service">Trang chủ</a>
+            <a href="/patient/booking">Đặt lịch khám</a>
+            <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
+            <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn bác sĩ</a>
+            <a onClick={() => navigate('/patient/booking/select-date')}>Chọn ngày khám</a>
+            <Text>Chọn giờ khám</Text>
+          </Space>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="main-content">
+        <div className="container">
+          <Row gutter={[24, 24]}>
+            {/* Left: Summary Info */}
+            <Col xs={24} md={8}>
+              <Card className="summary-card" title={<><ClockCircleOutlined /> Thông tin chi tiết</>}>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <div>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Dịch vụ:</Text>
+                    <Tag color="blue" style={{ fontSize: 13 }}>
+                      {selectedService?.name}
+                    </Tag>
+                    {selectedServiceAddOn && (
+                      <div style={{ marginTop: 4 }}>
+                        <Tag color="green" style={{ fontSize: 12 }}>
+                          📦 {selectedServiceAddOn.name}
+                        </Tag>
+                        <Tag color="cyan" style={{ fontSize: 12 }}>
+                          ⏱️ {selectedServiceAddOn.durationMinutes} phút
+                        </Tag>
+                      </div>
+                    )}
+                    {!selectedServiceAddOn && selectedService?.durationMinutes && (
+                      <Tag color="cyan" style={{ fontSize: 12, marginTop: 4 }}>
+                        ⏱️ {selectedService.durationMinutes} phút
+                      </Tag>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Bác sĩ:</Text>
+                    <Text style={{ fontSize: 13 }}>
+                      {selectedDentist?.title || 'BS'} {selectedDentist?.fullName}
+                    </Text>
+                  </div>
+                  
+                  <div>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Giới tính:</Text>
+                    <Text style={{ fontSize: 13 }}>
+                      {selectedDentist?.gender === 'male' ? 'Nam' : selectedDentist?.gender === 'female' ? 'Nữ' : 'Khác'}
+                    </Text>
+                  </div>
+                  
+                  <div>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Ngày khám:</Text>
+                    <Tag color="green" style={{ fontSize: 13 }}>
+                      {selectedDate?.format('DD/MM/YYYY')}
+                    </Tag>
+                  </div>
+                  
+                  {selectedSlotGroup && (
+                    <>
+                      <div>
+                        <Text strong style={{ display: 'block', marginBottom: 8 }}>Thời gian khám:</Text>
+                        <Tag color="orange" style={{ fontSize: 13 }}>
+                          {selectedSlotGroup.displayTime}
+                        </Tag>
+                      </div>
+                      <div>
+                        <Text strong style={{ display: 'block', marginBottom: 8 }}>Số slot đặt:</Text>
+                        <Tag color="purple" style={{ fontSize: 13 }}>
+                          {selectedSlotGroup.slots.length} slot × 15 phút
+                        </Tag>
+                      </div>
+                      <Alert
+                        type="success"
+                        showIcon
+                        message="💰 Tiền cọc"
+                        description={`${formatCurrency(selectedSlotGroup.slots.length * 50000)} (50,000đ × ${selectedSlotGroup.slots.length} slot)`}
+                        style={{ marginTop: 8 }}
+                      />
+                    </>
+                  )}
+                </Space>
+              </Card>
+            </Col>
+
+            {/* Right: Time Slots */}
+            <Col xs={24} md={16}>
+              <Card className="booking-card">
+                <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 24 }}>
+                  Vui lòng chọn giờ khám
+                </Title>
+
+                <Spin spinning={loading}>
+                  <div style={{ marginBottom: 24 }}>
+                    <Alert
+                      type="info"
+                      showIcon
+                      message={totalGroups > 0 
+                        ? `Có ${totalGroups} khung giờ phù hợp trong ngày ${selectedDate?.format('DD/MM/YYYY')}`
+                        : `Ngày ${selectedDate?.format('DD/MM/YYYY')} - Chọn khung giờ phù hợp`
+                      }
+                      description={
+                        (() => {
+                          const duration = selectedServiceAddOn?.durationMinutes || selectedService?.durationMinutes || 15;
+                          const slotsNeeded = Math.ceil(duration / 15);
+                          const serviceName = selectedServiceAddOn ? `${selectedService?.name} - ${selectedServiceAddOn.name}` : selectedService?.name;
+                          return serviceName && `Dịch vụ "${serviceName}" cần ${slotsNeeded} slot liên tục (${duration} phút)`;
+                        })()
+                      }
+                    />
+                  </div>
+
+                  {/* Always show all 3 shifts */}
+                  {renderShiftSlots('morning', 'Ca sáng', availableSlotGroups.morning)}
+                  {renderShiftSlots('afternoon', 'Ca chiều', availableSlotGroups.afternoon)}
+                  {renderShiftSlots('evening', 'Ca tối', availableSlotGroups.evening)}
+
+                  {selectedSlotGroup && (
+                    <Alert
+                      type="success"
+                      showIcon
+                      message={`✅ Đã chọn: ${selectedSlotGroup.displayTime} (${selectedSlotGroup.slots.length} slot)`}
+                      description={`Tiền cọc: ${formatCurrency(selectedSlotGroup.slots.length * 50000)}`}
+                      style={{ marginTop: 16 }}
+                    />
+                  )}
+                </Spin>
+
+                {/* Actions */}
+                <div style={{ marginTop: 32, textAlign: 'center' }}>
+                  <Space size="large">
+                    <Button 
+                      size="large" 
+                      icon={<ArrowLeftOutlined />}
+                      onClick={handleBack} 
+                      style={{ borderRadius: 6 }}
+                    >
+                      Quay lại bước trước
+                    </Button>
+                    <Button 
+                      type="primary" 
+                      size="large"
+                      onClick={handleContinue}
+                      disabled={!selectedSlotGroup}
+                      style={{ 
+                        backgroundColor: '#2c5f4f',
+                        borderColor: '#2c5f4f',
+                        borderRadius: 6
+                      }}
+                    >
+                      Tiếp tục {selectedSlotGroup && `(${formatCurrency(selectedSlotGroup.slots.length * 50000)})`}
+                    </Button>
+                  </Space>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BookingSelectTime;

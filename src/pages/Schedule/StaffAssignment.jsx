@@ -1,191 +1,204 @@
-/**
- * @author: HoTram
- * Staff Assignment Component - Phân công nhân sự vào slots
- */
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { 
   Card, Form, Select, Button, Space, Typography, Row, Col, 
-  Divider, Alert, Spin, notification, Checkbox, InputNumber
+  Divider, Alert, Spin, notification, Tag, Tabs
 } from 'antd';
 import { 
   TeamOutlined, UserOutlined, CalendarOutlined, HomeOutlined,
-  CheckCircleOutlined, ExclamationCircleOutlined
+  CheckCircleOutlined, ExclamationCircleOutlined,
+  ReloadOutlined, SaveOutlined, InfoCircleOutlined,
+  SwapOutlined, MedicineBoxOutlined
 } from '@ant-design/icons';
-import { roomService } from '../../services';
-import { userService } from '../../services';
+import smileCareTheme from '../../theme/smileCareTheme';
+import dayjs from 'dayjs';
+import { roomService, userService } from '../../services';
 import slotService from '../../services/slotService.js';
 import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { toast } from '../../services/toastService.js';
 import './StaffAssignment.css';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
+const { Option, OptGroup } = Select;
+
+const WORKFLOW_MODES = {
+  ROOM_BASED: 'room_based',
+  STAFF_BASED: 'staff_based'
+};
+
+const ASSIGNMENT_MODES = {
+  ASSIGN: 'assign',
+  REASSIGN: 'reassign'
+};
 
 const StaffAssignment = () => {
   const [form] = Form.useForm();
+  const [staffForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  // Data states
+  const [workflowMode, setWorkflowMode] = useState(WORKFLOW_MODES.ROOM_BASED);
   const [rooms, setRooms] = useState([]);
   const [dentists, setDentists] = useState([]);
   const [nurses, setNurses] = useState([]);
-  const [availableQuarters, setAvailableQuarters] = useState([]);
   const [availableShifts, setAvailableShifts] = useState([]);
-
-  // Form states
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [availableSubRooms, setAvailableSubRooms] = useState([]);
+  const [assignmentMode, setAssignmentMode] = useState(ASSIGNMENT_MODES.ASSIGN);
+  const [staffSchedule, setStaffSchedule] = useState(null);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [selectedDentists, setSelectedDentists] = useState([]);
+  const [selectedNurses, setSelectedNurses] = useState([]);
+  const [maxDentists, setMaxDentists] = useState(1);
+  const [maxNurses, setMaxNurses] = useState(1);
+
+  const normalizeSearch = (value = '') => value.toString().toLowerCase().trim();
+
+  const buildRoomSearchValue = (room = {}) => normalizeSearch([
+    room.roomCode,
+    room.code,
+    room.name,
+    room.description
+  ].filter(Boolean).join(' '));
+
+  const buildStaffSearchValue = (staff = {}) => normalizeSearch([
+    staff.employeeCode,
+    staff.code,
+    staff.fullName,
+    staff.firstName,
+    staff.lastName,
+    staff.email,
+    staff.phoneNumber
+  ].filter(Boolean).join(' '));
 
   useEffect(() => {
     loadInitialData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadRooms(), loadStaff(), loadAvailableShifts()]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadRooms = async () => {
     try {
-      const roomsRes = await roomService.getRooms(1, 100);
-      
-      // Room API không có field success, chỉ cần check có data
-      if (roomsRes?.rooms && Array.isArray(roomsRes.rooms)) {
-        // Lọc chỉ những phòng có isActive = true
-        const activeRooms = roomsRes.rooms.filter(room => room.isActive === true);
-        setRooms(activeRooms);
-      } else {
-        toast.error('Dữ liệu phòng không hợp lệ');
+      const res = await roomService.getRooms(1, 100);
+      if (res?.rooms && Array.isArray(res.rooms)) {
+        setRooms(res.rooms.filter(room => room.isActive === true));
       }
     } catch (error) {
-      toast.error(`Lỗi tải phòng: ${error.response?.status || error.message}`);
+      console.error('Loi tai phong:', error);
+      toast.error('Loi tai phong');
     }
   };
 
   const loadStaff = async () => {
     try {
-      const staffRes = await userService.getAllStaff(1, 1000);
-      
-      if (staffRes?.success) {
-        const allStaff = staffRes.users || [];
-        
-        const dentistList = allStaff.filter(user => {
-          return (user.role === 'dentist') && user.isActive === true;
-        });
-        
-        const nurseList = allStaff.filter(user => {
-          return user.role === 'nurse' && user.isActive === true;
-        });
-        
-        setDentists(dentistList);
-        setNurses(nurseList);
-      } else {
-        toast.error('API nhân viên trả về không thành công');
+      const res = await userService.getAllStaff(1, 1000);
+      if (res?.success) {
+        const allStaff = res.users || [];
+        setDentists(allStaff.filter(u => u.role === 'dentist' && u.isActive));
+        setNurses(allStaff.filter(u => u.role === 'nurse' && u.isActive));
       }
     } catch (error) {
-      toast.error(`Lỗi tải nhân viên: ${error.response?.status || error.message}`);
-    }
-  };
-
-  const loadAvailableQuarters = async () => {
-    try {
-      const quartersRes = await slotService.getAvailableQuartersYears();
-      
-      if (quartersRes?.success && quartersRes?.data?.availableOptions) {
-        setAvailableQuarters(quartersRes.data.availableOptions);
-        
-        // Set default values to current quarter
-        if (quartersRes.data.currentQuarter) {
-          const current = quartersRes.data.currentQuarter;
-          form.setFieldsValue({
-            quarter: current.quarter,
-            year: current.year,
-            quarterYear: `${current.quarter}-${current.year}`
-          });
-        }
-      } else {
-        toast.error('Dữ liệu quý không hợp lệ');
-      }
-    } catch (error) {
-      toast.error(`Lỗi tải danh sách quý: ${error.response?.status || error.message}`);
+      console.error('Loi tai nhan vien:', error);
+      toast.error('Loi tai nhan vien');
     }
   };
 
   const loadAvailableShifts = async () => {
     try {
-      const configRes = await scheduleConfigService.getConfig();
-      
-      if (configRes?.success && configRes?.data) {
+      const res = await scheduleConfigService.getConfig();
+      if (res?.success && res?.data) {
         const shifts = [];
-        const config = configRes.data;
-        
-        // Lấy các ca từ config và chỉ lấy những ca có isActive = true
-        if (config.morningShift?.isActive) {
-          shifts.push({
-            name: config.morningShift.name,
-            value: config.morningShift.name,
-            startTime: config.morningShift.startTime,
-            endTime: config.morningShift.endTime
-          });
-        }
-        
-        if (config.afternoonShift?.isActive) {
-          shifts.push({
-            name: config.afternoonShift.name,
-            value: config.afternoonShift.name,
-            startTime: config.afternoonShift.startTime,
-            endTime: config.afternoonShift.endTime
-          });
-        }
-        
-        if (config.eveningShift?.isActive) {
-          shifts.push({
-            name: config.eveningShift.name,
-            value: config.eveningShift.name,
-            startTime: config.eveningShift.startTime,
-            endTime: config.eveningShift.endTime
-          });
-        }
-        
+        const config = res.data;
+        if (config.morningShift?.isActive) shifts.push({ name: config.morningShift.name, value: config.morningShift.name });
+        if (config.afternoonShift?.isActive) shifts.push({ name: config.afternoonShift.name, value: config.afternoonShift.name });
+        if (config.eveningShift?.isActive) shifts.push({ name: config.eveningShift.name, value: config.eveningShift.name });
         setAvailableShifts(shifts);
-      } else {
-        toast.error('Dữ liệu cấu hình ca làm việc không hợp lệ');
       }
     } catch (error) {
-      toast.error(`Lỗi tải cấu hình ca làm việc: ${error.response?.status || error.message}`);
+      console.error('Loi tai ca lam viec:', error);
+      toast.error('Loi tai ca lam viec');
     }
   };
 
-  const loadInitialData = async () => {
-    setLoading(true);
+  const loadStaffSchedule = async (staffId, role) => {
+    if (!staffId) return;
+    setLoadingSchedule(true);
     try {
-      await Promise.all([
-        loadRooms(),
-        loadStaff(),
-        loadAvailableQuarters(),
-        loadAvailableShifts()
-      ]);
+      const params = { viewType: 'month', page: 0, limit: 1, startDate: dayjs().format('YYYY-MM-DD') };
+      let response;
+      if (role === 'dentist') response = await slotService.getDentistCalendar(staffId, params);
+      else if (role === 'nurse') response = await slotService.getNurseCalendar(staffId, params);
+      if (response?.success && response?.data) {
+        setStaffSchedule(response.data);
+        toast.success('Da tai lich lam viec');
+      } else {
+        toast.error('Khong the tai lich lam viec');
+        setStaffSchedule(null);
+      }
     } catch (error) {
-      // Error handling is done in individual functions
+      console.error('Loi tai lich lam viec:', error);
+      toast.error('Loi tai lich');
+      setStaffSchedule(null);
     } finally {
-      setLoading(false);
+      setLoadingSchedule(false);
     }
   };
 
   const handleRoomChange = (roomId) => {
     const room = rooms.find(r => r._id === roomId);
     setSelectedRoom(room);
-    
-    // Clear staff selections when changing room type to avoid single/multiple mode conflicts
-    form.setFieldsValue({ 
-      subRoomId: undefined,
-      dentistIds: undefined,
-      nurseIds: undefined
-    });
-    
+    form.setFieldsValue({ subRoomId: undefined, dentistIds: undefined, nurseIds: undefined });
+    setSelectedDentists([]);
+    setSelectedNurses([]);
     if (room?.hasSubRooms && room?.subRooms?.length > 0) {
-      // Lọc chỉ những subroom có isActive = true
-      const activeSubRooms = room.subRooms.filter(subRoom => subRoom.isActive === true);
-      setAvailableSubRooms(activeSubRooms);
+      setAvailableSubRooms(room.subRooms.filter(sr => sr.isActive === true));
+      setMaxDentists(1);
+      setMaxNurses(1);
     } else {
       setAvailableSubRooms([]);
+      setMaxDentists(room?.maxDoctors || 1);
+      setMaxNurses(room?.maxNurses || 1);
     }
+  };
+
+  const handleAssignmentModeChange = (mode) => {
+    setAssignmentMode(mode);
+    form.resetFields();
+    setSelectedRoom(null);
+    setAvailableSubRooms([]);
+    setSelectedDentists([]);
+    setSelectedNurses([]);
+  };
+
+  const handleStaffChange = (staffId) => {
+    const staff = [...dentists, ...nurses].find(s => s._id === staffId);
+    if (staff) loadStaffSchedule(staffId, staff.role);
+    else setStaffSchedule(null);
+  };
+
+  const handleDentistChange = (values) => {
+    const valueArray = Array.isArray(values) ? values : (values ? [values] : []);
+    if (valueArray.length > maxDentists) {
+      toast.warning('Chi duoc chon toi da nha sy');
+      return;
+    }
+    setSelectedDentists(valueArray);
+    form.setFieldsValue({ dentistIds: valueArray });
+  };
+
+  const handleNurseChange = (values) => {
+    const valueArray = Array.isArray(values) ? values : (values ? [values] : []);
+    if (valueArray.length > maxNurses) {
+      toast.warning('Chi duoc chon toi da y ta');
+      return;
+    }
+    setSelectedNurses(valueArray);
+    form.setFieldsValue({ nurseIds: valueArray });
   };
 
   const handleSubmit = async (values) => {
@@ -196,51 +209,41 @@ const StaffAssignment = () => {
         quarter: values.quarter,
         year: values.year,
         shifts: values.shifts,
-        // Đảm bảo dentistIds và nurseIds luôn là array
-        dentistIds: Array.isArray(values.dentistIds) ? values.dentistIds : [values.dentistIds].filter(Boolean),
-        nurseIds: Array.isArray(values.nurseIds) ? values.nurseIds : [values.nurseIds].filter(Boolean)
+        dentistIds: selectedDentists,
+        nurseIds: selectedNurses
       };
-
-      // Thêm subRoomId nếu room has subrooms
-      if (selectedRoom?.hasSubRooms && values.subRoomId) {
-        requestData.subRoomId = values.subRoomId;
-      }
-
-      const response = await slotService.assignStaffToSlots(requestData);
-
+      if (selectedRoom?.hasSubRooms && values.subRoomId) requestData.subRoomId = values.subRoomId;
+      let response;
+      if (assignmentMode === ASSIGNMENT_MODES.ASSIGN) response = await slotService.assignStaffToSlots(requestData);
+      else response = await slotService.reassignStaffToSlots(requestData);
       if (response.success) {
-        // Force notification hiển thị  
-        notification.destroy(); // Clear existing notifications
         notification.success({
-          message: 'Phân công nhân sự thành công!',
-          description: response.data?.message || 'Phân công nhân sự đã được thực hiện thành công',
+          message: 'Thanh cong!',
+          description: response.data?.message || 'Da thuc hien thanh cong',
           duration: 5,
-          placement: 'topRight',
-          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />
+          placement: 'topRight'
         });
-
-        toast.success(response.data?.message || 'Phân công nhân sự thành công!');
-        
-        // Reset form
         form.resetFields();
         setSelectedRoom(null);
         setAvailableSubRooms([]);
+        setSelectedDentists([]);
+        setSelectedNurses([]);
+      } else {
+        notification.error({
+          message: 'That bai',
+          description: response.message || 'Khong the thuc hien',
+          duration: 6,
+          placement: 'topRight'
+        });
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message;
-      
-      // Force notification hiển thị
-      notification.destroy(); // Clear existing notifications first
+      console.error('Loi thao tac:', error);
       notification.error({
-        message: 'Lỗi phân công nhân sự',
-        description: errorMessage || 'Có lỗi xảy ra khi phân công nhân sự',
+        message: 'Loi thao tac',
+        description: error.response?.data?.message || 'Co loi xay ra',
         duration: 6,
-        placement: 'topRight',
-        icon: <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+        placement: 'topRight'
       });
-
-      // Backup toast service nếu notification không hoạt động
-      toast.error(errorMessage || 'Có lỗi xảy ra khi phân công nhân sự');
     } finally {
       setSubmitting(false);
     }
@@ -249,260 +252,283 @@ const StaffAssignment = () => {
   if (loading) {
     return (
       <div className="staff-assignment">
-        <Card>
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <Spin size="large" />
-            <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show error state with retry button if no data loaded
-  if (!loading && rooms.length === 0 && dentists.length === 0 && nurses.length === 0) {
-    return (
-      <div className="staff-assignment">
-        <Card>
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <Alert
-              message="Không thể tải dữ liệu"
-              description="Không thể kết nối đến server. Kiểm tra console để xem chi tiết lỗi."
-              type="error"
-              showIcon
-              style={{ marginBottom: 24 }}
-            />
-            <Button 
-              type="primary" 
-              onClick={loadInitialData}
-              icon={<TeamOutlined />}
-            >
-              Thử lại
-            </Button>
-          </div>
-        </Card>
+        <Card><div style={{ textAlign: 'center', padding: '60px 0' }}>
+          <Spin size="large" /><div style={{ marginTop: 16 }}>Dang tai du lieu...</div>
+        </div></Card>
       </div>
     );
   }
 
   return (
-    <div className="staff-assignment">
-      <Card>
-        <div style={{ marginBottom: 24 }}>
-          <Title level={3}>
-            <TeamOutlined style={{ marginRight: 8 }} />
-            Phân Công Nhân Sự
-          </Title>
-          <Text type="secondary">
-            Phân công bác sĩ và y tá vào các slot làm việc theo quý
-          </Text>
-        </div>
-
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          requiredMark={false}
-        >
-          <Row gutter={24}>
-            {/* Room Selection */}
-            <Col span={12}>
-              <Form.Item
-                label="Chọn phòng"
-                name="roomId"
-                rules={[{ required: true, message: 'Vui lòng chọn phòng' }]}
-              >
-                <Select
-                  placeholder="Chọn phòng"
-                  onChange={handleRoomChange}
-                  showSearch
-                  optionFilterProp="children"
-                >
-                  {rooms.map(room => (
-                    <Option key={room._id} value={room._id}>
-                      <HomeOutlined style={{ marginRight: 8 }} />
-                      {room.name}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-
-            {/* SubRoom Selection (if applicable) */}
-            {selectedRoom?.hasSubRooms && availableSubRooms.length > 0 && (
-              <Col span={12}>
-                <Form.Item
-                  label="Chọn phòng con"
-                  name="subRoomId"
-                  rules={[{ required: true, message: 'Vui lòng chọn phòng con' }]}
-                >
-                  <Select placeholder="Chọn phòng con">
-                    {availableSubRooms.map(subRoom => (
-                      <Option key={subRoom._id} value={subRoom._id}>
-                        {subRoom.name}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            )}
-          </Row>
-
-          <Row gutter={24}>
-            {/* Quarter and Year Selection - Combined */}
-            <Col span={12}>
-              <Form.Item
-                label="Quý và Năm"
-                name="quarterYear"
-                rules={[{ required: true, message: 'Vui lòng chọn quý và năm' }]}
-              >
-                <Select 
-                  placeholder="Chọn quý và năm"
-                  onChange={(value) => {
-                    const [quarter, year] = value.split('-');
-                    form.setFieldsValue({
-                      quarter: parseInt(quarter),
-                      year: parseInt(year)
-                    });
-                  }}
-                  showSearch
-                  optionFilterProp="children"
-                >
-                  {availableQuarters.map(option => (
-                    <Option 
-                      key={`${option.quarter}-${option.year}`} 
-                      value={`${option.quarter}-${option.year}`}
-                    >
-                      <CalendarOutlined style={{ marginRight: 8 }} />
-                      {option.label} 
-                      {option.isCurrent}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-
-            {/* Hidden fields for quarter and year values */}
-            <Form.Item name="quarter" hidden>
-              <InputNumber />
-            </Form.Item>
-            
-            <Form.Item name="year" hidden>
-              <InputNumber />
-            </Form.Item>
-
-            {/* Shifts Selection */}
-            <Col span={12}>
-              <Form.Item
-                label="Ca làm việc"
-                name="shifts"
-                rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 ca' }]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="Chọn ca làm việc"
-                  allowClear
-                >
-                  {availableShifts.map(shift => (
-                    <Option key={shift.value} value={shift.value}>
-                      {shift.name} ({shift.startTime} - {shift.endTime})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Divider />
-          <Row >
-          <Col span={24}>
-          <Alert
-            message="Lưu ý phân công nhân sự"
-            description={
-              selectedRoom?.hasSubRooms 
-                ? "Phòng có buồng: Mỗi buồng chỉ được phân công 1 bác sĩ và 1 y tá. Hệ thống sẽ tự động phân bổ vào các slot còn trống."
-                : "Phòng đơn: Có thể phân công nhiều bác sĩ và y tá cùng lúc theo cấu hình tối đa của phòng. Các slot đã được phân công sẽ không bị ghi đè."
-            }
-            type="info"
-            showIcon
-          />
-          </Col>
-          </Row>
-          <Row gutter={24}>
-            {/* Dentist Selection */}
-            <Col span={12}>
-              <Form.Item
-                label={`Nha sĩ`}
-                name="dentistIds"
-                rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 bác sĩ' }]}
-              >
-                <Select
-                  mode={selectedRoom?.hasSubRooms ? undefined : "multiple"}
-                  placeholder="Chọn nha sĩ"
-                  showSearch
-                  optionFilterProp="children"
-                  allowClear
-                >
-                  {dentists.map(dentist => (
-                    <Option key={dentist._id} value={dentist._id}>
-                      <UserOutlined style={{ marginRight: 8 }} />
-                      {dentist.employeeCode || 'N/A'} | {dentist.fullName}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-
-            {/* Nurse Selection */}
-            <Col span={12}>
-              <Form.Item
-                label={`Y tá`}
-                name="nurseIds"
-                rules={[{ required: true, message: 'Vui lòng chọn ít nhất 1 y tá' }]}
-              >
-                <Select
-                  mode={selectedRoom?.hasSubRooms ? undefined : "multiple"}
-                  placeholder="Chọn y tá"
-                  showSearch
-                  optionFilterProp="children"
-                  allowClear
-                >
-                  {nurses.map(nurse => (
-                    <Option key={nurse._id} value={nurse._id}>
-                      <UserOutlined style={{ marginRight: 8 }} />
-                      {nurse.employeeCode || 'N/A'} | {nurse.fullName}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={submitting}
-                size="large"
-                icon={<TeamOutlined />}
-              >
-                Phân Công Nhân Sự
-              </Button>
-              <Button
-                onClick={() => {
-                  form.resetFields();
-                  setSelectedRoom(null);
-                  setAvailableSubRooms([]);
-                }}
-                size="large"
-              >
-                Reset
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+    <div className="staff-assignment" style={{
+      minHeight: 'calc(100vh - 64px)',
+      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+      padding: '32px 24px'
+    }}>
+      {/* Header Card */}
+      <Card
+        style={{
+          marginBottom: 24,
+          borderRadius: 16,
+          border: '2px solid #dbeafe',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+          boxShadow: smileCareTheme.shadows.lg
+        }}
+        bodyStyle={{ padding: '20px 28px' }}
+      >
+        <Space size={16} align="center">
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: 12,
+            background: 'rgba(255, 255, 255, 0.2)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid rgba(255, 255, 255, 0.3)'
+          }}>
+            <TeamOutlined style={{ fontSize: 24, color: '#fff' }} />
+          </div>
+          <div>
+            <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 700 }}>
+              Quản lý Phân công Nhân sự
+            </Title>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
+              Phân công nhân sự vào slots làm việc
+            </Text>
+          </div>
+        </Space>
       </Card>
+      <Tabs
+        activeKey={workflowMode}
+        onChange={(key) => {
+          setWorkflowMode(key);
+          form.resetFields();
+          staffForm.resetFields();
+          setSelectedRoom(null);
+          setStaffSchedule(null);
+        }}
+        size="large"
+      >
+        <Tabs.TabPane tab={<span><HomeOutlined /> Phan cong theo Phong</span>} key={WORKFLOW_MODES.ROOM_BASED}>
+          <Card style={{ marginBottom: 24 }}>
+            <Row gutter={24} align="middle">
+              <Col span={6}><Text strong style={{ fontSize: 16 }}>Che do phan cong:</Text></Col>
+              <Col span={18}>
+                <Select value={assignmentMode} onChange={handleAssignmentModeChange} style={{ width: '100%' }} size="large">
+                  <Option value={ASSIGNMENT_MODES.ASSIGN}>Phan cong moi</Option>
+                  <Option value={ASSIGNMENT_MODES.REASSIGN}>Phan cong lai</Option>
+                </Select>
+              </Col>
+            </Row>
+          </Card>
+          <Card>
+            <Form form={form} layout="vertical" onFinish={handleSubmit}>
+              <Row gutter={24}>
+                <Col span={12}>
+                  <Form.Item label="Chon phong" name="roomId" rules={[{ required: true }]}>
+                    <Select 
+                      placeholder="Chon phong" 
+                      onChange={handleRoomChange} 
+                      showSearch 
+                      optionFilterProp="roomsearch"
+                      filterOption={(input, option) => {
+                        const searchValue = option?.props?.roomsearch || '';
+                        return searchValue.includes(normalizeSearch(input));
+                      }}
+                    >
+                      {rooms.map(room => {
+                        const roomCode = room.roomCode || room.code;
+                        const searchValue = buildRoomSearchValue(room);
+                        return (
+                          <Option key={room._id} value={room._id} roomsearch={searchValue}>
+                            <Space size={6}>
+                              <HomeOutlined />
+                              {roomCode && <Tag color="blue" bordered={false}>{roomCode}</Tag>}
+                              <span>{room.name}</span>
+                            </Space>
+                          </Option>
+                        );
+                      })}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                {selectedRoom?.hasSubRooms && availableSubRooms.length > 0 && (
+                  <Col span={12}>
+                    <Form.Item label="Chon phong con" name="subRoomId" rules={[{ required: true }]}>
+                      <Select 
+                        placeholder="Chon phong con"
+                        showSearch
+                        optionFilterProp="roomsearch"
+                        filterOption={(input, option) => {
+                          const searchValue = option?.props?.roomsearch || '';
+                          return searchValue.includes(normalizeSearch(input));
+                        }}
+                      >
+                        {availableSubRooms.map(sr => {
+                          const subRoomCode = sr.roomCode || sr.code;
+                          const searchValue = buildRoomSearchValue(sr);
+                          return (
+                            <Option key={sr._id} value={sr._id} roomsearch={searchValue}>
+                              <Space size={6}>
+                                <HomeOutlined />
+                                {subRoomCode && <Tag color="purple" bordered={false}>{subRoomCode}</Tag>}
+                                <span>{sr.name}</span>
+                              </Space>
+                            </Option>
+                          );
+                        })}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                )}
+                <Col span={12}>
+                  <Form.Item label="Chon quy" name="quarter" rules={[{ required: true }]}>
+                    <Select placeholder="Chon quy">{[1,2,3,4].map(q => (<Option key={q} value={q}>Quy {q}</Option>))}</Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Chon nam" name="year" rules={[{ required: true }]}>
+                    <Select placeholder="Chon nam">{[2024,2025,2026].map(y => (<Option key={y} value={y}>{y}</Option>))}</Select>
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Form.Item label="Chon ca lam viec" name="shifts" rules={[{ required: true }]}>
+                    <Select mode="multiple" placeholder="Chon cac ca lam viec">
+                      {availableShifts.map(s => (<Option key={s.value} value={s.value}>{s.name}</Option>))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Divider>Chon nhan su</Divider>
+              <Row gutter={24}>
+                <Col span={12}>
+                  <Form.Item label="Nha sy" name="dentistIds" rules={[{ required: true }]}>
+                    <Select 
+                      mode={selectedRoom?.hasSubRooms ? undefined : "multiple"} 
+                      placeholder="Chon nha sy" 
+                      onChange={handleDentistChange} 
+                      value={selectedDentists}
+                      showSearch
+                      optionFilterProp="staffsearch"
+                      filterOption={(input, option) => {
+                        const searchValue = option?.props?.staffsearch || '';
+                        return searchValue.includes(normalizeSearch(input));
+                      }}
+                    >
+                      {dentists.map(d => {
+                        const fullName = d.fullName || `${d.firstName || ''} ${d.lastName || ''}`.trim();
+                        const employeeCode = d.employeeCode || d.code;
+                        const searchValue = buildStaffSearchValue(d);
+                        return (
+                          <Option key={d._id} value={d._id} staffsearch={searchValue}>
+                            <Space size={6}>
+                              <UserOutlined />
+                              {employeeCode && <Tag color="blue" bordered={false}>{employeeCode}</Tag>}
+                              <span>{fullName || 'Khong ro ten'}</span>
+                            </Space>
+                          </Option>
+                        );
+                      })}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Y ta" name="nurseIds" rules={[{ required: true }]}>
+                    <Select 
+                      mode={selectedRoom?.hasSubRooms ? undefined : "multiple"} 
+                      placeholder="Chon y ta" 
+                      onChange={handleNurseChange} 
+                      value={selectedNurses}
+                      showSearch
+                      optionFilterProp="staffsearch"
+                      filterOption={(input, option) => {
+                        const searchValue = option?.props?.staffsearch || '';
+                        return searchValue.includes(normalizeSearch(input));
+                      }}
+                    >
+                      {nurses.map(n => {
+                        const fullName = n.fullName || `${n.firstName || ''} ${n.lastName || ''}`.trim();
+                        const employeeCode = n.employeeCode || n.code;
+                        const searchValue = buildStaffSearchValue(n);
+                        return (
+                          <Option key={n._id} value={n._id} staffsearch={searchValue}>
+                            <Space size={6}>
+                              <MedicineBoxOutlined />
+                              {employeeCode && <Tag color="green" bordered={false}>{employeeCode}</Tag>}
+                              <span>{fullName || 'Khong ro ten'}</span>
+                            </Space>
+                          </Option>
+                        );
+                      })}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item>
+                <Button type="primary" htmlType="submit" loading={submitting} size="large">{assignmentMode === ASSIGNMENT_MODES.ASSIGN ? 'Phan cong' : 'Phan cong lai'}</Button>
+              </Form.Item>
+            </Form>
+          </Card>
+        </Tabs.TabPane>
+        <Tabs.TabPane tab={<span><SwapOutlined /> Thay the theo Nhan su</span>} key={WORKFLOW_MODES.STAFF_BASED}>
+          <Alert message="Tinh nang dang phat trien" type="info" showIcon style={{ marginBottom: 24 }} />
+          <Card>
+            <Form form={staffForm} layout="vertical">
+              <Form.Item label="Chon nhan su" name="staffId">
+                <Select 
+                  placeholder="Chon nhan su" 
+                  onChange={handleStaffChange} 
+                  size="large" 
+                  allowClear
+                  showSearch
+                  optionFilterProp="staffsearch"
+                  filterOption={(input, option) => {
+                    const searchValue = option?.props?.staffsearch || '';
+                    return searchValue.includes(normalizeSearch(input));
+                  }}
+                >
+                  <OptGroup label="Nha sy">
+                    {dentists.map(d => {
+                      const fullName = d.fullName || `${d.firstName || ''} ${d.lastName || ''}`.trim();
+                      const employeeCode = d.employeeCode || d.code;
+                      const searchValue = buildStaffSearchValue(d);
+                      return (
+                        <Option key={d._id} value={d._id} staffsearch={searchValue}>
+                          <Space size={6}>
+                            <UserOutlined />
+                            {employeeCode && <Tag color="blue" bordered={false}>{employeeCode}</Tag>}
+                            <span>{fullName || 'Khong ro ten'}</span>
+                          </Space>
+                        </Option>
+                      );
+                    })}
+                  </OptGroup>
+                  <OptGroup label="Y ta">
+                    {nurses.map(n => {
+                      const fullName = n.fullName || `${n.firstName || ''} ${n.lastName || ''}`.trim();
+                      const employeeCode = n.employeeCode || n.code;
+                      const searchValue = buildStaffSearchValue(n);
+                      return (
+                        <Option key={n._id} value={n._id} staffsearch={searchValue}>
+                          <Space size={6}>
+                            <MedicineBoxOutlined />
+                            {employeeCode && <Tag color="green" bordered={false}>{employeeCode}</Tag>}
+                            <span>{fullName || 'Khong ro ten'}</span>
+                          </Space>
+                        </Option>
+                      );
+                    })}
+                  </OptGroup>
+                </Select>
+              </Form.Item>
+            </Form>
+            {loadingSchedule && (<div style={{ textAlign: 'center', padding: '40px 0' }}><Spin size="large" /></div>)}
+            {staffSchedule && !loadingSchedule && (<Alert message="Da tai lich thanh cong" type="success" showIcon />)}
+          </Card>
+        </Tabs.TabPane>
+      </Tabs>
     </div>
   );
 };

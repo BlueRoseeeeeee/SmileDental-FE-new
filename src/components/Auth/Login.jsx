@@ -2,7 +2,7 @@
 * @author: HoTram
 */
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, Alert, Checkbox, Space, Divider, Row, Col } from 'antd';
 import { toast } from '../../services/toastService';
 import { 
@@ -24,6 +24,7 @@ const { Title, Text } = Typography;
 const Login = () => {
   const { login, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [form] = Form.useForm();
 
   // Kiểm tra xem người dùng đã từng chọn "Ghi nhớ đăng nhập" chưa
@@ -119,7 +120,9 @@ const Login = () => {
         localStorage.removeItem('rememberLogin');
       }
       
-      navigate('/dashboard');
+      // Redirect to previous page or dashboard
+      const from = location.state?.from || '/dashboard';
+      navigate(from);
     } catch {
       // Error is handled by AuthContext
     }

@@ -109,7 +109,13 @@ const ServiceList = () => {
   const loadServices = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      const response = await servicesService.getServices(page, limit);
+      // 🔥 When searching, fetch ALL services to enable search across all pages
+      const shouldFetchAll = searchTerm.trim() !== '';
+      
+      const response = await servicesService.getServices(
+        shouldFetchAll ? 1 : page, 
+        shouldFetchAll ? 9999 : limit
+      );
       setServices(response.services || []);
       setPagination(prev => ({
         ...prev,
@@ -125,8 +131,8 @@ const ServiceList = () => {
   };
 
   useEffect(() => {
-    loadServices();
-  }, []);
+    loadServices(pagination.current, pagination.pageSize);
+  }, [searchTerm]); // 🔥 Re-fetch when search term changes
 
   // Handle search 
   const handleSearch = (value) => {
@@ -212,13 +218,14 @@ const ServiceList = () => {
     return typeMap[type] || type;
   };
 
-  // Hiển thị giá addon
+  // 🆕 Hiển thị giá addon với effective price
   const getAddOnPriceRange = (addOns) => {
     if (!addOns || addOns.length === 0) return null;
     const activeAddOns = addOns.filter(addon => addon.isActive);
     if (activeAddOns.length === 0) return null;
     
-    const prices = activeAddOns.map(addon => addon.price);
+    // 🆕 Use effectivePrice if available, fallback to price
+    const prices = activeAddOns.map(addon => addon.effectivePrice || addon.price);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     
@@ -249,42 +256,48 @@ const ServiceList = () => {
         </Text>
       ),
     },
-    {
-      title: 'Thời gian',
-      dataIndex: 'durationMinutes',
-      key: 'durationMinutes',
-      width: 100,
-      sorter: (a, b) => a.durationMinutes - b.durationMinutes,
-      sortDirections: ['ascend', 'descend'],
-      render: (minutes) => (
-        <Tag color="blue">
-          {minutes} phút
-        </Tag>
-      ),
-    },
+    // {
+    //   title: 'Thời gian',
+    //   dataIndex: 'durationMinutes',
+    //   key: 'durationMinutes',
+    //   width: 100,
+    //   render: (minutes) => (
+    //     <Tag color="blue">
+    //       {minutes} phút
+    //     </Tag>
+    //   ),
+    // },
     {
       title: 'Giá dịch vụ',
       dataIndex: 'serviceAddOns',
       key: 'price',
-      width: 150,
-      sorter: (a, b) => {
-        const getMinPrice = (addOns) => {
-          if (!addOns || addOns.length === 0) return 0;
-          const activeAddOns = addOns.filter(addon => addon.isActive);
-          if (activeAddOns.length === 0) return 0;
-          return Math.min(...activeAddOns.map(addon => addon.price));
-        };
-        return getMinPrice(a.serviceAddOns) - getMinPrice(b.serviceAddOns);
-      },
-      sortDirections: ['ascend', 'descend'],
-      render: (addOns) => {
+      width: 180,
+      render: (addOns, record) => {
         const priceRange = getAddOnPriceRange(addOns);
-        return priceRange ? (
-          <Text strong style={{ color: '#52c41a' }}>
-            {priceRange}
-          </Text>
-        ) : (
-          <Text type="secondary">Liên hệ</Text>
+        
+        // 🆕 Check if any addon has modified price
+        const hasPromotion = addOns?.some(addon => addon.isPriceModified);
+        const hasTemporaryPrice = record.hasActiveTemporaryPrice;
+        
+        return (
+          <div>
+            {priceRange ? (
+              <>
+                <Text strong style={{ color: hasPromotion ? '#ff4d4f' : '#52c41a' }}>
+                  {priceRange}
+                </Text>
+                {(hasPromotion || hasTemporaryPrice) && (
+                  <div style={{ marginTop: 4 }}>
+                    <Tag color="red" style={{ fontSize: 10 }}>
+                      🎉 Khuyến mãi
+                    </Tag>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Text type="secondary">Liên hệ</Text>
+            )}
+          </div>
         );
       },
     },

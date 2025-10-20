@@ -1,0 +1,58 @@
+.booking-select-dentist-page {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.breadcrumb-section {
+  background-color: white;
+  padding: 16px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.breadcrumb-section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.breadcrumb-section a {
+  color: #1890ff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-section a:hover {
+  text-decoration: underline;
+}
+
+.main-content {
+  padding: 40px 0;
+}
+
+.booking-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dentist-item-card {
+  border-radius: 8px;
+  border: 2px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.dentist-item-card:hover {
+  border-color: #2c5f4f;
+  box-shadow: 0 4px 12px rgba(44, 95, 79, 0.15);
+}
+
+@media (max-width: 768px) {
+  .dentist-item-card .ant-card-body {
+    padding: 16px;
+  }
+  
+  .dentist-item-card .ant-avatar {
+    width: 60px;
+    height: 60px;
+  }
+}
+

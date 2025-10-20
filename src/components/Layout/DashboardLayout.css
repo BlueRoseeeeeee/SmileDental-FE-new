@@ -42,13 +42,26 @@
   padding: 0 16px !important;
 }
 
+/* Fix submenu items alignment */
+.dashboard-sider .ant-menu-submenu-title {
+  margin: 4px 8px;
+  border-radius: 6px;
+  padding: 0 16px !important;
+}
+
+.dashboard-sider .ant-menu-sub .ant-menu-item {
+  margin: 4px 8px;
+  padding-left: 40px !important; /* Align with parent menu items */
+}
+
 .dashboard-sider .ant-menu-item .ant-menu-title-content {
   overflow: visible !important;
   text-overflow: unset !important;
   white-space: nowrap !important;
 }
 
-.dashboard-sider .ant-menu-item:hover {
+.dashboard-sider .ant-menu-item:hover,
+.dashboard-sider .ant-menu-submenu-title:hover {
   background-color: #f0f8ff !important;
 }
 

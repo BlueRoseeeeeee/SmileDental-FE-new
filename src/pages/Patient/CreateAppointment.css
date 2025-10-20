@@ -1,0 +1,61 @@
+.create-appointment-page {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.breadcrumb-section {
+  background-color: white;
+  padding: 16px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.breadcrumb-section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.breadcrumb-section a {
+  color: #1890ff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-section a:hover {
+  text-decoration: underline;
+}
+
+.main-content {
+  padding: 40px 0;
+}
+
+.booking-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.booking-card .ant-descriptions-bordered .ant-descriptions-item-label {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+.ant-radio-wrapper {
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.ant-radio-wrapper:hover {
+  background-color: #f0f8ff;
+}
+
+.ant-radio-wrapper .ant-radio-checked + span {
+  color: #2c5f4f;
+}
+
+@media (max-width: 768px) {
+  .ant-descriptions-bordered .ant-descriptions-item-label,
+  .ant-descriptions-bordered .ant-descriptions-item-content {
+    padding: 8px;
+  }
+}

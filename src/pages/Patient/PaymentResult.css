@@ -1,0 +1,93 @@
+.payment-result-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.payment-result-card {
+  max-width: 800px;
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.payment-result-card .ant-result-icon {
+  margin-bottom: 24px;
+}
+
+.payment-result-card .ant-result-icon > svg {
+  font-size: 72px;
+}
+
+.payment-result-card .ant-result-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.payment-result-card .ant-result-subtitle {
+  font-size: 16px;
+  color: #595959;
+  margin-top: 12px;
+}
+
+.payment-result-card .ant-result-extra {
+  margin-top: 32px;
+}
+
+.payment-result-card .ant-btn {
+  height: 40px;
+  padding: 0 32px;
+  font-size: 15px;
+  border-radius: 8px;
+  margin: 0 8px;
+}
+
+.payment-result-card .ant-descriptions {
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.payment-result-card .ant-descriptions-item-label {
+  font-weight: 500;
+  background: #f0f0f0;
+}
+
+@media (max-width: 768px) {
+  .payment-result-container {
+    padding: 20px 10px;
+  }
+  
+  .payment-result-card .ant-result-title {
+    font-size: 22px;
+  }
+  
+  .payment-result-card .ant-result-subtitle {
+    font-size: 14px;
+  }
+  
+  .payment-result-card .ant-btn {
+    width: 100%;
+    margin: 8px 0;
+  }
+  
+  .payment-result-card .ant-result-extra {
+    display: flex;
+    flex-direction: column;
+  }
+}

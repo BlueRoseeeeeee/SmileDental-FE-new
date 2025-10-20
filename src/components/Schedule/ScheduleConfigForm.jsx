@@ -89,7 +89,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
           isActive: values.eveningActive === true
         },
         unitDuration: values.unitDuration || 15,
-        maxBookingDays: values.maxBookingDays || 30
+        maxBookingDays: values.maxBookingDays || 30,
+        depositAmount: values.depositAmount || 50000 // 💰 Tiền cọc mỗi slot
       };
 
       await onUpdate(configData);
@@ -438,6 +439,39 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                 disabled={!isEditing}
               />
             </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item 
+              name="depositAmount" 
+              label="💰 Tiền cọc mỗi slot (VND)"
+              rules={[
+                { required: true, message: 'Vui lòng nhập tiền cọc' },
+                { type: 'number', min: 0, message: 'Tiền cọc phải >= 0' }
+              ]}
+              tooltip="Số tiền bệnh nhân phải trả khi đặt lịch = Tiền cọc × Số slot"
+            >
+              <InputNumber 
+                min={0} 
+                style={{ width: '100%' }}
+                placeholder="Nhập số tiền (VND)"
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                addonAfter="VND"
+                disabled={!isEditing}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Alert
+              message="Lưu ý về tiền cọc"
+              description="Khi bệnh nhân đặt lịch, họ sẽ thanh toán: Tiền cọc × Số slot đã chọn. Ví dụ: 3 slot × 50,000 VND = 150,000 VND"
+              type="info"
+              showIcon
+              style={{ marginTop: '30px' }}
+            />
           </Col>
         </Row>
 

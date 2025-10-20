@@ -1,0 +1,47 @@
+.booking-select-addon-page {
+  background: linear-gradient(135deg, #e8f5e9 0%, #fff9e6 100%);
+  min-height: 100vh;
+  padding: 24px 0;
+}
+
+.booking-select-addon-page .breadcrumb-section {
+  background: white;
+  padding: 16px 0;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.booking-select-addon-page .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.booking-select-addon-page .booking-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 24px;
+}
+
+.booking-select-addon-page .addon-card {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  min-height: 180px;
+}
+
+.booking-select-addon-page .addon-card:hover {
+  box-shadow: 0 6px 16px rgba(44, 95, 79, 0.15);
+  transform: translateY(-4px);
+}
+
+.booking-select-addon-page .addon-card.selected {
+  background: #f0f9f5;
+  box-shadow: 0 6px 16px rgba(44, 95, 79, 0.25);
+}
+
+@media (max-width: 768px) {
+  .booking-select-addon-page .addon-card {
+    min-height: 160px;
+  }
+}

@@ -1,201 +1,188 @@
 /**
  * @author: HoTram
- * ScheduleManagement.css
+ * ScheduleManagement.css - SmileCare Design System
  */
 
+/* ===================================
+   SmileCare Schedule Management Styles
+   =================================== */
 
-.schedule-management-container {
-  padding: 24px;
-  background-color: #f5f5f5;
-  min-height: calc(100vh - 64px);
-}
-
-.schedule-header {
-  margin-bottom: 24px;
-  background-color: #fff;
-  padding: 16px 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.schedule-header h2 {
-  margin: 0;
-  color: #1890ff;
-}
-
-.schedule-header .ant-typography {
-  font-size: 16px;
-}
-
-.statistics-card {
-  text-align: center;
-}
-
-.statistics-card .ant-statistic-title {
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-
-.quick-action-button {
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
-}
-
-.quarter-summary-card {
-  text-align: center;
-  transition: all 0.3s ease;
-}
-
-.quarter-summary-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.quarter-summary-card h4 {
-  margin: 0 0 8px 0;
-  color: #1890ff;
-}
-
-.schedule-table .ant-table-thead > tr > th {
-  background-color: #fafafa;
-  font-weight: 600;
-}
-
-.schedule-table .ant-tag {
-  margin: 2px;
-}
-
-.loading-container {
-  text-align: center;
-  padding: 60px 0;
-}
-
-.loading-container .ant-spin {
-  margin-bottom: 16px;
-}
-
-.empty-container {
-  padding: 60px 0;
-  text-align: center;
-}
-
-.modal-result-section {
-  margin-top: 24px;
-}
-
-.modal-result-section .ant-divider {
-  margin: 16px 0;
-}
-
-.status-info-card {
-  background-color: #f6ffed;
-  border: 1px solid #b7eb8f;
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 16px;
-}
-
-.status-info-card .ant-typography {
-  margin: 0;
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .schedule-management-container {
-    padding: 16px;
+/* Keyframe Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
   }
-  
-  .schedule-header {
-    padding: 12px 16px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (max-width: 768px) {
-  .statistics-card {
-    margin-bottom: 16px;
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
   }
-  
-  .quick-action-button {
-    margin-bottom: 8px;
-  }
-  
-  .quarter-summary-card {
-    margin-bottom: 16px;
-  }
-  
-  .schedule-header h2 {
-    font-size: 20px;
-  }
-  
-  .schedule-header .ant-typography {
-    font-size: 14px;
+  50% {
+    transform: scale(1.05);
   }
 }
 
-/* Custom Ant Design overrides */
-.ant-tabs-card > .ant-tabs-content {
-  margin-top: 0;
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.ant-tabs-card > .ant-tabs-content > .ant-tabs-tabpane {
-  background: transparent;
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
+/* Apply animations to cards */
 .ant-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  animation: fadeInUp 0.6s ease-out;
 }
 
-.ant-card-head {
-  border-bottom: 1px solid #f0f0f0;
+/* Hero card animation */
+.ant-card:first-child {
+  animation: fadeInUp 0.8s ease-out;
 }
 
-.ant-progress-line {
-  margin-top: 8px;
+/* Feature cards stagger animation */
+.ant-col:nth-child(1) > div {
+  animation: slideInFromRight 0.5s ease-out;
+  animation-delay: 0.1s;
+  animation-fill-mode: backwards;
 }
 
-.ant-statistic-content {
-  font-size: 24px;
-  font-weight: 600;
+.ant-col:nth-child(2) > div {
+  animation: slideInFromRight 0.5s ease-out;
+  animation-delay: 0.2s;
+  animation-fill-mode: backwards;
 }
 
-.ant-badge-status-text {
-  margin-left: 8px;
+.ant-col:nth-child(3) > div {
+  animation: slideInFromRight 0.5s ease-out;
+  animation-delay: 0.3s;
+  animation-fill-mode: backwards;
 }
 
-.ant-empty-description {
-  color: #8c8c8c;
+/* Button hover effects */
+.ant-btn-primary:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.5) !important;
 }
 
-/* Animation Classes */
-.fade-in {
-  animation: fadeIn 0.3s ease-in;
+.ant-btn-primary:active {
+  transform: translateY(-1px) !important;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+/* Alert box animation */
+.ant-alert {
+  animation: fadeInUp 0.7s ease-out;
+}
+
+/* Icon container animation */
+.ant-card .anticon-calendar {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Smooth transitions for all interactive elements */
+.ant-btn,
+.ant-card,
+.ant-alert {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Feature card hover glow effect */
+.ant-col > div:hover {
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  /* Reduce padding on mobile */
+  .ant-card-body {
+    padding: 24px 20px !important;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  
+  /* Smaller icon container */
+  .ant-card .anticon-calendar {
+    font-size: 48px !important;
+  }
+  
+  /* Smaller title */
+  h1.ant-typography {
+    font-size: 32px !important;
+  }
+  
+  /* Smaller button */
+  .ant-btn-lg {
+    height: 48px !important;
+    font-size: 15px !important;
+    padding: 0 32px !important;
+  }
+  
+  /* Stack feature cards */
+  .ant-row .ant-col {
+    margin-bottom: 12px;
   }
 }
 
-.slide-up {
-  animation: slideUp 0.4s ease-out;
+@media (max-width: 480px) {
+  /* Further reduce sizes on very small screens */
+  h1.ant-typography {
+    font-size: 28px !important;
+  }
+  
+  .ant-btn-lg {
+    height: 44px !important;
+    font-size: 14px !important;
+    padding: 0 24px !important;
+  }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Loading state animation */
+.ant-spin-container {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Custom scrollbar for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+/* Text selection styling */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #1e3a8a;
+}
+
+::-moz-selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #1e3a8a;
 }

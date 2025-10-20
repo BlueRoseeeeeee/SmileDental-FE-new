@@ -94,13 +94,19 @@ const RoomList = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [pagination.current, pagination.pageSize]); // Chỉ chạy khi trang hoặc kích thước trang thay đổi
+  }, [pagination.current, pagination.pageSize, searchTerm, statusFilter, typeFilter]); // 🔥 Add all filter dependencies
 
 
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      const response = await roomService.getRooms(pagination.current, pagination.pageSize);
+      // 🔥 When searching or filtering, fetch ALL rooms to enable search across all pages
+      const shouldFetchAll = searchTerm.trim() !== '' || statusFilter !== '' || typeFilter !== '';
+      
+      const response = await roomService.getRooms(
+        shouldFetchAll ? 1 : pagination.current, 
+        shouldFetchAll ? 9999 : pagination.pageSize
+      );
       
       setRooms(response.rooms || []);
       setPagination(prev => ({
@@ -241,7 +247,7 @@ const RoomList = () => {
           {!record.hasSubRooms && (
             <div>
               <Tag color="green" size="small">
-                <SettingOutlined /> {record.maxDoctors} bác sĩ, {record.maxNurses} y tá
+                <SettingOutlined /> {record.maxDoctors} nha sĩ, {record.maxNurses} y tá
               </Tag>
             </div>
           )}
@@ -254,7 +260,7 @@ const RoomList = () => {
       key: 'hasSubRooms',
       render: (hasSubRooms) => (
         <Tag color={hasSubRooms ? 'blue' : 'green'}>
-          {hasSubRooms ? 'Có buồng con' : 'Phòng đơn'}
+          {hasSubRooms ? 'Có buồng' : 'Không buồng'}
         </Tag>
       )
     },
@@ -262,15 +268,10 @@ const RoomList = () => {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive, record) => (
-        <Space>
-          <Tag color={isActive ? 'green' : 'red'}>
-            {isActive ? 'Hoạt động' : 'Không hoạt động'}
-          </Tag>
-          {record.hasBeenUsed && (
-            <Tag color="orange">Đã sử dụng</Tag>
-          )}
-        </Space>
+      render: (isActive) => (
+        <Tag color={isActive ? 'green' : 'red'}>
+          {isActive ? 'Hoạt động' : 'Không hoạt động'}
+        </Tag>
       )
     },
     {
@@ -312,11 +313,12 @@ const RoomList = () => {
             />
           </Tooltip>
           
-          <Tooltip title="Xóa phòng">
+          <Tooltip title={record.hasBeenUsed ? 'Phòng đã được sử dụng, không thể xóa' : 'Xóa phòng'}>
             <Button
               type="text"
               danger
               icon={<DeleteOutlined />}
+              disabled={record.hasBeenUsed}
               onClick={() => handleDeleteRoom(record)}
             />
           </Tooltip>
@@ -376,8 +378,8 @@ const RoomList = () => {
                 }}
                 style={{ width: '100%' }}
               >
-                <Select.Option value="true">Có phòng con</Select.Option>
-                <Select.Option value="false">Phòng đơn</Select.Option>
+                <Select.Option value="true">Có buồng</Select.Option>
+                <Select.Option value="false">Không buồng</Select.Option>
               </Select>
             </div>
           </Col>
@@ -422,6 +424,7 @@ const RoomList = () => {
                 current: page,
                 pageSize: pageSize || 10
               }));
+              fetchRooms(); // 🔥 This will be triggered by useEffect dependency
             }
           }}
         />
@@ -429,7 +432,7 @@ const RoomList = () => {
 
       {/* Modal tạo/sửa phòng */}
       <RoomFormModal
-        visible={isModalVisible}
+        open={isModalVisible}
         onClose={handleModalClose}
         onSuccess={handleSuccess}
         room={editingRoom}

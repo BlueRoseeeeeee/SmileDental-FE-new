@@ -23,6 +23,9 @@ import {
   MenuUnfoldOutlined,
   EnvironmentOutlined,
   MedicineBoxOutlined,
+  UserAddOutlined,
+  DollarOutlined,
+  FileDoneOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import logo from '../../assets/image/smile-dental-logo.png';
@@ -80,6 +83,11 @@ const DashboardLayout = () => {
           label: 'Quản lý nhân viên',
         },
         {
+          key: '/patient-appointments',
+          icon: <CalendarOutlined />,
+          label: 'Lịch khám bệnh nhân',
+        },
+        {
           key: '/rooms',
           icon: <EnvironmentOutlined />,
           label: 'Quản lý phòng khám',
@@ -88,6 +96,21 @@ const DashboardLayout = () => {
           key: '/services',
           icon: <MedicineBoxOutlined />,
           label: 'Quản lý dịch vụ',
+        },
+        {
+          key: '/walk-in-appointments',
+          icon: <UserAddOutlined />,
+          label: 'Lịch hẹn Walk-in',
+        },
+        {
+          key: '/records',
+          icon: <FileDoneOutlined />,
+          label: 'Hồ sơ bệnh án',
+        },
+        {
+          key: '/invoices',
+          icon: <DollarOutlined />,
+          label: 'Quản lý hóa đơn',
         }
       );
     }
@@ -98,6 +121,11 @@ const DashboardLayout = () => {
           key: '/certificates',
           icon: <FileTextOutlined />,
           label: 'Quản lý chứng chỉ',
+        },
+        {
+          key: '/records',
+          icon: <FileDoneOutlined />,
+          label: 'Hồ sơ bệnh án',
         }
       );
     }
@@ -125,12 +153,13 @@ const DashboardLayout = () => {
     if (user?.role === 'admin' || user?.role === 'manager') {
       roleBasedItems.push(
         {
-          key: '/schedules',
+          key: 'schedules-menu',
           icon: <ClockCircleOutlined />,
           label: 'Quản lý lịch làm việc',
           children: [
             { key: '/schedules', label: 'Cấu hình hệ thống' },
-            { key: '/schedules/management', label: 'Quản lý lịch chính' },
+            { key: '/schedules/holidays', label: 'Quản lý ngày nghỉ' },
+            { key: '/schedules/create-for-room', label: 'Tạo lịch cho phòng' },
             { key: '/schedules/calendar', label: 'Lịch làm việc' },
             { key: '/schedules/staff-assignment', label: 'Phân công nhân sự' },
           ]
@@ -195,7 +224,7 @@ const DashboardLayout = () => {
         onClose={() => setMobileMenuVisible(false)}
         open={mobileMenuVisible}
         width={280}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         <div style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
           <img src={logo} alt="Smile Dental" style={{ width: '100%', height: '100%' }} />

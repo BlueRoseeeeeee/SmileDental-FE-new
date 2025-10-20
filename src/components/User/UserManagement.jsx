@@ -1216,7 +1216,7 @@ const UserManagement = () => {
       {/* Toggle Status Modal */}
       <Modal
         title={`${selectedUserForToggle?.isActive ? 'Khóa tài khoản nhân viên' : 'Mở khóa tài khoản nhân viên'}`}
-        visible={showToggleModal}
+        open={showToggleModal}
         onOk={handleConfirmToggle}
         onCancel={handleCancelToggle}
         confirmLoading={toggleLoading}
@@ -1283,7 +1283,7 @@ const UserManagement = () => {
       {/* Delete Confirmation Modal */}
       <Modal
         title="Xác nhận xóa nhân viên"
-        visible={showDeleteModal}
+        open={showDeleteModal}
         onOk={handleConfirmDelete}
         onCancel={handleCancelDelete}
         confirmLoading={deleteLoading}

@@ -4,6 +4,12 @@
 import { serviceApi } from './apiFactory.js';
 
 export const servicesService = {
+  // Lấy tất cả services (không phân trang)
+  async getAllServices() {
+    const response = await serviceApi.get('/service?page=1&limit=1000');
+    return response.data;
+  },
+
   // Lấy danh sách services
   async getServices(page = 1, limit = 10) {
     const response = await serviceApi.get(`/service?page=${page}&limit=${limit}`);
@@ -18,7 +24,11 @@ export const servicesService = {
 
   // Tạo service mới
   async createService(serviceData) {
-    const response = await serviceApi.post('/service', serviceData);
+    const response = await serviceApi.post('/service', serviceData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return response.data;
   },
 
@@ -87,6 +97,71 @@ export const servicesService = {
   // Xóa add-on
   async deleteServiceAddOn(serviceId, addOnId) {
     const response = await serviceApi.delete(`/service/${serviceId}/addons/${addOnId}`);
+    return response.data;
+  },
+
+  // Lấy chi tiết add-on theo ID
+  async getServiceAddOnById(serviceId, addOnId) {
+    const response = await serviceApi.get(`/service/${serviceId}/addons/${addOnId}`);
+    return response.data;
+  },
+
+  // Get room types enum
+  async getRoomTypes() {
+    const response = await serviceApi.get('/service/enums/room-types');
+    return response.data?.data || {};
+  },
+
+  // === 🆕 PRICE SCHEDULE APIs ===
+  
+  // Thêm lịch giá mới cho ServiceAddOn
+  async addPriceSchedule(serviceId, addOnId, scheduleData) {
+    const response = await serviceApi.post(
+      `/service/${serviceId}/addons/${addOnId}/price-schedules`, 
+      scheduleData
+    );
+    return response.data;
+  },
+
+  // Cập nhật lịch giá
+  async updatePriceSchedule(serviceId, addOnId, scheduleId, scheduleData) {
+    const response = await serviceApi.put(
+      `/service/${serviceId}/addons/${addOnId}/price-schedules/${scheduleId}`, 
+      scheduleData
+    );
+    return response.data;
+  },
+
+  // Xóa lịch giá
+  async deletePriceSchedule(serviceId, addOnId, scheduleId) {
+    const response = await serviceApi.delete(
+      `/service/${serviceId}/addons/${addOnId}/price-schedules/${scheduleId}`
+    );
+    return response.data;
+  },
+
+  // Toggle trạng thái active của lịch giá
+  async togglePriceScheduleStatus(serviceId, addOnId, scheduleId) {
+    const response = await serviceApi.patch(
+      `/service/${serviceId}/addons/${addOnId}/price-schedules/${scheduleId}/toggle`
+    );
+    return response.data;
+  },
+
+  // === 🆕 TEMPORARY PRICE APIs (for Service) ===
+  
+  // Cập nhật giá tạm thời cho Service
+  async updateTemporaryPrice(serviceId, temporaryPriceData) {
+    const response = await serviceApi.put(
+      `/service/${serviceId}/temporary-price`, 
+      temporaryPriceData
+    );
+    return response.data;
+  },
+
+  // Xóa giá tạm thời
+  async removeTemporaryPrice(serviceId) {
+    const response = await serviceApi.delete(`/service/${serviceId}/temporary-price`);
     return response.data;
   }
 };
