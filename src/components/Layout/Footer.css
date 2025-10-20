@@ -1,0 +1,29 @@
+/* Footer custom styles */
+.custom-footer .ant-typography {
+  color: #ffffff !important;
+}
+
+.custom-footer .ant-typography-caption {
+  color: #ffffff !important;
+}
+
+.custom-footer .ant-typography-text {
+  color: #ffffff !important;
+}
+
+.custom-footer .ant-typography-paragraph {
+  color: #ffffff !important;
+}
+
+/* Override Ant Design default text colors */
+.custom-footer .ant-typography,
+.custom-footer .ant-typography * {
+  color: #ffffff !important;
+}
+
+/* Ensure all text elements are white */
+.custom-footer span,
+.custom-footer div,
+.custom-footer p {
+  color: #ffffff !important;
+}

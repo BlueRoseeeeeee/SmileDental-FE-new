@@ -21,7 +21,8 @@ import {
   Tabs,
   List,
   Tag,
-  Modal
+  Modal,
+  Popconfirm
 } from 'antd';
 import {
   UserOutlined,
@@ -32,10 +33,12 @@ import {
   EyeOutlined,
   DeleteOutlined,
   PlusOutlined,
-  IdcardOutlined
+  IdcardOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { toast } from '../services/toastService';
+import TinyMCE from '../components/TinyMCE/TinyMCE';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -50,12 +53,26 @@ const EditUser = () => {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [certificates, setCertificates] = useState([]);
   const [certificateModalVisible, setCertificateModalVisible] = useState(false);
+  const [editCertificateModalVisible, setEditCertificateModalVisible] = useState(false);
+  const [editingCertificate, setEditingCertificate] = useState(null);
   const [newCertificate, setNewCertificate] = useState({ 
-    notes: '', 
-    files: [], 
-    previewUrls: [] 
+    name: '',
+    frontImage: null,
+    backImage: null,
+    frontPreview: null,
+    backPreview: null
+  });
+  const [editCertificate, setEditCertificate] = useState({ 
+    name: '',
+    frontImage: null,
+    backImage: null,
+    frontPreview: null,
+    backPreview: null
   });
   const [uploading, setUploading] = useState(false);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewCertificate, setPreviewCertificate] = useState(null);
+  const [description, setDescription] = useState('');
 
   useEffect(() => {
     loadUser();
@@ -64,29 +81,69 @@ const EditUser = () => {
   const loadUser = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/user/${id}`, {
+      
+      // Check if access token exists
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        toast.error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+        navigate('/login');
+        return;
+      }
+      
+      // Add timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const response = await fetch(`http://localhost:3001/api/user/${id}?_t=${timestamp}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          'Authorization': `Bearer ${accessToken}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       });
       
       if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        setCertificates(data.user.certificates || []);
+        const responseData = await response.json();
+        console.log('API Response:', responseData); // Debug log
+        
+        // Handle different response structures
+        const userData = responseData.data || responseData.user || responseData;
+        console.log('User Data:', userData); // Debug log
+        
+        if (!userData) {
+          throw new Error('Không có dữ liệu người dùng trong response');
+        }
+        
+        setUser(userData);
+        setCertificates(userData.certificates || []);
+        setDescription(userData.description || '');
         
         // Set form values - loại bỏ certificates khỏi form
-        const { certificates, ...userData } = data.user;
-        form.setFieldsValue({
-          ...userData,
-          dateOfBirth: data.user.dateOfBirth ? dayjs(data.user.dateOfBirth) : null
-        });
+        const { certificates, description: userDescription, ...formData } = userData;
+        try {
+          form.setFieldsValue({
+            ...formData,
+            dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
+          });
+        } catch (formError) {
+          console.error('Form Set Fields Error:', formError);
+          // Set basic fields if form setting fails
+          form.setFieldsValue({
+            fullName: userData.fullName || '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            role: userData.role || '',
+            isActive: userData.isActive !== undefined ? userData.isActive : true,
+            dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
+          });
+        }
       } else {
-        toast.error('Không thể tải thông tin người dùng');
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        toast.error(`Không thể tải thông tin người dùng (${response.status})`);
         navigate('/users');
       }
     } catch (error) {
-      toast.error('Lỗi khi tải thông tin người dùng');
+      console.error('Load User Error:', error);
+      toast.error(`Lỗi khi tải thông tin người dùng: ${error.message}`);
       navigate('/users');
     } finally {
       setLoading(false);
@@ -99,12 +156,15 @@ const EditUser = () => {
       // Loại bỏ certificates và employeeCode khỏi dữ liệu update
       const { certificates, employeeCode, ...updateData } = values;
       updateData.dateOfBirth = values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null;
+      updateData.description = description;
 
       const response = await fetch(`http://localhost:3001/api/user/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
         body: JSON.stringify(updateData)
       });
@@ -113,8 +173,21 @@ const EditUser = () => {
         toast.success('Cập nhật thông tin thành công');
         navigate('/users');
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Cập nhật thất bại');
+        const errorData = await response.json();
+        console.error('Update User Error:', errorData);
+        
+        // Ưu tiên hiển thị lỗi từ backend
+        if (errorData.message) {
+          toast.error(errorData.message);
+        } else if (errorData.error) {
+          toast.error(errorData.error);
+        } else if (errorData.errors && Array.isArray(errorData.errors)) {
+          errorData.errors.forEach(err => {
+            toast.error(err.message || err.msg || err);
+          });
+        } else {
+          toast.error(`Cập nhật thông tin thất bại (${response.status})`);
+        }
       }
     } catch (error) {
       toast.error('Lỗi khi cập nhật thông tin');
@@ -132,17 +205,30 @@ const EditUser = () => {
       const response = await fetch(`http://localhost:3001/api/user/avatar/${id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
         body: formData
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setUser(prev => ({ ...prev, avatar: data.user.avatar }));
+        const responseData = await response.json();
+        const userData = responseData.data || responseData.user;
+        setUser(prev => ({ ...prev, avatar: userData.avatar }));
         toast.success('Cập nhật avatar thành công');
       } else {
-        toast.error('Cập nhật avatar thất bại');
+        const errorData = await response.json();
+        console.error('Avatar Upload Error:', errorData);
+        
+        // Ưu tiên hiển thị lỗi từ backend
+        if (errorData.message) {
+          toast.error(errorData.message);
+        } else if (errorData.error) {
+          toast.error(errorData.error);
+        } else {
+          toast.error(`Cập nhật avatar thất bại (${response.status})`);
+        }
       }
     } catch (error) {
       toast.error('Lỗi khi cập nhật avatar');
@@ -152,42 +238,77 @@ const EditUser = () => {
   };
 
   const handleAddCertificate = async () => {
-    if (newCertificate.files.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một file ảnh cho chứng chỉ');
+    if (!newCertificate.name.trim()) {
+      toast.error('Vui lòng nhập tên chứng chỉ');
+      return;
+    }
+
+    if (!newCertificate.frontImage) {
+      toast.error('Vui lòng chọn ít nhất ảnh mặt trước của chứng chỉ');
       return;
     }
 
     setUploading(true);
 
     try {
-      // Upload tất cả file ảnh cho 1 chứng chỉ
       const formData = new FormData();
       
-      // Thêm tất cả file ảnh
-      newCertificate.files.forEach((file, index) => {
-        formData.append(`certificate_${index}`, file);
-      });
+      // Add action field
+      formData.append('action', 'batch-create');
       
-      formData.append('notes', newCertificate.notes);
-      formData.append('fileCount', newCertificate.files.length.toString());
+      // Add certificate name
+      formData.append('name0', newCertificate.name);
+      
+      // Add front image
+      formData.append('frontImages', newCertificate.frontImage);
+      
+      // Add back image (optional)
+      if (newCertificate.backImage) {
+        formData.append('backImages', newCertificate.backImage);
+      }
 
       const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
         body: formData
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setCertificates(data.user.certificates);
+        const responseData = await response.json();
+        setCertificates(responseData.data.certificates);
         setCertificateModalVisible(false);
-        setNewCertificate({ notes: '', files: [], previewUrls: [] });
+        setNewCertificate({ 
+          name: '',
+          frontImage: null,
+          backImage: null,
+          frontPreview: null,
+          backPreview: null
+        });
         toast.success('Thêm chứng chỉ thành công');
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Thêm chứng chỉ thất bại');
+        const errorData = await response.json();
+        console.error('Certificate Upload Error:', errorData);
+        
+        // Ưu tiên hiển thị lỗi từ backend
+        if (errorData.message) {
+          toast.error(errorData.message);
+        } else if (errorData.error) {
+          toast.error(errorData.error);
+        } else if (errorData.errors && Array.isArray(errorData.errors)) {
+          // Nếu có nhiều lỗi validation từ backend
+          errorData.errors.forEach(err => {
+            toast.error(err.message || err.msg || err);
+          });
+        } else if (errorData.details) {
+          // Nếu có chi tiết lỗi
+          toast.error(errorData.details);
+        } else {
+          toast.error(`Thêm chứng chỉ thất bại (${response.status})`);
+        }
       }
     } catch (error) {
       toast.error('Lỗi khi thêm chứng chỉ');
@@ -198,65 +319,261 @@ const EditUser = () => {
 
   const handleDeleteCertificate = async (certificateId) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates/${certificateId}`, {
-        method: 'DELETE',
+      const formData = new FormData();
+      formData.append('action', 'batch-delete');
+      formData.append('certificateId0', certificateId);
+
+      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
+        method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        }
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        body: formData
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setCertificates(data.user.certificates);
+        const responseData = await response.json();
+        setCertificates(responseData.data.certificates);
         toast.success('Xóa chứng chỉ thành công');
       } else {
-        toast.error('Xóa chứng chỉ thất bại');
+        const errorData = await response.json();
+        console.error('Delete Certificate Error:', errorData);
+        
+        // Ưu tiên hiển thị lỗi từ backend
+        if (errorData.message) {
+          toast.error(errorData.message);
+        } else if (errorData.error) {
+          toast.error(errorData.error);
+        } else {
+          toast.error(`Xóa chứng chỉ thất bại (${response.status})`);
+        }
       }
     } catch (error) {
       toast.error('Lỗi khi xóa chứng chỉ');
     }
   };
 
-  const handleFileSelect = (file) => {
+  const handleEditCertificate = (cert) => {
+    setEditingCertificate(cert);
+    setEditCertificate({
+      name: cert.name || '',
+      frontImage: null,
+      backImage: null,
+      frontPreview: null,
+      backPreview: null
+    });
+    setEditCertificateModalVisible(true);
+  };
+
+  const handleUpdateCertificate = async (certificateId, updateData) => {
+    try {
+      const formData = new FormData();
+      formData.append('action', 'batch-update');
+      formData.append('certificateId0', certificateId);
+      
+      // Add update fields
+      if (updateData.name) {
+        formData.append('name0', updateData.name);
+      }
+      if (updateData.frontImage) {
+        formData.append('frontImages', updateData.frontImage);
+      }
+      if (updateData.backImage) {
+        formData.append('backImages', updateData.backImage);
+      }
+
+      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        setCertificates(responseData.data.certificates);
+        toast.success('Cập nhật chứng chỉ thành công');
+        setEditCertificateModalVisible(false);
+        setEditingCertificate(null);
+        setEditCertificate({ 
+          name: '',
+          frontImage: null,
+          backImage: null,
+          frontPreview: null,
+          backPreview: null
+        });
+      } else {
+        const errorData = await response.json();
+        console.error('Update Certificate Error:', errorData);
+        
+        // Ưu tiên hiển thị lỗi từ backend
+        if (errorData.message) {
+          toast.error(errorData.message);
+        } else if (errorData.error) {
+          toast.error(errorData.error);
+        } else {
+          toast.error(`Cập nhật chứng chỉ thất bại (${response.status})`);
+        }
+      }
+    } catch (error) {
+      toast.error('Lỗi khi cập nhật chứng chỉ');
+    }
+  };
+
+  const handleFrontImageSelect = (file) => {
     const previewUrl = URL.createObjectURL(file);
     setNewCertificate(prev => ({
       ...prev,
-      files: [...prev.files, file],
-      previewUrls: [...prev.previewUrls, previewUrl]
+      frontImage: file,
+      frontPreview: previewUrl
     }));
     return false; // Prevent default upload
   };
 
-  const handleRemoveFile = (index) => {
-    setNewCertificate(prev => {
-      const newFiles = [...prev.files];
-      const newPreviewUrls = [...prev.previewUrls];
-      
-      // Clean up URL
-      URL.revokeObjectURL(newPreviewUrls[index]);
-      
-      newFiles.splice(index, 1);
-      newPreviewUrls.splice(index, 1);
-      
-      return {
-        ...prev,
-        files: newFiles,
-        previewUrls: newPreviewUrls
-      };
+  const handleBackImageSelect = (file) => {
+    const previewUrl = URL.createObjectURL(file);
+    setNewCertificate(prev => ({
+      ...prev,
+      backImage: file,
+      backPreview: previewUrl
+    }));
+    return false; // Prevent default upload
+  };
+
+  const handleRemoveFrontImage = () => {
+    if (newCertificate.frontPreview) {
+      URL.revokeObjectURL(newCertificate.frontPreview);
+    }
+    setNewCertificate(prev => ({
+      ...prev,
+      frontImage: null,
+      frontPreview: null
+    }));
+  };
+
+  const handleRemoveBackImage = () => {
+    if (newCertificate.backPreview) {
+      URL.revokeObjectURL(newCertificate.backPreview);
+    }
+    setNewCertificate(prev => ({
+      ...prev,
+      backImage: null,
+      backPreview: null
+    }));
+  };
+
+  const handleUpdateName = (name) => {
+    setNewCertificate(prev => ({ ...prev, name }));
+  };
+
+  // Edit certificate handlers
+  const handleEditFrontImageSelect = (file) => {
+    const previewUrl = URL.createObjectURL(file);
+    setEditCertificate(prev => ({
+      ...prev,
+      frontImage: file,
+      frontPreview: previewUrl
+    }));
+    return false;
+  };
+
+  const handleEditBackImageSelect = (file) => {
+    const previewUrl = URL.createObjectURL(file);
+    setEditCertificate(prev => ({
+      ...prev,
+      backImage: file,
+      backPreview: previewUrl
+    }));
+    return false;
+  };
+
+  const handleEditRemoveFrontImage = () => {
+    if (editCertificate.frontPreview) {
+      URL.revokeObjectURL(editCertificate.frontPreview);
+    }
+    setEditCertificate(prev => ({
+      ...prev,
+      frontImage: null,
+      frontPreview: null
+    }));
+  };
+
+  const handleEditRemoveBackImage = () => {
+    if (editCertificate.backPreview) {
+      URL.revokeObjectURL(editCertificate.backPreview);
+    }
+    setEditCertificate(prev => ({
+      ...prev,
+      backImage: null,
+      backPreview: null
+    }));
+  };
+
+  const handleEditUpdateName = (name) => {
+    setEditCertificate(prev => ({ ...prev, name }));
+  };
+
+  const handleEditCertificateModalClose = () => {
+    // Clean up object URLs
+    if (editCertificate.frontPreview) {
+      URL.revokeObjectURL(editCertificate.frontPreview);
+    }
+    if (editCertificate.backPreview) {
+      URL.revokeObjectURL(editCertificate.backPreview);
+    }
+    setEditCertificateModalVisible(false);
+    setEditingCertificate(null);
+    setEditCertificate({ 
+      name: '',
+      frontImage: null,
+      backImage: null,
+      frontPreview: null,
+      backPreview: null
     });
   };
 
-  const handleUpdateNotes = (notes) => {
-    setNewCertificate(prev => ({ ...prev, notes }));
+  const handleConfirmEditCertificate = async () => {
+    if (!editCertificate.name.trim()) {
+      toast.error('Vui lòng nhập tên chứng chỉ');
+      return;
+    }
+
+    setUploading(true);
+    await handleUpdateCertificate(editingCertificate.certificateId, editCertificate);
+    setUploading(false);
+  };
+
+  const handlePreviewCertificate = (cert) => {
+    setPreviewCertificate(cert);
+    setPreviewModalVisible(true);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewModalVisible(false);
+    setPreviewCertificate(null);
   };
 
   const handleCertificateModalClose = () => {
     // Clean up object URLs
-    newCertificate.previewUrls.forEach(url => {
-      URL.revokeObjectURL(url);
-    });
+    if (newCertificate.frontPreview) {
+      URL.revokeObjectURL(newCertificate.frontPreview);
+    }
+    if (newCertificate.backPreview) {
+      URL.revokeObjectURL(newCertificate.backPreview);
+    }
     setCertificateModalVisible(false);
-    setNewCertificate({ notes: '', files: [], previewUrls: [] });
+    setNewCertificate({ 
+      name: '',
+      frontImage: null,
+      backImage: null,
+      frontPreview: null,
+      backPreview: null
+    });
   };
 
   if (loading && !user) {
@@ -521,13 +838,18 @@ const EditUser = () => {
                         <Col xs={24}>
                           <Form.Item
                             name="description"
-                            label="Mô tả thêm"
+                            label="Mô tả"
                           >
-                            <TextArea
-                              rows={6}
-                              placeholder="Nhập mô tả về kinh nghiệm, thành tích hoặc thông tin bổ sung..."
-                              className="custom-textarea"
-                            />
+                            <div style={{
+                              height: '400px'
+                            }}>
+                              <TinyMCE
+                                value={description}
+                                onChange={setDescription}
+                                placeholder="Nhập mô tả về kinh nghiệm, thành tích hoặc thông tin bổ sung..."
+                                containerStyle={{ width: '100%'}}
+                              />
+                            </div>
                           </Form.Item>
                         </Col>
                       </Row>
@@ -562,7 +884,7 @@ const EditUser = () => {
                 },
                 {
                   key: 'certificates',
-                  label: 'Chứng chỉ & Bằng cấp',
+                  label: `Chứng chỉ & Bằng cấp ${certificates && certificates.length > 0 ? `(${certificates.length})` : ''}`,
                   children: (
                     <div>
                       <div style={{ 
@@ -608,28 +930,46 @@ const EditUser = () => {
                                 <Button 
                                   type="link" 
                                   icon={<EyeOutlined />}
-                                  onClick={() => window.open(cert.imageUrl, '_blank')}
+                                  onClick={() => handlePreviewCertificate(cert)}
                                 >
                                   Xem
                                 </Button>,
                                 <Button 
                                   type="link" 
-                                  danger
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => handleDeleteCertificate(cert._id)}
+                                  icon={<EditOutlined />}
+                                  onClick={() => handleEditCertificate(cert)}
                                 >
-                                  Xóa
-                                </Button>
+                                  Chỉnh sửa
+                                </Button>,
+                                <Popconfirm
+                                  title="Xóa chứng chỉ"
+                                  description="Bạn có chắc chắn muốn xóa chứng chỉ này không?"
+                                  onConfirm={() => handleDeleteCertificate(cert.certificateId)}
+                                  okText="Có, xóa"
+                                  cancelText="Hủy"
+                                  okButtonProps={{ danger: true }}
+                                >
+                                  <Button 
+                                    type="link" 
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                  >
+                                    Xóa
+                                  </Button>
+                                </Popconfirm>
                               ]}
                             >
                               <List.Item.Meta
-                                title={`Chứng chỉ ${index + 1}`}
+                                title={cert.name || `Chứng chỉ ${index + 1}`}
                                 description={
                                   <div>
                                     <div style={{ marginBottom: '8px' }}>
                                       {cert.notes && <div>Ghi chú: {cert.notes}</div>}
                                       <div style={{ fontSize: '12px', color: '#999' }}>
-                                        Upload: {new Date(cert.uploadedAt).toLocaleDateString('vi-VN')}
+                                        {cert.uploadedAt 
+                                          ? `Upload: ${new Date(cert.uploadedAt).toLocaleDateString('vi-VN')}`
+                                          : `Tạo: ${new Date(cert.createdAt).toLocaleDateString('vi-VN')}`
+                                        }
                                       </div>
                                     </div>
                                     <Tag color={cert.isVerified ? 'green' : 'orange'}>
@@ -661,19 +1001,42 @@ const EditUser = () => {
         cancelText="Hủy"
         width={800}
         okButtonProps={{ 
-          disabled: newCertificate.files.length === 0 || uploading,
+          disabled: !newCertificate.name.trim() || !newCertificate.frontImage || uploading,
           loading: uploading 
         }}
       >
+        {/* Certificate Name */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', fontSize: '14px' }}>
-            Chọn ảnh cho chứng chỉ (có thể chọn nhiều ảnh cho 1 chứng chỉ):
+            Tên chứng chỉ: <span style={{ color: '#ff4d4f' }}>*</span>
+          </label>
+          <Input
+            value={newCertificate.name}
+            onChange={(e) => handleUpdateName(e.target.value)}
+            placeholder="Nhập tên chứng chỉ..."
+            style={{ borderRadius: '8px' }}
+            status={!newCertificate.name.trim() ? 'error' : ''}
+          />
+          {!newCertificate.name.trim() && (
+            <div style={{ 
+              color: '#ff4d4f', 
+              fontSize: '12px', 
+              marginTop: '4px' 
+            }}>
+              Tên chứng chỉ không được để trống
+            </div>
+          )}
+        </div>
+
+        {/* Front Image Upload */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', fontSize: '14px' }}>
+            Ảnh mặt trước chứng chỉ: <span style={{ color: '#ff4d4f' }}>*</span>
           </label>
           <Upload
-            beforeUpload={handleFileSelect}
+            beforeUpload={handleFrontImageSelect}
             showUploadList={false}
             accept="image/*"
-            multiple
           >
             <Button 
               icon={<UploadOutlined />} 
@@ -684,13 +1047,46 @@ const EditUser = () => {
                 fontSize: '16px'
               }}
             >
-              📁 Chọn ảnh (có thể chọn nhiều ảnh)
+              📁 Chọn ảnh mặt trước
+            </Button>
+          </Upload>
+          {!newCertificate.frontImage && (
+            <div style={{ 
+              color: '#ff4d4f', 
+              fontSize: '12px', 
+              marginTop: '4px' 
+            }}>
+              Vui lòng chọn ảnh mặt trước của chứng chỉ
+            </div>
+          )}
+        </div>
+
+        {/* Back Image Upload */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', fontSize: '14px' }}>
+            Ảnh mặt sau chứng chỉ (nếu có):
+          </label>
+          <Upload
+            beforeUpload={handleBackImageSelect}
+            showUploadList={false}
+            accept="image/*"
+          >
+            <Button 
+              icon={<UploadOutlined />} 
+              style={{ 
+                width: '100%', 
+                height: '50px',
+                borderRadius: '8px',
+                fontSize: '16px'
+              }}
+            >
+              📁 Chọn ảnh mặt sau 
             </Button>
           </Upload>
         </div>
 
-        {/* File Preview List */}
-        {newCertificate.files.length > 0 && (
+        {/* Image Previews */}
+        {(newCertificate.frontImage || newCertificate.backImage) && (
           <div style={{ marginBottom: '20px' }}>
             <div style={{ 
               fontSize: '14px', 
@@ -698,22 +1094,20 @@ const EditUser = () => {
               marginBottom: '12px',
               color: '#333'
             }}>
-              📋 Ảnh đã chọn cho chứng chỉ này ({newCertificate.files.length} ảnh):
+              📋 Ảnh đã chọn:
             </div>
             
             <div style={{ 
-              maxHeight: '400px', 
-              overflowY: 'auto',
-              border: '1px solid #e8e8e8',
-              borderRadius: '8px',
-              padding: '12px'
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px'
             }}>
-              {newCertificate.files.map((file, index) => (
-                <div key={index} style={{
+              {/* Front Image Preview */}
+              {newCertificate.frontImage && (
+                <div style={{
                   border: '1px solid #f0f0f0',
                   borderRadius: '8px',
                   padding: '16px',
-                  marginBottom: '12px',
                   background: '#fafafa'
                 }}>
                   <div style={{ 
@@ -729,13 +1123,13 @@ const EditUser = () => {
                         color: '#333',
                         marginBottom: '4px'
                       }}>
-                        📄 Ảnh {index + 1}: {file.name}
+                        📄 Mặt trước: {newCertificate.frontImage.name}
                       </div>
                       <div style={{ 
                         fontSize: '12px', 
                         color: '#666' 
                       }}>
-                        Kích thước: {(file.size / 1024 / 1024).toFixed(2)} MB
+                        Kích thước: {(newCertificate.frontImage.size / 1024 / 1024).toFixed(2)} MB
                       </div>
                     </div>
                     <Button 
@@ -743,18 +1137,18 @@ const EditUser = () => {
                       danger 
                       size="small"
                       icon={<DeleteOutlined />}
-                      onClick={() => handleRemoveFile(index)}
+                      onClick={handleRemoveFrontImage}
                       style={{ marginLeft: '8px' }}
                     >
                       Xóa
                     </Button>
                   </div>
 
-                  {/* Image Preview */}
+                  {/* Front Image Preview */}
                   <div style={{ marginBottom: '12px' }}>
                     <img 
-                      src={newCertificate.previewUrls[index]} 
-                      alt={`Preview ${index + 1}`}
+                      src={newCertificate.frontPreview} 
+                      alt="Front Preview"
                       style={{ 
                         width: '100%', 
                         maxHeight: '200px', 
@@ -766,44 +1160,480 @@ const EditUser = () => {
                     />
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* Back Image Preview */}
+              {newCertificate.backImage && (
+                <div style={{
+                  border: '1px solid #f0f0f0',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  background: '#fafafa'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'flex-start',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '500', 
+                        color: '#333',
+                        marginBottom: '4px'
+                      }}>
+                        📄 Mặt sau: {newCertificate.backImage.name}
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#666' 
+                      }}>
+                        Kích thước: {(newCertificate.backImage.size / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                    <Button 
+                      type="text" 
+                      danger 
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={handleRemoveBackImage}
+                      style={{ marginLeft: '8px' }}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
+
+                  {/* Back Image Preview */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <img 
+                      src={newCertificate.backPreview} 
+                      alt="Back Preview"
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '6px',
+                        background: 'white'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Notes for the certificate */}
+      </Modal>
+
+      {/* Edit Certificate Modal */}
+      <Modal
+        title="Chỉnh sửa chứng chỉ"
+        open={editCertificateModalVisible}
+        onOk={handleConfirmEditCertificate}
+        onCancel={handleEditCertificateModalClose}
+        okText={uploading ? "Đang cập nhật..." : "Cập nhật chứng chỉ"}
+        cancelText="Hủy"
+        width={800}
+        okButtonProps={{ 
+          disabled: !editCertificate.name.trim() || uploading,
+          loading: uploading 
+        }}
+      >
+        {/* Certificate Name */}
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ 
-            display: 'block', 
-            marginBottom: '8px', 
-            fontWeight: '500',
-            fontSize: '14px',
-            color: '#333'
-          }}>
-            Ghi chú cho chứng chỉ:
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', fontSize: '14px' }}>
+            Tên chứng chỉ: <span style={{ color: '#ff4d4f' }}>*</span>
           </label>
-          <TextArea
-            value={newCertificate.notes}
-            onChange={(e) => handleUpdateNotes(e.target.value)}
-            placeholder="Nhập ghi chú cho chứng chỉ này..."
-            rows={3}
-            style={{ fontSize: '13px' }}
+          <Input
+            value={editCertificate.name}
+            onChange={(e) => handleEditUpdateName(e.target.value)}
+            placeholder="Nhập tên chứng chỉ..."
+            style={{ borderRadius: '8px' }}
+            status={!editCertificate.name.trim() ? 'error' : ''}
           />
+          {!editCertificate.name.trim() && (
+            <div style={{ 
+              color: '#ff4d4f', 
+              fontSize: '12px', 
+              marginTop: '4px' 
+            }}>
+              Tên chứng chỉ không được để trống
+            </div>
+          )}
         </div>
 
-        {/* Summary */}
-        {newCertificate.files.length > 0 && (
-          <div style={{
-            background: '#f0f9ff',
-            border: '1px solid #bae6fd',
-            borderRadius: '8px',
-            padding: '12px',
-            marginBottom: '16px'
-          }}>
-            <div style={{ fontSize: '13px', color: '#0369a1' }}>
-              <strong>📊 Tóm tắt:</strong> Bạn đã chọn {newCertificate.files.length} ảnh cho 1 chứng chỉ. 
-              Tất cả ảnh sẽ được gộp thành 1 chứng chỉ duy nhất.
+        {/* Current Images Display */}
+        {editingCertificate && (
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', fontSize: '14px' }}>
+              Ảnh hiện tại:
+            </label>
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px'
+            }}>
+              {editingCertificate.frontImage && (
+                <div style={{
+                  border: '1px solid #f0f0f0',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  background: '#fafafa'
+                }}>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#333',
+                    marginBottom: '8px'
+                  }}>
+                     Mặt trước hiện tại:
+                  </div>
+                  <img 
+                    src={editingCertificate.frontImage} 
+                    alt="Current Front"
+                    style={{ 
+                      width: '100%', 
+                      maxHeight: '150px', 
+                      objectFit: 'contain',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '6px',
+                      background: 'white'
+                    }}
+                  />
+                </div>
+              )}
+              {editingCertificate.backImage && (
+                <div style={{
+                  border: '1px solid #f0f0f0',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  background: '#fafafa'
+                }}>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#333',
+                    marginBottom: '8px'
+                  }}>
+                    Mặt sau hiện tại:
+                  </div>
+                  <img 
+                    src={editingCertificate.backImage} 
+                    alt="Current Back"
+                    style={{ 
+                      width: '100%', 
+                      maxHeight: '150px', 
+                      objectFit: 'contain',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '6px',
+                      background: 'white'
+                    }}
+                  />
+                </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {/* Front Image Upload */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', fontSize: '14px' }}>
+            Ảnh mặt trước mới (để trống nếu không thay đổi):
+          </label>
+          <Upload
+            beforeUpload={handleEditFrontImageSelect}
+            showUploadList={false}
+            accept="image/*"
+          >
+            <Button 
+              icon={<UploadOutlined />} 
+              style={{ 
+                width: '100%', 
+                height: '50px',
+                borderRadius: '8px',
+                fontSize: '16px'
+              }}
+            >
+              📁 Chọn ảnh mặt trước mới
+            </Button>
+          </Upload>
+        </div>
+
+        {/* Back Image Upload */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '12px', fontWeight: '500', fontSize: '14px' }}>
+            Ảnh mặt sau mới (để trống nếu không thay đổi):
+          </label>
+          <Upload
+            beforeUpload={handleEditBackImageSelect}
+            showUploadList={false}
+            accept="image/*"
+          >
+            <Button 
+              icon={<UploadOutlined />} 
+              style={{ 
+                width: '100%', 
+                height: '50px',
+                borderRadius: '8px',
+                fontSize: '16px'
+              }}
+            >
+              📁 Chọn ảnh mặt sau mới
+            </Button>
+          </Upload>
+        </div>
+
+        {/* New Image Previews */}
+        {(editCertificate.frontImage || editCertificate.backImage) && (
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ 
+              fontSize: '14px', 
+              fontWeight: '500', 
+              marginBottom: '12px',
+              color: '#333'
+            }}>
+              📋 Ảnh mới đã chọn:
+            </div>
+            
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px'
+            }}>
+              {/* Front Image Preview */}
+              {editCertificate.frontImage && (
+                <div style={{
+                  border: '1px solid #f0f0f0',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  background: '#fafafa'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'flex-start',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '500', 
+                        color: '#333',
+                        marginBottom: '4px'
+                      }}>
+                         Mặt trước mới: {editCertificate.frontImage.name}
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#666' 
+                      }}>
+                        Kích thước: {(editCertificate.frontImage.size / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                    <Button 
+                      type="text" 
+                      danger 
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={handleEditRemoveFrontImage}
+                      style={{ marginLeft: '8px' }}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
+
+                  {/* Front Image Preview */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <img 
+                      src={editCertificate.frontPreview} 
+                      alt="New Front Preview"
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '6px',
+                        background: 'white'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Back Image Preview */}
+              {editCertificate.backImage && (
+                <div style={{
+                  border: '1px solid #f0f0f0',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  background: '#fafafa'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'flex-start',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '500', 
+                        color: '#333',
+                        marginBottom: '4px'
+                      }}>
+                         Mặt sau mới: {editCertificate.backImage.name}
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: '#666' 
+                      }}>
+                        Kích thước: {(editCertificate.backImage.size / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                    <Button 
+                      type="text" 
+                      danger 
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={handleEditRemoveBackImage}
+                      style={{ marginLeft: '8px' }}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
+
+                  {/* Back Image Preview */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <img 
+                      src={editCertificate.backPreview} 
+                      alt="New Back Preview"
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '6px',
+                        background: 'white'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Certificate Preview Modal */}
+      <Modal
+        title={previewCertificate ? `${previewCertificate.name || 'Chứng chỉ'}` : ''}
+        open={previewModalVisible}
+        onCancel={handleClosePreview}
+        footer={null}
+        width="auto"
+        style={{ maxWidth: '90vw' }}
+        centered
+      >
+        {previewCertificate && (
+          <div>
+            {/* Two Column Layout for Front and Back Images */}
+            {(previewCertificate.frontImage || previewCertificate.backImage) && (
+              <div style={{ 
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '20px',
+                alignItems: 'start'
+              }}>
+                {/* Front Image Column */}
+                {previewCertificate.frontImage && (
+                  <div>
+                    <div style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '500', 
+                      marginBottom: '12px',
+                      color: '#333',
+                      textAlign: 'center'
+                    }}>
+                       Mặt trước
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <img 
+                        src={previewCertificate.frontImage} 
+                        alt="Mặt trước"
+                        style={{ 
+                          width: '100%', 
+                          maxHeight: '80vh', 
+                          height: '80vh',
+                          objectFit: 'contain',
+                          borderRadius: '8px',
+                          border: '1px solid #d9d9d9'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Back Image Column */}
+                {previewCertificate.backImage && (
+                  <div>
+                    <div style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '500', 
+                      marginBottom: '12px',
+                      color: '#333',
+                      textAlign: 'center'
+                    }}>
+                       Mặt sau
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <img 
+                        src={previewCertificate.backImage} 
+                        alt="Mặt sau"
+                        style={{ 
+                          width: '100%', 
+                          height: '80vh',
+                          maxHeight: '80vh', 
+                          objectFit: 'contain',
+                          borderRadius: '8px',
+                          border: '1px solid #d9d9d9'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Old format single image */}
+            {previewCertificate.imageUrl && !previewCertificate.frontImage && (
+              <div style={{ textAlign: 'center' }}>
+                <img 
+                  src={previewCertificate.imageUrl} 
+                  alt="Chứng chỉ"
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '80vh', 
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    border: '1px solid #d9d9d9'
+                  }}
+                />
+              </div>
+            )}
+
+            {/* No images message */}
+            {!previewCertificate.frontImage && !previewCertificate.backImage && !previewCertificate.imageUrl && (
+              <div style={{ 
+                textAlign: 'center', 
+                color: '#999', 
+                padding: '40px 20px',
+                fontSize: '16px'
+              }}>
+                Không có ảnh để hiển thị
+              </div>
+            )}
           </div>
         )}
       </Modal>

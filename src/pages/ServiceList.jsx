@@ -16,16 +16,15 @@ import {
   Button,
   Space,
   Statistic,
-  Badge,
   Switch,
   Select,
-  Modal
+  Modal,
+  Tabs
 } from 'antd';
 import {
   SearchOutlined,
   MedicineBoxOutlined,
   PlusOutlined,
-  EyeOutlined,
   EditOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
@@ -50,7 +49,8 @@ const ServiceList = () => {
 
   // Search & Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [activeTab, setActiveTab] = useState('active');
+  const [typeFilter, setTypeFilter] = useState('');
 
   // Toggle confirmation modal states
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -67,12 +67,20 @@ const ServiceList = () => {
     const searchFields = ['name', 'description'];
     const filters = {};
 
-    if (statusFilter !== '') {
-      filters.isActive = statusFilter === 'true';
+    // Filter by tab status
+    if (activeTab === 'active') {
+      filters.isActive = true;
+    } else if (activeTab === 'inactive') {
+      filters.isActive = false;
+    }
+
+    // Filter by type
+    if (typeFilter !== '') {
+      filters.type = typeFilter;
     }
 
     return searchAndFilter(services, searchTerm, searchFields, filters);
-  }, [services, searchTerm, statusFilter]);
+  }, [services, searchTerm, activeTab, typeFilter]);
 
   // Debounced search function
   const debouncedSearch = useMemo(
@@ -84,6 +92,18 @@ const ServiceList = () => {
     }, 300),
     []
   );
+
+  // Handle tab change
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  // Handle type filter change
+  const handleTypeFilterChange = (value) => {
+    setTypeFilter(value || '');
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
 
   // Load services data
   const loadServices = async (page = 1, limit = 10) => {
@@ -152,14 +172,9 @@ const ServiceList = () => {
     setSelectedService(null);
   };
 
-  // Handle view service details
-  const handleViewDetails = (serviceId) => {
-    navigate(`/services/${serviceId}`);
-  };
-
   // Handle edit service
   const handleEditService = (serviceId) => {
-    navigate(`/services/${serviceId}`);
+    navigate(`/services/${serviceId}/edit`);
   };
 
   // Handle show delete confirmation modal
@@ -233,6 +248,8 @@ const ServiceList = () => {
       dataIndex: 'name',
       key: 'name',
       width: 150,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'vi'),
+      sortDirections: ['ascend', 'descend'],
       render: (text) => (
         <Text strong style={{ color: '#1890ff' }}>
           {text}
@@ -289,6 +306,8 @@ const ServiceList = () => {
       dataIndex: 'type',
       key: 'type',
       width: 100,
+      sorter: (a, b) => a.type.localeCompare(b.type),
+      sortDirections: ['ascend', 'descend'],
       render: (type) => (
         <Tag color="green">
           {translateServiceType(type)}
@@ -300,6 +319,8 @@ const ServiceList = () => {
       dataIndex: 'isActive',
       key: 'isActive',
       width: 120,
+      sorter: (a, b) => a.isActive - b.isActive,
+      sortDirections: ['ascend', 'descend'],
       render: (isActive) => (
         <Tag color={isActive ? 'green' : 'red'}>
           {isActive ? 'Hoạt động' : 'Ngưng hoạt động'}
@@ -311,12 +332,19 @@ const ServiceList = () => {
       dataIndex: 'serviceAddOns',
       key: 'serviceAddOns',
       width: 120,
+      sorter: (a, b) => {
+        const getActiveAddOnsCount = (addOns) => {
+          return addOns?.filter(addon => addon.isActive).length || 0;
+        };
+        return getActiveAddOnsCount(a.serviceAddOns) - getActiveAddOnsCount(b.serviceAddOns);
+      },
+      sortDirections: ['ascend', 'descend'],
       render: (addOns, record) => {
         const activeAddOns = addOns?.filter(addon => addon.isActive) || [];
         return (
           <div>
             <Tag color="purple">
-              {activeAddOns.length} cấp độ
+              {activeAddOns.length} tùy chọn
             </Tag>
             {record.requireExamFirst && (
               <div style={{ marginTop: 4 }}>
@@ -336,13 +364,6 @@ const ServiceList = () => {
       align: 'center',
       render: (_, record) => (
         <Space>
-          <Tooltip title="Xem chi tiết dịch vụ" placement="top">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetails(record._id)}
-            />
-          </Tooltip>
           <Tooltip title="Chỉnh sửa dịch vụ" placement="top">
             <Button
               type="text"
@@ -395,21 +416,16 @@ const ServiceList = () => {
           </Col>
           <Col xs={24} md={8}>
             <div>
-              <Text style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Lọc theo trạng thái</Text>
+              <Text style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Lọc theo loại</Text>
               <Select
-                placeholder="Chọn trạng thái"
+                placeholder="Chọn loại dịch vụ"
                 allowClear
-                value={statusFilter}
-                onChange={(value) => {
-                  setStatusFilter(value || '');
-                  if (!value) {
-                    setPagination(prev => ({ ...prev, current: 1 }));
-                  }
-                }}
+                value={typeFilter}
+                onChange={handleTypeFilterChange}
                 style={{ width: '100%' }}
               >
-                <Select.Option value="true">Hoạt động</Select.Option>
-                <Select.Option value="false">Ngưng hoạt động</Select.Option>
+                <Select.Option value="treatment">Điều trị</Select.Option>
+                <Select.Option value="exam">Khám</Select.Option>
               </Select>
             </div>
           </Col>
@@ -417,7 +433,7 @@ const ServiceList = () => {
       </Card>
 
 
-      {/* Services Table */}
+      {/* Services Table with Tabs */}
       <Card>
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -434,33 +450,78 @@ const ServiceList = () => {
             Thêm dịch vụ
           </Button>
         </div>
-        <Table
-          columns={columns}
-          dataSource={filteredServices}
-          rowKey="_id"
-          loading={loading}
-          pagination={
-            (searchTerm || statusFilter) 
-              ? false 
-              : {
-                  current: pagination.current,
-                  pageSize: pagination.pageSize,
-                  total: pagination.total,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
-                  onChange: (page, pageSize) => {
-                    setPagination(prev => ({
-                      ...prev,
-                      current: page,
-                      pageSize: pageSize || 10
-                    }));
-                    loadServices(page, pageSize || 10); // 🔥 Fetch new page data
+        
+        <Tabs
+          activeKey={activeTab}
+          onChange={handleTabChange}
+          items={[
+            {
+              key: 'active',
+              label: 'Hoạt động',
+              children: (
+                <Table
+                  columns={columns}
+                  dataSource={filteredServices}
+                  rowKey="_id"
+                  loading={loading}
+                  pagination={
+                    (searchTerm || typeFilter) 
+                      ? false 
+                      : {
+                          current: pagination.current,
+                          pageSize: pagination.pageSize,
+                          total: filteredServices.length,
+                          showSizeChanger: true,
+                          showQuickJumper: true,
+                          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
+                          onChange: (page, pageSize) => {
+                            setPagination(prev => ({
+                              ...prev,
+                              current: page,
+                              pageSize: pageSize || 10
+                            }));
+                          }
+                        }
                   }
-                }
-          }
-          scroll={{ x: 1000 }}
-          size="middle"
+                  scroll={{ x: 1000 }}
+                  size="middle"
+                />
+              )
+            },
+            {
+              key: 'inactive',
+              label: 'Đã ngưng hoạt động',
+              children: (
+                <Table
+                  columns={columns}
+                  dataSource={filteredServices}
+                  rowKey="_id"
+                  loading={loading}
+                  pagination={
+                    (searchTerm || typeFilter) 
+                      ? false 
+                      : {
+                          current: pagination.current,
+                          pageSize: pagination.pageSize,
+                          total: filteredServices.length,
+                          showSizeChanger: true,
+                          showQuickJumper: true,
+                          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
+                          onChange: (page, pageSize) => {
+                            setPagination(prev => ({
+                              ...prev,
+                              current: page,
+                              pageSize: pageSize || 10
+                            }));
+                          }
+                        }
+                  }
+                  scroll={{ x: 1000 }}
+                  size="middle"
+                />
+              )
+            }
+          ]}
         />
       </Card>
 
@@ -528,7 +589,7 @@ const ServiceList = () => {
               
               {selectedServiceForDelete.serviceAddOns && selectedServiceForDelete.serviceAddOns.length > 0 && (
                 <p style={{ color: '#ff4d4f', fontSize: 12, margin: '0 0 8px 0' }}>
-                   <strong>Dịch vụ có {selectedServiceForDelete.serviceAddOns.length} cấp độ:</strong> Tất cả cấp độ sẽ bị xóa cùng.
+                   <strong>Dịch vụ có {selectedServiceForDelete.serviceAddOns.length} tùy chọn:</strong> Tất cả tùy chọn sẽ bị xóa cùng.
                 </p>
               )}
               

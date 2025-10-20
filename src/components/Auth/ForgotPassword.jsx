@@ -70,46 +70,18 @@ const ForgotPassword = () => {
 
   if (step === 2) {
     return (
-      <>
-        <style>
-          {`
-            /* Responsive layout for container */
-            @media (max-width: 768px) {
-              .register-container {
-                flex-direction: column !important;
-                min-height: auto !important;
-              }
-              .register-image {
-                flex: none !important;
-                height: 400px !important;
-                padding: 20px !important;
-              }
-              .register-form {
-                flex: none !important;
-                padding: 24px !important;
-              }
-            }
-          `}
-        </style>
-        <div style={{ 
-          minHeight: '100vh', 
-          background: '#e8f5e8',
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          padding: '20px 0'
+      <div 
+        className="register-container"
+        style={{ 
+          width: '100%', 
+          maxWidth: '100%',
+          display: 'flex',
+          background: 'white',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          overflow: 'hidden',
+          minHeight: 'calc(100vh - 200px)',
+          margin: '-24px -24px -24px -24px'
         }}>
-          <div 
-            className="register-container"
-            style={{ 
-              width: '100%', 
-              maxWidth: '100%',
-              display: 'flex',
-              background: 'white',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-              overflow: 'hidden',
-              minHeight: 'calc(100vh - 40px)'
-            }}>
             
             {/* Hình ảnh bên trái - 50% */}
             <div 
@@ -214,32 +186,30 @@ const ForgotPassword = () => {
               </Button>
             </div>
           </div>
-        </div>
-      </>
     );
   }
 
   return (
-    <>
-      <div style={{ 
-        minHeight: '100vh', 
-        background: '#e8f5e8',
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '20px 0'
-      }}>
-        <div 
-          className="register-container"
-          style={{ 
-            width: '100%', 
-            maxWidth: '100%',
-            display: 'flex',
-            background: 'white',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-            overflow: 'hidden',
-            minHeight: 'calc(100vh - 40px)'
-          }}>
+    <div style={{ 
+      minHeight: 'calc(100vh - 120px)', // Trừ đi chiều cao header và footer
+      background: '#e8f5e8',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      margin: '-24px -24px 0 -24px' // Loại bỏ padding mặc định của Ant Design Content
+    }}>
+      <div 
+        className="register-container"
+        style={{ 
+          width: '100%', 
+          maxWidth: '100%',
+          display: 'flex',
+          background: 'white',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          overflow: 'hidden',
+          minHeight: 'calc(100vh - 200px)',
+          margin: '-24px -24px -24px -10px'
+        }}>
           
           {/* Hình ảnh bên trái - 50% */}
           <div 
@@ -530,9 +500,8 @@ const ForgotPassword = () => {
               </Text>
             </div>
           </div>
-        </div>
       </div>
-    </>
+    </div>
   );
 };
 

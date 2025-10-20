@@ -129,26 +129,25 @@ const Login = () => {
   };
 
   return (
-    <>
-      <div style={{ 
-        minHeight: '100vh', 
-        background: '#e8f5e8', // Màu xanh nhạt cho nha khoa
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        padding: '20px 0'
-      }}>
-        <div 
-          className="register-container"
-          style={{ 
-            width: '100%', 
-            maxWidth: '100%', // Full width 100%
-            display: 'flex',
-            background: 'white',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-            overflow: 'hidden',
-            minHeight: 'calc(100vh - 40px)'
-          }}>
+    <div style={{ 
+      minHeight: 'calc(100vh - 120px)', // Trừ đi chiều cao header và footer
+      background: '#e8f5e8',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      margin: '-24px -24px -24px -24px' // Loại bỏ padding mặc định của Ant Design Content
+    }}>
+      <div 
+        className="register-container"
+        style={{ 
+          width: '100%', 
+          maxWidth: '100%', // Full width 100%
+          display: 'flex',
+          background: 'white',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          overflow: 'hidden',
+          minHeight: 'calc(100vh - 200px)',
+        }}>
 
           {/* Hình ảnh bên trái - 50% */}
           <div 
@@ -348,9 +347,8 @@ const Login = () => {
               </Text>
             </div>
           </div>
-        </div>
       </div>
-    </>
+    </div>
   );
 };
 

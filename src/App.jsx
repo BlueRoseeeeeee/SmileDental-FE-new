@@ -15,8 +15,10 @@ import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 import DashboardLayout from './components/Layout/DashboardLayout.jsx';
 import PatientLayout from './components/Layout/PatientLayout.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import HomepageLayout from './components/Layout/HomepageLayout.jsx';
 
 // Pages
+import Homepage from './pages/Homepage.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
@@ -29,6 +31,12 @@ import RoomManagement from './pages/RoomManagement.jsx';
 import ServiceList from './pages/ServiceList.jsx';
 import ServiceDetails from './pages/ServiceDetails.jsx';
 import AddService from './pages/AddService.jsx';
+import EditService from './pages/EditService.jsx';
+import AddServiceAddOn from './pages/AddServiceAddOn.jsx';
+import EditServiceAddOn from './pages/EditServiceAddOn.jsx';
+import PublicServiceAddOnDetail from './pages/PublicServiceAddOnDetail.jsx';
+import PublicServiceAddOns from './pages/PublicServiceAddOns.jsx';
+import PublicDentistDetail from './pages/PublicDentistDetail.jsx';
 
 // Admin - Patient Appointments Management
 import AdminPatientAppointments from './pages/Admin/PatientAppointments.jsx';
@@ -212,9 +220,53 @@ function App() {
               </ProtectedRoute>
             } />
           </Route>
-          
-          {/* Protected routes */}
+         
+          {/* Public routes - Trang chủ công khai */}
           <Route path="/" element={
+            <HomepageLayout>
+              <Homepage />
+            </HomepageLayout>
+          } />
+          <Route path="/login" element={
+            <HomepageLayout>
+              <Login />
+            </HomepageLayout>
+          } />
+          <Route path="/register" element={
+            <HomepageLayout>
+              <Register />
+            </HomepageLayout>
+          } />
+          <Route path="/forgot-password" element={
+            <HomepageLayout>
+              <ForgotPassword />
+            </HomepageLayout>
+          } />
+           
+           {/* Public Service AddOns Route */}
+           <Route path="/services/pl/:serviceName/addons" element={
+             <HomepageLayout>
+               <PublicServiceAddOns />
+             </HomepageLayout>
+           } />
+           
+           {/* Public Service AddOn Detail Route */}
+           <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
+             <HomepageLayout>
+               <PublicServiceAddOnDetail />
+             </HomepageLayout>
+           } />
+           
+           {/* Dentist Detail Route - Public */}
+           <Route path="/dentist-detail/:id" element={
+             <HomepageLayout>
+               <PublicDentistDetail />
+             </HomepageLayout>
+           } />
+           
+          
+          {/* Protected routes - Dashboard cho người đã đăng nhập */}
+          <Route path="/dashboard" element={
             <ProtectedRoute>
               <DashboardLayout />
             </ProtectedRoute>
@@ -295,19 +347,99 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* Certificate Management (Dentist only) */}
-            <Route path="certificates" element={
-              <ProtectedRoute roles={['dentist']}>
-                <CertificateManagement />
-              </ProtectedRoute>
-            } />
+          {/* Room Management (Admin/Manager only) */}
+          <Route path="/rooms" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<RoomList />} />
+          </Route>
+          <Route path="/rooms/:roomId" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<RoomManagement />} />
+          </Route>
             
-            {/* Settings */}
-            <Route path="settings" element={<Settings />} />
+          {/* Service Management (Admin/Manager only) */}
+          <Route path="/services" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ServiceList />} />
+          </Route>
+          <Route path="/services/:serviceId" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ServiceDetails />} />
+          </Route>
+          
+          {/* Edit Service (Admin/Manager only) */}
+          <Route path="/services/:serviceId/edit" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<EditService />} />
+          </Route>
+          
+          {/* Add Service (Admin/Manager only) */}
+          <Route path="/services/add" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AddService />} />
+          </Route>
+          
+          {/* Add Service Add-On (Admin/Manager only) */}
+          <Route path="/services/:serviceId/addons/add" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AddServiceAddOn />} />
+          </Route>
+          
+          {/* Edit Service Add-On (Admin/Manager only) */}
+          <Route path="/services/:serviceId/addons/:addOnId/edit" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<EditServiceAddOn />} />
+          </Route>
             
+          {/* Certificate Management (Dentist only) */}
+          <Route path="/certificates" element={
+            <ProtectedRoute roles={['dentist']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<CertificateManagement />} />
+          </Route>
+          
+          {/* Settings */}
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Settings />} />
+          </Route>
             
-            {/* Placeholder routes for future development */}
-            <Route path="appointments" element={
+          {/* Placeholder routes for future development */}
+          <Route path="/appointments" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <CalendarOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
@@ -318,20 +450,25 @@ function App() {
                 </div>
               </div>
             } />
+          </Route>
             
-            <Route path="patients" element={
-              <ProtectedRoute roles={['dentist', 'nurse']}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <HeartOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Quản lý bệnh nhân</h1>
-                  </div>
-                  <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                  </div>
+          <Route path="/patients" element={
+            <ProtectedRoute roles={['dentist', 'nurse']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <HeartOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Quản lý bệnh nhân</h1>
                 </div>
-              </ProtectedRoute>
+                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
+                </div>
+              </div>
             } />
+          </Route>
             
             {/* Schedule Management (Admin/Manager only) */}
             <Route path="schedules" element={
@@ -380,18 +517,21 @@ function App() {
               </ProtectedRoute>
             } />
             
-            <Route path="dentists" element={
-              <ProtectedRoute roles={['patient']}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <TeamOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Danh sách nha sĩ</h1>
-                  </div>
-                  <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                  </div>
+          <Route path="/dentists" element={
+            <ProtectedRoute roles={['patient']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <TeamOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Danh sách nha sĩ</h1>
                 </div>
-              </ProtectedRoute>
+                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
+                </div>
+              </div>
             } />
           </Route>
           

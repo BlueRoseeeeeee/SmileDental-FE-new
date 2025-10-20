@@ -22,12 +22,14 @@ import {
   Steps,
   Radio,
   Alert,
-  DatePicker
+  DatePicker,
+  Tabs
 } from 'antd';
 import { 
   UserSwitchOutlined,
   CheckCircleOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  FileExcelOutlined
 } from '@ant-design/icons';
 import { toast } from '../../services/toastService';
 import { 
@@ -43,7 +45,6 @@ import SearchBar from '../Common/SearchBar.jsx';
 import { 
   searchAndFilter, 
   createRoleFilter, 
-  createStatusFilter,
   debounce 
 } from '../../utils/searchUtils.js';
 import { 
@@ -51,6 +52,7 @@ import {
   getAntDesignFormRules
 } from '../../utils/validationUtils.js';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -70,6 +72,11 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({});
   const [selectedUser, setSelectedUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' hoặc 'inactive'
+  const [sortConfig, setSortConfig] = useState({
+    field: null,
+    order: null
+  });
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
@@ -100,7 +107,7 @@ const UserManagement = () => {
     }, 300);
     
     debouncedSearch();
-  }, [searchTerm, filters, users]);
+  }, [searchTerm, filters, users, activeTab, sortConfig]);
 
   const loadUsers = async () => {
     try {
@@ -126,11 +133,59 @@ const UserManagement = () => {
 
   const applySearchAndFilter = () => {
     const searchFields = ['fullName', 'email', 'phone', 'employeeCode'];
-    const filtered = searchAndFilter(users, searchTerm, searchFields, filters);
+    
+    // Filter users theo trạng thái trước
+    const statusFilteredUsers = users.filter(user => {
+      if (activeTab === 'active') {
+        return user.isActive === true;
+      } else {
+        return user.isActive === false;
+      }
+    });
+    
+    // Sau đó apply search và filter khác
+    let filtered = searchAndFilter(statusFilteredUsers, searchTerm, searchFields, filters);
+    
+    // Apply sorting nếu có
+    if (sortConfig.field && sortConfig.order) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue = a[sortConfig.field];
+        let bValue = b[sortConfig.field];
+        
+        // Xử lý các trường hợp đặc biệt
+        if (sortConfig.field === 'fullName') {
+          aValue = a.fullName?.toLowerCase() || '';
+          bValue = b.fullName?.toLowerCase() || '';
+        } else if (sortConfig.field === 'email') {
+          aValue = a.email?.toLowerCase() || '';
+          bValue = b.email?.toLowerCase() || '';
+        } else if (sortConfig.field === 'updatedAt') {
+          aValue = new Date(a.updatedAt);
+          bValue = new Date(b.updatedAt);
+        } else if (sortConfig.field === 'dateOfBirth') {
+          aValue = new Date(a.dateOfBirth );
+          bValue = new Date(b.dateOfBirth);
+        } else if (sortConfig.field === 'role') {
+          // Sắp xếp theo thứ tự ưu tiên vai trò
+          const roleOrder = { admin: 1, manager: 2, dentist: 3, nurse: 4, receptionist: 5, patient: 6 };
+          aValue = roleOrder[a.role];
+          bValue = roleOrder[b.role];
+        }
+        
+        if (aValue < bValue) {
+          return sortConfig.order === 'ascend' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.order === 'ascend' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    
     setFilteredUsers(filtered);
     
-    // Reset về page 1 khi có search/filter mới để user thấy kết quả
-    if (searchTerm || Object.keys(filters).length > 0) {
+    // Reset về page 1 khi có search/filter/sort mới để user thấy kết quả
+    if (searchTerm || Object.keys(filters).length > 0 || sortConfig.field) {
       setPagination(prev => ({
         ...prev,
         current: 1
@@ -144,6 +199,164 @@ const UserManagement = () => {
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
+  };
+
+  const handleTableChange = (pagination, filters, sorter) => {
+    // Handle sorting
+    if (sorter && sorter.field) {
+      setSortConfig({
+        field: sorter.field,
+        order: sorter.order
+      });
+    } else {
+      setSortConfig({
+        field: null,
+        order: null
+      });
+    }
+  };
+
+  // Export to Excel function
+  const exportToExcel = () => {
+    try {
+      // Prepare data for export based on table column order
+      const exportData = filteredUsers.map(user => {
+        const rowData = {};
+        
+        // Add data in the same order as table columns
+        columns.forEach(column => {
+          switch (column.key) {
+            case 'avatar':
+              // Skip avatar column in Excel
+              break;
+            case 'fullName':
+              rowData['Họ và tên'] = user.fullName || '';
+              break;
+            case 'email':
+              rowData['Email'] = user.email || '';
+              break;
+            case 'phone':
+              rowData['Số điện thoại'] = user.phone || '';
+              break;
+            case 'dateOfBirth':
+              rowData['Ngày sinh'] = user.dateOfBirth ? dayjs(user.dateOfBirth).format('DD/MM/YYYY') : '-';
+              break;
+            case 'role':
+              rowData['Vai trò'] = getRoleText(user.role);
+              break;
+            case 'isActive':
+              rowData['Trạng thái'] = user.isActive ? 'Đang làm việc' : 'Đã nghỉ việc';
+              break;
+            case 'updatedAt':
+              rowData['Ngày cập nhật'] = user.updatedAt ? dayjs(user.updatedAt).format('DD/MM/YYYY HH:mm') : '';
+              break;
+            case 'actions':
+              // Skip actions column in Excel
+              break;
+            default:
+              // Add employee code if not in columns but needed
+              if (!rowData['Mã nhân viên'] && user.employeeCode) {
+                rowData['Mã nhân viên'] = user.employeeCode;
+              }
+              break;
+          }
+        });
+        
+        // Add employee code at the beginning if not already added
+        if (user.employeeCode && !rowData['Mã nhân viên']) {
+          const newRowData = { 'Mã nhân viên': user.employeeCode };
+          Object.keys(rowData).forEach(key => {
+            newRowData[key] = rowData[key];
+          });
+          return newRowData;
+        }
+        
+        return rowData;
+      });
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Set column widths dynamically based on actual columns
+      const colWidths = [];
+      columns.forEach(column => {
+        switch (column.key) {
+          case 'avatar':
+            // Skip avatar
+            break;
+          case 'fullName':
+            colWidths.push({ wch: 25 }); // Họ và tên
+            break;
+          case 'email':
+            colWidths.push({ wch: 30 }); // Email
+            break;
+          case 'phone':
+            colWidths.push({ wch: 15 }); // Số điện thoại
+            break;
+          case 'dateOfBirth':
+            colWidths.push({ wch: 12 }); // Ngày sinh
+            break;
+          case 'role':
+            colWidths.push({ wch: 15 }); // Vai trò
+            break;
+          case 'isActive':
+            colWidths.push({ wch: 15 }); // Trạng thái
+            break;
+          case 'updatedAt':
+            colWidths.push({ wch: 20 }); // Ngày cập nhật
+            break;
+          case 'actions':
+            // Skip actions
+            break;
+        }
+      });
+      
+      // Add employee code width at the beginning if it exists
+      if (exportData.length > 0 && exportData[0]['Mã nhân viên']) {
+        colWidths.unshift({ wch: 15 }); // Mã nhân viên
+      }
+      
+      ws['!cols'] = colWidths;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Danh sách nhân viên');
+
+      // Generate filename with current date
+      const currentDate = dayjs().format('DD-MM-YYYY');
+      const tabName = activeTab === 'active' ? 'Dang-lam-viec' : 'Da-nghi-viec';
+      const filename = `Danh-sach-nhan-vien-${tabName}-${currentDate}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, filename);
+
+      toast.success(`Đã xuất file Excel thành công: ${filename}`);
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('Có lỗi xảy ra khi xuất file Excel');
+    }
+  };
+
+  // Helper functions for export
+  const getRoleText = (role) => {
+    const roleMap = {
+      admin: 'Quản trị viên',
+      manager: 'Quản lý',
+      dentist: 'Nha sĩ',
+      nurse: 'Y tá',
+      receptionist: 'Lễ tân',
+      patient: 'Bệnh nhân'
+    };
+    return roleMap[role] || role;
+  };
+
+  const getGenderText = (gender) => {
+    const genderMap = {
+      male: 'Nam',
+      female: 'Nữ',
+      other: 'Khác'
+    };
+    return genderMap[gender] || '';
   };
 
   const handleEdit = (user) => {
@@ -333,6 +546,7 @@ const UserManagement = () => {
       title: 'Họ tên',
       dataIndex: 'fullName',
       key: 'fullName',
+      sorter: true,
       render: (text, record) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>{text}</div>
@@ -348,18 +562,28 @@ const UserManagement = () => {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      sorter: true,
       render: (text) => <Text copyable={{ text }}>{text}</Text>
     },
     {
       title: 'Số điện thoại',
       dataIndex: 'phone',
       key: 'phone',
+      sorter: true,
       render: (text) => <Text copyable={{ text }}>{text}</Text>
+    },
+    {
+      title: 'Ngày sinh',
+      dataIndex: 'dateOfBirth',
+      key: 'dateOfBirth',
+      sorter: true,
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : '-'
     },
     {
       title: 'Vai trò',
       dataIndex: 'role',
       key: 'role',
+      sorter: true,
       render: (role) => getRoleTag(role)
     },
     {
@@ -372,6 +596,7 @@ const UserManagement = () => {
       title: 'Ngày cập nhật',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
+      sorter: true,
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
@@ -436,8 +661,7 @@ const UserManagement = () => {
         onFilterChange={handleFilterChange}
         placeholder="       Tìm kiếm theo tên, email, số điện thoại, mã nhân viên..."
         filters={[
-          createRoleFilter(),
-          createStatusFilter()
+          createRoleFilter()
         ]}
         searchValue={searchTerm}
         filterValues={filters}
@@ -447,55 +671,124 @@ const UserManagement = () => {
         }}
       />
 
-      {/* Users Table */}
+      {/* Users Table with Tabs */}
       <Card>
-      <div style={{marginBottom:16, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-      <div style={{display:'flex', gap:10}}>
-        <UserSwitchOutlined style={{fontSize: 18, color: '#1890ff'}}/>
-        <Title level={4} style={{margin:0, fontSize:16}}>Danh sách nhân viên</Title>
-      </div>  
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setSelectedUser(null);
-            form.resetFields();
-            setModalVisible(true);
-          }}
-          size="large"
-          style={{
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
-            border: 'none',
-            boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
-            fontWeight: '600'
-          }}
-        >
-          Thêm nhân viên
-        </Button>
-      </div>
-        <Table
-          columns={columns}
-          dataSource={filteredUsers}
-          rowKey="_id"
-          loading={loading}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: filteredUsers.length, // Sử dụng tổng số filteredUsers thay vì backend total
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `${range[0]}-${range[1]} của ${total} người dùng`,
-            onChange: (page, pageSize) => {
-              setPagination(prev => ({
-                ...prev,
-                current: page,
-                pageSize: pageSize || prev.pageSize
-              }));
+        <div style={{marginBottom:16, display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+          <div style={{display:'flex', gap:10}}>
+            <UserSwitchOutlined style={{fontSize: 18, color: '#1890ff'}}/>
+            <Title level={4} style={{margin:0, fontSize:16}}>Danh sách nhân viên</Title>
+          </div>  
+          <Space>
+            <Button 
+              icon={<FileExcelOutlined />}
+              onClick={exportToExcel}
+              size="large"
+              style={{
+                borderRadius: '8px',
+                border: '1px solid #52c41a',
+                color: '#52c41a',
+                background: '#f6ffed'
+              }}
+            >
+              Xuất Excel
+            </Button>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setSelectedUser(null);
+                form.resetFields();
+                setModalVisible(true);
+              }}
+              size="large"
+              style={{
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #2596be 0%, #40a9ff 100%)',
+                border: 'none',
+                boxShadow: '0 4px 12px rgba(37, 150, 190, 0.3)',
+                fontWeight: '600'
+              }}
+            >
+              Thêm nhân viên
+            </Button>
+          </Space>
+        </div>
+
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'active',
+              label: (
+                <span>
+                  <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                  Đang làm việc
+                </span>
+              ),
+              children: (
+                <Table
+                  columns={columns}
+                  dataSource={filteredUsers}
+                  rowKey="_id"
+                  loading={loading}
+                  onChange={handleTableChange}
+                  pagination={{
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    total: filteredUsers.length,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) => 
+                      `${range[0]}-${range[1]} của ${total} nhân viên đang làm việc`,
+                    onChange: (page, pageSize) => {
+                      setPagination(prev => ({
+                        ...prev,
+                        current: page,
+                        pageSize: pageSize || prev.pageSize
+                      }));
+                    }
+                  }}
+                  scroll={{ x: 1000 }}
+                />
+              )
+            },
+            {
+              key: 'inactive',
+              label: (
+                <span>
+                  <UserSwitchOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
+                  Đã nghỉ việc
+                </span>
+              ),
+              children: (
+                <Table
+                  columns={columns}
+                  dataSource={filteredUsers}
+                  rowKey="_id"
+                  loading={loading}
+                  onChange={handleTableChange}
+                  pagination={{
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    total: filteredUsers.length,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) => 
+                      `${range[0]}-${range[1]} của ${total} nhân viên đã nghỉ việc`,
+                    onChange: (page, pageSize) => {
+                      setPagination(prev => ({
+                        ...prev,
+                        current: page,
+                        pageSize: pageSize || prev.pageSize
+                      }));
+                    }
+                  }}
+                  scroll={{ x: 1000 }}
+                />
+              )
             }
-          }}
-          scroll={{ x: 1000 }}
+          ]}
         />
       </Card>
       
