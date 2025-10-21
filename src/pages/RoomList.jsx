@@ -322,17 +322,6 @@ const RoomList = () => {
            )
          },
     {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      sorter: false,
-      render: (isActive) => (
-        <Tag color={isActive ? 'blue' : 'default'}>
-          {isActive ? 'Hoạt động' : 'Không hoạt động'}
-        </Tag>
-      )
-    },
-    {
       title: 'Ngày cập nhật',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
