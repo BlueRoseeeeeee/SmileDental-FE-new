@@ -60,7 +60,7 @@
 
 /* Header toggle button styling */
 .header-toggle-btn {
-  transition: all 0.3s ease;
+  /* Transition removed for better performance */
   border: 1px solid transparent;
 }
 

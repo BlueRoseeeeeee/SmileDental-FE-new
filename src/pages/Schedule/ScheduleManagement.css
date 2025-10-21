@@ -3,11 +3,6 @@
  * ScheduleManagement.css - SmileCare Design System
  */
 
-/* ===================================
-   SmileCare Schedule Management Styles
-   =================================== */
-
-/* Removed all animations for better performance */
 
 /* Feature card hover glow effect */
 .ant-col > div:hover {
@@ -57,10 +52,6 @@
   }
 }
 
-/* Loading state animation */
-.ant-spin-container {
-  animation: fadeInUp 0.5s ease-out;
-}
 
 /* Custom scrollbar for better UX */
 ::-webkit-scrollbar {

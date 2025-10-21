@@ -1,10 +1,3 @@
-/* ===================================
-   ROOM MANAGEMENT - SMILECARE DESIGN
-   =================================== */
-
-/* Removed all animations for better performance */
-
-/* Table row hover effects - simplified */
 .ant-table-tbody > tr.table-row-light:hover,
 .ant-table-tbody > tr.table-row-dark:hover {
   background-color: #eff6ff !important;
@@ -43,12 +36,10 @@
 
 /* Tag styling */
 .ant-tag {
-  transition: all 0.3s ease;
   border: none;
 }
 
 .ant-tag:hover {
-  transform: scale(1.05);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
@@ -78,7 +69,6 @@
 
 /* Statistic card styling */
 .ant-statistic {
-  animation: fadeInUp 0.6s ease-out;
 }
 
 .ant-statistic-title {
@@ -152,7 +142,7 @@
 
 .ant-pagination-item:hover {
   border-color: #3b82f6;
-  transform: translateY(-2px);
+  /* Transform removed for better performance */
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
 }
 
