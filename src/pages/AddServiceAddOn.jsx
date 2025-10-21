@@ -298,7 +298,7 @@ const AddServiceAddOn = () => {
                 >
                   <div style={{
                     width: '100%',
-                    height: '120px',
+                    height: '180px',
                     border: '2px dashed #d9d9d9',
                     borderRadius: '8px',
                     display: 'flex',
@@ -313,16 +313,55 @@ const AddServiceAddOn = () => {
                     }
                   }}>
                     {imagePreview ? (
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        style={{ 
-                          maxWidth: '100%', 
-                          maxHeight: '100%', 
-                          objectFit: 'cover',
-                          borderRadius: '6px'
-                        }} 
-                      />
+                      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          style={{ 
+                            maxWidth: '100%', 
+                            maxHeight: '100%', 
+                            objectFit: 'cover',
+                            borderRadius: '6px'
+                          }} 
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          top: '12px',
+                          right: '12px',
+                          background: 'rgba(255, 77, 79, 0.9)',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                          transition: 'all 0.2s ease',
+                          border: '2px solid white'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setImageFile(null);
+                          setImagePreview(null);
+                          setHasUnsavedChanges(true);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 77, 79, 1)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 77, 79, 0.9)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        title="Xóa ảnh"
+                        >
+                          ×
+                        </div>
+                      </div>
                     ) : (
                       <>
                         <div style={{ fontSize: '24px', color: '#8c8c8c', marginBottom: '8px' }}>
