@@ -94,7 +94,7 @@ const AddServiceAddOn = () => {
     } catch (error) {
       console.error('Error fetching service details:', error);
       toastService.error('Không thể tải chi tiết dịch vụ: ' + error.message);
-      navigate('/services');
+      navigate('/dashboard/services');
     } finally {
       setLoading(false);
     }
@@ -206,7 +206,7 @@ const AddServiceAddOn = () => {
       }}>
         <Text type="secondary">Không tìm thấy dịch vụ</Text>
         <br />
-        <Button onClick={() => navigate('/services')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate('/dashboard/services')} style={{ marginTop: 16 }}>
           Quay lại danh sách
         </Button>
       </div>

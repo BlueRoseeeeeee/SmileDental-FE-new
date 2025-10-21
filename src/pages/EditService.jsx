@@ -111,7 +111,7 @@ const EditService = () => {
     } catch (error) {
       console.error('Error fetching service details:', error);
       toastService.error('Không thể tải chi tiết dịch vụ: ' + error.message);
-      navigate('/services');
+      navigate('/dashboard/services');
     } finally {
       setLoading(false);
     }
@@ -192,7 +192,7 @@ const EditService = () => {
       const confirmed = window.confirm('Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời khỏi trang?');
       if (!confirmed) return;
     }
-    navigate('/services');
+    navigate('/dashboard/services');
   };
 
   // Handle delete add-on
@@ -265,7 +265,7 @@ const EditService = () => {
       }}>
         <Text type="secondary">Không tìm thấy dịch vụ</Text>
         <br />
-        <Button onClick={() => navigate('/services')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate('/dashboard/services')} style={{ marginTop: 16 }}>
           Quay lại danh sách
         </Button>
       </div>

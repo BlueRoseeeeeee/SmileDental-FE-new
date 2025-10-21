@@ -139,7 +139,7 @@ const EditUser = () => {
         const errorText = await response.text();
         console.error('API Error:', response.status, errorText);
         toast.error(`Không thể tải thông tin người dùng (${response.status})`);
-        navigate('/users');
+        navigate('/dashboard/users');
       }
     } catch (error) {
       console.error('Load User Error:', error);
@@ -171,7 +171,7 @@ const EditUser = () => {
 
       if (response.ok) {
         toast.success('Cập nhật thông tin thành công');
-        navigate('/users');
+        navigate('/dashboard/users');
       } else {
         const errorData = await response.json();
         console.error('Update User Error:', errorData);
@@ -605,7 +605,7 @@ const EditUser = () => {
             </Text>
           </div>
           <Button 
-            onClick={() => navigate('/users')}
+            onClick={() => navigate('/dashboard/users')}
             style={{ borderRadius: '8px' }}
           >
             Quay lại
@@ -858,7 +858,7 @@ const EditUser = () => {
 
                       <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
                         <Button 
-                          onClick={() => navigate('/users')}
+                          onClick={() => navigate('/dashboard/users')}
                           style={{ borderRadius: '8px' }}
                         >
                           Hủy

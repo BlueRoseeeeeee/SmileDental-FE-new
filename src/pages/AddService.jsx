@@ -145,7 +145,7 @@ const AddService = () => {
       toastService.success('Thêm dịch vụ thành công!');
       
       // Quay về trang danh sách
-      navigate('/services');
+      navigate('/dashboard/services');
     } catch (error) {
       if (error.errorFields) {
         toastService.error('Vui lòng kiểm tra lại thông tin form!');
@@ -241,7 +241,7 @@ const AddService = () => {
           <Col>
             <Button 
               icon={<ArrowLeftOutlined />} 
-              onClick={() => navigate('/services')}
+              onClick={() => navigate('/dashboard/services')}
               size="large"
               style={{
                 height: '48px',
@@ -777,7 +777,7 @@ const AddService = () => {
                 gap: '16px'
               }}>
                 <Button 
-                  onClick={() => navigate('/services')}
+                  onClick={() => navigate('/dashboard/services')}
                   size="large"
                   style={{
                     height: '48px',

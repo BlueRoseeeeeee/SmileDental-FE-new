@@ -204,7 +204,7 @@ const ServiceDetails = () => {
       setService(response);
     } catch {
       toastService.error('Không thể tải chi tiết dịch vụ');
-      navigate('/services');
+      navigate('/dashboard/services');
     } finally {
       setLoading(false);
     }
@@ -555,7 +555,7 @@ const ServiceDetails = () => {
       }}>
         <Text type="secondary">Không tìm thấy dịch vụ</Text>
         <br />
-        <Button onClick={() => navigate('/services')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate('/dashboard/services')} style={{ marginTop: 16 }}>
           Quay lại danh sách
         </Button>
       </div>
@@ -568,7 +568,7 @@ const ServiceDetails = () => {
       <div style={{ marginBottom: 24 }}>
         <Button 
           icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate('/services')}
+          onClick={() => navigate('/dashboard/services')}
           style={{ marginBottom: 16 }}
         >
           Quay lại danh sách

@@ -221,7 +221,7 @@ const EditServiceAddOn = () => {
       }}>
         <Text type="secondary">Không tìm thấy dữ liệu</Text>
         <br />
-        <Button onClick={() => navigate('/services')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate('/dashboard/services')} style={{ marginTop: 16 }}>
           Quay lại danh sách
         </Button>
       </div>

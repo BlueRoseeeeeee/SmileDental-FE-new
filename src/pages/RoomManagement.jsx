@@ -361,7 +361,7 @@ const RoomManagement = () => {
               <Button
                 type="text"
                 icon={<ArrowLeftOutlined style={{ fontSize: 20, color: '#fff' }} />}
-                onClick={() => navigate('/rooms')}
+                onClick={() => navigate('/dashboard/rooms')}
                 style={{ 
                   padding: '8px 16px',
                   color: '#fff',

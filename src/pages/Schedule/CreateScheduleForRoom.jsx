@@ -1622,7 +1622,7 @@ const CreateScheduleForRoom = () => {
               <Button
                 type="text"
                 icon={<ArrowLeftOutlined style={{ fontSize: 20, color: '#fff' }} />}
-                onClick={() => navigate('/schedule')}
+                onClick={() => navigate('/dashboard/schedule')}
                 style={{ 
                   padding: '4px 8px',
                   color: '#fff',
