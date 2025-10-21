@@ -62,8 +62,19 @@ const ProtectedRoute = ({ children, roles = [] }) => {
 
   // Check if user has required role
   if (roles.length > 0 && !roles.includes(user.role)) {
+    console.log('❌ ProtectedRoute: Access denied', {
+      requiredRoles: roles,
+      userRole: user.role,
+      path: location.pathname
+    });
     return <Navigate to="/unauthorized" replace />;
   }
+
+  console.log('✅ ProtectedRoute: Access granted', {
+    requiredRoles: roles,
+    userRole: user.role,
+    path: location.pathname
+  });
 
   return children;
 };

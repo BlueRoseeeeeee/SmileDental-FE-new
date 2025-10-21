@@ -464,7 +464,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
               />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          {/* <Col span={12}>
             <Alert
               message="Lưu ý về tiền cọc"
               description="Khi bệnh nhân đặt lịch, họ sẽ thanh toán: Tiền cọc × Số slot đã chọn. Ví dụ: 3 slot × 50,000 VND = 150,000 VND"
@@ -472,7 +472,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
               showIcon
               style={{ marginTop: '30px' }}
             />
-          </Col>
+          </Col> */}
         </Row>
 
         <Divider />

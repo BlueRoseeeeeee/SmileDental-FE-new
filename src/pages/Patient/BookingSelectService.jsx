@@ -36,7 +36,7 @@ const USE_MOCK_DATA = false;
 
 const BookingSelectService = () => {
   const navigate = useNavigate();
-  const { user } = useAuth(); // Get current user
+  const { user, isAuthenticated } = useAuth(); // Get current user and auth status
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [unusedServices, setUnusedServices] = useState([]); // Services from doctor recommendations
@@ -47,10 +47,11 @@ const BookingSelectService = () => {
 
   useEffect(() => {
     fetchServices();
-    if (user && user._id) {
+    // Only fetch unused services if user is authenticated and has an ID
+    if (isAuthenticated && user && user._id) {
       fetchUnusedServices();
     }
-  }, [user]);
+  }, [user, isAuthenticated]);
 
   const fetchServices = async () => {
     try {

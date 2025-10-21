@@ -17,6 +17,12 @@ const slotService = {
     return response.data;
   },
 
+  // 🆕 Xóa nhân sự khỏi slot (chỉ manager/admin)
+  removeStaffFromSlots: async (removalData) => {
+    const response = await scheduleApi.post('/slot/remove-staff', removalData);
+    return response.data;
+  },
+
   // Cập nhật nhân sự cho slot (chỉ manager/admin)
   updateSlotStaff: async (updateData) => {
     const response = await scheduleApi.patch('/slot/staff', updateData);

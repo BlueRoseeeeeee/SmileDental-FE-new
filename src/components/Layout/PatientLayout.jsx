@@ -22,6 +22,12 @@ const PatientLayout = () => {
   const { user, logout } = useAuth();
   const [drawerVisible, setDrawerVisible] = useState(false);
 
+  // Debug logging
+  console.log('🏥 PatientLayout rendered', {
+    pathname: location.pathname,
+    user: user ? { id: user._id, role: user.role, name: user.fullName } : null
+  });
+
   const handleLogout = async () => {
     try {
       await logout();

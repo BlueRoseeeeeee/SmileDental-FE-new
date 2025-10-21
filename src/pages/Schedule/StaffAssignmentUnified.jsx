@@ -42,7 +42,8 @@ import {
   SearchOutlined,
   HomeOutlined,
   LeftOutlined,
-  RightOutlined
+  RightOutlined,
+  DeleteOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../../services/toastService';
@@ -2115,6 +2116,86 @@ const StaffAssignmentUnified = () => {
     setShowSlotSelectionModalStaff(false);
   };
 
+  // 🆕 Remove staff from selected slots (for staff replacement tab)
+  const handleRemoveStaffFromReplacementSlots = async () => {
+    console.log('🔴 handleRemoveStaffFromReplacementSlots called!');
+    console.log('📋 selectedSlotsForReplacement:', selectedSlotsForReplacement);
+    console.log('📋 monthStateForStaff:', monthStateForStaff);
+    console.log('📋 totalSelectedSlotCountForStaff:', totalSelectedSlotCountForStaff);
+    
+    if (totalSelectedSlotCountForStaff === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 slot');
+      return;
+    }
+
+    try {
+      const slotIdSet = new Set();
+      
+      // 🔥 Collect slots from current month first
+      selectedSlotsForReplacement.forEach(entry => {
+        (entry.slotIds || []).forEach(id => {
+          if (id) slotIdSet.add(id);
+        });
+      });
+      
+      // 🔥 Also collect from ALL months in monthStateForStaff if needed
+      Object.values(monthStateForStaff).forEach(monthState => {
+        if (monthState?.slots && Array.isArray(monthState.slots)) {
+          monthState.slots.forEach(entry => {
+            (entry.slotIds || []).forEach(id => {
+              if (id) slotIdSet.add(id);
+            });
+          });
+        }
+      });
+
+      const slotIds = Array.from(slotIdSet);
+      
+      if (slotIds.length === 0) {
+        toast.error('Không tìm thấy slot ID để xóa nhân sự');
+        return;
+      }
+
+      console.log('🗑️ Removing staff from slots:', slotIds);
+
+      const response = await slotService.removeStaffFromSlots({
+        slotIds,
+        removeDentists: true,
+        removeNurses: true
+      });
+
+      console.log('✅ API Response:', response);
+
+      if (response.success) {
+        toast.success(`Đã xóa nhân sự khỏi ${response.data.modifiedCount} slot!`);
+        
+        console.log('🔄 Refreshing calendar data...');
+        // Clear slot details cache to force refresh
+        setSlotDetailsCache({});
+        
+        // Refresh calendar data
+        await fetchStaffCalendar(
+          selectedStaffForReplacement._id,
+          selectedStaffForReplacement.role
+        );
+        console.log('✅ Calendar data refreshed');
+        
+        // ⭐ Reset ALL selections
+        setMonthStateForStaff({}); // Clear all month states
+        setSelectedShiftFiltersForStaff([]); // Uncheck all shift checkboxes
+        setSelectedSlotsForReplacement([]);
+        setSelectedReplacementStaff(null);
+        
+        console.log('✅ All selections cleared');
+      } else {
+        toast.error(response.message || 'Xóa nhân sự thất bại');
+      }
+    } catch (error) {
+      console.error('Error removing staff:', error);
+      toast.error('Lỗi khi xóa nhân sự: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   // Handle confirm replacement
   const handleConfirmReplacement = async () => {
     if (!selectedReplacementStaff) {
@@ -2870,6 +2951,85 @@ const StaffAssignmentUnified = () => {
     }
   };
 
+  // 🆕 Remove staff from selected slots
+  const handleRemoveStaffFromSlots = async () => {
+    console.log('🔴 handleRemoveStaffFromSlots called!');
+    console.log('📋 selectedSlotsForAssignment:', selectedSlotsForAssignment);
+    console.log('📋 monthStateForRoom:', monthStateForRoom);
+    console.log('📋 totalSelectedSlotCount:', totalSelectedSlotCount);
+    
+    if (totalSelectedSlotCount === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 slot');
+      return;
+    }
+
+    try {
+      const slotIdSet = new Set();
+      
+      // 🔥 Collect slots from current month first
+      selectedSlotsForAssignment.forEach(slot => {
+        (slot.slotIds || []).forEach(id => {
+          if (id) slotIdSet.add(id);
+        });
+      });
+      
+      // 🔥 Also collect from ALL months in monthStateForRoom if needed
+      Object.values(monthStateForRoom).forEach(monthState => {
+        if (monthState?.slots && Array.isArray(monthState.slots)) {
+          monthState.slots.forEach(slot => {
+            (slot.slotIds || []).forEach(id => {
+              if (id) slotIdSet.add(id);
+            });
+          });
+        }
+      });
+
+      const slotIds = Array.from(slotIdSet);
+      
+      if (slotIds.length === 0) {
+        toast.error('Không tìm thấy slot ID để xóa nhân sự');
+        return;
+      }
+
+      console.log('🗑️ Removing staff from slots:', slotIds);
+
+      const response = await slotService.removeStaffFromSlots({
+        slotIds,
+        removeDentists: true,
+        removeNurses: true
+      });
+
+      console.log('✅ API Response:', response);
+
+      if (response.success) {
+        toast.success(`Đã xóa nhân sự khỏi ${response.data.modifiedCount} slot!`);
+        
+        console.log('🔄 Refreshing calendar data...');
+        // Clear slot details cache to force refresh
+        setSlotDetailsCache({});
+        
+        // Refresh calendar data
+        await fetchRoomCalendar(selectedRoom._id, selectedSubRoom?._id);
+        console.log('✅ Calendar data refreshed');
+        
+        // ⭐ Reset ALL selections (including month state and shift filters)
+        setMonthStateForRoom({}); // Clear all month states
+        setSelectedShiftFilters([]); // Uncheck all shift checkboxes
+        setSelectedSlotsForAssignment([]);
+        setStaffList([]);
+        setSelectedDentists([]);
+        setSelectedNurses([]);
+        
+        console.log('✅ All selections cleared');
+      } else {
+        toast.error(response.message || 'Xóa nhân sự thất bại');
+      }
+    } catch (error) {
+      console.error('Error removing staff:', error);
+      toast.error('Lỗi khi xóa nhân sự: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
   // Confirm staff assignment
   const handleConfirmAssignment = async () => {
     console.log('🎯 handleConfirmAssignment triggered');
@@ -3227,8 +3387,8 @@ const StaffAssignmentUnified = () => {
         title={
           <Space>
             <CalendarOutlined style={{ color: '#1890ff' }} />
-            <span>
-              Lịch làm việc: {selectedSubRoom ? selectedSubRoom.name : selectedRoom?.name}
+            <span style={{ color: '#000' }}>
+              <strong>Lịch phòng khám:</strong> {selectedSubRoom ? selectedSubRoom.name : selectedRoom?.name}
             </span>
           </Space>
         }
@@ -3906,49 +4066,69 @@ const StaffAssignmentUnified = () => {
                       </Col>
                     </Row>
                     
-                    {/* Confirm Button */}
-                    <Tooltip
-                      title={
-                        !canConfirmAssignment
-                          ? allSlotsFullyAssigned
-                            ? 'Vui lòng chọn ít nhất 1 nhân sự để cập nhật'
-                            : (() => {
-                                const requiresDentist = maxDentists > 0;
-                                const requiresNurse = maxNurses > 0;
-                                if (requiresDentist && requiresNurse) {
-                                  return 'Vui lòng chọn ít nhất 1 nha sĩ VÀ 1 y tá để phân công';
-                                } else if (requiresDentist) {
-                                  return 'Vui lòng chọn ít nhất 1 nha sĩ để phân công';
-                                } else if (requiresNurse) {
-                                  return 'Vui lòng chọn ít nhất 1 y tá để phân công';
-                                }
-                                return 'Vui lòng chọn nhân sự để phân công';
-                              })()
-                          : ''
-                      }
-                    >
-                      <Button 
-                        type="primary" 
-                        size="large"
-                        block
-                        icon={<CheckCircleOutlined />}
-                        onClick={() => {
-                          console.log('🔘 Button clicked!');
-                          console.log('Selected slots count:', selectedSlotsForAssignment.length);
-                          console.log('Selected dentists count:', selectedDentists.length);
-                          console.log('Selected nurses count:', selectedNurses.length);
-                          console.log('All slots fully assigned:', allSlotsFullyAssigned);
-                          handleConfirmAssignment();
-                        }}
-                        disabled={!canConfirmAssignment}
-                        style={{ width: '100%' }}
-                      >
-                        {allSlotsFullyAssigned 
-                          ? `Cập nhật phân công (${selectedDentists.length} NS + ${selectedNurses.length} YT) - ${selectedSlotsForAssignment.length} ca`
-                          : `Xác nhận phân công (${selectedDentists.length} NS + ${selectedNurses.length} YT) - ${selectedSlotsForAssignment.length} ca`
+                    {/* Action Buttons */}
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      {/* Remove Staff Button */}
+                      <Tooltip title={totalSelectedSlotCount === 0 ? 'Vui lòng chọn ít nhất 1 slot' : ''}>
+                        <Button 
+                          danger
+                          size="large"
+                          block
+                          icon={<DeleteOutlined />}
+                          onClick={() => {
+                            console.log('🔴 Remove Staff Button CLICKED!');
+                            handleRemoveStaffFromSlots();
+                          }}
+                          disabled={totalSelectedSlotCount === 0}
+                        >
+                          Xóa nhân sự khỏi {totalSelectedSlotCount} slot đã chọn
+                        </Button>
+                      </Tooltip>
+
+                      {/* Confirm Assignment Button */}
+                      <Tooltip
+                        title={
+                          !canConfirmAssignment
+                            ? allSlotsFullyAssigned
+                              ? 'Vui lòng chọn ít nhất 1 nhân sự để cập nhật'
+                              : (() => {
+                                  const requiresDentist = maxDentists > 0;
+                                  const requiresNurse = maxNurses > 0;
+                                  if (requiresDentist && requiresNurse) {
+                                    return 'Vui lòng chọn ít nhất 1 nha sĩ VÀ 1 y tá để phân công';
+                                  } else if (requiresDentist) {
+                                    return 'Vui lòng chọn ít nhất 1 nha sĩ để phân công';
+                                  } else if (requiresNurse) {
+                                    return 'Vui lòng chọn ít nhất 1 y tá để phân công';
+                                  }
+                                  return 'Vui lòng chọn nhân sự để phân công';
+                                })()
+                            : ''
                         }
-                      </Button>
-                    </Tooltip>
+                      >
+                        <Button 
+                          type="primary" 
+                          size="large"
+                          block
+                          icon={<CheckCircleOutlined />}
+                          onClick={() => {
+                            console.log('🔘 Button clicked!');
+                            console.log('Selected slots count:', selectedSlotsForAssignment.length);
+                            console.log('Selected dentists count:', selectedDentists.length);
+                            console.log('Selected nurses count:', selectedNurses.length);
+                            console.log('All slots fully assigned:', allSlotsFullyAssigned);
+                            handleConfirmAssignment();
+                          }}
+                          disabled={!canConfirmAssignment}
+                          style={{ width: '100%' }}
+                        >
+                          {allSlotsFullyAssigned 
+                            ? `Cập nhật phân công (${selectedDentists.length} NS + ${selectedNurses.length} YT) - ${selectedSlotsForAssignment.length} ca`
+                            : `Xác nhận phân công (${selectedDentists.length} NS + ${selectedNurses.length} YT) - ${selectedSlotsForAssignment.length} ca`
+                          }
+                        </Button>
+                      </Tooltip>
+                    </Space>
                   </>
                 ) : null}
               </>
@@ -4410,8 +4590,8 @@ const StaffAssignmentUnified = () => {
                   title={
                     <Space>
                       <CalendarOutlined style={{ color: '#1890ff' }} />
-                      <span>
-                        Lịch làm việc: {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn nhân sự'}
+                      <span style={{ color: '#000' }}>
+                        <strong>Lịch làm việc của:</strong> {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn nhân sự'}
                       </span>
                     </Space>
                   }
@@ -4916,6 +5096,21 @@ const StaffAssignmentUnified = () => {
                                         }
                                       </Select>
                                       
+                                      {/* Remove Staff Button */}
+                                      <Button 
+                                        danger
+                                        block 
+                                        onClick={() => {
+                                          console.log('🔴 Remove Staff Button (Tab 2) CLICKED!');
+                                          handleRemoveStaffFromReplacementSlots();
+                                        }}
+                                        disabled={totalSelectedSlotCountForStaff === 0}
+                                        icon={<DeleteOutlined />}
+                                      >
+                                        Xóa nhân sự khỏi {totalSelectedSlotCountForStaff} slot đã chọn
+                                      </Button>
+
+                                      {/* Confirm Replacement Button */}
                                       <Button 
                                         type="primary" 
                                         block 
