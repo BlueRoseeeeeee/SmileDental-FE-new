@@ -198,7 +198,10 @@ const PatientAppointments = () => {
       key: 'patient',
       render: (_, record) => (
         <Space>
-          <Avatar icon={<UserOutlined />} src={record.profilePicture} />
+          <Avatar 
+            icon={<UserOutlined />} 
+            {...(record.profilePicture ? { src: record.profilePicture } : {})}
+          />
           <div>
             <div style={{ fontWeight: 500 }}>{record.fullName}</div>
             <Text type="secondary" style={{ fontSize: 12 }}>
@@ -365,7 +368,10 @@ const PatientAppointments = () => {
             title={
               selectedPatient ? (
                 <Space>
-                  <Avatar icon={<UserOutlined />} src={selectedPatient.profilePicture} />
+                  <Avatar 
+                    icon={<UserOutlined />} 
+                    {...(selectedPatient.profilePicture ? { src: selectedPatient.profilePicture } : {})}
+                  />
                   <div>
                     <div>Lịch khám của {selectedPatient.fullName}</div>
                     <Text type="secondary" style={{ fontSize: 12, fontWeight: 'normal' }}>
