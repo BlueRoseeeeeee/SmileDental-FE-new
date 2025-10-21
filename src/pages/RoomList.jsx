@@ -235,12 +235,14 @@ const RoomList = () => {
       dataIndex: 'index',
       key: 'index',
       render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
-      width: 60
+      width: 60,
+      sorter: false
     },
     {
       title: 'Tên phòng',
       dataIndex: 'name',
       key: 'name',
+      sorter: (a, b) => a.name.localeCompare(b.name),
       render: (text, record) => (
         <div>
           <Text strong>{text}</Text>
@@ -265,6 +267,7 @@ const RoomList = () => {
       title: 'Loại phòng',
       dataIndex: 'roomType',
       key: 'roomType',
+      sorter: (a, b) => a.roomType.localeCompare(b.roomType),
       render: (roomType) => {
         const getRoomTypeLabel = (roomType) => {
           const labels = {
@@ -311,6 +314,7 @@ const RoomList = () => {
            title: 'Cấu trúc phòng',
            dataIndex: 'hasSubRooms',
            key: 'hasSubRooms',
+           sorter: (a, b) => a.hasSubRooms - b.hasSubRooms,
            render: (hasSubRooms) => (
              <Tag color={hasSubRooms ? 'blue' : 'default'}>
                {hasSubRooms ? 'Có buồng' : 'Không buồng'}
@@ -321,6 +325,7 @@ const RoomList = () => {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
+      sorter: false,
       render: (isActive) => (
         <Tag color={isActive ? 'blue' : 'default'}>
           {isActive ? 'Hoạt động' : 'Không hoạt động'}
@@ -331,12 +336,14 @@ const RoomList = () => {
       title: 'Ngày cập nhật',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
+      sorter: (a, b) => new Date(a.updatedAt) - new Date(b.updatedAt),
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       title: 'Thao tác',
       key: 'actions',
       width: 200,
+      sorter: false,
       render: (_, record) => (
         <Space>
           <Tooltip title="Xem chi tiết">
