@@ -25,7 +25,6 @@ import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
 import EditUser from './pages/EditUser.jsx';
 import DetailStaff from './pages/DetailStaff.jsx';
-import CertificateManagement from './components/User/CertificateManagement.jsx';
 import ChangePassword from './components/Auth/ChangePassword.jsx';
 import RoomList from './pages/RoomList.jsx';
 import RoomManagement from './pages/RoomManagement.jsx';
