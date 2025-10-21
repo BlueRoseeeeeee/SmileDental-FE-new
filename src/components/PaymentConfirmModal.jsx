@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Button, Alert, Spinner, Row, Col, Badge } from 'react-bootstrap';
 import { FaMoneyBillWave, FaCreditCard, FaCheckCircle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import queueService from '../services/queueService';
 
 const PaymentConfirmModal = ({ show, onHide, record, paymentData, onPaymentConfirmed }) => {
   const [processing, setProcessing] = useState(false);
@@ -21,17 +21,9 @@ const PaymentConfirmModal = ({ show, onHide, record, paymentData, onPaymentConfi
     setProcessing(true);
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/payment/${payment._id}/confirm-cash`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+      const response = await queueService.confirmCashPayment(payment._id);
 
-      if (response.data.success) {
+      if (response.success) {
         toast.success('✅ Xác nhận thanh toán tiền mặt thành công!');
         toast.info('📄 Hóa đơn đã được tạo tự động');
         
@@ -56,19 +48,11 @@ const PaymentConfirmModal = ({ show, onHide, record, paymentData, onPaymentConfi
     
     // Get payment URL from backend
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/payment/${payment._id}/vnpay`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+      const response = await queueService.getVNPayPaymentUrl(payment._id);
 
-      if (response.data.success && response.data.data.paymentUrl) {
+      if (response.success && response.data.paymentUrl) {
         // Redirect to VNPay
-        window.location.href = response.data.data.paymentUrl;
+        window.location.href = response.data.paymentUrl;
       }
     } catch (error) {
       console.error('Error getting VNPay URL:', error);

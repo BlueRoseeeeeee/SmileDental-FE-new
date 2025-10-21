@@ -14,8 +14,6 @@ import {
   Tooltip,
   Drawer,
   Descriptions,
-  Divider,
-  Statistic,
   message,
   Empty,
   Spin
@@ -33,7 +31,7 @@ import {
   TeamOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import axios from 'axios';
+import userService from '../../services/userService';
 
 const { Title, Text } = Typography;
 
@@ -44,15 +42,6 @@ const PatientManagement = () => {
   const [searchText, setSearchText] = useState('');
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
-  
-  // Statistics
-  const [statistics, setStatistics] = useState({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    male: 0,
-    female: 0
-  });
 
   useEffect(() => {
     fetchPatients();
@@ -60,23 +49,15 @@ const PatientManagement = () => {
 
   useEffect(() => {
     filterPatients();
-    calculateStatistics();
   }, [searchText, patients]);
 
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(
-        `${import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001/api'}/user/all-patient`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { page: 1, limit: 1000 }
-        }
-      );
+      const response = await userService.getAllPatients(1, 1000);
       
-      if (response.data.success) {
-        const patientData = response.data.data.users || [];
+      if (response.success) {
+        const patientData = response.data.users || [];
         setPatients(patientData);
         setFilteredPatients(patientData);
       }
@@ -104,17 +85,6 @@ const PatientManagement = () => {
       patient.address?.toLowerCase().includes(search)
     );
     setFilteredPatients(filtered);
-  };
-
-  const calculateStatistics = () => {
-    const stats = {
-      total: filteredPatients.length,
-      active: filteredPatients.filter(p => p.isActive).length,
-      inactive: filteredPatients.filter(p => !p.isActive).length,
-      male: filteredPatients.filter(p => p.gender === 'male').length,
-      female: filteredPatients.filter(p => p.gender === 'female').length
-    };
-    setStatistics(stats);
   };
 
   const showPatientDetails = (patient) => {
@@ -251,60 +221,6 @@ const PatientManagement = () => {
         <Title level={3}>
           <TeamOutlined /> Quản Lý Bệnh Nhân
         </Title>
-
-        {/* Statistics */}
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={5}>
-            <Card>
-              <Statistic
-                title="Tổng số bệnh nhân"
-                value={statistics.total}
-                prefix={<TeamOutlined />}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col span={5}>
-            <Card>
-              <Statistic
-                title="Đang hoạt động"
-                value={statistics.active}
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col span={5}>
-            <Card>
-              <Statistic
-                title="Đã khóa"
-                value={statistics.inactive}
-                valueStyle={{ color: '#f5222d' }}
-              />
-            </Card>
-          </Col>
-          <Col span={5}>
-            <Card>
-              <Statistic
-                title="Nam"
-                value={statistics.male}
-                prefix={<ManOutlined />}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col span={4}>
-            <Card>
-              <Statistic
-                title="Nữ"
-                value={statistics.female}
-                prefix={<WomanOutlined />}
-                valueStyle={{ color: '#eb2f96' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        <Divider />
 
         {/* Search & Actions */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>

@@ -67,6 +67,12 @@ const roomService = {
   getRoomTypes: async () => {
     const response = await roomApi.get('/room/enums/room-types');
     return response.data?.data || {};
+  },
+
+  // Get active rooms - Used in QueueDashboard.jsx
+  getActiveRooms: async () => {
+    const response = await roomApi.get('/room/active');
+    return response.data;
   }
 
 };

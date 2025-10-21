@@ -16,9 +16,7 @@ import {
   message,
   Badge,
   Spin,
-  Empty,
-  Statistic,
-  Divider
+  Empty
 } from 'antd';
 import {
   SearchOutlined,
@@ -57,15 +55,6 @@ const PatientAppointments = () => {
   const [searchText, setSearchText] = useState('');
   const [dentists, setDentists] = useState([]);
   const [rooms, setRooms] = useState([]);
-  const [statistics, setStatistics] = useState({
-    total: 0,
-    confirmed: 0,
-    checkedIn: 0,
-    inProgress: 0,
-    completed: 0,
-    cancelled: 0,
-    noShow: 0
-  });
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
@@ -76,7 +65,6 @@ const PatientAppointments = () => {
 
   useEffect(() => {
     filterAppointments();
-    calculateStatistics();
   }, [statusFilter, dateFilter, dateRange, dentistFilter, serviceTypeFilter, roomFilter, searchText, appointments]);
 
   const fetchDentists = async () => {
@@ -162,19 +150,6 @@ const PatientAppointments = () => {
     }
     filtered.sort((a, b) => dayjs(b.appointmentDate).diff(dayjs(a.appointmentDate)));
     setFilteredAppointments(filtered);
-  };
-
-  const calculateStatistics = () => {
-    const stats = {
-      total: filteredAppointments.length,
-      confirmed: filteredAppointments.filter(a => a.status === 'confirmed').length,
-      checkedIn: filteredAppointments.filter(a => a.status === 'checked-in').length,
-      inProgress: filteredAppointments.filter(a => a.status === 'in-progress').length,
-      completed: filteredAppointments.filter(a => a.status === 'completed').length,
-      cancelled: filteredAppointments.filter(a => a.status === 'cancelled').length,
-      noShow: filteredAppointments.filter(a => a.status === 'no-show').length
-    };
-    setStatistics(stats);
   };
 
   const handleResetFilters = () => {
@@ -326,32 +301,6 @@ const PatientAppointments = () => {
           <CalendarOutlined /> Quản Lý Lịch Khám Bệnh Nhân
         </Title>
         
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={4}>
-            <Card><Statistic title="Tổng số" value={statistics.total} prefix={<CalendarOutlined />} /></Card>
-          </Col>
-          <Col span={3}>
-            <Card><Statistic title="Đã xác nhận" value={statistics.confirmed} valueStyle={{ color: '#1890ff' }} /></Card>
-          </Col>
-          <Col span={3}>
-            <Card><Statistic title="Check-in" value={statistics.checkedIn} valueStyle={{ color: '#13c2c2' }} /></Card>
-          </Col>
-          <Col span={3}>
-            <Card><Statistic title="Đang khám" value={statistics.inProgress} valueStyle={{ color: '#722ed1' }} /></Card>
-          </Col>
-          <Col span={3}>
-            <Card><Statistic title="Hoàn thành" value={statistics.completed} valueStyle={{ color: '#52c41a' }} /></Card>
-          </Col>
-          <Col span={4}>
-            <Card><Statistic title="Đã hủy" value={statistics.cancelled} valueStyle={{ color: '#f5222d' }} /></Card>
-          </Col>
-          <Col span={4}>
-            <Card><Statistic title="Không đến" value={statistics.noShow} valueStyle={{ color: '#8c8c8c' }} /></Card>
-          </Col>
-        </Row>
-
-        <Divider />
-
         <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: 16 }}>
           <Row gutter={[16, 16]}>
             <Col span={8}>

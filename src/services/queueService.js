@@ -1,6 +1,43 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+
+// Create axios instance with interceptor for token
+const queueApi = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Request interceptor to add token
+queueApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling
+queueApi.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 /**
  * Get next queue number for a specific date and room
@@ -10,11 +47,8 @@ const API_URL = import.meta.env.VITE_BACKEND_URL;
  */
 export const getNextQueueNumber = async (date, roomId) => {
   try {
-    const response = await axios.get(`${API_URL}/api/record/queue/next-number`, {
-      params: { date, roomId },
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
+    const response = await queueApi.get('/api/record/queue/next-number', {
+      params: { date, roomId }
     });
     return response.data;
   } catch (error) {
@@ -31,11 +65,8 @@ export const getNextQueueNumber = async (date, roomId) => {
  */
 export const getQueueStatus = async (date, roomId) => {
   try {
-    const response = await axios.get(`${API_URL}/api/record/queue/status`, {
-      params: { date, roomId },
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
+    const response = await queueApi.get('/api/record/queue/status', {
+      params: { date, roomId }
     });
     return response.data;
   } catch (error) {
@@ -51,15 +82,7 @@ export const getQueueStatus = async (date, roomId) => {
  */
 export const callRecord = async (recordId) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/api/record/${recordId}/call`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    );
+    const response = await queueApi.post(`/api/record/${recordId}/call`, {});
     return response.data;
   } catch (error) {
     console.error('Error calling record:', error);
@@ -74,15 +97,7 @@ export const callRecord = async (recordId) => {
  */
 export const completeRecord = async (recordId) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/api/record/${recordId}/complete`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    );
+    const response = await queueApi.post(`/api/record/${recordId}/complete`, {});
     return response.data;
   } catch (error) {
     console.error('Error completing record:', error);
@@ -98,15 +113,7 @@ export const completeRecord = async (recordId) => {
  */
 export const cancelRecord = async (recordId, reason) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/api/record/${recordId}/cancel`,
-      { reason },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    );
+    const response = await queueApi.post(`/api/record/${recordId}/cancel`, { reason });
     return response.data;
   } catch (error) {
     console.error('Error cancelling record:', error);
@@ -121,15 +128,7 @@ export const cancelRecord = async (recordId, reason) => {
  */
 export const confirmCashPayment = async (paymentId) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/api/payment/${paymentId}/confirm-cash`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    );
+    const response = await queueApi.post(`/api/payment/${paymentId}/confirm-cash`, {});
     return response.data;
   } catch (error) {
     console.error('Error confirming cash payment:', error);
@@ -144,15 +143,7 @@ export const confirmCashPayment = async (paymentId) => {
  */
 export const getVNPayPaymentUrl = async (paymentId) => {
   try {
-    const response = await axios.post(
-      `${API_URL}/api/payment/${paymentId}/vnpay`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    );
+    const response = await queueApi.post(`/api/payment/${paymentId}/vnpay`, {});
     return response.data;
   } catch (error) {
     console.error('Error getting VNPay URL:', error);

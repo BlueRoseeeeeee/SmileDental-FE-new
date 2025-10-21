@@ -65,6 +65,9 @@ import InvoiceFormModal from './pages/Invoices/InvoiceFormModal.jsx';
 import InvoiceDetailDrawer from './pages/Invoices/InvoiceDetailDrawer.jsx';
 import InvoiceTemplate from './pages/Invoices/InvoiceTemplate.jsx';
 
+// Statistics Dashboard
+import StatisticsDashboard from './pages/Statistics/StatisticsDashboard.jsx';
+
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
 import HolidayManagementPage from './pages/Schedule/HolidayManagementPage.jsx';
@@ -390,6 +393,15 @@ function App() {
             <Route index element={<InvoiceList />} />
           </Route>
           
+          {/* Statistics Dashboard */}
+          <Route path="/statistics" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<StatisticsDashboard />} />
+          </Route>
+          
           {/* Room Management */}
           <Route path="/rooms" element={
             <ProtectedRoute roles={['admin', 'manager']}>
@@ -434,6 +446,20 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<EditService />} />
+          </Route>
+          <Route path="/services/:serviceId/addons/:addonId/edit" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<EditServiceAddOn />} />
+          </Route>
+          <Route path="/services/:serviceId/addons/add" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AddServiceAddOn />} />
           </Route>
           
           {/* Schedule Management */}

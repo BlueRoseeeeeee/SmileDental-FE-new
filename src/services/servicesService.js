@@ -100,12 +100,6 @@ export const servicesService = {
     return response.data;
   },
 
-  // Lấy chi tiết add-on theo ID
-  async getServiceAddOnById(serviceId, addOnId) {
-    const response = await serviceApi.get(`/service/${serviceId}/addons/${addOnId}`);
-    return response.data;
-  },
-
   // Get room types enum
   async getRoomTypes() {
     const response = await serviceApi.get('/service/enums/room-types');

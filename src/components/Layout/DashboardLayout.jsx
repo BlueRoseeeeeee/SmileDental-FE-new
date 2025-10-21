@@ -26,6 +26,7 @@ import {
   UserAddOutlined,
   DollarOutlined,
   FileDoneOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import logo from '../../assets/image/smile-dental-logo.png';
@@ -142,6 +143,13 @@ const DashboardLayout = () => {
           key: '/invoices',
           icon: <DollarOutlined />,
           label: 'Quản lý hóa đơn',
+        },
+        
+        // Thống kê & Báo cáo
+        {
+          key: '/statistics',
+          icon: <BarChartOutlined />,
+          label: 'Thống kê & Báo cáo',
         }
       );
     }

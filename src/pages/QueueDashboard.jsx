@@ -13,9 +13,10 @@ import {
 } from 'react-bootstrap';
 import { FaPhone, FaCheckCircle, FaTimesCircle, FaUsers, FaClock } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 import { io } from 'socket.io-client';
 import PaymentConfirmModal from '../components/PaymentConfirmModal';
+import roomService from '../services/roomService';
+import queueService from '../services/queueService';
 
 const QueueDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -139,15 +140,10 @@ const QueueDashboard = () => {
 
   const fetchRooms = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/room/active`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        },
-        timeout: 3000 // 3 second timeout
-      });
+      const response = await roomService.getActiveRooms();
 
-      if (response.data.success) {
-        const activeRooms = response.data.data || [];
+      if (response.success) {
+        const activeRooms = response.data || [];
         setRooms(activeRooms);
         
         // Auto-select first room
@@ -157,16 +153,8 @@ const QueueDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching rooms:', error);
-      // Mock data for demo
-      const mockRooms = [
-        { _id: 'room1', name: 'Phòng khám 1' },
-        { _id: 'room2', name: 'Phòng khám 2' },
-        { _id: 'room3', name: 'Phòng khám 3' }
-      ];
-      setRooms(mockRooms);
-      if (!selectedRoomId) {
-        setSelectedRoomId(mockRooms[0]._id);
-      }
+      toast.error('Không thể tải danh sách phòng khám');
+      setRooms([]);
     }
   };
 
@@ -174,118 +162,40 @@ const QueueDashboard = () => {
     if (!silent) setLoading(true);
 
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/api/record/queue/status`,
-        {
-          params: {
-            date: selectedDate,
-            roomId: selectedRoomId
-          },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          timeout: 3000 // 3 second timeout
-        }
-      );
+      const response = await queueService.getQueueStatus(selectedDate, selectedRoomId);
 
-      if (response.data.success) {
-        setQueueStatus(response.data.data);
+      if (response.success) {
+        setQueueStatus(response.data);
       }
       setLoading(false);
     } catch (error) {
       console.error('Error fetching queue status:', error);
-      // Mock data for demo
-      const mockQueueStatus = {
-        current: {
-          _id: 'record1',
-          queueNumber: '001',
-          patientInfo: {
-            name: 'Nguyễn Văn A',
-            phone: '0901234567'
-          },
-          status: 'in_progress',
-          startedAt: new Date().toISOString()
-        },
-        next: {
-          _id: 'record2',
-          queueNumber: '002',
-          patientInfo: {
-            name: 'Trần Thị B',
-            phone: '0912345678'
-          },
-          status: 'pending'
-        },
-        upcoming: [
-          {
-            _id: 'record3',
-            queueNumber: '003',
-            patientInfo: {
-              name: 'Lê Văn C',
-              phone: '0923456789'
-            },
-            status: 'pending'
-          },
-          {
-            _id: 'record4',
-            queueNumber: '004',
-            patientInfo: {
-              name: 'Phạm Thị D',
-              phone: '0934567890'
-            },
-            status: 'pending'
-          },
-          {
-            _id: 'record5',
-            queueNumber: '005',
-            patientInfo: {
-              name: 'Hoàng Văn E',
-              phone: '0945678901'
-            },
-            status: 'pending'
-          }
-        ]
-      };
-      setQueueStatus(mockQueueStatus);
+      toast.error('Không thể tải trạng thái hàng đợi');
+      setQueueStatus(null);
       setLoading(false);
     }
   };
 
   const handleCallRecord = async (recordId) => {
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/record/${recordId}/call`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+      const response = await queueService.callRecord(recordId);
 
-      if (response.data.success) {
+      if (response.success) {
         toast.success('Đã gọi bệnh nhân thành công');
         fetchQueueStatus();
       }
     } catch (error) {
       console.error('Error calling record:', error);
-      toast.info('Demo mode: Tính năng này cần kết nối backend');
+      toast.error('Không thể gọi bệnh nhân');
     }
   };
 
   const handleCompleteRecord = async (recordId) => {
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/record/${recordId}/complete`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+      const response = await queueService.completeRecord(recordId);
 
-      if (response.data.success) {
-        const { record, paymentData } = response.data.data;
+      if (response.success) {
+        const { record, paymentData } = response.data;
         
         toast.success('Đã hoàn thành khám bệnh');
         
@@ -298,7 +208,7 @@ const QueueDashboard = () => {
       }
     } catch (error) {
       console.error('Error completing record:', error);
-      toast.info('Demo mode: Tính năng này cần kết nối backend');
+      toast.error('Không thể hoàn thành hồ sơ');
     }
   };
 
@@ -309,17 +219,9 @@ const QueueDashboard = () => {
     }
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/record/${cancelRecordId}/cancel`,
-        { reason: cancelReason },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+      const response = await queueService.cancelRecord(cancelRecordId, cancelReason);
 
-      if (response.data.success) {
+      if (response.success) {
         toast.success('Đã hủy hồ sơ thành công');
         setShowCancelModal(false);
         setCancelRecordId(null);
@@ -328,7 +230,7 @@ const QueueDashboard = () => {
       }
     } catch (error) {
       console.error('Error cancelling record:', error);
-      toast.info('Demo mode: Tính năng này cần kết nối backend');
+      toast.error('Không thể hủy hồ sơ');
       setShowCancelModal(false);
     }
   };
