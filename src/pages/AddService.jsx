@@ -27,7 +27,7 @@ import {
   PlusOutlined,
   DeleteOutlined,
   EyeOutlined,
-  UploadOutlined
+  UploadOutlined,
   UpOutlined,
   DownOutlined
 } from '@ant-design/icons';
@@ -73,6 +73,8 @@ const AddService = () => {
       imageFile: null 
     }
   ]);
+  const [showDescriptionEditor, setShowDescriptionEditor] = useState(false);
+  const [serviceDescription, setServiceDescription] = useState('');
 
   // Fetch room types on mount
   React.useEffect(() => {
@@ -133,7 +135,7 @@ const AddService = () => {
       formData.append('serviceAddOns', JSON.stringify(addOnsData));
       
       // Add image files (if any)
-      validAddOns.forEach((addon, index) => {
+      validAddOns.forEach((addon) => {
         if (addon.imageFile && addon.imageFile.originFileObj) {
           formData.append('images', addon.imageFile.originFileObj);
         }
@@ -371,7 +373,7 @@ const AddService = () => {
                       placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
                       style={{ width: '100%' }}
                     >
-                      {Object.entries(roomTypes).map(([key, value]) => (
+                      {Object.values(roomTypes).map((value) => (
                         <Option key={value} value={value}>
                           {getRoomTypeLabel(value)}
                         </Option>

@@ -21,7 +21,6 @@ import {
   Select,
   InputNumber,
   Switch,
-  Table,
   DatePicker,
   Popconfirm,
   Alert
@@ -203,7 +202,7 @@ const ServiceDetails = () => {
     try {
       const response = await servicesService.getServiceById(serviceId);
       setService(response);
-    } catch (error) {
+    } catch {
       toastService.error('Không thể tải chi tiết dịch vụ');
       navigate('/services');
     } finally {
@@ -257,7 +256,7 @@ const ServiceDetails = () => {
       setService(updatedService);
       toastService.success('Cập nhật dịch vụ thành công!');
       setShowUpdateModal(false);
-    } catch (error) {
+    } catch {
       toastService.error('Lỗi khi cập nhật dịch vụ');
     } finally {
       setUpdateLoading(false);
@@ -702,7 +701,7 @@ const ServiceDetails = () => {
                     title: 'Tên tùy chọn',
                     dataIndex: 'name',
                     key: 'name',
-                    render: (text, record) => (
+                    render: (text) => (
                       <div>
                         <Text strong>{text}</Text>
                       </div>
@@ -904,7 +903,7 @@ const ServiceDetails = () => {
               placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
               style={{ width: '100%' }}
             >
-              {Object.entries(roomTypes).map(([key, value]) => (
+              {Object.values(roomTypes).map((value) => (
                 <Select.Option key={value} value={value}>
                   {getRoomTypeLabel(value)}
                 </Select.Option>
