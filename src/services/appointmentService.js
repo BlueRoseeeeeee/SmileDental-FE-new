@@ -96,6 +96,55 @@ const appointmentService = {
       notes
     });
     return response.data;
+  },
+
+  // Lấy tất cả appointments (Admin/Manager)
+  getAllAppointments: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.status) queryParams.append('status', params.status);
+    if (params.dentistId) queryParams.append('dentistId', params.dentistId);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+
+    const url = `/appointment${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await appointmentApi.get(url);
+    return response.data;
+  },
+
+  // Check-in appointment
+  checkInAppointment: async (appointmentId, notes) => {
+    const response = await appointmentApi.post(`/appointment/${appointmentId}/check-in`, {
+      notes
+    });
+    return response.data;
+  },
+
+  // Complete appointment
+  completeAppointment: async (appointmentId, notes) => {
+    const response = await appointmentApi.post(`/appointment/${appointmentId}/complete`, {
+      notes
+    });
+    return response.data;
+  },
+
+  // Lấy appointments theo ngày
+  getAppointmentsByDate: async (date) => {
+    const response = await appointmentApi.get(`/appointment/by-date/${date}`);
+    return response.data;
+  },
+
+  // Lấy appointments theo dentist
+  getAppointmentsByDentist: async (dentistId, params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+    if (params.status) queryParams.append('status', params.status);
+
+    const url = `/appointment/dentist/${dentistId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await appointmentApi.get(url);
+    return response.data;
   }
 };
 

@@ -13,17 +13,20 @@ import {
   Tag,
   message,
   Select,
-  Popover
+  Popover,
+  Radio
 } from 'antd';
 import { 
   SearchOutlined, 
   ArrowRightOutlined,
   MedicineBoxOutlined,
   DollarOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  StarFilled
 } from '@ant-design/icons';
-import { servicesService } from '../../services';
+import { servicesService, recordService } from '../../services';
 import { mockServices } from '../../services/mockData.js';
+import { useAuth } from '../../hooks/useAuth';
 import './BookingSelectService.css';
 
 const { Title, Text, Paragraph } = Typography;
@@ -33,15 +36,21 @@ const USE_MOCK_DATA = false;
 
 const BookingSelectService = () => {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get current user
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
+  const [unusedServices, setUnusedServices] = useState([]); // Services from doctor recommendations
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [selectedType, setSelectedType] = useState('all'); // 'all', 'Khám', 'Điều trị'
+  const [serviceSource, setServiceSource] = useState('all'); // 'all' or 'recommended'
 
   useEffect(() => {
     fetchServices();
-  }, []);
+    if (user && user._id) {
+      fetchUnusedServices();
+    }
+  }, [user]);
 
   const fetchServices = async () => {
     try {
@@ -61,7 +70,7 @@ const BookingSelectService = () => {
         if (response.services && Array.isArray(response.services)) {
           const activeServices = response.services.filter(s => s.isActive);
           setServices(activeServices);
-          setFilteredServices(activeServices);
+          applyFilters(searchValue, selectedType, serviceSource, activeServices, unusedServices);
           
           if (activeServices.length === 0) {
             message.warning('Hiện tại chưa có dịch vụ nào khả dụng');
@@ -79,18 +88,44 @@ const BookingSelectService = () => {
     }
   };
 
+  const fetchUnusedServices = async () => {
+    try {
+      const response = await recordService.getUnusedServices(user._id);
+      console.log('🩺 Unused services from exam records:', response);
+      
+      if (response.success && response.data) {
+        setUnusedServices(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching unused services:', error);
+      // Don't show error to user - just means no exam records with unused services
+    }
+  };
+
   const handleSearch = (value) => {
     setSearchValue(value);
-    applyFilters(value, selectedType);
+    applyFilters(value, selectedType, serviceSource, services, unusedServices);
   };
 
   const handleTypeChange = (value) => {
     setSelectedType(value);
-    applyFilters(searchValue, value);
+    applyFilters(searchValue, value, serviceSource, services, unusedServices);
   };
 
-  const applyFilters = (search, type) => {
-    let filtered = services;
+  const handleSourceChange = (e) => {
+    const value = e.target.value;
+    setServiceSource(value);
+    applyFilters(searchValue, selectedType, value, services, unusedServices);
+  };
+
+  const applyFilters = (search, type, source, allServices, recommendedServices) => {
+    let filtered = allServices;
+
+    // Filter by source (all or recommended only)
+    if (source === 'recommended' && recommendedServices.length > 0) {
+      const recommendedIds = new Set(recommendedServices.map(s => s.serviceId.toString()));
+      filtered = filtered.filter(service => recommendedIds.has(service._id.toString()));
+    }
 
     // Filter by type
     if (type !== 'all') {
@@ -106,6 +141,10 @@ const BookingSelectService = () => {
     }
 
     setFilteredServices(filtered);
+  };
+
+  const isRecommended = (serviceId) => {
+    return unusedServices.some(s => s.serviceId.toString() === serviceId.toString());
   };
 
   const handleSelectService = (service) => {
@@ -144,9 +183,28 @@ const BookingSelectService = () => {
       <div className="main-content">
         <div className="container">
           <Card className="booking-card">
-            <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 32 }}>
+            <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 16 }}>
               Vui lòng chọn dịch vụ
             </Title>
+
+            {/* ✅ Service Source Filter */}
+            {unusedServices.length > 0 && (
+              <Row justify="center" style={{ marginBottom: 24 }}>
+                <Radio.Group 
+                  value={serviceSource} 
+                  onChange={handleSourceChange}
+                  buttonStyle="solid"
+                  size="large"
+                >
+                  <Radio.Button value="all">
+                    Tất cả dịch vụ
+                  </Radio.Button>
+                  <Radio.Button value="recommended">
+                    <StarFilled style={{ color: '#faad14' }} /> Theo chỉ định bác sĩ ({unusedServices.length})
+                  </Radio.Button>
+                </Radio.Group>
+              </Row>
+            )}
 
             {/* Search and Filter */}
             <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -255,6 +313,12 @@ const BookingSelectService = () => {
                                     {service.type && (
                                       <Tag color={service.type === 'Khám' ? 'blue' : 'green'}>
                                         {service.type}
+                                      </Tag>
+                                    )}
+                                    {/* ✅ Recommended Badge */}
+                                    {isRecommended(service._id) && (
+                                      <Tag color="gold" icon={<StarFilled />}>
+                                        Chỉ định bác sĩ
                                       </Tag>
                                     )}
                                     <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />

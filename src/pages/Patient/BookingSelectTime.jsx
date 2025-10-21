@@ -136,24 +136,29 @@ const BookingSelectTime = () => {
             allSlots = response.data.slots;
           }
           
-          console.log('📊 Total slots before grouping:', allSlots.length);
+          console.log('📊 Total slots before filtering:', allSlots.length);
+          
+          // ✅ Filter only active slots
+          const activeSlots = allSlots.filter(slot => slot.isActive === true);
+          console.log('✅ Active slots:', activeSlots.length, '/', allSlots.length);
           
           // Debug: Log first few slots to check structure
-          if (allSlots.length > 0) {
+          if (activeSlots.length > 0) {
             console.log('🔍 Sample slot structure:', {
-              slot: allSlots[0],
-              startTime: allSlots[0].startTime,
-              startTimeVN: allSlots[0].startTimeVN,
-              endTime: allSlots[0].endTime,
-              endTimeVN: allSlots[0].endTimeVN
+              slot: activeSlots[0],
+              startTime: activeSlots[0].startTime,
+              startTimeVN: activeSlots[0].startTimeVN,
+              endTime: activeSlots[0].endTime,
+              endTimeVN: activeSlots[0].endTimeVN,
+              isActive: activeSlots[0].isActive
             });
           }
           
           // Group slots by shift first
           const slotsByShift = {
-            morning: allSlots.filter(s => s.shiftName === 'Ca Sáng'),
-            afternoon: allSlots.filter(s => s.shiftName === 'Ca Chiều'),
-            evening: allSlots.filter(s => s.shiftName === 'Ca Tối')
+            morning: activeSlots.filter(s => s.shiftName === 'Ca Sáng'),
+            afternoon: activeSlots.filter(s => s.shiftName === 'Ca Chiều'),
+            evening: activeSlots.filter(s => s.shiftName === 'Ca Tối')
           };
           
           console.log('📦 Slots by shift:', {

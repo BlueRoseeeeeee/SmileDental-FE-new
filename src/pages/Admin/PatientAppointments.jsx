@@ -30,7 +30,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import appointmentService from '../../services/appointmentService';
-import authService from '../../services/authService';
+import userService from '../../services/userService';
 import './PatientAppointments.css';
 
 const { Title, Text } = Typography;
@@ -74,17 +74,22 @@ const PatientAppointments = () => {
   const fetchPatients = async () => {
     try {
       setLoadingPatients(true);
-      const response = await authService.getAllUsers();
+      // Use getAllStaff to get all users, then filter patients
+      // Or we need to create a new API endpoint for getting all users including patients
+      const response = await userService.getAllStaff(1, 1000); // Get large limit to get all
       
       if (response.success) {
         // Filter only patients
-        const patientList = response.data.users.filter(u => u.role === 'patient');
+        const patientList = response.data.users?.filter(u => u.role === 'patient') || [];
         setPatients(patientList);
         setFilteredPatients(patientList);
       }
     } catch (error) {
       console.error('Error fetching patients:', error);
       message.error('Không thể tải danh sách bệnh nhân');
+      // Set empty array on error
+      setPatients([]);
+      setFilteredPatients([]);
     } finally {
       setLoadingPatients(false);
     }

@@ -137,7 +137,7 @@ const CreateScheduleForRoom = () => {
   // States
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [roomActiveFilter, setRoomActiveFilter] = useState(true); // Combobox filter
+  const [roomActiveFilter, setRoomActiveFilter] = useState('all'); // 'all' | true | false
   const [scheduleStatusFilter, setScheduleStatusFilter] = useState('all'); // 'all' | 'has-schedule' | 'no-schedule'
   const [roomSearchValue, setRoomSearchValue] = useState('');
   const [roomSearchTerm, setRoomSearchTerm] = useState('');
@@ -299,17 +299,40 @@ const CreateScheduleForRoom = () => {
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      // 🔥 When searching, fetch ALL rooms to enable search across all pages
+      // � DEBUG: Check token
+      const token = localStorage.getItem('accessToken');
+      console.log('🔐 Token exists:', !!token, token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+      
+      // �🔥 When searching, fetch ALL rooms to enable search across all pages
       const shouldFetchAll = roomSearchTerm.trim() !== '';
       
-      const response = await roomService.getRoomsForSchedule({
+      // Build params - only include isActive if it's a boolean value
+      const params = {
         page: shouldFetchAll ? 1 : pagination.current,
-        limit: shouldFetchAll ? 9999 : pagination.pageSize, // Fetch all when searching
-        isActive: roomActiveFilter !== 'all' ? roomActiveFilter : undefined
+        limit: shouldFetchAll ? 9999 : pagination.pageSize
+      };
+      
+      // Only add isActive if roomActiveFilter is actually a boolean (not 'all')
+      if (typeof roomActiveFilter === 'boolean') {
+        params.isActive = roomActiveFilter;
+      }
+      
+      console.log('📡 Calling API with params:', params);
+      const response = await roomService.getRoomsForSchedule(params);
+
+      console.log('🔍 Room API Response:', {
+        success: response.success,
+        roomsCount: response.data?.rooms?.length || 0,
+        total: response.data?.total,
+        firstRoom: response.data?.rooms?.[0],
+        scheduleStatusFilter,
+        params
       });
 
       if (response.success) {
         let filteredRooms = response.data.rooms;
+        
+        console.log('📊 Before filter - Rooms count:', filteredRooms?.length);
         
         // Apply schedule status filter based on hasBeenUsed
         if (scheduleStatusFilter === 'has-schedule') {
@@ -318,17 +341,20 @@ const CreateScheduleForRoom = () => {
           filteredRooms = filteredRooms.filter(room => !room.hasBeenUsed);
         }
         
+        console.log('📊 After filter - Rooms count:', filteredRooms?.length);
+        
         setRooms(filteredRooms);
         setPagination(prev => ({
           ...prev,
           total: response.data.total
         }));
       } else {
+        console.error('❌ API Error:', response.message);
         message.error(response.message || 'Không thể lấy danh sách phòng');
       }
     } catch (error) {
-      console.error('Error fetching rooms:', error);
-      message.error('Lỗi khi lấy danh sách phòng');
+      console.error('❌ Error fetching rooms:', error);
+      message.error('Lỗi khi lấy danh sách phòng: ' + error.message);
     }
     setLoading(false);
   };
@@ -1885,11 +1911,17 @@ const CreateScheduleForRoom = () => {
                     try {
                       setLoading(true);
                       // 🔥 Fetch ALL rooms (không phụ thuộc pagination)
-                      const response = await roomService.getRoomsForSchedule({
+                      const params = {
                         page: 1,
-                        limit: 9999,
-                        isActive: roomActiveFilter !== 'all' ? roomActiveFilter : undefined
-                      });
+                        limit: 9999
+                      };
+                      
+                      // Only add isActive if roomActiveFilter is not 'all'
+                      if (roomActiveFilter !== 'all') {
+                        params.isActive = roomActiveFilter;
+                      }
+                      
+                      const response = await roomService.getRoomsForSchedule(params);
 
                       if (response.success) {
                         let allRooms = response.data.rooms;
@@ -2062,8 +2094,8 @@ const CreateScheduleForRoom = () => {
           loading={loading}
           rowKey="_id"
           scroll={{ 
-            x: bulkSelectionMode ? 1400 : 1200,
-            y: 'calc(100vh - 520px)'
+            x: bulkSelectionMode ? 1400 : 1200
+            // Remove y scroll to show all 10 rows without scrolling
           }}
           pagination={roomSearchTerm ? false : {
             current: pagination.current,

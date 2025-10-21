@@ -41,6 +41,9 @@ import PublicDentistDetail from './pages/PublicDentistDetail.jsx';
 // Admin - Patient Appointments Management
 import AdminPatientAppointments from './pages/Admin/PatientAppointments.jsx';
 
+// Admin - Appointment Management (All appointments)
+import AppointmentManagement from './pages/Admin/AppointmentManagement.jsx';
+
 // Cash Payment & Walk-in
 import CashPaymentModal from './components/CashPayment/CashPaymentModal.jsx';
 import WalkInAppointmentForm from './components/CashPayment/WalkInAppointmentForm.jsx';
@@ -288,6 +291,13 @@ function App() {
             <Route path="users/edit/:id" element={<EditUser />} />
             <Route path="users/detail/:id" element={<DetailStaff />} />
             
+            {/* Appointment Management - All appointments (Admin/Manager/Receptionist) */}
+            <Route path="appointments" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <AppointmentManagement />
+              </ProtectedRoute>
+            } />
+
             {/* Patient Appointments Management (Admin/Manager only) */}
             <Route path="patient-appointments" element={
               <ProtectedRoute roles={['admin', 'manager']}>
