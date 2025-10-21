@@ -4,6 +4,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { ToastContainer } from 'react-toastify';
 
 // Auth Components
 import Login from './components/Auth/Login.jsx';
@@ -40,6 +41,9 @@ import PublicDentistDetail from './pages/PublicDentistDetail.jsx';
 
 // Admin - Patient Appointments Management
 import AdminPatientAppointments from './pages/Admin/PatientAppointments.jsx';
+
+// Admin - Patient Management
+import PatientManagement from './pages/Admin/PatientManagement.jsx';
 
 // Admin - Appointment Management (All appointments)
 import AppointmentManagement from './pages/Admin/AppointmentManagement.jsx';
@@ -147,6 +151,18 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
         <Routes>
           {/* Public routes - Auth */}
           <Route path="/login" element={<Login />} />
@@ -336,6 +352,15 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<AdminPatientAppointments />} />
+          </Route>
+          
+          {/* Patient Management */}
+          <Route path="/patients" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<PatientManagement />} />
           </Route>
           
           {/* Walk-in Appointments */}
