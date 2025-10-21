@@ -273,6 +273,73 @@ const AddServiceAddOn = () => {
           }}
         >
           <Row gutter={[16, 16]}>
+            {/* Upload ảnh - Full width */}
+            <Col span={24}>
+              <Form.Item
+                label="Hình ảnh"
+              >
+                <Upload
+                  customRequest={({ file, onSuccess }) => {
+                    setImageFile(file);
+                    setHasUnsavedChanges(true);
+                    
+                    // Tạo preview URL
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setImagePreview(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    onSuccess("ok");
+                  }}
+                  showUploadList={false}
+                  maxCount={1}
+                  accept="image/*"
+                >
+                  <div style={{
+                    width: '100%',
+                    height: '120px',
+                    border: '2px dashed #d9d9d9',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    backgroundColor: '#fafafa',
+                    transition: 'border-color 0.3s',
+                    ':hover': {
+                      borderColor: '#1890ff'
+                    }
+                  }}>
+                    {imagePreview ? (
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '100%', 
+                          objectFit: 'cover',
+                          borderRadius: '6px'
+                        }} 
+                      />
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '24px', color: '#8c8c8c', marginBottom: '8px' }}>
+                          <UploadOutlined />
+                        </div>
+                        <div style={{ color: '#ff6b35', fontSize: '14px', fontWeight: '500' }}>
+                          Thêm hình ảnh
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Upload>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]}>
             {/* Tên tùy chọn - Full width */}
             <Col span={24}>
               <Form.Item
@@ -370,72 +437,6 @@ const AddServiceAddOn = () => {
             </Col>
           </Row>
 
-          <Row gutter={[16, 16]}>
-            {/* Upload ảnh - Full width */}
-            <Col span={24}>
-              <Form.Item
-                label="Hình ảnh"
-              >
-                <Upload
-                  customRequest={({ file, onSuccess }) => {
-                    setImageFile(file);
-                    setHasUnsavedChanges(true);
-                    
-                    // Tạo preview URL
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                      setImagePreview(e.target.result);
-                    };
-                    reader.readAsDataURL(file);
-                    
-                    onSuccess("ok");
-                  }}
-                  showUploadList={false}
-                  maxCount={1}
-                  accept="image/*"
-                >
-                  <div style={{
-                    width: '100%',
-                    height: '120px',
-                    border: '2px dashed #d9d9d9',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    backgroundColor: '#fafafa',
-                    transition: 'border-color 0.3s',
-                    ':hover': {
-                      borderColor: '#1890ff'
-                    }
-                  }}>
-                    {imagePreview ? (
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        style={{ 
-                          maxWidth: '100%', 
-                          maxHeight: '100%', 
-                          objectFit: 'cover',
-                          borderRadius: '6px'
-                        }} 
-                      />
-                    ) : (
-                      <>
-                        <div style={{ fontSize: '24px', color: '#8c8c8c', marginBottom: '8px' }}>
-                          <UploadOutlined />
-                        </div>
-                        <div style={{ color: '#ff6b35', fontSize: '14px', fontWeight: '500' }}>
-                          Thêm hình ảnh
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </Upload>
-              </Form.Item>
-            </Col>
-          </Row>
 
           <Row gutter={[16, 16]}>
             {/* Mô tả - Full width */}
