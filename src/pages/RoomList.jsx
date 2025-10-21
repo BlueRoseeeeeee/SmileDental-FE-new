@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import roomService from '../services/roomService';
 import RoomFormModal from '../components/Room/RoomFormModal';
+import RoomDetailsModal from '../components/Room/RoomDetailsModal';
 import { searchAndFilter, debounce } from '../utils/searchUtils';
 import dayjs from 'dayjs';
 const { Title, Text } = Typography;
@@ -62,6 +63,10 @@ const RoomList = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRoomForDelete, setSelectedRoomForDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Room details modal states
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedRoomForDetails, setSelectedRoomForDetails] = useState(null);
 
   // Filtered data using searchUtils
   const filteredRooms = useMemo(() => {
@@ -141,7 +146,8 @@ const RoomList = () => {
   };
 
   const handleViewSubRooms = (room) => {
-    navigate(`/dashboard/rooms/${room._id}`);
+    setSelectedRoomForDetails(room);
+    setShowDetailsModal(true);
   };
 
   // Handle show delete confirmation modal
@@ -227,6 +233,11 @@ const RoomList = () => {
   const handleSuccess = () => {
     fetchRooms();
     handleModalClose();
+  };
+
+  const handleDetailsModalClose = () => {
+    setShowDetailsModal(false);
+    setSelectedRoomForDetails(null);
   };
 
   const columns = [
@@ -516,6 +527,14 @@ const RoomList = () => {
         onClose={handleModalClose}
         onSuccess={handleSuccess}
         room={editingRoom}
+      />
+
+      {/* Modal xem chi tiết phòng */}
+      <RoomDetailsModal
+        open={showDetailsModal}
+        onClose={handleDetailsModalClose}
+        roomId={selectedRoomForDetails?._id}
+        roomData={selectedRoomForDetails}
       />
 
       {/* Confirmation Modal */}

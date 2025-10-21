@@ -27,7 +27,6 @@ import EditUser from './pages/EditUser.jsx';
 import DetailStaff from './pages/DetailStaff.jsx';
 import ChangePassword from './components/Auth/ChangePassword.jsx';
 import RoomList from './pages/RoomList.jsx';
-import RoomManagement from './pages/RoomManagement.jsx';
 import ServiceList from './pages/ServiceList.jsx';
 import ServiceDetails from './pages/ServiceDetails.jsx';
 import AddService from './pages/AddService.jsx';
@@ -345,11 +344,6 @@ function App() {
             <Route path="rooms" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <RoomList />
-              </ProtectedRoute>
-            } />
-            <Route path="rooms/:roomId" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <RoomManagement />
               </ProtectedRoute>
             } />
             
