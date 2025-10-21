@@ -86,7 +86,12 @@ const AddServiceAddOn = () => {
       // Load draft if exists
       const draft = loadDraft();
       if (draft) {
-        form.setFieldsValue(draft.formData);
+        // Đảm bảo durationMinutes không có giá trị mặc định
+        const formData = { ...draft.formData };
+        if (formData.durationMinutes === 30) {
+          formData.durationMinutes = null;
+        }
+        form.setFieldsValue(formData);
         setAddOnDescription(draft.description);
         setHasUnsavedChanges(true);
         message.info('Đã khôi phục bản nháp chưa lưu');
@@ -254,12 +259,7 @@ const AddServiceAddOn = () => {
         </div>
       </div>
 
-
-      {/* Thông tin hàng hoá */}
       <Card>
-        <Title level={4} style={{ marginBottom: 16, color: '#262626' }}>
-          Thông tin hàng hoá
-        </Title>
         <Form
           form={form}
           layout="vertical"
@@ -267,7 +267,7 @@ const AddServiceAddOn = () => {
           initialValues={{
             name: '',
             price: 0,
-            durationMinutes: 30,
+            durationMinutes: null,
             unit: 'Răng',
             isActive: true
           }}
