@@ -1,7 +1,7 @@
 /*
 * @author: HoTram
 */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { useAuth } from './hooks/useAuth.js';
@@ -131,7 +131,18 @@ const Unauthorized = () => (
 const RootRedirect = () => {
   const { isAuthenticated, loading } = useAuth();
   
-  if (loading) {
+  // Show loading for a maximum of 2 seconds, then show homepage
+  const [showHomepage, setShowHomepage] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHomepage(true);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (loading && !showHomepage) {
     return (
       <div style={{ 
         display: 'flex', 
@@ -144,10 +155,7 @@ const RootRedirect = () => {
     );
   }
   
-  // Redirect to dashboard if authenticated, otherwise to homepage
-  return isAuthenticated ? 
-    <Navigate to="/dashboard" replace /> : 
-    <HomepageLayout><Homepage /></HomepageLayout>;
+  return <HomepageLayout><Homepage /></HomepageLayout>;
 };
 
 // Placeholder pages for development
