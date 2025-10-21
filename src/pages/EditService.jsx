@@ -3,6 +3,7 @@
  * @author: HoTram  
  */
 import React, { useState, useEffect } from 'react';
+import dayjs from 'dayjs';
 import { 
   Card, 
   Row, 
@@ -19,14 +20,18 @@ import {
   message,
   Tag,
   Table,
-  Modal
+  Modal,
+  DatePicker,
+  Popconfirm,
+  Alert
 } from 'antd';
 import { 
   ArrowLeftOutlined, 
   SaveOutlined,
   PlusOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  DollarOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
@@ -49,6 +54,17 @@ const EditService = () => {
   const [showToggleConfirmModal, setShowToggleConfirmModal] = useState(false);
   const [selectedAddOn, setSelectedAddOn] = useState(null);
   const [toggleLoading, setToggleLoading] = useState(false);
+
+  // 🆕 Price schedule management states
+  const [showPriceScheduleModal, setShowPriceScheduleModal] = useState(false);
+  const [selectedAddOnForPrice, setSelectedAddOnForPrice] = useState(null);
+  const [showAddScheduleModal, setShowAddScheduleModal] = useState(false);
+  const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [priceScheduleForm] = Form.useForm();
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [selectedStartDate, setSelectedStartDate] = useState(null);
+  const [dateAnalysis, setDateAnalysis] = useState(null);
 
 
   // Auto-save key for localStorage
@@ -238,6 +254,243 @@ const EditService = () => {
   const handleCancelToggleAddOn = () => {
     setShowToggleConfirmModal(false);
     setSelectedAddOn(null);
+  };
+
+  // 🆕 ========== PRICE SCHEDULE HANDLERS ==========
+  
+  // Helper function to analyze price schedules and find available date ranges
+  const analyzePriceSchedules = (priceSchedules = [], editingScheduleId = null) => {
+    // Filter out the schedule being edited (if any) and sort by startDate
+    const activeSchedules = priceSchedules
+      .filter(s => !editingScheduleId || s._id !== editingScheduleId)
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+    // Get tomorrow as minimum start date
+    const tomorrow = dayjs().add(1, 'day').startOf('day');
+
+    // If no schedules exist, can start from tomorrow
+    if (activeSchedules.length === 0) {
+      return {
+        minStartDate: tomorrow,
+        suggestedStartDate: tomorrow,
+        gaps: [],
+        schedules: []
+      };
+    }
+
+    // Find all gaps (including before first schedule and after last schedule)
+    const gaps = [];
+    const schedules = activeSchedules.map(s => ({
+      start: dayjs(s.startDate),
+      end: dayjs(s.endDate)
+    }));
+
+    // Gap 1: From tomorrow to before first schedule (only if it's a valid future gap)
+    const firstSchedule = activeSchedules[0];
+    const firstStart = dayjs(firstSchedule.startDate);
+    
+    if (tomorrow.isBefore(firstStart, 'day')) {
+      const gapDays = firstStart.diff(tomorrow, 'day');
+      gaps.push({
+        start: tomorrow,
+        end: firstStart.subtract(1, 'day'),
+        days: gapDays
+      });
+    }
+
+    // Gaps between schedules (only real gaps, not continuous schedules)
+    for (let i = 0; i < activeSchedules.length - 1; i++) {
+      const currentEnd = dayjs(activeSchedules[i].endDate);
+      const nextStart = dayjs(activeSchedules[i + 1].startDate);
+      const gapDays = nextStart.diff(currentEnd, 'day');
+      
+      // Only add as gap if there's at least 2 days difference (not continuous)
+      if (gapDays > 1) {
+        gaps.push({
+          start: currentEnd.add(1, 'day'),
+          end: nextStart.subtract(1, 'day'),
+          days: gapDays - 1
+        });
+      }
+    }
+
+    // Gap after last schedule (unlimited) - always available
+    const lastSchedule = activeSchedules[activeSchedules.length - 1];
+    const lastEnd = dayjs(lastSchedule.endDate);
+    const afterLastGapStart = lastEnd.add(1, 'day');
+    
+    gaps.push({
+      start: afterLastGapStart,
+      end: null, // No end limit
+      days: Infinity
+    });
+
+    // Smart suggested start date: 
+    // Find first gap that is actually available (start date >= tomorrow)
+    let suggestedStartDate = tomorrow;
+    for (const gap of gaps) {
+      if (gap.start.isSameOrAfter(tomorrow, 'day')) {
+        suggestedStartDate = gap.start;
+        break;
+      }
+    }
+
+    return {
+      minStartDate: tomorrow,
+      suggestedStartDate,
+      gaps,
+      schedules
+    };
+  };
+
+  // Format giá tiền
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+  };
+
+  // Open price schedule management modal
+  const handleManagePriceSchedule = (addOn) => {
+    setSelectedAddOnForPrice(addOn);
+    setShowPriceScheduleModal(true);
+  };
+
+  // Add new price schedule
+  const handleAddPriceSchedule = () => {
+    priceScheduleForm.resetFields();
+    setEditingSchedule(null);
+    
+    // Analyze existing schedules to determine available dates
+    const analysis = analyzePriceSchedules(selectedAddOnForPrice?.priceSchedules || []);
+    setDateAnalysis(analysis);
+    
+    // Set suggested start date AND update selectedStartDate state
+    setSelectedStartDate(analysis.suggestedStartDate);
+    priceScheduleForm.setFieldsValue({
+      startDate: analysis.suggestedStartDate
+    });
+    
+    setShowAddScheduleModal(true);
+  };
+
+  // Edit price schedule
+  const handleEditPriceSchedule = (schedule) => {
+    setEditingSchedule(schedule);
+    setSelectedStartDate(schedule.startDate ? dayjs(schedule.startDate) : null);
+    
+    // Analyze with current schedule excluded
+    const analysis = analyzePriceSchedules(
+      selectedAddOnForPrice?.priceSchedules || [], 
+      schedule._id
+    );
+    setDateAnalysis(analysis);
+    
+    priceScheduleForm.setFieldsValue({
+      price: schedule.price,
+      startDate: schedule.startDate ? dayjs(schedule.startDate) : null,
+      endDate: schedule.endDate ? dayjs(schedule.endDate) : null,
+      isActive: schedule.isActive,
+      note: schedule.note
+    });
+    setShowEditScheduleModal(true);
+  };
+
+  // Save price schedule (add or edit)
+  const handleSavePriceSchedule = async () => {
+    try {
+      const values = await priceScheduleForm.validateFields();
+      setScheduleLoading(true);
+
+      const scheduleData = {
+        price: values.price,
+        startDate: values.startDate?.toISOString(),
+        endDate: values.endDate?.toISOString(),
+        isActive: values.isActive !== undefined ? values.isActive : true,
+        note: values.note
+      };
+
+      if (editingSchedule) {
+        // Update existing schedule
+        await servicesService.updatePriceSchedule(
+          serviceId,
+          selectedAddOnForPrice._id,
+          editingSchedule._id,
+          scheduleData
+        );
+        toastService.success('Cập nhật lịch giá thành công!');
+      } else {
+        // Add new schedule
+        await servicesService.addPriceSchedule(
+          serviceId,
+          selectedAddOnForPrice._id,
+          scheduleData
+        );
+        toastService.success('Thêm lịch giá thành công!');
+      }
+
+      // Refresh service data and update selectedAddOnForPrice
+      await fetchServiceDetails();
+      
+      // Update selectedAddOnForPrice with fresh data
+      const updatedService = await servicesService.getServiceById(serviceId);
+      const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
+      if (updatedAddOn) {
+        setSelectedAddOnForPrice(updatedAddOn);
+      }
+      
+      setShowAddScheduleModal(false);
+      setShowEditScheduleModal(false);
+      priceScheduleForm.resetFields();
+    } catch (error) {
+      toastService.error('Lỗi: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
+  // Delete price schedule
+  const handleDeletePriceSchedule = async (schedule) => {
+    try {
+      await servicesService.deletePriceSchedule(
+        serviceId,
+        selectedAddOnForPrice._id,
+        schedule._id
+      );
+      toastService.success('Xóa lịch giá thành công!');
+      
+      // Refresh service data and update selectedAddOnForPrice
+      await fetchServiceDetails();
+      
+      const updatedService = await servicesService.getServiceById(serviceId);
+      const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
+      if (updatedAddOn) {
+        setSelectedAddOnForPrice(updatedAddOn);
+      }
+    } catch (error) {
+      toastService.error('Lỗi: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  // Toggle price schedule status
+  const handleTogglePriceSchedule = async (schedule) => {
+    try {
+      await servicesService.togglePriceScheduleStatus(
+        serviceId,
+        selectedAddOnForPrice._id,
+        schedule._id
+      );
+      toastService.success('Cập nhật trạng thái lịch giá thành công!');
+      
+      // Refresh service data and update selectedAddOnForPrice
+      await fetchServiceDetails();
+      
+      const updatedService = await servicesService.getServiceById(serviceId);
+      const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
+      if (updatedAddOn) {
+        setSelectedAddOnForPrice(updatedAddOn);
+      }
+    } catch (error) {
+      toastService.error('Lỗi: ' + (error.response?.data?.message || error.message));
+    }
   };
 
 
@@ -432,11 +685,41 @@ const EditService = () => {
                 title: 'Giá',
                 dataIndex: 'price',
                 key: 'price',
-                render: (price) => (
-                  <Text strong style={{ color: '#52c41a' }}>
-                    {new Intl.NumberFormat('vi-VN').format(price)}đ
-                  </Text>
-                ),
+                render: (price, record) => {
+                  // Show effective price with promotion badge
+                  const effectivePrice = record.effectivePrice || price;
+                  const isPriceModified = record.isPriceModified;
+                  
+                  return (
+                    <div>
+                      {isPriceModified ? (
+                        <>
+                          <div>
+                            <Text 
+                              delete 
+                              type="secondary" 
+                              style={{ fontSize: 12 }}
+                            >
+                              {formatPrice(record.basePrice || price)}
+                            </Text>
+                          </div>
+                          <div>
+                            <Text strong style={{ color: '#ff4d4f', fontSize: 16 }}>
+                              {formatPrice(effectivePrice)}
+                            </Text>
+                            <Tag color="red" style={{ marginLeft: 8, fontSize: 10 }}>
+                              🎉 KM
+                            </Tag>
+                          </div>
+                        </>
+                      ) : (
+                        <Text strong style={{ color: '#52c41a' }}>
+                          {formatPrice(price)}
+                        </Text>
+                      )}
+                    </div>
+                  );
+                },
               },
               {
                 title: 'Thời gian',
@@ -466,9 +749,16 @@ const EditService = () => {
               {
                 title: 'Thao tác',
                 key: 'actions',
-                width: 180,
+                width: 220,
                 render: (_, record) => (
                   <Space>
+                    <Button
+                      type="text"
+                      icon={<DollarOutlined />}
+                      onClick={() => handleManagePriceSchedule(record)}
+                      size="small"
+                      title="Quản lý giá"
+                    />
                     <Button
                       type="text"
                       icon={<EditOutlined />}
@@ -548,6 +838,395 @@ const EditService = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* 🆕 Price Schedule Management Modal */}
+      <Modal
+        title={`Quản lý lịch giá - ${selectedAddOnForPrice?.name || ''}`}
+        open={showPriceScheduleModal}
+        onCancel={() => setShowPriceScheduleModal(false)}
+        footer={[
+          <Button key="close" onClick={() => setShowPriceScheduleModal(false)}>
+            Đóng
+          </Button>
+        ]}
+        width={900}
+      >
+        {selectedAddOnForPrice && (
+          <div>
+            <div style={{ marginBottom: 16 }}>
+              <Space>
+                <Text strong>Giá gốc:</Text>
+                <Text style={{ color: '#52c41a', fontSize: 16 }}>
+                  {formatPrice(selectedAddOnForPrice.basePrice || selectedAddOnForPrice.price)}
+                </Text>
+                {selectedAddOnForPrice.isPriceModified && (
+                  <>
+                    <Text strong style={{ marginLeft: 16 }}>Giá hiệu lực:</Text>
+                    <Text style={{ color: '#ff4d4f', fontSize: 16 }}>
+                      {formatPrice(selectedAddOnForPrice.effectivePrice)}
+                    </Text>
+                    <Tag color="red">🎉 Đang khuyến mãi</Tag>
+                  </>
+                )}
+              </Space>
+            </div>
+
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={handleAddPriceSchedule}
+              style={{ marginBottom: 16 }}
+            >
+              Thêm lịch giá mới
+            </Button>
+
+            <Table
+              dataSource={selectedAddOnForPrice.priceSchedules || []}
+              rowKey="_id"
+              size="small"
+              pagination={false}
+              columns={[
+                {
+                  title: 'Giá áp dụng',
+                  dataIndex: 'price',
+                  key: 'price',
+                  render: (price) => (
+                    <Text strong style={{ color: '#ff4d4f' }}>
+                      {formatPrice(price)}
+                    </Text>
+                  )
+                },
+                {
+                  title: 'Ngày bắt đầu',
+                  dataIndex: 'startDate',
+                  key: 'startDate',
+                  render: (date) => dayjs(date).format('DD/MM/YYYY')
+                },
+                {
+                  title: 'Ngày kết thúc',
+                  dataIndex: 'endDate',
+                  key: 'endDate',
+                  render: (date) => dayjs(date).format('DD/MM/YYYY')
+                },
+                {
+                  title: 'Trạng thái',
+                  dataIndex: 'isActive',
+                  key: 'isActive',
+                  render: (isActive) => (
+                    <Tag color={isActive ? 'green' : 'red'}>
+                      {isActive ? 'Đang áp dụng' : 'Tạm ngưng'}
+                    </Tag>
+                  )
+                },
+                {
+                  title: 'Ghi chú',
+                  dataIndex: 'note',
+                  key: 'note',
+                  render: (note) => note || '-'
+                },
+                {
+                  title: 'Thao tác',
+                  key: 'actions',
+                  width: 150,
+                  render: (_, record) => (
+                    <Space>
+                      <Button
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEditPriceSchedule(record)}
+                        size="small"
+                      />
+                      <Switch
+                        size="small"
+                        checked={record.isActive}
+                        onChange={() => handleTogglePriceSchedule(record)}
+                      />
+                      <Popconfirm
+                        title="Xác nhận xóa lịch giá?"
+                        description="Hành động này không thể hoàn tác!"
+                        onConfirm={() => handleDeletePriceSchedule(record)}
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        okType="danger"
+                      >
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          size="small"
+                        />
+                      </Popconfirm>
+                    </Space>
+                  )
+                }
+              ]}
+            />
+          </div>
+        )}
+      </Modal>
+
+      {/* 🆕 Add/Edit Price Schedule Modal */}
+      <Modal
+        title={editingSchedule ? "Chỉnh sửa lịch giá" : "Thêm lịch giá mới"}
+        open={showAddScheduleModal || showEditScheduleModal}
+        onOk={handleSavePriceSchedule}
+        onCancel={() => {
+          setShowAddScheduleModal(false);
+          setShowEditScheduleModal(false);
+          setSelectedStartDate(null);
+          setDateAnalysis(null);
+          priceScheduleForm.resetFields();
+        }}
+        okText={editingSchedule ? "Cập nhật" : "Thêm"}
+        cancelText="Hủy"
+        confirmLoading={scheduleLoading}
+        width={700}
+      >
+        {/* Show date analysis info */}
+        {dateAnalysis && !editingSchedule && (
+          <Alert
+            type="info"
+            message="Hướng dẫn chọn ngày"
+            description={
+              <div>
+                <Text>• Ngày bắt đầu tối thiểu: <strong>{dateAnalysis.minStartDate.format('DD/MM/YYYY')}</strong></Text>
+                <br />
+                {dateAnalysis.gaps.length > 0 && (
+                  <>
+                    <Text strong style={{ color: '#52c41a' }}>• Khoảng trống có thể sử dụng:</Text>
+                    <ul style={{ marginTop: 4, marginBottom: 0 }}>
+                      {dateAnalysis.gaps.map((gap, idx) => (
+                        <li key={idx}>
+                          <Text strong>{gap.start.format('DD/MM/YYYY')}</Text>
+                          {gap.end ? (
+                            <>
+                              {' - '}
+                              <Text strong>{gap.end.format('DD/MM/YYYY')}</Text>
+                              <Text type="secondary"> ({gap.days} ngày)</Text>
+                            </>
+                          ) : (
+                            <Text type="secondary"> trở đi (không giới hạn)</Text>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {dateAnalysis.schedules.length > 0 && (
+                  <>
+                    <br />
+                    <Text type="secondary">• Các khung giá hiện tại (không thể chọn):</Text>
+                    <ul style={{ marginTop: 4, marginBottom: 0 }}>
+                      {dateAnalysis.schedules.map((sch, idx) => (
+                        <li key={idx}>
+                          <Text type="secondary">
+                            {sch.start.format('DD/MM/YYYY')} - {sch.end.format('DD/MM/YYYY')}
+                          </Text>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            }
+            style={{ marginBottom: 16 }}
+            showIcon
+          />
+        )}
+
+        <Form
+          form={priceScheduleForm}
+          layout="vertical"
+          initialValues={{
+            isActive: true
+          }}
+        >
+          <Form.Item
+            name="price"
+            label="Giá áp dụng (VNĐ)"
+            rules={[
+              { required: true, message: 'Vui lòng nhập giá' },
+              { type: 'number', min: 0, message: 'Giá phải lớn hơn hoặc bằng 0' }
+            ]}
+          >
+            <InputNumber
+              placeholder="Nhập giá áp dụng"
+              style={{ width: '100%' }}
+              formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={value => value.replace(/\$\s?|(,*)/g, '')}
+            />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="startDate"
+                label="Ngày bắt đầu"
+                rules={[
+                  { required: true, message: 'Vui lòng chọn ngày bắt đầu' },
+                  () => ({
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      
+                      // Must be after today
+                      const tomorrow = dayjs().add(1, 'day').startOf('day');
+                      if (value.isBefore(tomorrow, 'day')) {
+                        return Promise.reject(new Error('Ngày bắt đầu phải sau ngày hôm nay ít nhất 1 ngày'));
+                      }
+
+                      // Check if date falls within existing schedule range
+                      if (dateAnalysis?.schedules) {
+                        for (const sch of dateAnalysis.schedules) {
+                          if (value.isSameOrAfter(sch.start, 'day') && value.isSameOrBefore(sch.end, 'day')) {
+                            return Promise.reject(
+                              new Error(`Ngày này nằm trong lịch giá đã tồn tại (${sch.start.format('DD/MM/YYYY')} - ${sch.end.format('DD/MM/YYYY')})`)
+                            );
+                          }
+                        }
+                      }
+
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
+              >
+                <DatePicker 
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày bắt đầu"
+                  style={{ width: '100%' }}
+                  defaultPickerValue={dateAnalysis?.suggestedStartDate}
+                  disabledDate={(current) => {
+                    if (!current) return false;
+                    
+                    // Disable dates before tomorrow
+                    const tomorrow = dayjs().add(1, 'day').startOf('day');
+                    if (current.isBefore(tomorrow, 'day')) {
+                      return true;
+                    }
+
+                    // Disable dates that fall within existing schedules
+                    if (dateAnalysis?.schedules) {
+                      for (const sch of dateAnalysis.schedules) {
+                        if (current.isSameOrAfter(sch.start, 'day') && current.isSameOrBefore(sch.end, 'day')) {
+                          return true;
+                        }
+                      }
+                    }
+
+                    return false;
+                  }}
+                  onChange={(date) => {
+                    setSelectedStartDate(date);
+                    // Clear end date when start date changes
+                    priceScheduleForm.setFieldsValue({ endDate: null });
+                  }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="endDate"
+                label="Ngày kết thúc"
+                rules={[
+                  { required: true, message: 'Vui lòng chọn ngày kết thúc' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const startDate = getFieldValue('startDate');
+                      
+                      if (!value) return Promise.resolve();
+                      
+                      // Must select start date first
+                      if (!startDate) {
+                        return Promise.reject(new Error('Vui lòng chọn ngày bắt đầu trước'));
+                      }
+                      
+                      // End must be >= start (can be equal for single-day schedule)
+                      if (value.isBefore(startDate, 'day')) {
+                        return Promise.reject(new Error('Ngày kết thúc không được trước ngày bắt đầu'));
+                      }
+
+                      // Check if end date crosses into THE NEXT schedule only
+                      if (dateAnalysis?.schedules) {
+                        // Find the nearest schedule AFTER selected start date
+                        const nextSchedule = dateAnalysis.schedules.find(sch => 
+                          sch.start.isAfter(startDate, 'day')
+                        );
+                        
+                        if (nextSchedule) {
+                          // Only check against this next schedule
+                          if (value.isSameOrAfter(nextSchedule.start, 'day')) {
+                            return Promise.reject(
+                              new Error(`Ngày kết thúc không được chạm vào lịch giá tiếp theo (bắt đầu ${nextSchedule.start.format('DD/MM/YYYY')})`)
+                            );
+                          }
+                        }
+                        // If no next schedule, endDate can be any date after startDate
+                      }
+
+                      return Promise.resolve();
+                    },
+                  })
+                ]}
+              >
+                <DatePicker 
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày kết thúc"
+                  style={{ width: '100%' }}
+                  disabled={!selectedStartDate}
+                  defaultPickerValue={selectedStartDate}
+                  disabledDate={(current) => {
+                    if (!current || !selectedStartDate) return true;
+                    
+                    // Can select same day as start date (for single-day schedule)
+                    if (current.isBefore(selectedStartDate, 'day')) {
+                      return true;
+                    }
+
+                    // Find the nearest next schedule after selected start date
+                    if (dateAnalysis?.schedules) {
+                      const nextSchedule = dateAnalysis.schedules.find(sch => 
+                        sch.start.isAfter(selectedStartDate, 'day')
+                      );
+                      
+                      if (nextSchedule) {
+                        // Disable dates on or after the next schedule's start
+                        if (current.isSameOrAfter(nextSchedule.start, 'day')) {
+                          return true;
+                        }
+                      }
+                    }
+
+                    return false;
+                  }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            name="note"
+            label="Ghi chú"
+          >
+            <Input.TextArea
+              placeholder="Ghi chú cho lịch giá (VD: Khuyến mãi Tết, Giảm giá mùa hè...)"
+              rows={3}
+              maxLength={500}
+              showCount
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="isActive"
+            label="Trạng thái"
+            valuePropName="checked"
+          >
+            <Switch 
+              checkedChildren="Đang áp dụng" 
+              unCheckedChildren="Tạm ngưng" 
+            />
+          </Form.Item>
+        </Form>
       </Modal>
 
     </div>
