@@ -398,6 +398,10 @@ const RoomList = () => {
               <Select
                 placeholder="Chọn loại phòng"
                 allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
                 value={roomTypeFilter}
                 onChange={(value) => {
                   setRoomTypeFilter(value || '');
@@ -427,6 +431,10 @@ const RoomList = () => {
               <Select
                 placeholder="Chọn cấu trúc"
                 allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
                 value={structureFilter}
                 onChange={(value) => {
                   setStructureFilter(value || '');
