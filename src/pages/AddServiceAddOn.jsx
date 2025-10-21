@@ -297,8 +297,8 @@ const AddServiceAddOn = () => {
                   accept="image/*"
                 >
                   <div style={{
-                    width: '100%',
-                    height: '180px',
+                    width: '200px',
+                    height: '200px',
                     border: '2px dashed #d9d9d9',
                     borderRadius: '8px',
                     display: 'flex',
@@ -308,6 +308,7 @@ const AddServiceAddOn = () => {
                     cursor: 'pointer',
                     backgroundColor: '#fafafa',
                     transition: 'border-color 0.3s',
+                    margin: '0 auto',
                     ':hover': {
                       borderColor: '#1890ff'
                     }
