@@ -56,8 +56,8 @@ const PatientManagement = () => {
       setLoading(true);
       const response = await userService.getAllPatients(1, 1000);
       
-      if (response.success) {
-        const patientData = response.data.users || [];
+      if (response.success && response.data) {
+        const patientData = response.data.users || response.data || [];
         setPatients(patientData);
         setFilteredPatients(patientData);
       }

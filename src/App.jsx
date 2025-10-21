@@ -90,6 +90,8 @@ import CreateAppointment from './pages/Patient/CreateAppointment.jsx';
 import PatientHomePage from './pages/Patient/HomePage.jsx';
 import PatientProfile from './pages/Patient/PatientProfile.jsx';
 import PatientAppointments from './pages/Patient/PatientAppointments.jsx';
+import PatientRecords from './pages/Patient/PatientRecords.jsx';
+import PatientInvoices from './pages/Patient/PatientInvoices.jsx';
 import PaymentSelection from './pages/Patient/PaymentSelection.jsx';
 import PaymentResult from './pages/Patient/PaymentResult.jsx';
 import VisaPayment from './pages/Patient/VisaPayment.jsx';
@@ -235,6 +237,16 @@ function App() {
             <Route path="appointments" element={
               <ProtectedRoute roles={['patient']}>
                 <PatientAppointments />
+              </ProtectedRoute>
+            } />
+            <Route path="records" element={
+              <ProtectedRoute roles={['patient']}>
+                <PatientRecords />
+              </ProtectedRoute>
+            } />
+            <Route path="invoices" element={
+              <ProtectedRoute roles={['patient']}>
+                <PatientInvoices />
               </ProtectedRoute>
             } />
             <Route path="settings" element={

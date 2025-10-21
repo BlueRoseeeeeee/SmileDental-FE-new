@@ -38,7 +38,7 @@ api.interceptors.response.use(
 
 class InvoiceService {
   /**
-   * Get all invoices with filters
+   * Get all invoices with filters (Admin/Staff only)
    * @param {Object} params - Filter parameters
    * @returns {Promise<Object>} { success, data: { invoices: [...], pagination: {...} } }
    */
@@ -48,6 +48,21 @@ class InvoiceService {
       return response.data;
     } catch (error) {
       console.error('getAllInvoices error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get invoices for current patient (Patient only)
+   * @param {Object} params - Filter parameters (status, dateFrom, dateTo, paymentMethod, page, limit)
+   * @returns {Promise<Object>} { success, data: { invoices: [...], pagination: {...} } }
+   */
+  async getMyInvoices(params = {}) {
+    try {
+      const response = await api.get('/my-invoices', { params });
+      return response.data;
+    } catch (error) {
+      console.error('getMyInvoices error:', error);
       throw error;
     }
   }

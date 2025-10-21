@@ -51,9 +51,28 @@ const appointmentService = {
     return response.data;
   },
 
+  // Create offline appointment (walk-in) - tạo trực tiếp, không qua payment
+  createOfflineAppointment: async (appointmentData) => {
+    console.log('🚀 [appointmentService] Sending createOfflineAppointment request:', JSON.stringify(appointmentData, null, 2));
+    const response = await appointmentApi.post('/appointment/create-offline', appointmentData);
+    return response.data;
+  },
+
   // Tạo appointment mới (reserve/book) - Legacy method
   createAppointment: async (appointmentData) => {
     const response = await appointmentApi.post('/appointment/reserve', appointmentData);
+    return response.data;
+  },
+
+  // Lấy danh sách appointments của patient hiện tại
+  getMyAppointments: async (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.status) queryParams.append('status', params.status);
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+
+    const url = `/appointment/my-appointments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await appointmentApi.get(url);
     return response.data;
   },
 
@@ -83,13 +102,29 @@ const appointmentService = {
 
   // Hủy appointment
   cancelAppointment: async (appointmentId, reason) => {
-    const response = await appointmentApi.patch(`/appointment/${appointmentId}/cancel`, {
-      cancelReason: reason
+    const response = await appointmentApi.post(`/appointment/${appointmentId}/cancel`, {
+      reason: reason
     });
     return response.data;
   },
 
-  // Cập nhật trạng thái appointment
+  // Check-in appointment
+  checkInAppointment: async (appointmentId, notes = '') => {
+    const response = await appointmentApi.post(`/appointment/${appointmentId}/check-in`, {
+      notes
+    });
+    return response.data;
+  },
+
+  // Complete appointment
+  completeAppointment: async (appointmentId, notes = '') => {
+    const response = await appointmentApi.post(`/appointment/${appointmentId}/complete`, {
+      notes
+    });
+    return response.data;
+  },
+
+  // Cập nhật trạng thái appointment (deprecated - use specific methods above)
   updateAppointmentStatus: async (appointmentId, status, notes) => {
     const response = await appointmentApi.patch(`/appointment/${appointmentId}/status`, {
       status,
@@ -100,17 +135,27 @@ const appointmentService = {
 
   // Lấy tất cả appointments (Admin/Manager)
   getAllAppointments: async (params = {}) => {
-    const queryParams = new URLSearchParams();
-    if (params.status) queryParams.append('status', params.status);
-    if (params.dentistId) queryParams.append('dentistId', params.dentistId);
-    if (params.startDate) queryParams.append('startDate', params.startDate);
-    if (params.endDate) queryParams.append('endDate', params.endDate);
-    if (params.page) queryParams.append('page', params.page);
-    if (params.limit) queryParams.append('limit', params.limit);
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.status) queryParams.append('status', params.status);
+      if (params.dentistId) queryParams.append('dentistId', params.dentistId);
+      if (params.startDate) queryParams.append('startDate', params.startDate);
+      if (params.endDate) queryParams.append('endDate', params.endDate);
+      if (params.page) queryParams.append('page', params.page);
+      if (params.limit) queryParams.append('limit', params.limit);
 
-    const url = `/appointment${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    const response = await appointmentApi.get(url);
-    return response.data;
+      const url = `/appointment${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      console.log('🔵 [AppointmentService] Calling getAllAppointments:', url);
+      
+      const response = await appointmentApi.get(url);
+      console.log('🟢 [AppointmentService] getAllAppointments response:', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error('🔴 [AppointmentService] getAllAppointments error:', error);
+      console.error('Error response:', error.response?.data);
+      throw error;
+    }
   },
 
   // Check-in appointment

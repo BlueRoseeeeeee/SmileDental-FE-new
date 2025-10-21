@@ -24,7 +24,9 @@ import {
   message,
   Modal,
   Typography,
-  Drawer
+  Drawer,
+  Row,
+  Col
 } from 'antd';
 import {
   FileTextOutlined,

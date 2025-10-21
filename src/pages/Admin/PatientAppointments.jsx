@@ -70,29 +70,49 @@ const PatientAppointments = () => {
   const fetchDentists = async () => {
     try {
       const response = await userService.getAllStaff(1, 1000);
-      if (response.success) {
-        const dentistList = response.data.users?.filter(u => u.role === 'dentist') || [];
+      if (response.success && response.data) {
+        const dentistList = (response.data.users || response.data)?.filter(u => u.role === 'dentist') || [];
         setDentists(dentistList);
       }
     } catch (error) {
       console.error('Error fetching dentists:', error);
+      setDentists([]);
     }
   };
 
   const fetchAllAppointments = async () => {
     try {
+      console.log('🔄 [Admin] Fetching all appointments...');
       setLoading(true);
       const response = await appointmentService.getAllAppointments();
       
+      console.log('📥 [Admin] Appointments response:', response);
+      
       if (response.success) {
-        const appointmentData = response.data || [];
+        // Backend trả về { appointments: [], total, page, limit, totalPages }
+        const appointmentData = response.data?.appointments || [];
+        console.log('✅ [Admin] Appointments loaded:', appointmentData.length, 'items');
+        console.log('📊 [Admin] Pagination info:', {
+          total: response.data?.total,
+          page: response.data?.page,
+          totalPages: response.data?.totalPages
+        });
         setAppointments(appointmentData);
         setFilteredAppointments(appointmentData);
         const uniqueRooms = [...new Set(appointmentData.map(apt => apt.roomName).filter(Boolean))];
         setRooms(uniqueRooms.map(name => ({ name })));
+      } else {
+        console.warn('⚠️ [Admin] Response not successful:', response);
+        setAppointments([]);
+        setFilteredAppointments([]);
       }
     } catch (error) {
-      console.error('Error fetching appointments:', error);
+      console.error('❌ [Admin] Error fetching appointments:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       message.error('Không thể tải danh sách lịch hẹn');
       setAppointments([]);
       setFilteredAppointments([]);
@@ -167,6 +187,28 @@ const PatientAppointments = () => {
     setDrawerVisible(true);
   };
 
+  const handleCheckIn = async (appointmentId) => {
+    try {
+      await appointmentService.checkInAppointment(appointmentId);
+      message.success('Check-in thành công');
+      fetchAllAppointments(); // Reload data
+    } catch (error) {
+      console.error('Error checking in appointment:', error);
+      message.error(error.response?.data?.message || 'Không thể check-in');
+    }
+  };
+
+  const handleComplete = async (appointmentId) => {
+    try {
+      await appointmentService.completeAppointment(appointmentId);
+      message.success('Hoàn thành lịch hẹn thành công');
+      fetchAllAppointments(); // Reload data
+    } catch (error) {
+      console.error('Error completing appointment:', error);
+      message.error(error.response?.data?.message || 'Không thể hoàn thành lịch hẹn');
+    }
+  };
+
   const getStatusTag = (status) => {
     const statusConfig = {
       'confirmed': { color: 'blue', text: 'Đã xác nhận', icon: <CheckCircleOutlined /> },
@@ -189,74 +231,52 @@ const PatientAppointments = () => {
       title: 'Mã lịch hẹn',
       dataIndex: 'appointmentCode',
       key: 'appointmentCode',
-      width: 150,
-      fixed: 'left',
-      render: (code) => <Text strong>{code}</Text>
+      width: 130,
+      render: (code) => <Text strong style={{ fontSize: 12 }}>{code}</Text>
     },
     {
       title: 'Bệnh nhân',
       key: 'patient',
-      width: 200,
+      width: 150,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{record.patientInfo?.name}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            <PhoneOutlined /> {record.patientInfo?.phone}
+          <Text strong style={{ fontSize: 12 }}>{record.patientInfo?.name}</Text>
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            {record.patientInfo?.phone}
           </Text>
         </Space>
       )
     },
     {
-      title: 'Ngày khám',
-      dataIndex: 'appointmentDate',
-      key: 'appointmentDate',
-      width: 120,
+      title: 'Ngày & Giờ',
+      key: 'datetime',
+      width: 130,
       sorter: (a, b) => dayjs(a.appointmentDate).unix() - dayjs(b.appointmentDate).unix(),
-      render: (date) => (
+      render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {dayjs(date).format('dddd')}
+          <Text style={{ fontSize: 12 }}>{dayjs(record.appointmentDate).format('DD/MM/YYYY')}</Text>
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            {record.startTime} - {record.endTime}
           </Text>
         </Space>
-      )
-    },
-    {
-      title: 'Giờ khám',
-      key: 'time',
-      width: 100,
-      render: (_, record) => (
-        <Text>
-          <ClockCircleOutlined /> {record.startTime} - {record.endTime}
-        </Text>
       )
     },
     {
       title: 'Nha sĩ',
       dataIndex: 'dentistName',
       key: 'dentistName',
-      width: 150,
-      render: (name) => <Text><UserOutlined /> {name}</Text>
-    },
-    {
-      title: 'Phòng',
-      dataIndex: 'roomName',
-      key: 'roomName',
       width: 120,
-      render: (name) => <Tag icon={<HomeOutlined />} color="purple">{name}</Tag>
+      render: (name) => <Text style={{ fontSize: 12 }}>{name}</Text>
     },
     {
       title: 'Dịch vụ',
       key: 'service',
-      width: 200,
+      width: 180,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <Space>
-            {getServiceTypeTag(record.serviceType)}
-            <Text>{record.serviceName}</Text>
-          </Space>
+          <Text style={{ fontSize: 12 }}>{record.serviceName}</Text>
           {record.serviceAddOnName && (
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text type="secondary" style={{ fontSize: 11 }}>
               + {record.serviceAddOnName}
             </Text>
           )}
@@ -267,29 +287,50 @@ const PatientAppointments = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 130,
+      width: 110,
       render: (status) => getStatusTag(status)
-    },
-    {
-      title: 'Số tiền',
-      dataIndex: 'totalAmount',
-      key: 'totalAmount',
-      width: 120,
-      render: (amount) => (
-        <Text strong style={{ color: '#52c41a' }}>
-          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)}
-        </Text>
-      )
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 100,
-      fixed: 'right',
+      width: 120,
       render: (_, record) => (
-        <Button type="link" icon={<EyeOutlined />} onClick={() => showAppointmentDetails(record)}>
-          Chi tiết
-        </Button>
+        <Space direction="vertical" size={2} style={{ width: '100%' }}>
+          <Button 
+            type="link" 
+            icon={<EyeOutlined />} 
+            onClick={() => showAppointmentDetails(record)}
+            size="small"
+            block
+            style={{ padding: '0 4px', height: 24 }}
+          >
+            Chi tiết
+          </Button>
+          {record.status === 'confirmed' && (
+            <Button 
+              type="primary" 
+              icon={<CheckCircleOutlined />} 
+              onClick={() => handleCheckIn(record._id)}
+              size="small"
+              block
+              style={{ height: 24, fontSize: 11 }}
+            >
+              Check-in
+            </Button>
+          )}
+          {record.status === 'checked-in' && (
+            <Button 
+              type="primary" 
+              icon={<CheckCircleOutlined />} 
+              onClick={() => handleComplete(record._id)}
+              size="small"
+              block
+              style={{ height: 24, fontSize: 11, backgroundColor: '#52c41a' }}
+            >
+              Hoàn thành
+            </Button>
+          )}
+        </Space>
       )
     }
   ];
@@ -387,7 +428,7 @@ const PatientAppointments = () => {
           dataSource={filteredAppointments}
           rowKey="_id"
           loading={loading}
-          scroll={{ x: 1500, y: 600 }}
+          scroll={{ x: 1000, y: 600 }}
           pagination={{
             total: filteredAppointments.length,
             pageSize: 20,

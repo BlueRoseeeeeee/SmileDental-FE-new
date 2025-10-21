@@ -39,7 +39,8 @@ const BookingSelectService = () => {
   const { user, isAuthenticated } = useAuth(); // Get current user and auth status
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
-  const [unusedServices, setUnusedServices] = useState([]); // Services from doctor recommendations
+  const [unusedServices, setUnusedServices] = useState([]); // Services from doctor recommendations (exam records)
+  const [patientRecords, setPatientRecords] = useState([]); // All exam records with unused indications
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [selectedType, setSelectedType] = useState('all'); // 'all', 'Khám', 'Điều trị'
@@ -96,6 +97,23 @@ const BookingSelectService = () => {
       
       if (response.success && response.data) {
         setUnusedServices(response.data);
+        
+        // Also fetch full records to get recordId for each service
+        const recordsResponse = await recordService.getRecordsByPatient(user._id, 100);
+        console.log('📋 Patient exam records:', recordsResponse);
+        
+        if (recordsResponse.success && recordsResponse.data) {
+          // Filter only exam records with unused indications
+          const examRecordsWithUnused = recordsResponse.data.filter(record => 
+            record.type === 'exam' && 
+            !record.hasBeenUsed &&
+            record.treatmentIndications && 
+            record.treatmentIndications.length > 0 &&
+            record.treatmentIndications.some(ind => !ind.used)
+          );
+          setPatientRecords(examRecordsWithUnused);
+          console.log('📋 Exam records with unused indications:', examRecordsWithUnused);
+        }
       }
     } catch (error) {
       console.error('Error fetching unused services:', error);
@@ -128,6 +146,26 @@ const BookingSelectService = () => {
       filtered = filtered.filter(service => recommendedIds.has(service._id.toString()));
     }
 
+    // ⭐ Filter services based on requireExamFirst
+    if (isAuthenticated && user?._id) {
+      filtered = filtered.filter(service => {
+        // If service doesn't require exam first, always show it
+        if (!service.requireExamFirst) {
+          return true;
+        }
+        
+        // If service requires exam first, check if patient has unused indication for it
+        const hasUnusedIndication = unusedServices.some(
+          unused => unused.serviceId.toString() === service._id.toString()
+        );
+        
+        return hasUnusedIndication;
+      });
+    } else {
+      // If not authenticated, only show services that don't require exam first
+      filtered = filtered.filter(service => !service.requireExamFirst);
+    }
+
     // Filter by type
     if (type !== 'all') {
       filtered = filtered.filter(service => service.type === type);
@@ -148,9 +186,36 @@ const BookingSelectService = () => {
     return unusedServices.some(s => s.serviceId.toString() === serviceId.toString());
   };
 
+  // ⭐ Get recordId for a service (find the exam record that has unused indication for this service)
+  const getRecordIdForService = (serviceId) => {
+    for (const record of patientRecords) {
+      const hasIndicationForService = record.treatmentIndications?.some(
+        ind => ind.serviceId.toString() === serviceId.toString() && !ind.used
+      );
+      if (hasIndicationForService) {
+        return record._id;
+      }
+    }
+    return null;
+  };
+
   const handleSelectService = (service) => {
     // Lưu service vào localStorage
     localStorage.setItem('booking_service', JSON.stringify(service));
+    
+    // ⭐ If service requires exam first, save the recordId to update hasBeenUsed later
+    if (service.requireExamFirst) {
+      const recordId = getRecordIdForService(service._id);
+      if (recordId) {
+        localStorage.setItem('booking_examRecordId', recordId);
+        console.log('💾 Saved exam record ID for later update:', recordId);
+      } else {
+        console.warn('⚠️ Service requires exam first but no record found!');
+      }
+    } else {
+      // Clear any previous recordId
+      localStorage.removeItem('booking_examRecordId');
+    }
     
     // Nếu service có addons -> navigate đến select-addon
     // Nếu không có addons -> skip sang select-dentist

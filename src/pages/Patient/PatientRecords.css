@@ -1,0 +1,11 @@
+.patient-records-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .patient-records-page {
+    padding: 16px;
+  }
+}

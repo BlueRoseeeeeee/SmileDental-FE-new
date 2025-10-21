@@ -1,0 +1,617 @@
+/**
+ * Walk-In Appointment Form Component
+ * 
+ * Tạo lịch hẹn cho bệnh nhân đến phòng khám trực tiếp
+ * Flow:
+ * 1. Tìm kiếm bệnh nhân có tài khoản (phone/email/name) hoặc nhập thông tin mới
+ * 2. Chọn dịch vụ, nha sĩ, ngày, slot
+ * 3. Tạo appointment + check-in ngay (tạo record tự động)
+ */
+
+import React, { useState, useEffect } from 'react';
+import {
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Button,
+  Space,
+  Card,
+  Row,
+  Col,
+  Typography,
+  Tag,
+  message,
+  Spin,
+  Divider,
+  Steps,
+  Alert,
+  InputNumber
+} from 'antd';
+import {
+  UserAddOutlined,
+  SearchOutlined,
+  MedicineBoxOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  UserOutlined
+} from '@ant-design/icons';
+import dayjs from 'dayjs';
+import userService from '../../services/userService';
+import { servicesService } from '../../services/servicesService';
+import slotService from '../../services/slotService';
+import appointmentService from '../../services/appointmentService';
+
+const { Title, Text } = Typography;
+const { Option } = Select;
+const { TextArea } = Input;
+
+const WalkInAppointmentForm = ({ onSuccess }) => {
+  const [form] = Form.useForm();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  
+  // Patient search
+  const [searchType, setSearchType] = useState('phone'); // phone, email, name
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isNewPatient, setIsNewPatient] = useState(false);
+  
+  // Services & Dentists
+  const [services, setServices] = useState([]);
+  const [dentists, setDentists] = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
+  const [selectedDentist, setSelectedDentist] = useState(null);
+  
+  // Slots
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [selectedSlots, setSelectedSlots] = useState([]);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    loadServices();
+    loadDentists();
+  }, []);
+
+  // Search patient
+  const handleSearchPatient = async () => {
+    const searchValue = form.getFieldValue('searchValue');
+    if (!searchValue || searchValue.trim() === '') {
+      message.warning('Vui lòng nhập thông tin tìm kiếm');
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const response = await userService.getAllPatients(1, 100);
+      if (response.success && response.data) {
+        const allPatients = response.data.users || response.data || [];
+        
+        const results = allPatients.filter(patient => {
+          const value = searchValue.toLowerCase().trim();
+          switch (searchType) {
+            case 'phone':
+              return patient.phoneNumber?.includes(value);
+            case 'email':
+              return patient.email?.toLowerCase().includes(value);
+            case 'name':
+              return patient.fullName?.toLowerCase().includes(value);
+            default:
+              return false;
+          }
+        });
+
+        setSearchResults(results);
+        
+        if (results.length === 0) {
+          message.info('Không tìm thấy bệnh nhân. Vui lòng nhập thông tin mới.');
+          setIsNewPatient(true);
+        } else {
+          message.success(`Tìm thấy ${results.length} bệnh nhân`);
+        }
+      }
+    } catch (error) {
+      console.error('Error searching patient:', error);
+      message.error('Lỗi khi tìm kiếm bệnh nhân');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSelectPatient = (patientId) => {
+    const patient = searchResults.find(p => p._id === patientId);
+    if (patient) {
+      setSelectedPatient(patient);
+      setIsNewPatient(false);
+      form.setFieldsValue({
+        patientName: patient.fullName,
+        patientPhone: patient.phoneNumber,
+        patientEmail: patient.email,
+        patientBirthYear: patient.birthYear
+      });
+      message.success('Đã chọn bệnh nhân: ' + patient.fullName);
+    }
+  };
+
+  const handleCreateNewPatient = () => {
+    setIsNewPatient(true);
+    setSelectedPatient(null);
+    setSearchResults([]);
+    form.resetFields(['patientName', 'patientPhone', 'patientEmail', 'patientBirthYear']);
+    message.info('Vui lòng nhập thông tin bệnh nhân mới');
+  };
+
+  // Load services from API
+  const loadServices = async () => {
+    try {
+      const response = await servicesService.getAllServices();
+      if (response.success && response.data) {
+        const serviceData = response.data.services || response.data || [];
+        // Filter only active services
+        const activeServices = serviceData.filter(s => s.isActive);
+        setServices(activeServices);
+      }
+    } catch (error) {
+      console.error('Error loading services:', error);
+      message.error('Không thể tải danh sách dịch vụ');
+    }
+  };
+
+  // Load dentists from API
+  const loadDentists = async () => {
+    try {
+      const response = await userService.getAllStaff(1, 1000);
+      if (response.success && response.data) {
+        const staffData = response.data.users || response.data || [];
+        // Filter only dentists with active status
+        const dentistList = staffData.filter(s => s.role === 'dentist' && s.isActive);
+        setDentists(dentistList);
+      }
+    } catch (error) {
+      console.error('Error loading dentists:', error);
+      message.error('Không thể tải danh sách nha sỹ');
+    }
+  };
+
+  // Load available slots when service, dentist, and date are selected
+  useEffect(() => {
+    if (selectedService && selectedDate && selectedDentist) {
+      loadAvailableSlots();
+    }
+  }, [selectedService, selectedDate, selectedDentist]);
+
+  const loadAvailableSlots = async () => {
+    if (!selectedService || !selectedDentist || !selectedDate) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const dateStr = selectedDate.format('YYYY-MM-DD');
+      const response = await slotService.getDentistSlots(
+        selectedDentist._id,
+        selectedService._id,
+        dateStr
+      );
+
+      if (response.success && response.data) {
+        const slots = response.data.slots || response.data || [];
+        const available = slots.filter(s => s.status === 'available');
+        setAvailableSlots(available);
+        
+        if (available.length === 0) {
+          message.info('Không có slot trống trong ngày này');
+        }
+      } else {
+        setAvailableSlots([]);
+      }
+    } catch (error) {
+      console.error('Error loading slots:', error);
+      message.error('Không thể tải danh sách slot');
+      setAvailableSlots([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle service change
+  const handleServiceChange = (serviceId) => {
+    const service = services.find(s => s._id === serviceId);
+    setSelectedService(service);
+    setSelectedDentist(null);
+    setSelectedDate(null);
+    setAvailableSlots([]);
+    setSelectedSlots([]);
+    form.setFieldsValue({ 
+      dentistId: undefined, 
+      date: undefined, 
+      slots: undefined 
+    });
+  };
+
+  // Handle dentist change
+  const handleDentistChange = (dentistId) => {
+    const dentist = dentists.find(d => d._id === dentistId);
+    setSelectedDentist(dentist);
+    setSelectedDate(null);
+    setAvailableSlots([]);
+    setSelectedSlots([]);
+    form.setFieldsValue({ 
+      date: undefined, 
+      slots: undefined 
+    });
+  };
+
+  // Handle date change
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    setAvailableSlots([]);
+    setSelectedSlots([]);
+    form.setFieldsValue({ slots: undefined });
+  };
+
+  // Handle slot selection
+  const handleSlotSelect = (slotIds) => {
+    setSelectedSlots(slotIds);
+  };
+
+  // Calculate total cost
+  const calculateTotalCost = () => {
+    const serviceId = form.getFieldValue('serviceId');
+    const addOnId = form.getFieldValue('serviceAddOnId');
+    
+    let total = 0;
+    
+    const service = services.find(s => s._id === serviceId);
+    if (service) {
+      total += service.price;
+    }
+    
+    if (addOnId && service) {
+      const addOn = service.addOns.find(a => a._id === addOnId);
+      if (addOn) {
+        total += addOn.price;
+      }
+    }
+    
+    return total;
+  };
+
+  // Handle form submit - Create offline appointment and immediately check-in
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      setLoading(true);
+
+      // Prepare patient info
+      const patientInfo = {
+        name: values.patientName,
+        phone: values.patientPhone,
+        email: values.patientEmail || '',
+        birthYear: values.patientBirthYear
+      };
+
+      // Prepare appointment data
+      const appointmentData = {
+        patientId: selectedPatient?._id || null, // null for new walk-in patients
+        patientInfo: patientInfo,
+        serviceId: selectedService._id,
+        serviceName: selectedService.name,
+        serviceType: selectedService.type,
+        serviceAddOnId: values.serviceAddOnId || null,
+        dentistId: selectedDentist._id,
+        dentistName: selectedDentist.fullName,
+        date: selectedDate.format('YYYY-MM-DD'),
+        slotIds: selectedSlots,
+        notes: values.notes || '',
+        isWalkIn: true,
+        createdBy: currentUser._id
+      };
+
+      console.log('📝 Creating walk-in appointment:', appointmentData);
+
+      // Step 1: Create offline appointment
+      const createResponse = await appointmentService.createOfflineAppointment(appointmentData);
+
+      if (!createResponse.success || !createResponse.data) {
+        message.error(createResponse.message || 'Không thể tạo lịch hẹn');
+        return;
+      }
+
+      const appointment = createResponse.data;
+      console.log('✅ Appointment created:', appointment.appointmentCode);
+
+      // Step 2: Immediately check-in to trigger record creation
+      const checkInResponse = await appointmentService.checkInAppointment(
+        appointment._id,
+        'Walk-in patient - auto check-in'
+      );
+
+      if (checkInResponse.success) {
+        message.success({
+          content: `Tạo lịch hẹn và check-in thành công! Mã lịch: ${appointment.appointmentCode}`,
+          duration: 5
+        });
+        
+        console.log('✅ Walk-in appointment checked-in successfully');
+        console.log('📋 Record will be auto-created by record-service');
+        
+        handleReset();
+        
+        if (onSuccess) {
+          onSuccess(appointment);
+        }
+      } else {
+        message.warning({
+          content: `Lịch hẹn đã tạo (${appointment.appointmentCode}) nhưng check-in thất bại. Vui lòng check-in thủ công.`,
+          duration: 5
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Create walk-in appointment error:', error);
+      const errorMsg = error.response?.data?.message || error.message || 'Có lỗi xảy ra khi tạo lịch hẹn';
+      message.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reset form and state
+  const handleReset = () => {
+    form.resetFields();
+    setSearchType('phone');
+    setSearchResults([]);
+    setSelectedPatient(null);
+    setIsNewPatient(false);
+    setSelectedService(null);
+    setSelectedDentist(null);
+    setSelectedDate(null);
+    setAvailableSlots([]);
+    setSelectedSlots([]);
+    setCurrentStep(0);
+  };
+
+  // Step 1: Patient Selection
+  const renderPatientStep = () => (
+    <Card title={<Space><UserAddOutlined />Chọn bệnh nhân</Space>} style={{ marginBottom: 16 }}>
+      <Form.Item
+        name="patientId"
+        label="Bệnh nhân"
+        rules={[{ required: true, message: 'Vui lòng chọn bệnh nhân' }]}
+      >
+        <Select
+          showSearch
+          placeholder="Tìm và chọn bệnh nhân"
+          optionFilterProp="children"
+          filterOption={(input, option) =>
+            option.children.toLowerCase().includes(input.toLowerCase())
+          }
+        >
+          {patients.map(patient => (
+            <Option key={patient._id} value={patient._id}>
+              {patient.fullName || patient.name} - {patient.phone}
+            </Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+      <Button type="dashed" block icon={<UserAddOutlined />}>
+        Thêm bệnh nhân mới
+      </Button>
+    </Card>
+  );
+
+  // Step 2: Service Selection
+  const renderServiceStep = () => (
+    <Card title={<Space><MedicineBoxOutlined />Chọn dịch vụ</Space>} style={{ marginBottom: 16 }}>
+      <Form.Item
+        name="serviceId"
+        label="Dịch vụ"
+        rules={[{ required: true, message: 'Vui lòng chọn dịch vụ' }]}
+      >
+        <Select
+          placeholder="Chọn dịch vụ khám"
+          onChange={handleServiceChange}
+        >
+          {services.map(service => (
+            <Option key={service._id} value={service._id}>
+              <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                <Text strong>{service.name}</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {service.price.toLocaleString('vi-VN')}đ - {service.duration} phút
+                </Text>
+              </Space>
+            </Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+      {selectedService && selectedService.addOns.length > 0 && (
+        <Form.Item
+          name="serviceAddOnId"
+          label="Dịch vụ thêm (tùy chọn)"
+        >
+          <Select
+            placeholder="Chọn dịch vụ thêm"
+            allowClear
+          >
+            {selectedService.addOns.map(addOn => (
+              <Option key={addOn._id} value={addOn._id}>
+                {addOn.name} - {addOn.price.toLocaleString('vi-VN')}đ
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+      )}
+
+      {form.getFieldValue('serviceId') && (
+        <div style={{ 
+          background: '#f0f5ff', 
+          padding: '12px', 
+          borderRadius: '4px',
+          marginTop: '16px'
+        }}>
+          <Text type="secondary">Tổng tiền: </Text>
+          <Text strong style={{ fontSize: 18, color: '#1890ff' }}>
+            {calculateTotalCost().toLocaleString('vi-VN')}đ
+          </Text>
+        </div>
+      )}
+    </Card>
+  );
+
+  // Step 3: Schedule Selection
+  const renderScheduleStep = () => (
+    <Card title={<Space><CalendarOutlined />Chọn lịch khám</Space>} style={{ marginBottom: 16 }}>
+      <Row gutter={16}>
+        <Col span={12}>
+          <Form.Item
+            name="dentistId"
+            label="Nha sĩ"
+            rules={[{ required: true, message: 'Vui lòng chọn nha sĩ' }]}
+          >
+            <Select 
+              placeholder="Chọn nha sĩ"
+              onChange={handleDentistChange}
+            >
+              {dentists.map(dentist => (
+                <Option key={dentist._id} value={dentist._id}>
+                  <Space direction="vertical" size={0}>
+                    <Text strong>{dentist.fullName || dentist.name}</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {dentist.specialization || 'Nha khoa'}
+                    </Text>
+                  </Space>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </Col>
+
+        <Col span={12}>
+          <Form.Item
+            name="date"
+            label="Ngày khám"
+            rules={[{ required: true, message: 'Vui lòng chọn ngày khám' }]}
+          >
+            <DatePicker
+              style={{ width: '100%' }}
+              placeholder="Chọn ngày"
+              format="DD/MM/YYYY"
+              disabledDate={(current) => current && current < dayjs().startOf('day')}
+              onChange={handleDateChange}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      {selectedDate && form.getFieldValue('dentistId') && (
+        <Form.Item
+          name="slotIds"
+          label="Giờ khám"
+          rules={[{ required: true, message: 'Vui lòng chọn giờ khám' }]}
+        >
+          <Checkbox.Group style={{ width: '100%' }}>
+            <Row gutter={[8, 8]}>
+              {slots.map(slot => (
+                <Col span={6} key={slot._id}>
+                  <Checkbox value={slot._id} style={{ width: '100%' }}>
+                    <div style={{
+                      padding: '8px',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '4px',
+                      textAlign: 'center'
+                    }}>
+                      {slot.startTime}
+                    </div>
+                  </Checkbox>
+                </Col>
+              ))}
+            </Row>
+          </Checkbox.Group>
+        </Form.Item>
+      )}
+
+      <Form.Item
+        name="notes"
+        label="Ghi chú"
+      >
+        <Input.TextArea
+          rows={3}
+          placeholder="Nhập ghi chú về lịch hẹn..."
+          maxLength={500}
+          showCount
+        />
+      </Form.Item>
+
+      <Divider />
+
+      <Form.Item name="payNow" valuePropName="checked">
+        <Checkbox onChange={(e) => setPayNow(e.target.checked)}>
+          <Space>
+            <DollarOutlined style={{ color: '#52c41a' }} />
+            <Text strong>Thanh toán tiền mặt ngay</Text>
+          </Space>
+        </Checkbox>
+      </Form.Item>
+    </Card>
+  );
+
+  return (
+    <>
+      <Card>
+        <Title level={3}>
+          <Space>
+            <UserAddOutlined />
+            Tạo lịch hẹn Walk-in
+          </Space>
+        </Title>
+
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+        >
+          {renderPatientStep()}
+          {renderServiceStep()}
+          {renderScheduleStep()}
+
+          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+            <Button onClick={handleReset}>
+              Đặt lại
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              icon={<CheckCircleOutlined />}
+              size="large"
+            >
+              {payNow ? 'Tạo lịch hẹn & Thanh toán' : 'Tạo lịch hẹn'}
+            </Button>
+          </Space>
+        </Form>
+      </Card>
+
+      {/* Cash Payment Modal */}
+      <CashPaymentModal
+        visible={showPaymentModal}
+        appointment={createdAppointment}
+        onSuccess={handlePaymentSuccess}
+        onCancel={() => {
+          setShowPaymentModal(false);
+          message.info('Lịch hẹn đã được tạo nhưng chưa thanh toán');
+          handleReset();
+        }}
+      />
+    </>
+  );
+};
+
+export default WalkInAppointmentForm;

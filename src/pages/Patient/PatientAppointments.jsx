@@ -22,6 +22,7 @@ import {
   ExclamationCircleOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import appointmentService from '../../services/appointmentService';
 import dayjs from 'dayjs';
 import './PatientAppointments.css';
 
@@ -42,37 +43,19 @@ const PatientAppointments = () => {
   const loadAppointments = async () => {
     try {
       setLoading(true);
-      // TODO: Call API to get patient appointments
-      // const response = await appointmentService.getMyAppointments();
       
-      // Mock data for now
-      const mockAppointments = [
-        {
-          _id: '1',
-          date: '2025-10-20',
-          time: '09:00',
-          dentist: { fullName: 'BS. Nguyễn Văn A' },
-          service: { name: 'Khám tổng quát' },
-          status: 'confirmed',
-          room: 'Phòng 101',
-          notes: 'Khám định kỳ'
-        },
-        {
-          _id: '2',
-          date: '2025-10-15',
-          time: '14:00',
-          dentist: { fullName: 'BS. Trần Thị B' },
-          service: { name: 'Nhổ răng khôn' },
-          status: 'completed',
-          room: 'Phòng 102',
-          notes: 'Đã hoàn thành'
-        }
-      ];
+      // ⭐ Call real API to get patient appointments
+      const response = await appointmentService.getMyAppointments();
       
-      setAppointments(mockAppointments);
+      if (response.success && response.data) {
+        setAppointments(response.data);
+      } else {
+        setAppointments([]);
+      }
     } catch (error) {
       console.error('Load appointments error:', error);
       message.error('Không thể tải danh sách lịch khám');
+      setAppointments([]);
     } finally {
       setLoading(false);
     }

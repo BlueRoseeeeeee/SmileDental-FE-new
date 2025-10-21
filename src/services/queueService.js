@@ -151,6 +151,54 @@ export const getVNPayPaymentUrl = async (paymentId) => {
   }
 };
 
+// ============================================
+// 🔥 NEW QUEUE MANAGEMENT METHODS
+// ============================================
+
+/**
+ * Get queue for all rooms or specific room
+ * @param {String} roomId - Optional room ID
+ * @returns {Promise}
+ */
+export const getQueue = async (roomId = null) => {
+  try {
+    const params = roomId ? { roomId } : {};
+    const response = await queueApi.get('/api/appointment/queue', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error getting queue:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get queue statistics
+ * @returns {Promise}
+ */
+export const getQueueStats = async () => {
+  try {
+    const response = await queueApi.get('/api/appointment/queue/stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting queue stats:', error);
+    throw error;
+  }
+};
+
+/**
+ * Manually trigger auto-start (for testing)
+ * @returns {Promise}
+ */
+export const triggerAutoStart = async () => {
+  try {
+    const response = await queueApi.post('/api/appointment/queue/auto-start');
+    return response.data;
+  } catch (error) {
+    console.error('Error triggering auto-start:', error);
+    throw error;
+  }
+};
+
 export default {
   getNextQueueNumber,
   getQueueStatus,
@@ -158,5 +206,8 @@ export default {
   completeRecord,
   cancelRecord,
   confirmCashPayment,
-  getVNPayPaymentUrl
+  getVNPayPaymentUrl,
+  getQueue,
+  getQueueStats,
+  triggerAutoStart
 };

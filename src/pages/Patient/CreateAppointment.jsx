@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import appointmentService from '../../services/appointmentService.js';
+import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { mockPatient, mockServices, mockDentists, mockSlots } from '../../services/mockData.js';
 import './CreateAppointment.css';
@@ -46,6 +47,23 @@ const CreateAppointment = () => {
   const [loading, setLoading] = useState(false);
   const [createdAppointment, setCreatedAppointment] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState({ depositAmount: 100000 }); // 🆕 Default fallback
+
+  // 🆕 Fetch schedule config on mount
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const config = await scheduleConfigService.getConfig();
+        if (config?.depositAmount) {
+          setScheduleConfig(config);
+        }
+      } catch (error) {
+        console.error('Failed to fetch schedule config:', error);
+        // Keep default value of 50000
+      }
+    };
+    fetchConfig();
+  }, []);
 
   useEffect(() => {
     // Pre-populate localStorage with mock data if using mocks
@@ -109,6 +127,9 @@ const CreateAppointment = () => {
       const serviceAddOnData = localStorage.getItem('booking_serviceAddOn');
       const serviceAddOn = serviceAddOnData ? JSON.parse(serviceAddOnData) : null;
       
+      // ⭐ Get exam recordId if service requires exam first
+      const examRecordId = localStorage.getItem('booking_examRecordId');
+      
       // Call API to reserve appointment (create temporary reservation)
       const reservationData = {
         patientId: user._id,
@@ -122,11 +143,15 @@ const CreateAppointment = () => {
         dentistId: selectedDentist._id,
         slotIds: selectedSlotGroup.slotIds, // 🆕 Use slotIds array from group
         date: selectedDate.format('YYYY-MM-DD'),
-        notes: values.notes || ''
+        notes: values.notes || '',
+        examRecordId: examRecordId || null // ⭐ Include recordId if exists
       };
       
       console.log('📝 Creating reservation with data:', reservationData);
       console.log('📦 Slot group:', selectedSlotGroup);
+      if (examRecordId) {
+        console.log('🩺 Exam record ID for hasBeenUsed update:', examRecordId);
+      }
       
       const response = await appointmentService.reserveAppointment(reservationData);
       
@@ -312,14 +337,14 @@ const CreateAppointment = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text strong>💰 Tiền cọc (phải thanh toán):</Text>
                     <Text strong style={{ fontSize: 20, color: '#2c5f4f' }}>
-                      {(selectedSlotGroup?.slots.length * 50000).toLocaleString('vi-VN')} VNĐ
+                      {(selectedSlotGroup?.slots.length * scheduleConfig.depositAmount).toLocaleString('vi-VN')} VNĐ
                     </Text>
                   </div>
                 }
                 description={
                   <div style={{ marginTop: 8 }}>
                     <Text type="secondary">
-                      = 50,000 VNĐ/slot × {selectedSlotGroup?.slots.length} slot
+                      = {scheduleConfig.depositAmount.toLocaleString('vi-VN')} VNĐ/slot × {selectedSlotGroup?.slots.length} slot
                     </Text>
                     <br />
                     <Text type="secondary" style={{ fontSize: 12 }}>

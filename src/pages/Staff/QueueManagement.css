@@ -1,0 +1,72 @@
+.queue-management-container {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 64px);
+}
+
+.queue-header {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.room-queue-card {
+  height: 100%;
+  min-height: 400px;
+}
+
+.room-queue-card .ant-card-head {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.room-queue-card .ant-card-head-title {
+  color: white;
+}
+
+.current-patient-section {
+  padding: 12px;
+  background: #e6f7ff;
+  border-radius: 8px;
+  border-left: 4px solid #1890ff;
+}
+
+.waiting-list-section {
+  padding: 12px;
+  background: #fffbe6;
+  border-radius: 8px;
+  border-left: 4px solid #faad14;
+}
+
+.patient-card {
+  transition: all 0.3s ease;
+  margin-bottom: 8px;
+}
+
+.patient-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.active-patient {
+  border-left: 4px solid #1890ff;
+  background: #f0f9ff;
+}
+
+.waiting-patient {
+  border-left: 4px solid #faad14;
+  background: #fffef9;
+}
+
+.patient-card .ant-card-body {
+  padding: 12px;
+}
+
+@media (max-width: 768px) {
+  .queue-management-container {
+    padding: 12px;
+  }
+
+  .room-queue-card {
+    min-height: 300px;
+  }
+}
