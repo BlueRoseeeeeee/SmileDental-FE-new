@@ -41,25 +41,7 @@ html, body {
   --border-radius-xl: 16px;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
+/* Scrollbar styling removed - using default browser scrollbar */
 
 /* Ant Design Theme Customization */
 .ant-layout {
