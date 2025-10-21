@@ -84,6 +84,21 @@ const AddService = () => {
         setRoomTypes(types);
       } catch (error) {
         console.error('Error fetching room types:', error);
+        // Fallback data nếu API lỗi
+        const fallbackTypes = {
+          CONSULTATION: 'CONSULTATION',
+          GENERAL_TREATMENT: 'GENERAL_TREATMENT', 
+          SURGERY: 'SURGERY',
+          ORTHODONTIC: 'ORTHODONTIC',
+          COSMETIC: 'COSMETIC',
+          PEDIATRIC: 'PEDIATRIC',
+          X_RAY: 'X_RAY',
+          STERILIZATION: 'STERILIZATION',
+          LAB: 'LAB',
+          RECOVERY: 'RECOVERY',
+          SUPPORT: 'SUPPORT'
+        };
+        setRoomTypes(fallbackTypes);
       }
     };
     fetchRoomTypes();
@@ -346,6 +361,10 @@ const AddService = () => {
                       placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
                       style={{ width: '100%' }}
                       maxTagCount="responsive"
+                      showSearch
+                      filterOption={(input, option) =>
+                        option?.children?.toLowerCase().includes(input.toLowerCase())
+                      }
                     >
                       {Object.values(roomTypes).map((value) => (
                         <Option key={value} value={value}>
@@ -540,6 +559,32 @@ const AddService = () => {
                     </div>
 
                     <Row gutter={[16, 16]}>
+                      <Col xs={24}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ color: '#262626' }}>Hình ảnh (Tùy chọn)</Text>
+                        </div>
+                        <Upload
+                          listType="picture-card"
+                          fileList={addon.imageFile ? [addon.imageFile] : []}
+                          onChange={(info) => {
+                            const file = info.fileList[0];
+                            updateServiceAddOn(index, 'imageFile', file);
+                          }}
+                          beforeUpload={() => false}
+                          maxCount={1}
+                          accept="image/*"
+                        >
+                          {!addon.imageFile && (
+                            <div>
+                              <UploadOutlined />
+                              <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                            </div>
+                          )}
+                        </Upload>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={[16, 16]}>
                       <Col xs={24} sm={12} md={9}>
                         <div style={{ marginBottom: '8px' }}>
                           <Text strong style={{ color: '#262626' }}>Tên tùy chọn *</Text>
@@ -557,22 +602,24 @@ const AddService = () => {
                       
                       <Col xs={24} sm={12} md={5}>
                         <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Giá (VNĐ) *</Text>
+                          <Text strong style={{ color: '#262626' }}>Đơn vị *</Text>
                         </div>
-                         <InputNumber
-                           style={{ 
+                         <Select
+                           value={addon.unit}
+                           onChange={(value) => updateServiceAddOn(index, 'unit', value)}
+                           size="large"
+                           style={{
                              width: '100%',
                              borderRadius: '8px'
                            }}
-                           placeholder="500,000"
-                           value={addon.price}
-                           onChange={(value) => updateServiceAddOn(index, 'price', value)}
-                           formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                           parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                           min={0}
-                           size="large"
-                           addonAfter="VNĐ"
-                         />
+                           placeholder="Chọn đơn vị"
+                         >
+                           <Option value="Răng">Răng</Option>
+                           <Option value="Hàm">Hàm</Option>
+                           <Option value="Trụ">Trụ</Option>
+                           <Option value="Cái">Cái</Option>
+                           <Option value="Lần">Lần</Option>
+                         </Select>
                       </Col>
 
                       <Col xs={24} sm={12} md={5}>
@@ -595,24 +642,22 @@ const AddService = () => {
 
                       <Col xs={24} sm={12} md={5}>
                         <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Đơn vị *</Text>
+                          <Text strong style={{ color: '#262626' }}>Giá (VNĐ) *</Text>
                         </div>
-                         <Select
-                           value={addon.unit}
-                           onChange={(value) => updateServiceAddOn(index, 'unit', value)}
-                           size="large"
-                           style={{
+                         <InputNumber
+                           style={{ 
                              width: '100%',
                              borderRadius: '8px'
                            }}
-                           placeholder="Chọn đơn vị"
-                         >
-                           <Option value="Răng">Răng</Option>
-                           <Option value="Hàm">Hàm</Option>
-                           <Option value="Trụ">Trụ</Option>
-                           <Option value="Cái">Cái</Option>
-                           <Option value="Lần">Lần</Option>
-                         </Select>
+                           placeholder="500,000"
+                           value={addon.price}
+                           onChange={(value) => updateServiceAddOn(index, 'price', value)}
+                           formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                           parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                           min={0}
+                           size="large"
+                           addonAfter="VNĐ"
+                         />
                       </Col>
                     </Row>
 
@@ -673,32 +718,6 @@ const AddService = () => {
                           )}
                         </Col>
                       </Row>
-
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Hình ảnh (Tùy chọn)</Text>
-                        </div>
-                        <Upload
-                          listType="picture-card"
-                          fileList={addon.imageFile ? [addon.imageFile] : []}
-                          onChange={(info) => {
-                            const file = info.fileList[0];
-                            updateServiceAddOn(index, 'imageFile', file);
-                          }}
-                          beforeUpload={() => false}
-                          maxCount={1}
-                          accept="image/*"
-                        >
-                          {!addon.imageFile && (
-                            <div>
-                              <UploadOutlined />
-                              <div style={{ marginTop: 8 }}>Chọn ảnh</div>
-                            </div>
-                          )}
-                        </Upload>
-                      </Col>
-                    </Row>
 
                   </Card>
                 ))}
