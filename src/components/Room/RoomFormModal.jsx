@@ -390,7 +390,13 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
               label="Loại phòng"
               rules={[{ required: true, message: 'Vui lòng chọn loại phòng' }]}
             >
-              <Select placeholder="Chọn loại phòng">
+              <Select 
+                placeholder="Chọn loại phòng"
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              >
                 {Object.entries(roomTypes).map(([key, value]) => (
                   <Select.Option key={value} value={value}>
                     {getRoomTypeLabel(value)}
