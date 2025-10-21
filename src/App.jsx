@@ -168,10 +168,51 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes - Auth */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Root redirect - redirect based on auth status */}
+          <Route path="/" element={<RootRedirect />} />
+          
+          {/* Public routes - Auth with HomepageLayout */}
+          <Route path="/login" element={
+            <HomepageLayout>
+              <Login />
+            </HomepageLayout>
+          } />
+          <Route path="/register" element={
+            <HomepageLayout>
+              <Register />
+            </HomepageLayout>
+          } />
+          <Route path="/forgot-password" element={
+            <HomepageLayout>
+              <ForgotPassword />
+            </HomepageLayout>
+          } />
+          
+          {/* Public Homepage */}
+          <Route path="/home" element={
+            <HomepageLayout>
+              <Homepage />
+            </HomepageLayout>
+          } />
+           
+          {/* Public Service Routes */}
+          <Route path="/services/pl/:serviceName/addons" element={
+            <HomepageLayout>
+              <PublicServiceAddOns />
+            </HomepageLayout>
+          } />
+          
+          <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
+            <HomepageLayout>
+              <PublicServiceAddOnDetail />
+            </HomepageLayout>
+          } />
+          
+          <Route path="/dentist-detail/:id" element={
+            <HomepageLayout>
+              <PublicDentistDetail />
+            </HomepageLayout>
+          } />
           
           {/* Patient Public Routes with Layout */}
           <Route path="/patient" element={<PatientLayout />}>
@@ -244,54 +285,6 @@ function App() {
               </ProtectedRoute>
             } />
           </Route>
-         
-          {/* Root redirect - redirect based on auth status */}
-          <Route path="/" element={<RootRedirect />} />
-          
-          {/* Public Homepage */}
-          <Route path="/home" element={
-            <HomepageLayout>
-              <Homepage />
-            </HomepageLayout>
-          } />
-          
-          <Route path="/login" element={
-            <HomepageLayout>
-              <Login />
-            </HomepageLayout>
-          } />
-          <Route path="/register" element={
-            <HomepageLayout>
-              <Register />
-            </HomepageLayout>
-          } />
-          <Route path="/forgot-password" element={
-            <HomepageLayout>
-              <ForgotPassword />
-            </HomepageLayout>
-          } />
-           
-           {/* Public Service AddOns Route */}
-           <Route path="/services/pl/:serviceName/addons" element={
-             <HomepageLayout>
-               <PublicServiceAddOns />
-             </HomepageLayout>
-           } />
-           
-           {/* Public Service AddOn Detail Route */}
-           <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
-             <HomepageLayout>
-               <PublicServiceAddOnDetail />
-             </HomepageLayout>
-           } />
-           
-           {/* Dentist Detail Route - Public */}
-           <Route path="/dentist-detail/:id" element={
-             <HomepageLayout>
-               <PublicDentistDetail />
-             </HomepageLayout>
-           } />
-           
           
           {/* Protected routes - Dashboard cho người đã đăng nhập */}
           <Route path="/dashboard" element={
