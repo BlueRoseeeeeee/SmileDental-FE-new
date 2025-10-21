@@ -67,9 +67,6 @@
   border-radius: 0 0 16px 16px !important;
 }
 
-/* Statistic card styling */
-.ant-statistic {
-}
 
 .ant-statistic-title {
   font-weight: 500;
@@ -190,4 +187,3 @@
   }
 }
 
-/* Removed all animations for better performance */

@@ -110,7 +110,7 @@ const EditServiceAddOn = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
       toastService.error('Không thể tải dữ liệu: ' + error.message);
-      navigate(`/services/${serviceId}/edit`);
+      navigate(`/dashboard/services/${serviceId}/edit`);
     } finally {
       setLoading(false);
     }
@@ -180,7 +180,7 @@ const EditServiceAddOn = () => {
       setHasUnsavedChanges(false);
       clearDraft();
       toastService.success('Cập nhật tùy chọn dịch vụ thành công!');
-      navigate(`/services/${serviceId}/edit`);
+      navigate(`/dashboard/services/${serviceId}/edit`);
     } catch (error) {
       toastService.error('Lỗi khi cập nhật tùy chọn dịch vụ');
     } finally {
@@ -194,7 +194,7 @@ const EditServiceAddOn = () => {
       const confirmed = window.confirm('Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời khỏi trang?');
       if (!confirmed) return;
     }
-    navigate(`/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`);
   };
 
   if (loading) {

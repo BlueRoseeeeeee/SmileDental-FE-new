@@ -398,7 +398,7 @@ const EditService = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate(`/services/${serviceId}/addons/add`)}
+            onClick={() => navigate(`/dashboard/services/${serviceId}/addons/add`)}
             size="small"
           >
             Thêm tùy chọn
@@ -472,7 +472,7 @@ const EditService = () => {
                     <Button
                       type="text"
                       icon={<EditOutlined />}
-                      onClick={() => navigate(`/services/${serviceId}/addons/${record._id}/edit`)}
+                      onClick={() => navigate(`/dashboard/services/${serviceId}/addons/${record._id}/edit`)}
                       size="small"
                     />
                     <Switch
@@ -499,7 +499,7 @@ const EditService = () => {
             <Button 
               type="dashed" 
               icon={<PlusOutlined />}
-              onClick={() => navigate(`/services/${serviceId}/addons/add`)}
+              onClick={() => navigate(`/dashboard/services/${serviceId}/addons/add`)}
               style={{ marginTop: 8 }}
             >
               Thêm tùy chọn đầu tiên

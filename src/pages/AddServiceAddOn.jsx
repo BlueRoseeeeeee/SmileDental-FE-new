@@ -165,7 +165,7 @@ const AddServiceAddOn = () => {
       setHasUnsavedChanges(false);
       clearDraft();
       toastService.success('Thêm tùy chọn dịch vụ thành công!');
-      navigate(`/services/${serviceId}/edit`);
+      navigate(`/dashboard/services/${serviceId}/edit`);
     } catch (error) {
       toastService.error('Lỗi khi thêm tùy chọn dịch vụ');
     } finally {
@@ -179,7 +179,7 @@ const AddServiceAddOn = () => {
       const confirmed = window.confirm('Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời khỏi trang?');
       if (!confirmed) return;
     }
-    navigate(`/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`);
   };
 
   if (loading) {

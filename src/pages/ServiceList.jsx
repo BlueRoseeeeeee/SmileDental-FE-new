@@ -174,7 +174,7 @@ const ServiceList = () => {
 
   // Handle edit service
   const handleEditService = (serviceId) => {
-    navigate(`/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`);
   };
 
   // Handle show delete confirmation modal

@@ -134,7 +134,7 @@ const RoomList = () => {
   };
 
   const handleViewSubRooms = (room) => {
-    navigate(`/rooms/${room._id}`);
+    navigate(`/dashboard/rooms/${room._id}`);
   };
 
   // Handle show delete confirmation modal

@@ -361,12 +361,12 @@ const UserManagement = () => {
 
   const handleEdit = (user) => {
     // Navigate to edit page instead of opening modal
-    navigate(`/users/edit/${user._id}`);
+    navigate(`/dashboard/users/edit/${user._id}`);
   };
 
   const handleView = (user) => {
     // Navigate to detail page instead of opening modal
-    navigate(`/users/detail/${user._id}`);
+    navigate(`/dashboard/users/detail/${user._id}`);
   };
 
   // Handle show delete confirmation modal

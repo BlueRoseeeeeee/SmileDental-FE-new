@@ -179,7 +179,7 @@ const DetailStaff = () => {
           </div>
           <Space>
             <Button 
-              onClick={() => navigate(`/users/edit/${id}`)}
+              onClick={() => navigate(`/dashboard/users/edit/${id}`)}
               type="primary"
               style={{ borderRadius: '8px' }}
             >
