@@ -49,6 +49,7 @@ import CashPaymentModal from './components/CashPayment/CashPaymentModal.jsx';
 import WalkInAppointmentForm from './components/CashPayment/WalkInAppointmentForm.jsx';
 
 // Medical Records Management
+import QueueDashboard from './pages/QueueDashboard.jsx';
 import RecordList from './pages/Records/RecordList.jsx';
 import RecordFormModal from './pages/Records/RecordFormModal.jsx';
 import PrescriptionForm from './pages/Records/PrescriptionForm.jsx';
@@ -275,89 +276,96 @@ function App() {
             </ProtectedRoute>
           }>
             {/* Default redirect */}
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            
-            {/* Dashboard */}
-            <Route path="dashboard" element={<Dashboard />} />
-            
-            {/* Profile */}
-            <Route path="profile" element={<Profile />} />
-            
-            {/* Change Password */}
-            <Route path="change-password" element={<ChangePassword />} />
-            
-            {/* Admin/Manager routes */}
-            <Route path="users" element={<UserManagement />} />
-            <Route path="users/edit/:id" element={<EditUser />} />
-            <Route path="users/detail/:id" element={<DetailStaff />} />
-            
-            {/* Appointment Management - All appointments (Admin/Manager/Receptionist) */}
-            <Route path="appointments" element={
-              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
-                <AppointmentManagement />
-              </ProtectedRoute>
-            } />
-
-            {/* Patient Appointments Management (Admin/Manager only) */}
-            <Route path="patient-appointments" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <AdminPatientAppointments />
-              </ProtectedRoute>
-            } />
-            
-            {/* Walk-in Appointments & Cash Payment (Admin/Manager only) */}
-            <Route path="walk-in-appointments" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <WalkInAppointmentForm />
-              </ProtectedRoute>
-            } />
-            
-            {/* Medical Records Management (Admin/Manager/Dentist) */}
-            <Route path="records" element={
-              <ProtectedRoute roles={['admin', 'manager', 'dentist']}>
-                <RecordList />
-              </ProtectedRoute>
-            } />
-            
-            {/* Invoice Management (Admin/Manager) */}
-            <Route path="invoices" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <InvoiceList />
-              </ProtectedRoute>
-            } />
-            
-            {/* Room Management (Admin/Manager only) */}
-            <Route path="rooms" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <RoomList />
-              </ProtectedRoute>
-            } />
-            <Route path="rooms/:roomId" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <RoomManagement />
-              </ProtectedRoute>
-            } />
-            
-            {/* Service Management (Admin/Manager only) */}
-            <Route path="services" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <ServiceList />
-              </ProtectedRoute>
-            } />
-            <Route path="services/:serviceId" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <ServiceDetails />
-              </ProtectedRoute>
-            } />
-            
-            {/* Add Service (Admin/Manager only) */}
-            <Route path="services/add" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <AddService />
-              </ProtectedRoute>
-            } />
-            
-          {/* Room Management (Admin/Manager only) */}
+            <Route index element={<Dashboard />} />
+          </Route>
+          
+          {/* Queue Dashboard */}
+          <Route path="/queue" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<QueueDashboard />} />
+          </Route>
+          
+          {/* Profile - Direct access with DashboardLayout */}
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<Profile />} />
+          </Route>
+          
+          {/* Change Password */}
+          <Route path="/change-password" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ChangePassword />} />
+          </Route>
+          
+          {/* User Management */}
+          <Route path="/users" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<UserManagement />} />
+          </Route>
+          <Route path="/users/edit/:id" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<EditUser />} />
+          </Route>
+          <Route path="/users/detail/:id" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<DetailStaff />} />
+          </Route>
+          
+          {/* Patient Appointments Management */}
+          <Route path="/patient-appointments" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AdminPatientAppointments />} />
+          </Route>
+          
+          {/* Walk-in Appointments */}
+          <Route path="/walk-in-appointments" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<WalkInAppointmentForm />} />
+          </Route>
+          
+          {/* Medical Records */}
+          <Route path="/records" element={
+            <ProtectedRoute roles={['admin', 'manager', 'dentist']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<RecordList />} />
+          </Route>
+          
+          {/* Invoices */}
+          <Route path="/invoices" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<InvoiceList />} />
+          </Route>
+          
+          {/* Room Management */}
           <Route path="/rooms" element={
             <ProtectedRoute roles={['admin', 'manager']}>
               <DashboardLayout />
@@ -372,14 +380,21 @@ function App() {
           }>
             <Route index element={<RoomManagement />} />
           </Route>
-            
-          {/* Service Management (Admin/Manager only) */}
+          
+          {/* Service Management */}
           <Route path="/services" element={
             <ProtectedRoute roles={['admin', 'manager']}>
               <DashboardLayout />
             </ProtectedRoute>
           }>
             <Route index element={<ServiceList />} />
+          </Route>
+          <Route path="/services/add" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AddService />} />
           </Route>
           <Route path="/services/:serviceId" element={
             <ProtectedRoute roles={['admin', 'manager']}>
@@ -388,8 +403,6 @@ function App() {
           }>
             <Route index element={<ServiceDetails />} />
           </Route>
-          
-          {/* Edit Service (Admin/Manager only) */}
           <Route path="/services/:serviceId/edit" element={
             <ProtectedRoute roles={['admin', 'manager']}>
               <DashboardLayout />
@@ -398,34 +411,65 @@ function App() {
             <Route index element={<EditService />} />
           </Route>
           
-          {/* Add Service (Admin/Manager only) */}
-          <Route path="/services/add" element={
+          {/* Schedule Management */}
+          <Route path="/schedules" element={
             <ProtectedRoute roles={['admin', 'manager']}>
               <DashboardLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<AddService />} />
+            <Route index element={<ScheduleConfig />} />
+          </Route>
+          <Route path="/schedules/holidays" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<HolidayManagementPage />} />
+          </Route>
+          <Route path="/schedules/create-for-room" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<CreateScheduleForRoom />} />
+          </Route>
+          <Route path="/schedules/calendar" element={
+            <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<ScheduleCalendar />} />
+          </Route>
+          <Route path="/schedules/staff-assignment" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<StaffAssignmentUnified />} />
+          </Route>
+          <Route path="/schedules/staff-assignment/detail" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<StaffAssignmentDetail />} />
+          </Route>
+          <Route path="/schedules/staff-assignment/assign" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<AssignStaffForm />} />
+          </Route>
+          <Route path="/schedules/staff-replacement" element={
+            <ProtectedRoute roles={['admin', 'manager']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<StaffReplacement />} />
           </Route>
           
-          {/* Add Service Add-On (Admin/Manager only) */}
-          <Route path="/services/:serviceId/addons/add" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AddServiceAddOn />} />
-          </Route>
-          
-          {/* Edit Service Add-On (Admin/Manager only) */}
-          <Route path="/services/:serviceId/addons/:addOnId/edit" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<EditServiceAddOn />} />
-          </Route>
-            
-          {/* Certificate Management (Dentist only) */}
+          {/* Certificate Management */}
           <Route path="/certificates" element={
             <ProtectedRoute roles={['dentist']}>
               <DashboardLayout />
@@ -441,108 +485,6 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<Settings />} />
-          </Route>
-            
-          {/* Placeholder routes for future development */}
-          <Route path="/appointments" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <CalendarOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Lịch hẹn</h1>
-                </div>
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                </div>
-              </div>
-            } />
-          </Route>
-            
-          <Route path="/patients" element={
-            <ProtectedRoute roles={['dentist', 'nurse']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <HeartOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Quản lý bệnh nhân</h1>
-                </div>
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                </div>
-              </div>
-            } />
-          </Route>
-            
-            {/* Schedule Management (Admin/Manager only) */}
-            <Route path="schedules" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <ScheduleConfig />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/create-for-room" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <CreateScheduleForRoom />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/calendar" element={
-              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
-                <ScheduleCalendar />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/holidays" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <HolidayManagementPage />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/staff-assignment" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <StaffAssignmentUnified />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/staff-assignment/detail" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <StaffAssignmentDetail />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/staff-assignment/assign" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <AssignStaffForm />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/staff-assignment-unified" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <StaffAssignmentUnified />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/staff-replacement" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <StaffReplacement />
-              </ProtectedRoute>
-            } />
-            
-          <Route path="/dentists" element={
-            <ProtectedRoute roles={['patient']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <TeamOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Danh sách nha sĩ</h1>
-                </div>
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                </div>
-              </div>
-            } />
           </Route>
           
           {/* Error routes */}

@@ -1,7 +1,7 @@
 /**
  * ServiceDetails.jsx
  * Trang chi tiết dịch vụ nha khoa
- * @author: HoTram  
+ * @author: HoTram
  */
 import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
@@ -21,7 +21,6 @@ import {
   Select,
   InputNumber,
   Switch,
-  Table,
   DatePicker,
   Popconfirm,
   Alert

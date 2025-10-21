@@ -150,6 +150,17 @@ const DashboardLayout = () => {
       );
     }
 
+    // Queue management for receptionists and staff
+    if (user?.role === 'receptionist' || user?.role === 'staff' || user?.role === 'admin' || user?.role === 'manager') {
+      roleBasedItems.push(
+        {
+          key: '/queue',
+          icon: <UserAddOutlined />,
+          label: 'Quản lý hàng đợi',
+        }
+      );
+    }
+
     if (user?.role === 'admin' || user?.role === 'manager') {
       roleBasedItems.push(
         {

@@ -1,7 +1,7 @@
 /**
  * AddService.jsx
  * Trang thêm dịch vụ nha khoa
- * @author: HoTram  
+ * @author: HoTram
  */
 import React, { useState } from 'react';
 import { 
@@ -27,7 +27,7 @@ import {
   PlusOutlined,
   DeleteOutlined,
   EyeOutlined,
-  UploadOutlined
+  UploadOutlined,
   UpOutlined,
   DownOutlined
 } from '@ant-design/icons';
