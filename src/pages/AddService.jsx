@@ -66,7 +66,7 @@ const AddService = () => {
     { 
       name: '', 
       price: 0, 
-      durationMinutes: 0, 
+      durationMinutes: null, 
       unit: '', 
       description: '', 
       isActive: true,
@@ -175,7 +175,7 @@ const AddService = () => {
     setServiceAddOns([...serviceAddOns, { 
       name: '', 
       price: 0, 
-      durationMinutes: 0,
+      durationMinutes: null,
       unit: '',
       description: '',
       isActive: true,
@@ -585,7 +585,7 @@ const AddService = () => {
                              width: '100%',
                              borderRadius: '8px'
                            }}
-                           placeholder="30"
+                           placeholder="Nhập thời gian"
                            value={addon.durationMinutes}
                            onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
                            min={1}
@@ -617,44 +617,6 @@ const AddService = () => {
                       </Col>
                     </Row>
 
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} md={12}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Thời gian (phút) *</Text>
-                        </div>
-                        <InputNumber
-                          style={{ 
-                            width: '100%',
-                            borderRadius: '8px'
-                          }}
-                          placeholder="30"
-                          value={addon.durationMinutes}
-                          onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
-                          min={1}
-                          size="large"
-                          addonAfter="phút"
-                        />
-                      </Col>
-                      
-                      <Col xs={24} md={12}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Đơn vị *</Text>
-                        </div>
-                        <Select
-                          style={{ width: '100%' }}
-                          placeholder="Chọn đơn vị"
-                          value={addon.unit || undefined}
-                          onChange={(value) => updateServiceAddOn(index, 'unit', value)}
-                          size="large"
-                        >
-                          <Option value="Răng">Răng</Option>
-                          <Option value="Hàm">Hàm</Option>
-                          <Option value="Trụ">Trụ</Option>
-                          <Option value="Cái">Cái</Option>
-                          <Option value="Lần">Lần</Option>
-                        </Select>
-                      </Col>
-                    </Row>
 
                     <Row gutter={[16, 16]}>
                         <Col xs={24}>
