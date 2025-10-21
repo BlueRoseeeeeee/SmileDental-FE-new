@@ -423,11 +423,11 @@ html, body {
 .ant-btn {
   border-radius: 8px !important;
   font-weight: 500 !important;
-  transition: all 0.3s ease !important;
+  /* Transition removed for better performance */
 }
 
 .ant-btn:hover {
-  transform: translateY(-1px) !important;
+  /* Transform removed for better performance */
   box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
 }
 

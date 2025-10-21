@@ -25,14 +25,14 @@
 
 .booking-select-addon-page .addon-card {
   border-radius: 12px;
-  transition: all 0.3s ease;
+  /* Transition removed for better performance */
   cursor: pointer;
   min-height: 180px;
 }
 
 .booking-select-addon-page .addon-card:hover {
   box-shadow: 0 6px 16px rgba(44, 95, 79, 0.15);
-  transform: translateY(-4px);
+  /* Transform removed for better performance */
 }
 
 .booking-select-addon-page .addon-card.selected {

@@ -2,14 +2,9 @@
 * @author: HoTram
 */
 
-/* Sidebar logo styling */
+/* Sidebar logo styling - animations removed for performance */
 .dashboard-sider .sidebar-logo {
-  transition: all 0.3s ease;
   cursor: pointer;
-}
-
-.dashboard-sider .sidebar-logo:hover {
-  transform: scale(1.05);
 }
 
 .dashboard-sider .logo-text {
@@ -19,17 +14,10 @@
   background-clip: text;
   font-weight: 600;
   letter-spacing: 0.5px;
-  transition: all 0.3s ease;
 }
 
 .dashboard-sider .logo-image {
-  transition: all 0.3s ease;
   filter: drop-shadow(0 2px 4px rgba(37, 150, 190, 0.2));
-}
-
-.dashboard-sider .logo-image:hover {
-  transform: scale(1.1);
-  filter: drop-shadow(0 4px 8px rgba(37, 150, 190, 0.3));
 }
 
 /* Sidebar text display fix */
@@ -148,11 +136,7 @@
   background: rgba(255, 255, 255, 0.95) !important;
 }
 
-/* Search bar improvements */
-.desktop-search .ant-input {
-  transition: all 0.3s ease;
-}
-
+/* Search bar improvements - animations removed */
 .desktop-search .ant-input:focus {
   border-color: #2596be !important;
   box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
@@ -164,21 +148,13 @@
   font-weight: 600 !important;
 }
 
-/* User profile improvements */
-.user-profile-dropdown {
-  transition: all 0.3s ease;
-}
-
+/* User profile improvements - animations removed */
 .user-profile-dropdown:hover {
   background-color: #f5f5f5 !important;
   border-color: #d9d9d9 !important;
 }
 
-/* Button improvements */
-.ant-btn {
-  transition: all 0.3s ease;
-}
-
+/* Button improvements - animations removed */
 .ant-btn:hover {
   background-color: #f5f5f5 !important;
 }

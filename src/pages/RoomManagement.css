@@ -2,41 +2,12 @@
    ROOM MANAGEMENT - SMILECARE DESIGN
    =================================== */
 
-/* Page animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Removed all animations for better performance */
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Table row animations */
-.ant-table-tbody > tr.table-row-light,
-.ant-table-tbody > tr.table-row-dark {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: slideIn 0.4s ease-out;
-}
-
+/* Table row hover effects - simplified */
 .ant-table-tbody > tr.table-row-light:hover,
 .ant-table-tbody > tr.table-row-dark:hover {
   background-color: #eff6ff !important;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-  transform: scale(1.01);
 }
 
 .ant-table-tbody > tr.table-row-light {
@@ -45,38 +16,6 @@
 
 .ant-table-tbody > tr.table-row-dark {
   background-color: #f9fafb;
-}
-
-/* Card animations */
-.ant-card {
-  animation: fadeInUp 0.5s ease-out;
-}
-
-/* Button hover effects */
-.ant-btn {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.ant-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.ant-btn-primary:hover:not(:disabled) {
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
-}
-
-.ant-btn-danger:hover:not(:disabled) {
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
-}
-
-/* Switch styling */
-.ant-switch {
-  transition: all 0.3s ease;
-}
-
-.ant-switch:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Input focus effects */
@@ -261,41 +200,4 @@
   }
 }
 
-/* Pulse animation for loading */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.ant-spin-dot {
-  animation: pulse 1.2s ease-in-out infinite;
-}
-
-/* Success message animation */
-@keyframes successSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.ant-message {
-  animation: successSlide 0.3s ease-out;
-}
-
-/* Icon container hover effect */
-.icon-container {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.icon-container:hover {
-  transform: scale(1.1) rotate(5deg);
-}
+/* Removed all animations for better performance */

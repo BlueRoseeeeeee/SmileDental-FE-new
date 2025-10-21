@@ -133,13 +133,13 @@
   padding: 6px;
   margin-bottom: 4px;
   cursor: pointer;
-  transition: all 0.2s;
+  /* Transition removed for better performance */
 }
 
 .slot-item:hover {
   background: #bae7ff;
   border-color: #40a9ff;
-  transform: translateY(-1px);
+  /* Transform removed for better performance */
 }
 
 .slot-time {
@@ -266,20 +266,7 @@
 }
 
 /* Animation */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.slot-item {
-  animation: slideIn 0.2s ease-out;
-}
+/* Keyframes and animations removed for better performance */
 
 /* New cell stats styling */
 .cell-stats {

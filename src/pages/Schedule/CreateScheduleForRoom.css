@@ -2,49 +2,12 @@
    CREATE SCHEDULE FOR ROOM - ENHANCED STYLES
    =================================== */
 
-/* Global animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Removed all animations for better performance */
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-/* Table row hover effects */
-.ant-table-tbody > tr.table-row-light,
-.ant-table-tbody > tr.table-row-dark {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
+/* Table row hover effects - simplified */
 .ant-table-tbody > tr.table-row-light:hover,
 .ant-table-tbody > tr.table-row-dark:hover {
   background-color: #f0f5ff !important;
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
-  transform: translateY(-2px);
 }
 
 .ant-table-tbody > tr.table-row-light {
@@ -55,46 +18,11 @@
   background-color: #fafafa;
 }
 
-/* Card animations */
-.ant-card {
-  animation: fadeIn 0.4s ease-out;
-}
-
-/* Button hover effects */
-.ant-btn {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.ant-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.ant-btn-primary:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4);
-}
-
-/* Tag animations */
-.ant-tag {
-  transition: all 0.3s ease;
-}
-
-.ant-tag:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* Input focus effects */
+/* Input focus effects - simplified */
 .ant-input:focus,
 .ant-input-focused,
 .ant-select-focused .ant-select-selector {
   border-color: #667eea !important;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-}
-
-/* Alert animations */
-.ant-alert {
-  animation: slideInRight 0.4s ease-out;
 }
 
 /* Table header gradient */

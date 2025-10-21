@@ -36,7 +36,7 @@
 }
 
 .staff-assignment .ant-btn-primary:hover {
-  transform: translateY(-1px);
+  /* Transform removed for better performance */
   box-shadow: 0 6px 16px rgba(24, 144, 255, 0.3);
 }
 
@@ -106,7 +106,7 @@
 
 /* Animation for form sections */
 .staff-assignment .ant-row {
-  transition: all 0.3s ease;
+  /* Transition removed for better performance */
 }
 
 .staff-assignment .ant-form-item {
@@ -114,5 +114,5 @@
 }
 
 .staff-assignment .ant-form-item:hover {
-  transform: translateY(-1px);
+  /* Transform removed for better performance */
 }

@@ -12,19 +12,10 @@
   width: 100%;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  animation: slideUp 0.5s ease-out;
+  /* Animation removed for better performance */
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Keyframes removed for better performance */
 
 .payment-result-card .ant-result-icon {
   margin-bottom: 24px;
