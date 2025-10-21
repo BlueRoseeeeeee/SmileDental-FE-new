@@ -331,6 +331,28 @@ const AddService = () => {
                     </Select>
                   </Form.Item>
                 </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="allowedRoomTypes"
+                    label="Loại phòng cho phép"
+                    rules={[
+                      { required: true, message: 'Vui lòng chọn ít nhất 1 loại phòng!' }
+                    ]}
+                  >
+                    <Select
+                      mode="multiple"
+                      size="large"
+                      placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
+                      style={{ width: '100%' }}
+                    >
+                      {Object.values(roomTypes).map((value) => (
+                        <Option key={value} value={value}>
+                          {getRoomTypeLabel(value)}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
               </Row>
 
               <Row gutter={16}>
@@ -354,31 +376,6 @@ const AddService = () => {
                         Dịch vụ này có yêu cầu bệnh nhân phải khám trước khi thực hiện
                       </Text>
                     </div>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={24}>
-                  <Form.Item
-                    name="allowedRoomTypes"
-                    label="Loại phòng cho phép"
-                    rules={[
-                      { required: true, message: 'Vui lòng chọn ít nhất 1 loại phòng!' }
-                    ]}
-                  >
-                    <Select
-                      mode="multiple"
-                      size="large"
-                      placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
-                      style={{ width: '100%' }}
-                    >
-                      {Object.values(roomTypes).map((value) => (
-                        <Option key={value} value={value}>
-                          {getRoomTypeLabel(value)}
-                        </Option>
-                      ))}
-                    </Select>
                   </Form.Item>
                 </Col>
               </Row>
