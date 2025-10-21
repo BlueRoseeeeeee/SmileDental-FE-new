@@ -1055,7 +1055,18 @@ const ServiceDetails = () => {
 
       {/* 🆕 Price Schedule Management Modal */}
       <Modal
-        title={`Quản lý lịch giá - ${selectedAddOnForPrice?.name || ''}`}
+        title={
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            fontSize: '16px',
+            fontWeight: '600',
+            color: '#262626'
+          }}>
+            Quản lý lịch giá - {selectedAddOnForPrice?.name || ''}
+          </div>
+        }
         open={showPriceScheduleModal}
         onCancel={() => setShowPriceScheduleModal(false)}
         footer={[
@@ -1064,6 +1075,7 @@ const ServiceDetails = () => {
           </Button>
         ]}
         width={900}
+        style={{ top: 20 }}
       >
         {selectedAddOnForPrice && (
           <div>
