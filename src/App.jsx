@@ -359,16 +359,17 @@ function App() {
                 <ServiceList />
               </ProtectedRoute>
             } />
-            <Route path="services/:serviceId" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <ServiceDetails />
-              </ProtectedRoute>
-            } />
             
-            {/* Add Service (Admin/Manager only) */}
+            {/* Add Service (Admin/Manager only) - Phải đặt trước services/:serviceId */}
             <Route path="services/add" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <AddService />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="services/:serviceId" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ServiceDetails />
               </ProtectedRoute>
             } />
             

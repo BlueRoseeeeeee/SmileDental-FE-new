@@ -432,7 +432,7 @@ const ServiceList = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/services/add')}
+            onClick={() => navigate('/dashboard/services/add')}
           >
             Thêm dịch vụ
           </Button>
