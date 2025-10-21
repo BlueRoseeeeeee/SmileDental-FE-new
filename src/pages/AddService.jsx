@@ -325,6 +325,7 @@ const AddService = () => {
                   >
                     <Select 
                       size="large"
+                      style={{ width: '100%' }}
                     >
                       <Option value="treatment">Điều trị</Option>
                       <Option value="exam">Khám</Option>
@@ -344,6 +345,7 @@ const AddService = () => {
                       size="large"
                       placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
                       style={{ width: '100%' }}
+                      maxTagCount="responsive"
                     >
                       {Object.values(roomTypes).map((value) => (
                         <Option key={value} value={value}>
