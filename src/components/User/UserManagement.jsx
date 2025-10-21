@@ -244,9 +244,6 @@ const UserManagement = () => {
             case 'role':
               rowData['Vai trò'] = getRoleText(user.role);
               break;
-            case 'isActive':
-              rowData['Trạng thái'] = user.isActive ? 'Đang làm việc' : 'Đã nghỉ việc';
-              break;
             case 'updatedAt':
               rowData['Ngày cập nhật'] = user.updatedAt ? dayjs(user.updatedAt).format('DD/MM/YYYY HH:mm') : '';
               break;
@@ -299,9 +296,6 @@ const UserManagement = () => {
             break;
           case 'role':
             colWidths.push({ wch: 15 }); // Vai trò
-            break;
-          case 'isActive':
-            colWidths.push({ wch: 15 }); // Trạng thái
             break;
           case 'updatedAt':
             colWidths.push({ wch: 20 }); // Ngày cập nhật
@@ -520,13 +514,6 @@ const UserManagement = () => {
     return <Tag color={config.color} style={{ fontSize: '16px' }}>{config.text}</Tag>;
   };
 
-  const getStatusTag = (isActive) => {
-    return isActive ? (
-      <Tag color="green" style={{ fontSize: '16px' }}>Đang làm việc</Tag>
-    ) : (
-      <Tag color="red" style={{ fontSize: '16px' }}>Đã nghỉ việc</Tag>
-    );
-  };
 
   const columns = [
     {
@@ -585,12 +572,6 @@ const UserManagement = () => {
       key: 'role',
       sorter: true,
       render: (role) => getRoleTag(role)
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      render: (isActive) => getStatusTag(isActive)
     },
     {
       title: 'Ngày cập nhật',
