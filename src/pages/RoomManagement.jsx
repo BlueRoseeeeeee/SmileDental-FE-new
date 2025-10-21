@@ -341,236 +341,193 @@ const RoomManagement = () => {
   return (
     <div style={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+      background: '#f8fafc',
       padding: '24px'
     }}>
-      {/* Header Card với SmileCare Design */}
-      <Card 
-        style={{ 
-          marginBottom: 24,
-          borderRadius: 16,
-          boxShadow: smileCareTheme.shadows.lg,
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          border: 'none'
-        }}
-        bodyStyle={{ padding: '24px 32px' }}
-      >
-        <Row align="middle" justify="space-between">
-          <Col>
-            <Space align="center" size="large">
-              <Button
-                type="text"
-                icon={<ArrowLeftOutlined style={{ fontSize: 20, color: '#fff' }} />}
-                onClick={() => navigate('/dashboard/rooms')}
-                style={{ 
-                  padding: '8px 16px',
-                  color: '#fff',
-                  height: 48,
-                  borderRadius: 12,
-                  fontWeight: 500,
-                  transition: 'all 0.3s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                Quay lại danh sách
-              </Button>
-              <Divider type="vertical" style={{ height: 40, background: 'rgba(255,255,255,0.3)' }} />
-              <div>
-                <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 600 }}>
-                  <EnvironmentOutlined style={{ marginRight: 12 }} />
-                  {room.name}
-                </Title>
-                <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15 }}>
-                  {room.hasSubRooms ? `Quản lý ${subRooms.length} buồng khám` : 'Phòng không chia buồng'}
-                </Text>
-              </div>
-            </Space>
-          </Col>
-          <Col>
-            <Tag 
-              color={room.isActive ? 'success' : 'error'}
-              style={{ 
-                padding: '8px 20px',
-                fontSize: 15,
-                fontWeight: 600,
-                borderRadius: 20,
-                border: 'none'
-              }}
-              icon={room.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-            >
-              {room.isActive ? 'Đang hoạt động' : 'Ngưng hoạt động'}
-            </Tag>
-          </Col>
-        </Row>
-      </Card>
+      {/* Header đơn giản */}
+      <div style={{ 
+        marginBottom: 24,
+        padding: '20px 0',
+        borderBottom: '1px solid #e5e7eb'
+      }}>
+        {/* Nút quay lại ở trên */}
+        <div style={{ marginBottom: 16 }}>
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/dashboard/rooms')}
+            style={{ 
+              color: '#6b7280',
+              height: 36,
+              padding: '0 12px',
+              borderRadius: 8
+            }}
+          >
+            Quay lại danh sách
+          </Button>
+        </div>
+        
+        {/* Thông tin phòng ở dưới */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <EnvironmentOutlined style={{ color: '#3b82f6', fontSize: 18 }} />
+              <Title level={3} style={{ margin: 0, color: '#1f2937', fontSize: 20 }}>
+                {room.name}
+              </Title>
+            </div>
+            <Text style={{ color: '#6b7280', fontSize: 14 }}>
+              {room.hasSubRooms ? `Quản lý ${subRooms.length} buồng khám` : 'Phòng không chia buồng'}
+            </Text>
+          </div>
+          <Tag 
+            color={room.isActive ? 'success' : 'error'}
+            style={{ 
+              padding: '4px 12px',
+              fontSize: 13,
+              fontWeight: 500,
+              borderRadius: 6
+            }}
+            icon={room.isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+          >
+            {room.isActive ? 'Đang hoạt động' : 'Ngưng hoạt động'}
+          </Tag>
+        </div>
+      </div>
 
       {/* Hiển thị thông tin phù hợp với loại phòng */}
       {room.hasSubRooms ? (
         <>
-          {/* Thêm buồng mới - SmileCare Design */}
-          <Card 
-            style={{ 
-              marginBottom: 20,
-              borderRadius: 16,
-              boxShadow: smileCareTheme.shadows.md,
-              border: '2px solid #dbeafe',
-              background: 'linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%)'
-            }}
-            bodyStyle={{ padding: '28px 32px' }}
-          >
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Thêm buồng mới - Layout đơn giản */}
+          <div style={{ 
+            marginBottom: 24,
+            padding: '24px',
+            background: '#fff',
+            borderRadius: 12,
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                background: '#3b82f6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <PlusOutlined style={{ fontSize: 20, color: '#fff' }} />
+              </div>
+              <div>
+                <Title level={4} style={{ margin: 0, color: '#1f2937' }}>
+                  Thêm buồng khám mới
+                </Title>
+                <Text style={{ color: '#6b7280', fontSize: 14 }}>
+                  Tạo thêm buồng để mở rộng phòng khám
+                </Text>
+              </div>
+            </div>
+
+            <Row gutter={16} align="middle">
+              <Col flex="auto">
+                <Space align="center" size="middle">
+                  <Text strong style={{ fontSize: 15 }}>Số lượng buồng:</Text>
+                  <InputNumber
+                    min={1}
+                    max={20}
+                    value={addSubRoomCount}
+                    onChange={setAddSubRoomCount}
+                    size="large"
+                    style={{ width: 120 }}
+                  />
+                </Space>
+              </Col>
+              <Col>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddSubRooms}
+                  loading={isAddingSubRooms}
+                  disabled={addSubRoomCount < 1}
+                  style={{ height: 40, borderRadius: 8 }}
+                >
+                  Thêm buồng
+                </Button>
+              </Col>
+            </Row>
+
+            <div style={{ 
+              marginTop: 16,
+              padding: '12px 16px',
+              background: '#f0f9ff',
+              borderRadius: 8,
+              borderLeft: '3px solid #3b82f6'
+            }}>
+              <Space align="start">
+                <InfoCircleOutlined style={{ color: '#3b82f6', fontSize: 14, marginTop: 2 }} />
+                <Text style={{ color: '#6b7280', fontSize: 13 }}>
+                  Buồng mới sẽ được đặt tên tự động và kích hoạt ngay. Bạn có thể chỉnh sửa sau.
+                </Text>
+              </Space>
+            </div>
+          </div>
+
+          {/* Bảng danh sách buồng - Layout đơn giản */}
+          <div style={{ 
+            background: '#fff',
+            borderRadius: 12,
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            overflow: 'hidden'
+          }}>
+            {/* Header đơn giản */}
+            <div style={{ 
+              padding: '20px 24px',
+              background: '#f8fafc',
+              borderBottom: '1px solid #e5e7eb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: '#3b82f6',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+                  justifyContent: 'center'
                 }}>
-                  <PlusOutlined style={{ fontSize: 24, color: '#fff' }} />
+                  <HomeOutlined style={{ fontSize: 18, color: '#fff' }} />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <Title level={4} style={{ margin: 0, color: smileCareTheme.colors.text.primary }}>
-                    Thêm buồng khám mới
+                <div>
+                  <Title level={4} style={{ margin: 0, color: '#1f2937' }}>
+                    Danh sách buồng khám
                   </Title>
-                  <Text style={{ color: smileCareTheme.colors.text.secondary, fontSize: 14 }}>
-                    Tạo thêm buồng để mở rộng phòng khám
+                  <Text style={{ color: '#6b7280', fontSize: 13 }}>
+                    Quản lý tất cả buồng trong phòng
                   </Text>
                 </div>
               </div>
-
-              <Row gutter={16} align="middle">
-                <Col flex="auto">
-                  <Space align="center" size="middle">
-                    <Text strong style={{ fontSize: 15 }}>Số lượng buồng:</Text>
-                    <InputNumber
-                      min={1}
-                      max={20}
-                      value={addSubRoomCount}
-                      onChange={setAddSubRoomCount}
-                      size="large"
-                      style={{ 
-                        width: 120,
-                        borderRadius: 8,
-                        borderColor: smileCareTheme.colors.primary[300]
-                      }}
-                    />
-                  </Space>
-                </Col>
-                <Col>
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<PlusOutlined />}
-                    onClick={handleAddSubRooms}
-                    loading={isAddingSubRooms}
-                    disabled={addSubRoomCount < 1}
-                    style={{
-                      height: 48,
-                      borderRadius: 12,
-                      fontWeight: 600,
-                      padding: '0 32px',
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                      border: 'none',
-                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
-                    }}
-                  >
-                    Thêm buồng
-                  </Button>
-                </Col>
-              </Row>
-
-              <div style={{ 
-                padding: '12px 16px',
-                background: '#f0f9ff',
-                borderRadius: 10,
-                borderLeft: '4px solid #3b82f6'
-              }}>
-                <Space align="start">
-                  <InfoCircleOutlined style={{ color: '#3b82f6', fontSize: 16, marginTop: 2 }} />
-                  <Text style={{ color: smileCareTheme.colors.text.secondary, fontSize: 13 }}>
-                    Buồng mới sẽ được đặt tên tự động và kích hoạt ngay. Bạn có thể chỉnh sửa sau.
-                  </Text>
-                </Space>
-              </div>
-            </Space>
-          </Card>
-
-          {/* Bảng danh sách buồng - SmileCare Design */}
-          <Card 
-            style={{ 
-              borderRadius: 16,
-              boxShadow: smileCareTheme.shadows.md,
-              border: '1px solid #e5e7eb',
-              overflow: 'hidden'
-            }}
-            bodyStyle={{ padding: 0 }}
-          >
-            {/* Table Header */}
-            <div style={{ 
-              padding: '20px 28px',
-              background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
-              borderBottom: '2px solid #e5e7eb'
-            }}>
-              <Row align="middle" justify="space-between">
-                <Col>
-                  <Space align="center">
-                    <div style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 10,
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <HomeOutlined style={{ fontSize: 20, color: '#fff' }} />
-                    </div>
-                    <div>
-                      <Title level={4} style={{ margin: 0, color: smileCareTheme.colors.text.primary }}>
-                        Danh sách buồng khám
-                      </Title>
-                      <Text style={{ color: smileCareTheme.colors.text.secondary, fontSize: 13 }}>
-                        Quản lý tất cả buồng trong phòng
-                      </Text>
-                    </div>
-                  </Space>
-                </Col>
-                <Col>
-                  <Tag 
-                    color="blue" 
-                    style={{ 
-                      padding: '6px 16px',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      borderRadius: 8
-                    }}
-                  >
-                    {filteredSubRooms.length} buồng
-                  </Tag>
-                </Col>
-              </Row>
+              <Tag color="blue" style={{ fontSize: 13, fontWeight: 500 }}>
+                {filteredSubRooms.length} buồng
+              </Tag>
             </div>
 
             {/* Filter và Search */}
-            <div style={{ padding: '20px 28px', background: '#fff' }}>
+            <div style={{ padding: '20px 24px', background: '#fff' }}>
               <Row gutter={[16, 16]} align="middle">
                 <Col xs={24} sm={16} md={12} lg={8}>
                   <Input
-                    placeholder="🔍 Tìm kiếm theo tên buồng..."
-                    prefix={<SearchOutlined style={{ color: smileCareTheme.colors.primary[500] }} />}
+                    placeholder="Tìm kiếm theo tên buồng..."
+                    prefix={<SearchOutlined />}
                     value={searchTerm}
                     onChange={handleSearchChange}
                     allowClear
-                    size="large"
-                    style={{ 
-                      borderRadius: 10,
-                      borderColor: smileCareTheme.colors.border.light
-                    }}
+                    style={{ borderRadius: 8 }}
                   />
                 </Col>
                 
@@ -580,21 +537,17 @@ const RoomManagement = () => {
                     value={filters.isActive}
                     onChange={(value) => handleFilterChange('isActive', value)}
                     allowClear
-                    size="large"
-                    style={{ 
-                      width: '100%',
-                      borderRadius: 10
-                    }}
+                    style={{ width: '100%', borderRadius: 8 }}
                   >
-                    <Select.Option value={true}>✅ Hoạt động</Select.Option>
-                    <Select.Option value={false}>⛔ Không hoạt động</Select.Option>
+                    <Select.Option value={true}>Hoạt động</Select.Option>
+                    <Select.Option value={false}>Không hoạt động</Select.Option>
                   </Select>
                 </Col>
               </Row>
             </div>
 
             {/* Table */}
-            <div style={{ padding: '0 28px 28px' }}>
+            <div style={{ padding: '0 24px 24px' }}>
               <Table
                 columns={columns}
                 dataSource={filteredSubRooms}
@@ -608,191 +561,168 @@ const RoomManagement = () => {
                     `${range[0]}-${range[1]} của ${total} buồng`,
                   style: { marginTop: 16 }
                 }}
-                rowClassName={(record, index) => 
-                  index % 2 === 0 ? 'table-row-light' : 'table-row-dark'
-                }
-                style={{
-                  background: '#fff',
-                  borderRadius: 12,
-                  overflow: 'hidden'
-                }}
+                style={{ background: '#fff' }}
               />
             </div>
-          </Card>
+          </div>
         </>
       ) : (
-        /* Hiển thị thông tin phòng đơn - SmileCare Design */
-        <Card 
-          style={{ 
-            borderRadius: 16,
-            boxShadow: smileCareTheme.shadows.md,
-            border: '1px solid #e5e7eb',
-            overflow: 'hidden'
-          }}
-          bodyStyle={{ padding: 0 }}
-        >
-          {/* Header */}
+        /* Hiển thị thông tin phòng đơn - Layout đơn giản */
+        <div style={{ 
+          background: '#fff',
+          borderRadius: 12,
+          border: '1px solid #e5e7eb',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          overflow: 'hidden'
+        }}>
+          {/* Header đơn giản */}
           <div style={{ 
-            padding: '20px 28px',
-            background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)',
-            borderBottom: '2px solid #e5e7eb'
+            padding: '20px 24px',
+            background: '#f8fafc',
+            borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12
           }}>
-            <Space align="center">
-              <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <InfoCircleOutlined style={{ fontSize: 20, color: '#fff' }} />
-              </div>
-              <div>
-                <Title level={4} style={{ margin: 0, color: smileCareTheme.colors.text.primary }}>
-                  Thông tin phòng khám
-                </Title>
-                <Text style={{ color: smileCareTheme.colors.text.secondary, fontSize: 13 }}>
-                  Phòng không chia buồng - Cấu hình chung
-                </Text>
-              </div>
-            </Space>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              background: '#3b82f6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <InfoCircleOutlined style={{ fontSize: 18, color: '#fff' }} />
+            </div>
+            <div>
+              <Title level={4} style={{ margin: 0, color: '#1f2937' }}>
+                Thông tin phòng khám
+              </Title>
+              <Text style={{ color: '#6b7280', fontSize: 13 }}>
+                Phòng không chia buồng - Cấu hình chung
+              </Text>
+            </div>
           </div>
 
-          {/* Statistics */}
-          <div style={{ padding: '32px 28px' }}>
-            <Row gutter={[24, 24]}>
-              <Col xs={24} sm={12} md={8}>
-                <Card 
-                  style={{ 
-                    textAlign: 'center',
-                    borderRadius: 12,
-                    border: '2px solid #dbeafe',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #eff6ff 100%)',
-                    boxShadow: smileCareTheme.shadows.sm
-                  }}
-                  bodyStyle={{ padding: '24px' }}
-                >
-                  <div style={{
-                    width: 56,
-                    height: 56,
-                    margin: '0 auto 16px',
-                    borderRadius: 14,
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
-                  }}>
-                    <UserOutlined style={{ fontSize: 28, color: '#fff' }} />
-                  </div>
-                  <Statistic
-                    title={<Text style={{ fontSize: 13, color: smileCareTheme.colors.text.secondary }}>Nha sĩ tối đa</Text>}
-                    value={room.maxDoctors}
-                    valueStyle={{ 
-                      color: smileCareTheme.colors.primary[600], 
-                      fontSize: 32,
-                      fontWeight: 700
-                    }}
-                    suffix={<Text style={{ fontSize: 16, color: smileCareTheme.colors.text.tertiary }}>người</Text>}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={8}>
-                <Card 
-                  style={{ 
-                    textAlign: 'center',
-                    borderRadius: 12,
-                    border: '2px solid #d1fae5',
-                    background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
-                    boxShadow: smileCareTheme.shadows.sm
-                  }}
-                  bodyStyle={{ padding: '24px' }}
-                >
-                  <div style={{
-                    width: 56,
-                    height: 56,
-                    margin: '0 auto 16px',
-                    borderRadius: 14,
-                    background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)'
-                  }}>
-                    <UserOutlined style={{ fontSize: 28, color: '#fff' }} />
-                  </div>
-                  <Statistic
-                    title={<Text style={{ fontSize: 13, color: smileCareTheme.colors.text.secondary }}>Y tá tối đa</Text>}
-                    value={room.maxNurses}
-                    valueStyle={{ 
-                      color: smileCareTheme.colors.success[600], 
-                      fontSize: 32,
-                      fontWeight: 700
-                    }}
-                    suffix={<Text style={{ fontSize: 16, color: smileCareTheme.colors.text.tertiary }}>người</Text>}
-                  />
-                </Card>
-              </Col>
-              <Col xs={24} sm={24} md={8}>
-                <Card 
-                  style={{ 
-                    textAlign: 'center',
-                    borderRadius: 12,
-                    border: room.autoScheduleEnabled ? '2px solid #d1fae5' : '2px solid #fee2e2',
-                    background: room.autoScheduleEnabled 
-                      ? 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)'
-                      : 'linear-gradient(135deg, #ffffff 0%, #fef2f2 100%)',
-                    boxShadow: smileCareTheme.shadows.sm
-                  }}
-                  bodyStyle={{ padding: '24px' }}
-                >
-                  <div style={{
-                    width: 56,
-                    height: 56,
-                    margin: '0 auto 16px',
-                    borderRadius: 14,
-                    background: room.autoScheduleEnabled 
-                      ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
-                      : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: room.autoScheduleEnabled 
-                      ? '0 4px 12px rgba(34, 197, 94, 0.4)'
-                      : '0 4px 12px rgba(239, 68, 68, 0.4)'
-                  }}>
-                    {room.autoScheduleEnabled ? <CheckCircleOutlined style={{ fontSize: 28, color: '#fff' }} /> : <CloseCircleOutlined style={{ fontSize: 28, color: '#fff' }} />}
-                  </div>
-                  <Statistic
-                    title={<Text style={{ fontSize: 13, color: smileCareTheme.colors.text.secondary }}>Tự động lịch</Text>}
-                    value={room.autoScheduleEnabled ? 'Đang bật' : 'Đang tắt'}
-                    valueStyle={{ 
-                      color: room.autoScheduleEnabled ? smileCareTheme.colors.success[600] : smileCareTheme.colors.error[600], 
-                      fontSize: 20,
-                      fontWeight: 700
-                    }}
-                  />
-                </Card>
-              </Col>
-            </Row>
+          {/* Statistics đơn giản - Căn chỉnh đều */}
+          <div style={{ padding: '24px' }}>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+              gap: '16px' 
+            }}>
+              <div style={{ 
+                textAlign: 'center',
+                padding: '20px',
+                background: '#f0f9ff',
+                borderRadius: 8,
+                border: '1px solid #dbeafe',
+                height: '140px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  margin: '0 auto 12px',
+                  borderRadius: 8,
+                  background: '#3b82f6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <UserOutlined style={{ fontSize: 24, color: '#fff' }} />
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#1e40af', marginBottom: 4 }}>
+                  {room.maxDoctors}
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>Nha sĩ tối đa</div>
+              </div>
+              
+              <div style={{ 
+                textAlign: 'center',
+                padding: '20px',
+                background: '#f0fdf4',
+                borderRadius: 8,
+                border: '1px solid #d1fae5',
+                height: '140px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  margin: '0 auto 12px',
+                  borderRadius: 8,
+                  background: '#22c55e',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <UserOutlined style={{ fontSize: 24, color: '#fff' }} />
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#16a34a', marginBottom: 4 }}>
+                  {room.maxNurses}
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>Y tá tối đa</div>
+              </div>
+              
+              <div style={{ 
+                textAlign: 'center',
+                padding: '20px',
+                background: room.autoScheduleEnabled ? '#f0fdf4' : '#fef2f2',
+                borderRadius: 8,
+                border: room.autoScheduleEnabled ? '1px solid #d1fae5' : '1px solid #fecaca',
+                height: '140px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+              }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  margin: '0 auto 12px',
+                  borderRadius: 8,
+                  background: room.autoScheduleEnabled ? '#22c55e' : '#ef4444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {room.autoScheduleEnabled ? 
+                    <CheckCircleOutlined style={{ fontSize: 24, color: '#fff' }} /> : 
+                    <CloseCircleOutlined style={{ fontSize: 24, color: '#fff' }} />
+                  }
+                </div>
+                <div style={{ 
+                  fontSize: 16, 
+                  fontWeight: 700, 
+                  color: room.autoScheduleEnabled ? '#16a34a' : '#dc2626', 
+                  marginBottom: 4 
+                }}>
+                  {room.autoScheduleEnabled ? 'Đang bật' : 'Đang tắt'}
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>Tự động lịch</div>
+              </div>
+            </div>
           </div>
           
-          {/* Info Note */}
+          {/* Info Note đơn giản */}
           <div style={{ 
-            padding: '20px 28px',
+            padding: '16px 24px',
             background: '#f0f9ff',
             borderTop: '1px solid #e5e7eb'
           }}>
             <Space align="start">
-              <InfoCircleOutlined style={{ color: smileCareTheme.colors.primary[500], fontSize: 16, marginTop: 2 }} />
-              <Text style={{ color: smileCareTheme.colors.text.secondary, fontSize: 13 }}>
+              <InfoCircleOutlined style={{ color: '#3b82f6', fontSize: 14, marginTop: 2 }} />
+              <Text style={{ color: '#6b7280', fontSize: 13 }}>
                 <strong>Lưu ý:</strong> Đây là phòng không chia buồng. Tất cả hoạt động diễn ra trong một không gian chung.
               </Text>
             </Space>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Toggle Status Modal - SmileCare Design */}
