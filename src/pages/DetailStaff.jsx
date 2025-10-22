@@ -293,9 +293,11 @@ const DetailStaff = () => {
                               color: '#333',
                               fontWeight: '400',
                               lineHeight: '1.5'
-                            }}>
-                              {user.description || 'Không có mô tả'}
-                            </div>
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: user.description || 'Không có mô tả'
+                            }}
+                            />
                           </div>
                         </div>
                       )
