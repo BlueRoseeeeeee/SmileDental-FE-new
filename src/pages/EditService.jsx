@@ -39,6 +39,24 @@ import TinyMCE from '../components/TinyMCE/TinyMCE';
 
 const { Title, Text } = Typography;
 
+// Helper function to get room type label
+const getRoomTypeLabel = (roomType) => {
+  const labels = {
+    CONSULTATION: 'Phòng tư vấn/khám',
+    GENERAL_TREATMENT: 'Phòng điều trị TQ',
+    SURGERY: 'Phòng phẫu thuật',
+    ORTHODONTIC: 'Phòng chỉnh nha',
+    COSMETIC: 'Phòng thẩm mỹ',
+    PEDIATRIC: 'Phòng nha nhi',
+    X_RAY: 'Phòng X-quang',
+    STERILIZATION: 'Phòng tiệt trùng',
+    LAB: 'Phòng labo',
+    RECOVERY: 'Phòng hồi sức',
+    SUPPORT: 'Phòng phụ trợ'
+  };
+  return labels[roomType] || roomType;
+};
+
 const EditService = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
@@ -49,6 +67,7 @@ const EditService = () => {
   const [serviceDescription, setServiceDescription] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [roomTypes, setRoomTypes] = useState({});
 
   // Add-on confirmation states
   const [showToggleConfirmModal, setShowToggleConfirmModal] = useState(false);
@@ -73,6 +92,7 @@ const EditService = () => {
   useEffect(() => {
     if (serviceId) {
       fetchServiceDetails();
+      fetchRoomTypes();
     }
   }, [serviceId]);
 
@@ -120,7 +140,8 @@ const EditService = () => {
         form.setFieldsValue({
           name: response.name,
           type: response.type,
-          requireExamFirst: response.requireExamFirst
+          requireExamFirst: response.requireExamFirst,
+          allowedRoomTypes: response.allowedRoomTypes || []
         });
         setServiceDescription(response.description || '');
       }
@@ -130,6 +151,17 @@ const EditService = () => {
       navigate('/dashboard/services');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch room types
+  const fetchRoomTypes = async () => {
+    try {
+      const response = await servicesService.getRoomTypes();
+      setRoomTypes(response);
+    } catch (error) {
+      console.error('Error fetching room types:', error);
+      toastService.error('Không thể tải danh sách loại phòng');
     }
   };
 
@@ -186,7 +218,8 @@ const EditService = () => {
         name: values.name,
         type: values.type,
         description: serviceDescription,
-        requireExamFirst: values.requireExamFirst
+        requireExamFirst: values.requireExamFirst,
+        allowedRoomTypes: values.allowedRoomTypes
       };
 
       const updatedService = await servicesService.updateService(serviceId, updateData);
@@ -575,7 +608,8 @@ const EditService = () => {
           initialValues={{
             name: service?.name,
             type: service?.type,
-            requireExamFirst: service?.requireExamFirst
+            requireExamFirst: service?.requireExamFirst,
+            allowedRoomTypes: service?.allowedRoomTypes || []
           }}
         >
           <Row gutter={[16, 16]}>
@@ -623,7 +657,37 @@ const EditService = () => {
           </Row>
 
           <Row gutter={[16, 16]}>
-            {/* Row 3: Mô tả - Full width */}
+            {/* Row 3: Loại phòng cho phép - Full width */}
+            <Col span={24}>
+              <Form.Item
+                name="allowedRoomTypes"
+                label="Loại phòng cho phép"
+                rules={[
+                  { required: true, message: 'Vui lòng chọn ít nhất 1 loại phòng!' }
+                ]}
+              >
+                <Select
+                  mode="multiple"
+                  placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
+                  style={{ width: '100%' }}
+                  maxTagCount="responsive"
+                  showSearch
+                  filterOption={(input, option) =>
+                    option?.children?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {Object.values(roomTypes).map((value) => (
+                    <Select.Option key={value} value={value}>
+                      {getRoomTypeLabel(value)}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]}>
+            {/* Row 4: Mô tả - Full width */}
             <Col span={24}>
               <Form.Item
                 label="Mô tả"
