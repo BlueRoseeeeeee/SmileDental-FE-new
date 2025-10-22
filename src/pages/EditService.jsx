@@ -1285,10 +1285,11 @@ const EditService = () => {
             label="Ghi chú"
           >
             <Input.TextArea
-              placeholder="Ghi chú cho lịch giá (VD: Khuyến mãi Tết, Giảm giá mùa hè...)"
+              placeholder="Nhập ghi chú cho lịch giá (VD: Khuyến mãi Tết, Giảm giá mùa hè...)"
               rows={3}
               maxLength={500}
               showCount
+              className="price-schedule-textarea"
             />
           </Form.Item>
 
