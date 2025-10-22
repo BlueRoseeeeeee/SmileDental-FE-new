@@ -306,7 +306,7 @@ const PublicServiceAddOns = () => {
                             color: '#666',
                             lineHeight: '14px'
                           }}>
-                            Từ {new Date(addOn.priceSchedules?.[0]?.startDate).toLocaleDateString('vi-VN')} đến {new Date(addOn.priceSchedules?.[0]?.endDate).toLocaleDateString('vi-VN')}
+                            Giá áp dụng từ {new Date(addOn.priceSchedules?.[0]?.startDate).toLocaleDateString('vi-VN')} đến {new Date(addOn.priceSchedules?.[0]?.endDate).toLocaleDateString('vi-VN')}
                           </Text>
                         </div>
                       </div>
