@@ -1,10 +1,11 @@
 /*
 * @author: HoTram
 */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { ToastContainer } from 'react-toastify';
+import { useAuth } from './hooks/useAuth.js';
 
 // Auth Components
 import Login from './components/Auth/Login.jsx';
@@ -25,10 +26,8 @@ import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
 import EditUser from './pages/EditUser.jsx';
 import DetailStaff from './pages/DetailStaff.jsx';
-import CertificateManagement from './components/User/CertificateManagement.jsx';
 import ChangePassword from './components/Auth/ChangePassword.jsx';
 import RoomList from './pages/RoomList.jsx';
-import RoomManagement from './pages/RoomManagement.jsx';
 import ServiceList from './pages/ServiceList.jsx';
 import ServiceDetails from './pages/ServiceDetails.jsx';
 import AddService from './pages/AddService.jsx';
@@ -139,6 +138,37 @@ const Unauthorized = () => (
   </div>
 );
 
+// Root redirect component
+const RootRedirect = () => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  // Show loading for a maximum of 2 seconds, then show homepage
+  const [showHomepage, setShowHomepage] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHomepage(true);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (loading && !showHomepage) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        Loading...
+      </div>
+    );
+  }
+  
+  return <HomepageLayout><Homepage /></HomepageLayout>;
+};
+
 // Placeholder pages for development
 const Settings = () => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -169,10 +199,51 @@ function App() {
           theme="light"
         />
         <Routes>
-          {/* Public routes - Auth */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
+          {/* Root redirect - redirect based on auth status */}
+          <Route path="/" element={<RootRedirect />} />
+          
+          {/* Public routes - Auth with HomepageLayout */}
+          <Route path="/login" element={
+            <HomepageLayout>
+              <Login />
+            </HomepageLayout>
+          } />
+          <Route path="/register" element={
+            <HomepageLayout>
+              <Register />
+            </HomepageLayout>
+          } />
+          <Route path="/forgot-password" element={
+            <HomepageLayout>
+              <ForgotPassword />
+            </HomepageLayout>
+          } />
+          
+          {/* Public Homepage */}
+          <Route path="/home" element={
+            <HomepageLayout>
+              <Homepage />
+            </HomepageLayout>
+          } />
+           
+          {/* Public Service Routes */}
+          <Route path="/services/pl/:serviceName/addons" element={
+            <HomepageLayout>
+              <PublicServiceAddOns />
+            </HomepageLayout>
+          } />
+          
+          <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
+            <HomepageLayout>
+              <PublicServiceAddOnDetail />
+            </HomepageLayout>
+          } />
+          
+          <Route path="/dentist-detail/:id" element={
+            <HomepageLayout>
+              <PublicDentistDetail />
+            </HomepageLayout>
+          } />
           
           {/* Patient Public Routes with Layout */}
           <Route path="/patient" element={<PatientLayout />}>
@@ -255,50 +326,6 @@ function App() {
               </ProtectedRoute>
             } />
           </Route>
-         
-          {/* Public routes - Trang chủ công khai */}
-          <Route path="/" element={
-            <HomepageLayout>
-              <Homepage />
-            </HomepageLayout>
-          } />
-          <Route path="/login" element={
-            <HomepageLayout>
-              <Login />
-            </HomepageLayout>
-          } />
-          <Route path="/register" element={
-            <HomepageLayout>
-              <Register />
-            </HomepageLayout>
-          } />
-          <Route path="/forgot-password" element={
-            <HomepageLayout>
-              <ForgotPassword />
-            </HomepageLayout>
-          } />
-           
-           {/* Public Service AddOns Route */}
-           <Route path="/services/pl/:serviceName/addons" element={
-             <HomepageLayout>
-               <PublicServiceAddOns />
-             </HomepageLayout>
-           } />
-           
-           {/* Public Service AddOn Detail Route */}
-           <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
-             <HomepageLayout>
-               <PublicServiceAddOnDetail />
-             </HomepageLayout>
-           } />
-           
-           {/* Dentist Detail Route - Public */}
-           <Route path="/dentist-detail/:id" element={
-             <HomepageLayout>
-               <PublicDentistDetail />
-             </HomepageLayout>
-           } />
-           
           
           {/* Protected routes - Dashboard cho người đã đăng nhập */}
           <Route path="/dashboard" element={
@@ -548,6 +575,140 @@ function App() {
             </ProtectedRoute>
           }>
             <Route index element={<Settings />} />
+            
+            {/* Profile */}
+            <Route path="profile" element={<Profile />} />
+            
+            {/* Change Password */}
+            <Route path="change-password" element={<ChangePassword />} />
+            
+            {/* Admin/Manager routes */}
+            <Route path="users" element={<UserManagement />} />
+            <Route path="users/edit/:id" element={<EditUser />} />
+            <Route path="users/detail/:id" element={<DetailStaff />} />
+            
+            {/* Patient Appointments Management (Admin/Manager only) */}
+            <Route path="patient-appointments" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AdminPatientAppointments />
+              </ProtectedRoute>
+            } />
+            
+            {/* Walk-in Appointments & Cash Payment (Admin/Manager only) */}
+            <Route path="walk-in-appointments" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <WalkInAppointmentForm />
+              </ProtectedRoute>
+            } />
+            
+            {/* Medical Records Management (Admin/Manager/Dentist) */}
+            <Route path="records" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist']}>
+                <RecordList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Invoice Management (Admin/Manager) */}
+            <Route path="invoices" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <InvoiceList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Room Management (Admin/Manager only) */}
+            <Route path="rooms" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <RoomList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Service Management (Admin/Manager only) */}
+            <Route path="services" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ServiceList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Add Service (Admin/Manager only) - Phải đặt trước services/:serviceId */}
+            <Route path="services/add" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AddService />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="services/:serviceId" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ServiceDetails />
+              </ProtectedRoute>
+            } />
+            
+            {/* Edit Service (Admin/Manager only) */}
+            <Route path="services/:serviceId/edit" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <EditService />
+              </ProtectedRoute>
+            } />
+            
+            {/* Add Service Add-On (Admin/Manager only) */}
+            <Route path="services/:serviceId/addons/add" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AddServiceAddOn />
+              </ProtectedRoute>
+            } />
+            
+            {/* Edit Service Add-On (Admin/Manager only) */}
+            <Route path="services/:serviceId/addons/:addOnId/edit" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <EditServiceAddOn />
+              </ProtectedRoute>
+            } />
+
+            {/* Schedule Management (Admin/Manager only) */}
+            <Route path="schedules" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ScheduleConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/create-for-room" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <CreateScheduleForRoom />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/calendar" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
+                <ScheduleCalendar />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/holidays" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <HolidayManagementPage />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffAssignmentUnified />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment/detail" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffAssignmentDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment/assign" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AssignStaffForm />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment-unified" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffAssignmentUnified />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-replacement" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffReplacement />
+              </ProtectedRoute>
+            } />
           </Route>
           
           {/* Error routes */}

@@ -86,7 +86,12 @@ const AddServiceAddOn = () => {
       // Load draft if exists
       const draft = loadDraft();
       if (draft) {
-        form.setFieldsValue(draft.formData);
+        // Đảm bảo durationMinutes không có giá trị mặc định
+        const formData = { ...draft.formData };
+        if (formData.durationMinutes === 30) {
+          formData.durationMinutes = null;
+        }
+        form.setFieldsValue(formData);
         setAddOnDescription(draft.description);
         setHasUnsavedChanges(true);
         message.info('Đã khôi phục bản nháp chưa lưu');
@@ -94,7 +99,7 @@ const AddServiceAddOn = () => {
     } catch (error) {
       console.error('Error fetching service details:', error);
       toastService.error('Không thể tải chi tiết dịch vụ: ' + error.message);
-      navigate('/services');
+      navigate('/dashboard/services');
     } finally {
       setLoading(false);
     }
@@ -165,7 +170,7 @@ const AddServiceAddOn = () => {
       setHasUnsavedChanges(false);
       clearDraft();
       toastService.success('Thêm tùy chọn dịch vụ thành công!');
-      navigate(`/services/${serviceId}/edit`);
+      navigate(`/dashboard/services/${serviceId}/edit`);
     } catch (error) {
       toastService.error('Lỗi khi thêm tùy chọn dịch vụ');
     } finally {
@@ -179,7 +184,7 @@ const AddServiceAddOn = () => {
       const confirmed = window.confirm('Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời khỏi trang?');
       if (!confirmed) return;
     }
-    navigate(`/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`);
   };
 
   if (loading) {
@@ -206,7 +211,7 @@ const AddServiceAddOn = () => {
       }}>
         <Text type="secondary">Không tìm thấy dịch vụ</Text>
         <br />
-        <Button onClick={() => navigate('/services')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate('/dashboard/services')} style={{ marginTop: 16 }}>
           Quay lại danh sách
         </Button>
       </div>
@@ -254,12 +259,7 @@ const AddServiceAddOn = () => {
         </div>
       </div>
 
-
-      {/* Thông tin hàng hoá */}
       <Card>
-        <Title level={4} style={{ marginBottom: 16, color: '#262626' }}>
-          Thông tin hàng hoá
-        </Title>
         <Form
           form={form}
           layout="vertical"
@@ -267,11 +267,118 @@ const AddServiceAddOn = () => {
           initialValues={{
             name: '',
             price: 0,
-            durationMinutes: 30,
+            durationMinutes: null,
             unit: 'Răng',
             isActive: true
           }}
         >
+          <Row gutter={[16, 16]}>
+            {/* Upload ảnh - Full width */}
+            <Col span={24}>
+              <Form.Item
+                label="Hình ảnh"
+              >
+                <Upload
+                  customRequest={({ file, onSuccess }) => {
+                    setImageFile(file);
+                    setHasUnsavedChanges(true);
+                    
+                    // Tạo preview URL
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setImagePreview(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                    
+                    onSuccess("ok");
+                  }}
+                  showUploadList={false}
+                  maxCount={1}
+                  accept="image/*"
+                >
+                  <div style={{
+                    width: '200px',
+                    height: '200px',
+                    border: '2px dashed #d9d9d9',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    backgroundColor: '#fafafa',
+                    transition: 'border-color 0.3s',
+                    margin: '0 auto',
+                    ':hover': {
+                      borderColor: '#1890ff'
+                    }
+                  }}>
+                    {imagePreview ? (
+                      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          style={{ 
+                            maxWidth: '100%', 
+                            maxHeight: '100%', 
+                            objectFit: 'cover',
+                            borderRadius: '6px'
+                          }} 
+                        />
+                        <div style={{
+                          position: 'absolute',
+                          top: '12px',
+                          right: '12px',
+                          background: 'rgba(255, 77, 79, 0.9)',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                          transition: 'all 0.2s ease',
+                          border: '2px solid white'
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setImageFile(null);
+                          setImagePreview(null);
+                          setHasUnsavedChanges(true);
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 77, 79, 1)';
+                          e.target.style.transform = 'scale(1.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 77, 79, 0.9)';
+                          e.target.style.transform = 'scale(1)';
+                        }}
+                        title="Xóa ảnh"
+                        >
+                          ×
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: '24px', color: '#8c8c8c', marginBottom: '8px' }}>
+                          <UploadOutlined />
+                        </div>
+                        <div style={{ color: '#ff6b35', fontSize: '14px', fontWeight: '500' }}>
+                          Thêm hình ảnh
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Upload>
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Row gutter={[16, 16]}>
             {/* Tên tùy chọn - Full width */}
             <Col span={24}>
@@ -370,72 +477,6 @@ const AddServiceAddOn = () => {
             </Col>
           </Row>
 
-          <Row gutter={[16, 16]}>
-            {/* Upload ảnh - Full width */}
-            <Col span={24}>
-              <Form.Item
-                label="Hình ảnh"
-              >
-                <Upload
-                  customRequest={({ file, onSuccess }) => {
-                    setImageFile(file);
-                    setHasUnsavedChanges(true);
-                    
-                    // Tạo preview URL
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                      setImagePreview(e.target.result);
-                    };
-                    reader.readAsDataURL(file);
-                    
-                    onSuccess("ok");
-                  }}
-                  showUploadList={false}
-                  maxCount={1}
-                  accept="image/*"
-                >
-                  <div style={{
-                    width: '100%',
-                    height: '120px',
-                    border: '2px dashed #d9d9d9',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    backgroundColor: '#fafafa',
-                    transition: 'border-color 0.3s',
-                    ':hover': {
-                      borderColor: '#1890ff'
-                    }
-                  }}>
-                    {imagePreview ? (
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        style={{ 
-                          maxWidth: '100%', 
-                          maxHeight: '100%', 
-                          objectFit: 'cover',
-                          borderRadius: '6px'
-                        }} 
-                      />
-                    ) : (
-                      <>
-                        <div style={{ fontSize: '24px', color: '#8c8c8c', marginBottom: '8px' }}>
-                          <UploadOutlined />
-                        </div>
-                        <div style={{ color: '#ff6b35', fontSize: '14px', fontWeight: '500' }}>
-                          Thêm hình ảnh
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </Upload>
-              </Form.Item>
-            </Col>
-          </Row>
 
           <Row gutter={[16, 16]}>
             {/* Mô tả - Full width */}

@@ -75,7 +75,7 @@ const Profile = () => {
               <div style={{ marginBottom: '24px' }}>
                 <Avatar
                   size={120}
-                  src={user?.avatar}
+                  {...(user?.avatar ? { src: user.avatar } : {})}
                   icon={<UserOutlined />}
                   style={{ 
                     background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',

@@ -174,7 +174,7 @@ const ServiceList = () => {
 
   // Handle edit service
   const handleEditService = (serviceId) => {
-    navigate(`/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`);
   };
 
   // Handle show delete confirmation modal
@@ -315,19 +315,6 @@ const ServiceList = () => {
       ),
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 120,
-      sorter: (a, b) => a.isActive - b.isActive,
-      sortDirections: ['ascend', 'descend'],
-      render: (isActive) => (
-        <Tag color={isActive ? 'green' : 'red'}>
-          {isActive ? 'Hoạt động' : 'Ngưng hoạt động'}
-        </Tag>
-      ),
-    },
-    {
       title: 'Tùy chọn',
       dataIndex: 'serviceAddOns',
       key: 'serviceAddOns',
@@ -445,7 +432,7 @@ const ServiceList = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/services/add')}
+            onClick={() => navigate('/dashboard/services/add')}
           >
             Thêm dịch vụ
           </Button>
