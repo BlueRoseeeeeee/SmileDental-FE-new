@@ -138,8 +138,8 @@ const DashboardLayout = () => {
           icon: <EnvironmentOutlined />,
           label: 'Cơ sở vật chất',
           children: [
-            { key: '/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
-            { key: '/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
+            { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
+            // { key: '/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
           ]
         },
 
