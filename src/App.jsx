@@ -24,6 +24,7 @@ import Homepage from './pages/Homepage.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
+import CertificateManagement from './components/User/CertificateManagement.jsx';
 import EditUser from './pages/EditUser.jsx';
 import DetailStaff from './pages/DetailStaff.jsx';
 import ChangePassword from './components/Auth/ChangePassword.jsx';
@@ -445,7 +446,7 @@ function App() {
               <DashboardLayout />
             </ProtectedRoute>
           }>
-            <Route index element={<RoomManagement />} />
+            <Route index element={<RoomList />} />
           </Route>
           
           {/* Service Management */}
