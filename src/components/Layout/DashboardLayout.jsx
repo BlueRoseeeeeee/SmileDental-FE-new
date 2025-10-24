@@ -81,7 +81,7 @@ const DashboardLayout = () => {
           label: 'Quản lý nhân sự',
           children: [
             { key: '/dashboard/users', label: 'Danh sách nhân viên', icon: <UserSwitchOutlined /> },
-            { key: '/schedules/staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined /> },
+            { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined /> },
           ]
         },
         
