@@ -14,6 +14,7 @@ import {
   Table,
   Divider,
   Typography,
+  Statistic,
   message,
   Tooltip
 } from 'antd';

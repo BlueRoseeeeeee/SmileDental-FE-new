@@ -1,0 +1,147 @@
+/**
+ * @author: TrungNghia, HoTram
+ * AppointmentManagement - Styling
+ */
+
+.appointment-management-container {
+  padding: 24px;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+}
+
+.appointment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.appointment-header h2 {
+  margin: 0;
+  color: #1a4c8a;
+}
+
+/* Tabs styling */
+.appointment-management-container .ant-tabs-tab {
+  font-weight: 500;
+}
+
+.appointment-management-container .ant-tabs-tab-active {
+  background-color: #e6f4ff;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Table styling */
+.appointment-management-container .ant-table {
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+.appointment-management-container .ant-table-thead > tr > th {
+  background-color: #1a4c8a;
+  color: #fff;
+  font-weight: 600;
+}
+
+.appointment-management-container .ant-table-tbody > tr:hover > td {
+  background-color: #e6f4ff;
+}
+
+/* Badge styling */
+.appointment-management-container .ant-badge-count {
+  font-size: 11px;
+  height: 18px;
+  line-height: 18px;
+  min-width: 18px;
+  padding: 0 6px;
+}
+
+/* Status tags */
+.appointment-management-container .ant-tag {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* Action buttons */
+.appointment-management-container .ant-btn-sm {
+  font-size: 13px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
+}
+
+/* Drawer styling */
+.appointment-management-container .ant-drawer-header {
+  background-color: #1a4c8a;
+  color: #fff;
+}
+
+.appointment-management-container .ant-drawer-header .ant-drawer-title {
+  color: #fff;
+  font-weight: 600;
+}
+
+.appointment-management-container .ant-drawer-close {
+  color: #fff;
+}
+
+.appointment-management-container .ant-descriptions-item-label {
+  background-color: #f0f2f5;
+  font-weight: 600;
+  color: #1a4c8a;
+}
+
+/* Modal styling */
+.appointment-management-container .ant-modal-header {
+  background-color: #1a4c8a;
+  color: #fff;
+}
+
+.appointment-management-container .ant-modal-title {
+  color: #fff;
+  font-weight: 600;
+}
+
+.appointment-management-container .ant-modal-close-x {
+  color: #fff;
+}
+
+/* Filter row */
+.appointment-management-container .ant-select-selector,
+.appointment-management-container .ant-input,
+.appointment-management-container .ant-picker {
+  border-radius: 6px;
+}
+
+/* Empty state */
+.appointment-management-container .ant-empty {
+  padding: 40px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .appointment-management-container {
+    padding: 16px;
+  }
+
+  .appointment-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .appointment-header h2 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  .appointment-management-container {
+    padding: 12px;
+  }
+
+  .appointment-header h2 {
+    font-size: 18px;
+  }
+}

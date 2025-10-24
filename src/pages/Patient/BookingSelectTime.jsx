@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import slotService from '../../services/slotService.js';
+import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { mockSlots, mockServices, mockDentists } from '../../services/mockData.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { groupConsecutiveSlots, groupSlotsByShift, formatCurrency } from '../../utils/slotGrouping.js';
@@ -47,6 +48,25 @@ const BookingSelectTime = () => {
   });
   const [loading, setLoading] = useState(false);
   const [scheduleConfig, setScheduleConfig] = useState(null); // 🆕 Store config for deposit calculation
+
+  useEffect(() => {
+    // Fetch schedule config for deposit amount
+    const fetchScheduleConfig = async () => {
+      try {
+        const response = await scheduleConfigService.getConfig();
+        if (response.success && response.data) {
+          setScheduleConfig(response.data);
+          console.log('📋 Schedule config loaded:', response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching schedule config:', error);
+        // Set default if fetch fails
+        setScheduleConfig({ depositAmount: 50000 });
+      }
+    };
+
+    fetchScheduleConfig();
+  }, []);
 
   useEffect(() => {
     // Pre-populate localStorage with mock data if using mocks
@@ -136,24 +156,29 @@ const BookingSelectTime = () => {
             allSlots = response.data.slots;
           }
           
-          console.log('📊 Total slots before grouping:', allSlots.length);
+          console.log('📊 Total slots before filtering:', allSlots.length);
+          
+          // ✅ Filter only active slots
+          const activeSlots = allSlots.filter(slot => slot.isActive === true);
+          console.log('✅ Active slots:', activeSlots.length, '/', allSlots.length);
           
           // Debug: Log first few slots to check structure
-          if (allSlots.length > 0) {
+          if (activeSlots.length > 0) {
             console.log('🔍 Sample slot structure:', {
-              slot: allSlots[0],
-              startTime: allSlots[0].startTime,
-              startTimeVN: allSlots[0].startTimeVN,
-              endTime: allSlots[0].endTime,
-              endTimeVN: allSlots[0].endTimeVN
+              slot: activeSlots[0],
+              startTime: activeSlots[0].startTime,
+              startTimeVN: activeSlots[0].startTimeVN,
+              endTime: activeSlots[0].endTime,
+              endTimeVN: activeSlots[0].endTimeVN,
+              isActive: activeSlots[0].isActive
             });
           }
           
           // Group slots by shift first
           const slotsByShift = {
-            morning: allSlots.filter(s => s.shiftName === 'Ca Sáng'),
-            afternoon: allSlots.filter(s => s.shiftName === 'Ca Chiều'),
-            evening: allSlots.filter(s => s.shiftName === 'Ca Tối')
+            morning: activeSlots.filter(s => s.shiftName === 'Ca Sáng'),
+            afternoon: activeSlots.filter(s => s.shiftName === 'Ca Chiều'),
+            evening: activeSlots.filter(s => s.shiftName === 'Ca Tối')
           };
           
           console.log('📦 Slots by shift:', {
@@ -380,7 +405,7 @@ const BookingSelectTime = () => {
                     </Tag>
                   </div>
                   
-                  {selectedSlotGroup && (
+                  {selectedSlotGroup && scheduleConfig && (
                     <>
                       <div>
                         <Text strong style={{ display: 'block', marginBottom: 8 }}>Thời gian khám:</Text>
@@ -398,7 +423,7 @@ const BookingSelectTime = () => {
                         type="success"
                         showIcon
                         message="💰 Tiền cọc"
-                        description={`${formatCurrency(selectedSlotGroup.slots.length * 50000)} (50,000đ × ${selectedSlotGroup.slots.length} slot)`}
+                        description={`${formatCurrency(selectedSlotGroup.slots.length * scheduleConfig.depositAmount)} (${formatCurrency(scheduleConfig.depositAmount)} × ${selectedSlotGroup.slots.length} slot)`}
                         style={{ marginTop: 8 }}
                       />
                     </>
@@ -439,12 +464,12 @@ const BookingSelectTime = () => {
                   {renderShiftSlots('afternoon', 'Ca chiều', availableSlotGroups.afternoon)}
                   {renderShiftSlots('evening', 'Ca tối', availableSlotGroups.evening)}
 
-                  {selectedSlotGroup && (
+                  {selectedSlotGroup && scheduleConfig && (
                     <Alert
                       type="success"
                       showIcon
                       message={`✅ Đã chọn: ${selectedSlotGroup.displayTime} (${selectedSlotGroup.slots.length} slot)`}
-                      description={`Tiền cọc: ${formatCurrency(selectedSlotGroup.slots.length * 50000)}`}
+                      description={`Tiền cọc: ${formatCurrency(selectedSlotGroup.slots.length * scheduleConfig.depositAmount)}`}
                       style={{ marginTop: 16 }}
                     />
                   )}
@@ -472,7 +497,7 @@ const BookingSelectTime = () => {
                         borderRadius: 6
                       }}
                     >
-                      Tiếp tục {selectedSlotGroup && `(${formatCurrency(selectedSlotGroup.slots.length * 50000)})`}
+                      Tiếp tục {selectedSlotGroup && scheduleConfig && `(${formatCurrency(selectedSlotGroup.slots.length * scheduleConfig.depositAmount)})`}
                     </Button>
                   </Space>
                 </div>

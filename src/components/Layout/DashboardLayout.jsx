@@ -26,6 +26,7 @@ import {
   UserAddOutlined,
   DollarOutlined,
   FileDoneOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import logo from '../../assets/image/smile-dental-logo.png';
@@ -65,56 +66,100 @@ const DashboardLayout = () => {
         key: '/dashboard',
         icon: <HomeOutlined />,
         label: 'Trang chủ',
-      },
-      {
-        key: '/dashboard/profile',
-        icon: <UserOutlined />,
-        label: 'Hồ sơ cá nhân',
-      },
+      }
     ];
 
     const roleBasedItems = [];
 
+    // ==================== ADMIN & MANAGER ====================
     if (user?.role === 'admin' || user?.role === 'manager') {
       roleBasedItems.push(
+        // Quản lý nhân sự
         {
-          key: '/dashboard/users',
-          icon: <UserSwitchOutlined />,
-          label: 'Quản lý nhân viên',
+          key: 'staff-management',
+          icon: <TeamOutlined />,
+          label: 'Quản lý nhân sự',
+          children: [
+            { key: '/dashboard/users', label: 'Danh sách nhân viên', icon: <UserSwitchOutlined /> },
+            { key: '/schedules/staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined /> },
+          ]
         },
+        
+        // Quản lý lịch làm việc
         {
-          key: '/dashboard/patient-appointments',
+          key: 'schedules-menu',
+          icon: <ClockCircleOutlined />,
+          label: 'Quản lý lịch làm việc',
+          children: [
+            { key: '/dashboard/schedules', label: 'Cấu hình hệ thống' },
+            { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc' },
+            { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng' },
+            { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ' },
+          ]
+        },
+
+        // Quản lý lịch hẹn
+        {
+          key: 'appointments-menu',
           icon: <CalendarOutlined />,
-          label: 'Lịch khám bệnh nhân',
-        },
-        {
-          key: '/dashboard/rooms',
-          icon: <EnvironmentOutlined />,
-          label: 'Quản lý phòng khám',
+          label: 'Quản lý lịch hẹn',
+          children: [
+            { key: '/patient-appointments', label: 'Lịch khám bệnh nhân', icon: <CalendarOutlined /> },
+            { key: '/walk-in-appointments', label: 'Lịch hẹn Walk-in', icon: <UserAddOutlined /> },
+          ]
         },
         {
           key: '/dashboard/services',
           icon: <MedicineBoxOutlined />,
           label: 'Quản lý dịch vụ',
         },
+
+        // Quản lý hàng đợi
         {
-          key: '/dashboard/walk-in-appointments',
+          key: '/queue',
           icon: <UserAddOutlined />,
-          label: 'Lịch hẹn Walk-in',
+          label: 'Quản lý hàng đợi',
         },
+
+        // Quản lý hồ sơ & bệnh án
         {
-          key: '/dashboard/records',
+          key: 'medical-records',
           icon: <FileDoneOutlined />,
-          label: 'Hồ sơ bệnh án',
+          label: 'Hồ sơ & Bệnh án',
+          children: [
+            { key: '/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
+            { key: '/patients', label: 'Quản lý bệnh nhân', icon: <HeartOutlined /> },
+          ]
         },
+
+        // Quản lý phòng khám & dịch vụ
+        {
+          key: 'facility-menu',
+          icon: <EnvironmentOutlined />,
+          label: 'Cơ sở vật chất',
+          children: [
+            { key: '/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
+            { key: '/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
+          ]
+        },
+
+        // Quản lý tài chính
         {
           key: '/dashboard/invoices',
           icon: <DollarOutlined />,
           label: 'Quản lý hóa đơn',
+        },
+        
+        // Thống kê & Báo cáo
+        {
+          key: '/statistics',
+          icon: <BarChartOutlined />,
+          label: 'Thống kê & Báo cáo',
         }
       );
     }
 
+    // ==================== DENTIST ====================
     if (user?.role === 'dentist') {
       roleBasedItems.push(
         {
@@ -126,61 +171,68 @@ const DashboardLayout = () => {
           key: '/dashboard/records',
           icon: <FileDoneOutlined />,
           label: 'Hồ sơ bệnh án',
-        }
-      );
-    }
-
-    if (user?.role === 'patient') {
-      roleBasedItems.push(
+        },
         {
-          key: '/dashboard/dentists',
-          icon: <TeamOutlined />,
-          label: 'Danh sách nha sĩ',
-        }
-      );
-    }
-
-    if (user?.role === 'dentist' || user?.role === 'nurse') {
-      roleBasedItems.push(
-        {
-          key: '/dashboard/patients',
+          key: '/patients',
           icon: <HeartOutlined />,
           label: 'Quản lý bệnh nhân',
         }
       );
     }
 
-    if (user?.role === 'admin' || user?.role === 'manager') {
+    // ==================== NURSE ====================
+    if (user?.role === 'nurse') {
       roleBasedItems.push(
         {
-          key: 'schedules-menu',
-          icon: <ClockCircleOutlined />,
-          label: 'Quản lý lịch làm việc',
-          children: [
-            { key: '/dashboard/schedules', label: 'Cấu hình hệ thống' },
-            { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ' },
-            { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng' },
-            { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc' },
-            { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân sự' },
-          ]
+          key: '/patients',
+          icon: <HeartOutlined />,
+          label: 'Quản lý bệnh nhân',
         }
       );
     }
 
-    roleBasedItems.push(
+    // ==================== RECEPTIONIST & STAFF ====================
+    if (user?.role === 'receptionist' || user?.role === 'staff') {
+      roleBasedItems.push(
+        {
+          key: '/queue',
+          icon: <UserAddOutlined />,
+          label: 'Quản lý hàng đợi',
+        },
+        {
+          key: '/patient-appointments',
+          icon: <CalendarOutlined />,
+          label: 'Lịch hẹn',
+        }
+      );
+    }
+
+    // ==================== PATIENT ====================
+    if (user?.role === 'patient') {
+      roleBasedItems.push(
+        {
+          key: '/dentists',
+          icon: <TeamOutlined />,
+          label: 'Danh sách nha sĩ',
+        }
+      );
+    }
+
+    // ==================== COMMON ITEMS ====================
+    const commonItems = [
       {
-        key: '/dashboard/appointments',
-        icon: <CalendarOutlined />,
-        label: 'Lịch hẹn',
+        key: '/dashboard/profile'',
+        icon: <UserOutlined />,
+        label: 'Hồ sơ cá nhân',
       },
       {
         key: '/dashboard/settings',
         icon: <SettingOutlined />,
         label: 'Cài đặt',
       }
-    );
+    ];
 
-    return [...baseItems, ...roleBasedItems];
+    return [...baseItems, ...roleBasedItems, ...commonItems];
   };
 
   const userMenuItems = [

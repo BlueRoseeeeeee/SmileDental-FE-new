@@ -32,7 +32,10 @@ const { Option } = Select;
 
 const EditServiceAddOn = () => {
   const navigate = useNavigate();
-  const { serviceId, addOnId } = useParams();
+  const { serviceId, addonId } = useParams();
+  
+  console.log('EditServiceAddOn mounted, serviceId:', serviceId, 'addonId:', addonId);
+  
   const [service, setService] = useState(null);
   const [addOn, setAddOn] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,13 +48,14 @@ const EditServiceAddOn = () => {
   const [currentImageUrl, setCurrentImageUrl] = useState('');
 
   // Auto-save key for localStorage
-  const AUTO_SAVE_KEY = `addon_edit_draft_${addOnId}`;
+  const AUTO_SAVE_KEY = `addon_edit_draft_${addonId}`;
 
   useEffect(() => {
-    if (serviceId && addOnId) {
+    console.log('useEffect triggered, serviceId:', serviceId, 'addonId:', addonId);
+    if (serviceId && addonId) {
       fetchData();
     }
-  }, [serviceId, addOnId]);
+  }, [serviceId, addonId]);
 
   // Auto-save functionality
   useEffect(() => {
@@ -81,13 +85,18 @@ const EditServiceAddOn = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      console.log('Fetching data for serviceId:', serviceId, 'addonId:', addonId);
+      
       // Fetch service details
       const serviceResponse = await servicesService.getServiceById(serviceId);
+      console.log('Service response:', serviceResponse);
       setService(serviceResponse);
 
       // Fetch add-on details
-      const addOnResponse = await servicesService.getServiceAddOnById(serviceId, addOnId);
-      setAddOn(addOnResponse.addOn);
+      const addOnResponse = await servicesService.getServiceAddOnById(serviceId, addonId);
+      console.log('AddOn response:', addOnResponse);
+      const addOnData = addOnResponse.data?.addOn || addOnResponse.addOn;
+      setAddOn(addOnData);
       
       // Load draft if exists
       const draft = loadDraft();
@@ -99,19 +108,20 @@ const EditServiceAddOn = () => {
       } else {
         // Load actual data
         form.setFieldsValue({
-          name: addOnResponse.addOn.name,
-          price: addOnResponse.addOn.price,
-          durationMinutes: addOnResponse.addOn.durationMinutes,
-          unit: addOnResponse.addOn.unit
+          name: addOnData.name,
+          price: addOnData.price,
+          durationMinutes: addOnData.durationMinutes,
+          unit: addOnData.unit
         });
-        setAddOnDescription(addOnResponse.addOn.description || '');
-        setCurrentImageUrl(addOnResponse.addOn.imageUrl || '');
+        setAddOnDescription(addOnData.description || '');
+        setCurrentImageUrl(addOnData.imageUrl || '');
       }
     } catch (error) {
       console.error('Error fetching data:', error);
       toastService.error('Không thể tải dữ liệu: ' + error.message);
       navigate(`/dashboard/services/${serviceId}/edit`);
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
@@ -176,7 +186,7 @@ const EditServiceAddOn = () => {
         formData.append('image', imageFile);
       }
 
-      await servicesService.updateServiceAddOn(serviceId, addOnId, formData);
+      await servicesService.updateServiceAddOn(serviceId, addonId, formData);
       setHasUnsavedChanges(false);
       clearDraft();
       toastService.success('Cập nhật tùy chọn dịch vụ thành công!');

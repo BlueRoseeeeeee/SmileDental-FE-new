@@ -8,13 +8,12 @@ import {
   Input,
   Select,
   DatePicker,
-  Row,
-  Col,
-  Statistic,
   Modal,
   message,
   Tooltip,
-  Dropdown
+  Dropdown,
+  Row,
+  Col
 } from 'antd';
 import {
   PlusOutlined,
@@ -26,19 +25,10 @@ import {
   BellOutlined,
   FilePdfOutlined,
   MoreOutlined,
-  DollarOutlined,
-  FileTextOutlined,
   ExclamationCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import {
-  getAllInvoices,
-  deleteInvoice,
-  cancelInvoice,
-  sendInvoiceReminder,
-  exportInvoiceToPDF,
-  getInvoiceStatistics
-} from '../../services/mockInvoiceService';
+import invoiceService from '../../services/invoiceService';
 import InvoiceFormModal from './InvoiceFormModal';
 import InvoiceDetailDrawer from './InvoiceDetailDrawer';
 
@@ -49,7 +39,6 @@ const { Option } = Select;
 const InvoiceList = () => {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [statistics, setStatistics] = useState({});
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageSize: 10,
@@ -73,7 +62,6 @@ const InvoiceList = () => {
   // Load data
   useEffect(() => {
     loadInvoices();
-    loadStatistics();
   }, [pagination.currentPage, pagination.pageSize, filters]);
 
   const loadInvoices = async () => {
@@ -89,7 +77,7 @@ const InvoiceList = () => {
         endDate: filters.dateRange?.[1]?.format('YYYY-MM-DD')
       };
 
-      const result = await getAllInvoices(params);
+      const result = await invoiceService.getAllInvoices(params);
       
       if (result.success) {
         setInvoices(result.data.invoices);
@@ -102,23 +90,6 @@ const InvoiceList = () => {
       message.error('Tải danh sách hóa đơn thất bại');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadStatistics = async () => {
-    try {
-      const params = {
-        startDate: filters.dateRange?.[0]?.format('YYYY-MM-DD'),
-        endDate: filters.dateRange?.[1]?.format('YYYY-MM-DD')
-      };
-      
-      const result = await getInvoiceStatistics(params);
-      
-      if (result.success) {
-        setStatistics(result.data);
-      }
-    } catch (error) {
-      console.error('Error loading statistics:', error);
     }
   };
 
@@ -169,10 +140,9 @@ const InvoiceList = () => {
       cancelText: 'Hủy',
       okButtonProps: { danger: true },
       onOk: async () => {
-        const result = await deleteInvoice(invoice._id);
+        const result = await invoiceService.deleteInvoice(invoice._id);
         if (result.success) {
           loadInvoices();
-          loadStatistics();
         }
       }
     });
@@ -197,27 +167,27 @@ const InvoiceList = () => {
       okButtonProps: { danger: true },
       onOk: async () => {
         const reason = document.getElementById('cancel-reason')?.value;
-        const result = await cancelInvoice(invoice._id, {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const result = await invoiceService.cancelInvoice(invoice._id, {
           reason: reason || 'Không có lý do',
-          cancelledBy: 'user_001'
+          cancelledBy: currentUser._id || currentUser.id
         });
         if (result.success) {
           loadInvoices();
-          loadStatistics();
         }
       }
     });
   };
 
   const handleSendReminder = async (invoice) => {
-    const result = await sendInvoiceReminder(invoice._id);
+    const result = await invoiceService.sendInvoiceReminder(invoice._id);
     if (result.success) {
       message.success(`Đã gửi nhắc nhở đến ${invoice.patientInfo.phone}`);
     }
   };
 
   const handleExportPDF = async (invoice) => {
-    const result = await exportInvoiceToPDF(invoice._id);
+    const result = await invoiceService.exportInvoiceToPDF(invoice._id);
     if (result.success) {
       console.log('PDF URL:', result.data.pdfUrl);
     }
@@ -239,7 +209,6 @@ const InvoiceList = () => {
   const handleFormSuccess = () => {
     setFormModalVisible(false);
     loadInvoices();
-    loadStatistics();
   };
 
   // Status colors
@@ -478,66 +447,6 @@ const InvoiceList = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* Statistics Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Tổng hóa đơn"
-              value={statistics.totalInvoices || 0}
-              prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Tổng doanh thu"
-              value={statistics.totalRevenue || 0}
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-              formatter={(value) => formatCurrency(value)}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Đã thu"
-              value={statistics.totalPaid || 0}
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-              formatter={(value) => formatCurrency(value)}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Công nợ"
-              value={statistics.totalOutstanding || 0}
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
-              formatter={(value) => formatCurrency(value)}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Status Summary */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space size="large">
-          <span>Trạng thái:</span>
-          <Tag color="default">Nháp: {statistics.byStatus?.draft || 0}</Tag>
-          <Tag color="orange">Chờ TT: {statistics.byStatus?.pending || 0}</Tag>
-          <Tag color="blue">TT 1 phần: {statistics.byStatus?.partial_paid || 0}</Tag>
-          <Tag color="green">Đã TT: {statistics.byStatus?.paid || 0}</Tag>
-          <Tag color="red">Quá hạn: {statistics.byStatus?.overdue || 0}</Tag>
-          <Tag color="default">Đã hủy: {statistics.byStatus?.cancelled || 0}</Tag>
-        </Space>
-      </Card>
-
       {/* Filters */}
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={[16, 16]}>

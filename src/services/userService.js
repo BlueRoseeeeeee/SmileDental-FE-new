@@ -22,6 +22,12 @@ export const userService = {
     return response.data;
   },
 
+  // Get all patients - Used in PatientManagement.jsx
+  getAllPatients: async (page = 1, limit = 1000) => {
+    const response = await userApi.get(`/user/all-patient?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
   getUserById: async (userId) => {
     const response = await userApi.get(`/user/${userId}`);
     return response.data;

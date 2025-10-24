@@ -21,13 +21,12 @@ import {
   DatePicker,
   Tag,
   Tooltip,
-  Row,
-  Col,
-  Statistic,
   message,
   Modal,
   Typography,
-  Drawer
+  Drawer,
+  Row,
+  Col
 } from 'antd';
 import {
   FileTextOutlined,
@@ -42,12 +41,7 @@ import {
   FilterOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import {
-  getAllRecords,
-  deleteRecord,
-  completeRecord,
-  getRecordStatistics
-} from '../../services/mockRecordService';
+import recordService from '../../services/recordService';
 import RecordFormModal from './RecordFormModal';
 import RecordDetailDrawer from './RecordDetailDrawer';
 
@@ -64,7 +58,6 @@ const RecordList = () => {
     pageSize: 10,
     total: 0
   });
-  const [statistics, setStatistics] = useState(null);
   
   // Filters
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -84,7 +77,6 @@ const RecordList = () => {
   // Load records on mount and when filters change
   useEffect(() => {
     loadRecords();
-    loadStatistics();
   }, [
     pagination.current,
     pagination.pageSize,
@@ -111,13 +103,13 @@ const RecordList = () => {
         endDate: dateRange?.[1]?.format('YYYY-MM-DD')
       };
 
-      const response = await getAllRecords(params);
+      const response = await recordService.getAllRecords(params);
 
       if (response.success) {
-        setRecords(response.data.records);
+        setRecords(response.data);
         setPagination({
           ...pagination,
-          total: response.data.pagination.total
+          total: response.total
         });
       }
     } catch (error) {
@@ -125,24 +117,6 @@ const RecordList = () => {
       message.error('Không thể tải danh sách hồ sơ');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Load statistics
-  const loadStatistics = async () => {
-    try {
-      const params = {
-        startDate: dateRange?.[0]?.format('YYYY-MM-DD'),
-        endDate: dateRange?.[1]?.format('YYYY-MM-DD')
-      };
-
-      const response = await getRecordStatistics(params);
-
-      if (response.success) {
-        setStatistics(response.data);
-      }
-    } catch (error) {
-      console.error('Load statistics error:', error);
     }
   };
 
@@ -184,7 +158,7 @@ const RecordList = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          const response = await completeRecord(record._id);
+          const response = await recordService.completeRecord(record._id);
           
           if (response.success) {
             message.success('Hồ sơ đã được hoàn thành');
@@ -208,7 +182,7 @@ const RecordList = () => {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
-          const response = await deleteRecord(record._id);
+          const response = await recordService.deleteRecord(record._id);
           
           if (response.success) {
             message.success('Hồ sơ đã được xóa');
@@ -233,7 +207,6 @@ const RecordList = () => {
     setShowFormModal(false);
     setSelectedRecord(null);
     loadRecords();
-    loadStatistics();
   };
 
   // Reset filters
@@ -420,51 +393,6 @@ const RecordList = () => {
 
   return (
     <div>
-      {/* Statistics */}
-      {statistics && (
-        <Row gutter={16} style={{ marginBottom: 20 }}>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Tổng hồ sơ"
-                value={statistics.totalRecords}
-                prefix={<FileTextOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Hồ sơ khám"
-                value={statistics.examRecords.count}
-                suffix={`(${statistics.examRecords.percentage}%)`}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Hồ sơ điều trị"
-                value={statistics.treatmentRecords.count}
-                suffix={`(${statistics.treatmentRecords.percentage}%)`}
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card>
-              <Statistic
-                title="Doanh thu"
-                value={statistics.totalRevenue}
-                prefix="đ"
-                valueStyle={{ color: '#faad14' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-      )}
-
       {/* Main Card */}
       <Card
         title={

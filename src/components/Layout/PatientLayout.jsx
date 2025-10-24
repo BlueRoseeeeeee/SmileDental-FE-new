@@ -8,7 +8,9 @@ import {
   LogoutOutlined,
   MenuOutlined,
   HistoryOutlined,
-  SettingOutlined
+  SettingOutlined,
+  FileTextOutlined,
+  DollarOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import './PatientLayout.css';
@@ -21,6 +23,12 @@ const PatientLayout = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [drawerVisible, setDrawerVisible] = useState(false);
+
+  // Debug logging
+  console.log('🏥 PatientLayout rendered', {
+    pathname: location.pathname,
+    user: user ? { id: user._id, role: user.role, name: user.fullName } : null
+  });
 
   const handleLogout = async () => {
     try {
@@ -49,6 +57,18 @@ const PatientLayout = () => {
       icon: <HistoryOutlined />,
       label: 'Lịch khám của tôi',
       onClick: () => navigate('/patient/appointments')
+    },
+    {
+      key: '/patient/records',
+      icon: <FileTextOutlined />,
+      label: 'Hồ sơ của tôi',
+      onClick: () => navigate('/patient/records')
+    },
+    {
+      key: '/patient/invoices',
+      icon: <DollarOutlined />,
+      label: 'Hóa đơn của tôi',
+      onClick: () => navigate('/patient/invoices')
     },
     {
       key: '/patient/profile',
@@ -93,6 +113,12 @@ const PatientLayout = () => {
     }
     if (path === '/patient/appointments') {
       return '/patient/appointments';
+    }
+    if (path === '/patient/records') {
+      return '/patient/records';
+    }
+    if (path === '/patient/invoices') {
+      return '/patient/invoices';
     }
     return '/patient';
   };

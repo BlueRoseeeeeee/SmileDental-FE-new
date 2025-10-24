@@ -1,7 +1,7 @@
 /**
  * AddService.jsx
  * Trang thêm dịch vụ nha khoa
- * @author: HoTram  
+ * @author: HoTram
  */
 import React, { useState } from 'react';
 import { 
@@ -62,6 +62,8 @@ const AddService = () => {
   const [form] = Form.useForm();
   const [submitLoading, setSubmitLoading] = useState(false);
   const [roomTypes, setRoomTypes] = useState({});
+  const [showDescriptionEditor, setShowDescriptionEditor] = useState(false);
+  const [serviceDescription, setServiceDescription] = useState('');
   const [serviceAddOns, setServiceAddOns] = useState([
     { 
       name: '', 
@@ -131,7 +133,7 @@ const AddService = () => {
       // Add service basic data
       formData.append('name', values.name);
       formData.append('type', values.type);
-      formData.append('description', values.description || '');
+      formData.append('description', serviceDescription || '');
       formData.append('requireExamFirst', values.requireExamFirst || false);
       
       // Add allowedRoomTypes as JSON string

@@ -37,9 +37,9 @@ export const groupConsecutiveSlots = (slots, serviceDurationMinutes, slotDuratio
         groupId: slot._id,
         slots: [slot],
         slotIds: [slot._id],
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        displayTime: formatSlotTime(slot.startTime, slot.endTime),
+        startTime: slot.startTimeVN || slot.startTime,
+        endTime: slot.endTimeVN || slot.endTime,
+        displayTime: formatSlotTime(slot.startTimeVN || slot.startTime, slot.endTimeVN || slot.endTime),
         isAvailable: slot.status === 'available',
         unavailableReason: slot.status === 'locked' ? 'Đang được giữ chỗ' : 
                           slot.status === 'booked' ? 'Đã có người đặt' : null
@@ -111,8 +111,17 @@ export const groupConsecutiveSlots = (slots, serviceDurationMinutes, slotDuratio
       const firstSlot = potentialGroup[0];
       const lastSlot = potentialGroup[potentialGroup.length - 1];
       
+      // 🔥 FIX: Get startTime from FIRST slot, endTime from LAST slot
       const startTimeToUse = firstSlot.startTimeVN || firstSlot.startTime;
       const endTimeToUse = lastSlot.endTimeVN || lastSlot.endTime;
+      
+      console.log('🎯 Creating slot group:', {
+        firstSlotId: firstSlot._id,
+        lastSlotId: lastSlot._id,
+        startTimeToUse,
+        endTimeToUse,
+        displayTime: formatSlotTime(startTimeToUse, endTimeToUse)
+      });
       
       // Determine display reason based on highest priority status
       let displayReason = null;
@@ -226,6 +235,13 @@ const parseTimeToMinutes = (time) => {
  * Format slot time range for display
  */
 const formatSlotTime = (startTime, endTime) => {
+  console.log('🕐 formatSlotTime called with:', { 
+    startTime, 
+    startTimeType: typeof startTime,
+    endTime, 
+    endTimeType: typeof endTime 
+  });
+  
   let start, end;
   
   // Prioritize VN time format (HH:mm string)
@@ -240,6 +256,8 @@ const formatSlotTime = (startTime, endTime) => {
   } else {
     end = dayjs(endTime).format('HH:mm');
   }
+  
+  console.log('🕐 formatSlotTime result:', { start, end, display: `${start} - ${end}` });
   
   return `${start} - ${end}`;
 };
