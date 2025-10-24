@@ -123,18 +123,18 @@ const DashboardLayout = () => {
 
         // Quản lý hồ sơ & bệnh án
         {
-          key: 'medical-records',
+          key: '/dashboard/medical-records',
           icon: <FileDoneOutlined />,
           label: 'Hồ sơ & Bệnh án',
           children: [
-            { key: '/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
-            { key: '/patients', label: 'Quản lý bệnh nhân', icon: <HeartOutlined /> },
+            { key: '/dashboard/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
+            { key: '/dashboard/patients', label: 'Quản lý bệnh nhân', icon: <HeartOutlined /> },
           ]
         },
 
         // Quản lý phòng khám & dịch vụ
         {
-          key: 'facility-menu',
+          key: '/dashboard/facility-menu',
           icon: <EnvironmentOutlined />,
           label: 'Cơ sở vật chất',
           children: [
@@ -152,7 +152,7 @@ const DashboardLayout = () => {
         
         // Thống kê & Báo cáo
         {
-          key: '/statistics',
+          key: '/dashboard/statistics',
           icon: <BarChartOutlined />,
           label: 'Thống kê & Báo cáo',
         }
