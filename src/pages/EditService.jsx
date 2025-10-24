@@ -140,8 +140,8 @@ const EditService = () => {
         form.setFieldsValue({
           name: response.name,
           type: response.type,
-          allowedRoomTypes: response.allowedRoomTypes || [],
-          requireExamFirst: response.requireExamFirst
+          requireExamFirst: response.requireExamFirst,
+          allowedRoomTypes: response.allowedRoomTypes || []
         });
         setServiceDescription(response.description || '');
       }
@@ -217,7 +217,6 @@ const EditService = () => {
       const updateData = {
         name: values.name,
         type: values.type,
-        allowedRoomTypes: values.allowedRoomTypes,
         description: serviceDescription,
         requireExamFirst: values.requireExamFirst,
         allowedRoomTypes: values.allowedRoomTypes
@@ -609,8 +608,8 @@ const EditService = () => {
           initialValues={{
             name: service?.name,
             type: service?.type,
-            allowedRoomTypes: service?.allowedRoomTypes || [],
-            requireExamFirst: service?.requireExamFirst
+            requireExamFirst: service?.requireExamFirst,
+            allowedRoomTypes: service?.allowedRoomTypes || []
           }}
         >
           <Row gutter={[16, 16]}>
@@ -642,47 +641,7 @@ const EditService = () => {
           </Row>
 
           <Row gutter={[16, 16]}>
-            {/* Row 2: Loại phòng cho phép - Full width */}
-            <Col span={24}>
-              <Form.Item
-                name="allowedRoomTypes"
-                label="Loại phòng cho phép"
-                rules={[
-                  { required: true, message: 'Vui lòng chọn ít nhất 1 loại phòng' },
-                  {
-                    validator: (_, value) => {
-                      if (!value || value.length === 0) {
-                        return Promise.reject('Dịch vụ phải có ít nhất 1 loại phòng được phép');
-                      }
-                      return Promise.resolve();
-                    }
-                  }
-                ]}
-              >
-                <Select
-                  mode="multiple"
-                  placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
-                  style={{ width: '100%' }}
-                  maxTagCount="responsive"
-                >
-                  <Select.Option value="CONSULTATION">Phòng tư vấn/khám tổng quát</Select.Option>
-                  <Select.Option value="GENERAL_TREATMENT">Phòng điều trị tổng quát</Select.Option>
-                  <Select.Option value="SURGERY">Phòng phẫu thuật/tiểu phẫu</Select.Option>
-                  <Select.Option value="ORTHODONTIC">Phòng chỉnh nha/niềng</Select.Option>
-                  <Select.Option value="COSMETIC">Phòng thẩm mỹ nha</Select.Option>
-                  <Select.Option value="PEDIATRIC">Phòng nha nhi</Select.Option>
-                  <Select.Option value="X_RAY">Phòng X-quang/CT</Select.Option>
-                  <Select.Option value="STERILIZATION">Phòng tiệt trùng</Select.Option>
-                  <Select.Option value="LAB">Phòng labo</Select.Option>
-                  <Select.Option value="RECOVERY">Phòng hồi sức</Select.Option>
-                  <Select.Option value="SUPPORT">Phòng phụ trợ</Select.Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={[16, 16]}>
-            {/* Row 3: Yêu cầu khám trước - Full width */}
+            {/* Row 2: Yêu cầu khám trước - Full width */}
             <Col span={24}>
               <Form.Item
                 name="requireExamFirst"
