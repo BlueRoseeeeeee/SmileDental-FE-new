@@ -190,6 +190,16 @@ const appointmentService = {
     const url = `/appointment/dentist/${dentistId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await appointmentApi.get(url);
     return response.data;
+  },
+
+  // Lấy appointments theo staff (dentist/nurse) với date filter
+  getAppointmentsByStaff: async (staffId, date) => {
+    const queryParams = new URLSearchParams();
+    if (date) queryParams.append('date', date);
+
+    const url = `/appointments/by-staff/${staffId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await appointmentApi.get(url);
+    return response.data;
   }
 };
 

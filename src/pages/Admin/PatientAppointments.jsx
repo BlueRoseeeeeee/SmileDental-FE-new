@@ -34,6 +34,7 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { io } from 'socket.io-client';
 import appointmentService from '../../services/appointmentService';
 import userService from '../../services/userService';
 import './PatientAppointments.css';
@@ -57,10 +58,48 @@ const PatientAppointments = () => {
   const [rooms, setRooms] = useState([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     fetchDentists();
     fetchAllAppointments();
+    
+    // Setup WebSocket connection
+    const RECORD_SERVICE_URL = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010';
+    const newSocket = io(RECORD_SERVICE_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
+
+    newSocket.on('connect', () => {
+      console.log('✅ [PatientAppointments] WebSocket connected');
+    });
+
+    newSocket.on('appointment_updated', (data) => {
+      console.log('🔄 [PatientAppointments] Appointment updated event:', data);
+      // Reload appointments when update received
+      fetchAllAppointments();
+    });
+
+    newSocket.on('record_updated', (data) => {
+      console.log('🔄 [PatientAppointments] Record updated event:', data);
+      // Reload appointments when record changes
+      fetchAllAppointments();
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('❌ [PatientAppointments] WebSocket disconnected');
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      if (newSocket) {
+        newSocket.disconnect();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -269,6 +308,18 @@ const PatientAppointments = () => {
       render: (name) => <Text style={{ fontSize: 12 }}>{name}</Text>
     },
     {
+      title: 'Y tá',
+      key: 'nurse',
+      width: 120,
+      render: (_, record) => (
+        record.nurseName ? (
+          <Text style={{ fontSize: 12 }}>{record.nurseName}</Text>
+        ) : (
+          <Text type="secondary" style={{ fontSize: 11 }}>Chưa phân</Text>
+        )
+      )
+    },
+    {
       title: 'Dịch vụ',
       key: 'service',
       width: 180,
@@ -475,6 +526,9 @@ const PatientAppointments = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Nha sĩ">
               {selectedAppointment.dentistName}
+            </Descriptions.Item>
+            <Descriptions.Item label="Y tá">
+              {selectedAppointment.nurseName || <Text type="secondary">Chưa phân công</Text>}
             </Descriptions.Item>
             <Descriptions.Item label="Phòng khám">
               {selectedAppointment.roomName}

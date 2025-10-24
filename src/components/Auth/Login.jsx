@@ -3,7 +3,7 @@
 */
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Form, Input, Button, Card, Typography, Alert, Checkbox, Space, Divider, Row, Col } from 'antd';
+import { Form, Input, Button, Card, Typography, Alert, Checkbox, Space, Divider, Row, Col, Modal, Select } from 'antd';
 import { toast } from '../../services/toastService';
 import { 
   UserOutlined, 
@@ -22,10 +22,17 @@ import './Login.css';
 const { Title, Text } = Typography;
 
 const Login = () => {
-  const { login, loading, error, clearError } = useAuth();
+  const { login, loading, error, clearError, completeLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [form] = Form.useForm();
+  
+  // 🆕 Nhiệm vụ 3.2: State cho first login và specialty selection
+  const [showPasswordChangeModal, setShowPasswordChangeModal] = React.useState(false);
+  const [showSpecialtyModal, setShowSpecialtyModal] = React.useState(false);
+  const [tempLoginData, setTempLoginData] = React.useState(null);
+  const [passwordChangeForm] = Form.useForm();
+  const [specialtyForm] = Form.useForm();
 
   // Kiểm tra xem người dùng đã từng chọn "Ghi nhớ đăng nhập" chưa
   React.useEffect(() => {
@@ -100,11 +107,30 @@ const Login = () => {
     try {
       clearError();
       // Truyền giá trị remember vào login function
-      await login({
+      const response = await login({
         login: values.login,
         password: values.password,
         remember: values.remember || false
       });
+      
+      // 🆕 Nhiệm vụ 3.2: Kiểm tra pendingData từ authService
+      if (response.pendingData) {
+        setTempLoginData(response.pendingData);
+        
+        // First-time login - must change password
+        if (response.pendingData.requiresPasswordChange) {
+          setShowPasswordChangeModal(true);
+          toast.info('Đây là lần đăng nhập đầu tiên. Vui lòng đổi mật khẩu để tiếp tục.');
+          return;
+        }
+        
+        // Multiple specialties - must select one
+        if (response.pendingData.requiresSpecialtySelection) {
+          setShowSpecialtyModal(true);
+          toast.info('Vui lòng chọn chuyên khoa bạn muốn làm việc.');
+          return;
+        }
+      }
       
       // Lưu login data sau khi đăng nhập thành công
       const dataToSave = {
@@ -125,6 +151,67 @@ const Login = () => {
       navigate(from);
     } catch {
       // Error is handled by AuthContext
+    }
+  };
+
+  // 🆕 Nhiệm vụ 3.2: Handle password change
+  const handlePasswordChange = async (values) => {
+    try {
+      const { authService } = await import('../../services/authService.js');
+      
+      // Call completeFirstLogin API with tempToken
+      const result = await authService.completeFirstLogin(
+        tempLoginData.tempToken,
+        values.newPassword
+      );
+      
+      toast.success('Đổi mật khẩu thành công!');
+      
+      // Update AuthContext with logged-in user
+      completeLogin(result.user);
+      
+      setShowPasswordChangeModal(false);
+      passwordChangeForm.resetFields();
+      
+      // Check if need specialty selection
+      if (result.user.specialties && result.user.specialties.length > 1) {
+        setTempLoginData({ ...tempLoginData, user: result.user });
+        setShowSpecialtyModal(true);
+      } else {
+        // Navigate to dashboard
+        setTempLoginData(null);
+        const from = location.state?.from || '/dashboard';
+        navigate(from);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Đổi mật khẩu thất bại');
+    }
+  };
+
+  // 🆕 Nhiệm vụ 3.2: Handle specialty selection
+  const handleSpecialtySelection = async (values) => {
+    try {
+      const { authService } = await import('../../services/authService.js');
+      
+      // Call completeSpecialtySelection API
+      const result = await authService.completeSpecialtySelection(
+        tempLoginData.tempToken,
+        values.specialty
+      );
+      
+      // Update AuthContext with logged-in user
+      completeLogin(result.user);
+      
+      toast.success(`Đã chọn chuyên khoa: ${values.specialty}`);
+      setShowSpecialtyModal(false);
+      specialtyForm.resetFields();
+      setTempLoginData(null);
+      
+      // Navigate to dashboard
+      const from = location.state?.from || '/dashboard';
+      navigate(from);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
     }
   };
 
@@ -348,6 +435,120 @@ const Login = () => {
             </div>
           </div>
       </div>
+
+      {/* 🆕 Nhiệm vụ 3.2: Modal đổi mật khẩu (First Login) */}
+      <Modal
+        title="Đổi mật khẩu"
+        open={showPasswordChangeModal}
+        onCancel={() => {
+          setShowPasswordChangeModal(false);
+          setTempLoginData(null);
+        }}
+        footer={null}
+        centered
+      >
+        <Alert
+          message="Đây là lần đăng nhập đầu tiên"
+          description="Vì lý do bảo mật, bạn cần đổi mật khẩu trước khi tiếp tục sử dụng hệ thống."
+          type="warning"
+          showIcon
+          style={{ marginBottom: 20 }}
+        />
+        <Form
+          form={passwordChangeForm}
+          layout="vertical"
+          onFinish={handlePasswordChange}
+        >
+          <Form.Item
+            name="newPassword"
+            label="Mật khẩu mới"
+            rules={[
+              { required: true, message: 'Vui lòng nhập mật khẩu mới!' },
+              { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự!' },
+              { max: 16, message: 'Mật khẩu không được quá 16 ký tự!' }
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Nhập mật khẩu mới (8-16 ký tự)"
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="confirmPassword"
+            label="Xác nhận mật khẩu"
+            dependencies={['newPassword']}
+            rules={[
+              { required: true, message: 'Vui lòng xác nhận mật khẩu!' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('newPassword') === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                },
+              }),
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="Nhập lại mật khẩu mới"
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              Đổi mật khẩu
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 🆕 Nhiệm vụ 3.2: Modal chọn chuyên khoa */}
+      <Modal
+        title="Chọn chuyên khoa"
+        open={showSpecialtyModal}
+        onCancel={() => {
+          setShowSpecialtyModal(false);
+          setTempLoginData(null);
+        }}
+        footer={null}
+        centered
+      >
+        <Alert
+          message="Bạn có nhiều chuyên khoa"
+          description="Vui lòng chọn chuyên khoa bạn muốn làm việc trong phiên đăng nhập này."
+          type="info"
+          showIcon
+          style={{ marginBottom: 20 }}
+        />
+        <Form
+          form={specialtyForm}
+          layout="vertical"
+          onFinish={handleSpecialtySelection}
+        >
+          <Form.Item
+            name="specialty"
+            label="Chuyên khoa"
+            rules={[{ required: true, message: 'Vui lòng chọn chuyên khoa!' }]}
+          >
+            <Select
+              placeholder="Chọn chuyên khoa"
+              size="large"
+              options={tempLoginData?.user?.specialties?.map(s => ({
+                label: s,
+                value: s
+              })) || []}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              Tiếp tục
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

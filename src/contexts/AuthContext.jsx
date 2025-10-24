@@ -52,6 +52,12 @@ export const AuthProvider = ({ children }) => {
       const { authService } = await import('../services/authService.js');
       const response = await authService.login(credentials);
       
+      // 🆕 Nhiệm vụ 3.2: Nếu có pendingData, không cập nhật state (chưa hoàn tất login)
+      if (response.pendingData) {
+        setLoading(false);
+        return response; // Return pendingData to Login.jsx
+      }
+      
       // Update state (không cần lưu localStorage nữa vì authService đã lưu)
       setIsAuthenticated(true);
       setUser(response.user);
@@ -181,6 +187,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // 🆕 Nhiệm vụ 3.2: Complete login after password change or specialty selection
+  const completeLogin = (userData) => {
+    setIsAuthenticated(true);
+    setUser(userData);
+  };
+
   const value = {
     isAuthenticated,
     user,
@@ -194,7 +206,8 @@ export const AuthProvider = ({ children }) => {
     register,
     sendOtpResetPassword,
     resetPassword,
-    updateUser
+    updateUser,
+    completeLogin // 🆕 Export completeLogin
   };
 
   return (

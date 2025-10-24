@@ -88,6 +88,12 @@ export const userService = {
     const response = await userApi.get('/user/public/dentists');
     return response.data;
   },
+
+  // 🆕 Nhiệm vụ 3.1: Create staff without OTP
+  createStaff: async (staffData) => {
+    const response = await userApi.post('/user/create-staff', staffData);
+    return response.data;
+  },
 };
 
 export default userService;

@@ -3,9 +3,8 @@
 */
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext.jsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { ToastContainer } from 'react-toastify';
-import { useAuth } from './hooks/useAuth.js';
 
 // Auth Components
 import Login from './components/Auth/Login.jsx';
@@ -55,6 +54,7 @@ import WalkInAppointmentForm from './components/CashPayment/WalkInAppointmentFor
 // Medical Records Management
 import QueueDashboard from './pages/QueueDashboard.jsx';
 import QueueManagement from './pages/Staff/QueueManagement.jsx'; // 🔥 New Queue UI
+import StaffSchedule from './pages/Staff/StaffSchedule.jsx'; // 🔥 Staff Schedule View
 import RecordList from './pages/Records/RecordList.jsx';
 import RecordFormModal from './pages/Records/RecordFormModal.jsx';
 import PrescriptionForm from './pages/Records/PrescriptionForm.jsx';
@@ -350,6 +350,13 @@ function App() {
             <Route path="queue" element={
               <ProtectedRoute>
                 <QueueManagement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Staff Schedule */}
+            <Route path="staff-schedule" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
+                <StaffSchedule />
               </ProtectedRoute>
             } />
             

@@ -25,7 +25,29 @@ export const authService = {
 
   // Login user (supports email or employeeCode)
   login: async (credentials) => {
-    const response = await authApi.post('/auth/login', credentials);
+    // 🆕 Nhiệm vụ 3.2: Tự động phát hiện role dựa vào format của login
+    // Email: có @
+    // EmployeeCode: NV00000001 format
+    const { login: loginValue, password, remember } = credentials;
+    
+    let role = null;
+    if (loginValue) {
+      // Nếu có @ → patient (email)
+      if (loginValue.includes('@')) {
+        role = 'patient';
+      } 
+      // Nếu bắt đầu bằng NV và 8 số → staff
+      else if (/^NV\d{8}$/.test(loginValue)) {
+        role = 'staff'; // BE sẽ tìm trong tất cả staff roles
+      }
+    }
+    
+    const response = await authApi.post('/auth/login', {
+      login: loginValue,
+      password,
+      role // 🆕 Gửi role cho BE
+    });
+    
     const { accessToken, refreshToken, user } = response.data;
     
     // Kiểm tra trạng thái tài khoản
@@ -40,10 +62,33 @@ export const authService = {
       throw error;
     }
     
+    // 🆕 Kiểm tra isFirstLogin - nếu true, trả về flag để FE xử lý
+    if (user.isFirstLogin) {
+      response.data.requirePasswordChange = true;
+    }
+    
+    // 🆕 Kiểm tra specialties - nếu có nhiều hơn 1, yêu cầu chọn
+    if (user.specialties && Array.isArray(user.specialties) && user.specialties.length > 1) {
+      response.data.requireSpecialtySelection = true;
+    }
+    
     // Save tokens and user info to localStorage
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('user', JSON.stringify(user));
+    // 🆕 Chỉ lưu tạm thời nếu cần đổi mật khẩu hoặc chọn specialty
+    if (remember && !response.data.requirePasswordChange && !response.data.requireSpecialtySelection) {
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(user));
+    } else if (!response.data.requirePasswordChange && !response.data.requireSpecialtySelection) {
+      // Không remember → dùng sessionStorage
+      sessionStorage.setItem('accessToken', accessToken);
+      sessionStorage.setItem('refreshToken', refreshToken);
+      sessionStorage.setItem('user', JSON.stringify(user));
+    } else {
+      // Cần đổi mật khẩu hoặc chọn specialty → lưu tạm vào sessionStorage
+      sessionStorage.setItem('tempAccessToken', accessToken);
+      sessionStorage.setItem('tempRefreshToken', refreshToken);
+      sessionStorage.setItem('tempUser', JSON.stringify(user));
+    }
     
     return response.data;
   },
@@ -149,6 +194,41 @@ export const authService = {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+  },
+
+  // 🆕 Nhiệm vụ 3.2: Complete login sau khi đổi mật khẩu hoặc chọn specialty
+  completeLogin: (remember = false) => {
+    const tempAccessToken = sessionStorage.getItem('tempAccessToken');
+    const tempRefreshToken = sessionStorage.getItem('tempRefreshToken');
+    const tempUser = sessionStorage.getItem('tempUser');
+    
+    if (!tempAccessToken || !tempUser) {
+      throw new Error('No temporary login data found');
+    }
+    
+    // Move from temp to permanent storage
+    if (remember) {
+      localStorage.setItem('accessToken', tempAccessToken);
+      localStorage.setItem('refreshToken', tempRefreshToken);
+      localStorage.setItem('user', tempUser);
+    } else {
+      sessionStorage.setItem('accessToken', tempAccessToken);
+      sessionStorage.setItem('refreshToken', tempRefreshToken);
+      sessionStorage.setItem('user', tempUser);
+    }
+    
+    // Clear temp data
+    sessionStorage.removeItem('tempAccessToken');
+    sessionStorage.removeItem('tempRefreshToken');
+    sessionStorage.removeItem('tempUser');
+    
+    return JSON.parse(tempUser);
+  },
+
+  // 🆕 Get temporary user (khi đang trong trạng thái chờ đổi mật khẩu/chọn specialty)
+  getTempUser: () => {
+    const tempUser = sessionStorage.getItem('tempUser');
+    return tempUser ? JSON.parse(tempUser) : null;
   }
 };
 

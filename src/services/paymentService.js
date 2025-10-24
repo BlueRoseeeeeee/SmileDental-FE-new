@@ -74,6 +74,21 @@ const paymentService = {
     return response.data;
   },
 
+  // Get payment by recordId
+  getPaymentByRecordId: async (recordId) => {
+    const response = await paymentApi.get(`/payments/by-record/${recordId}`);
+    return response.data;
+  },
+
+  // Confirm cash payment
+  confirmCashPayment: async (paymentId, paidAmount, notes = '') => {
+    const response = await paymentApi.post(`/payments/${paymentId}/confirm-cash`, {
+      paidAmount,
+      notes
+    });
+    return response.data;
+  },
+
   // Verify payment status
   verifyPayment: async (transactionId) => {
     const response = await paymentApi.get(`/payment/verify/${transactionId}`);

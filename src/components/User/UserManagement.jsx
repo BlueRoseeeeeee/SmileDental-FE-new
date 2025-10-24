@@ -41,6 +41,7 @@ import {
 } from '@ant-design/icons';
 import { userService } from '../../services/userService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { canManageUsers } from '../Common/PermissionGuard.jsx';
 import SearchBar from '../Common/SearchBar.jsx';
 import { 
   searchAndFilter, 
@@ -80,11 +81,6 @@ const UserManagement = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
-  const [email, setEmail] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpMessage, setOtpMessage] = useState('');
-  const [localLoading, setLocalLoading] = useState(false);
-  const [formData, setFormData] = useState({}); // Lưu dữ liệu từ các steps
 
   // Toggle confirmation modal states
   const [showToggleModal, setShowToggleModal] = useState(false);
@@ -434,10 +430,9 @@ const UserManagement = () => {
         const {...formData } = values;
         const updateData = {
           ...formData,
-          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
+          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null,
+          specialties: values.specialties || [] // 🆕 Include specialties
         };
-        
-
 
         const response = await fetch(`http://localhost:3001/api/user/update/${selectedUser._id}`, {
           method: 'PUT',
@@ -456,35 +451,41 @@ const UserManagement = () => {
           return;
         }
       } else {
-        // Add new user - requires OTP verification
-        const step4Data = form.getFieldsValue();
-        // Combine data from all steps
-        const registerData = {
-          ...formData, // Dữ liệu từ step 3 đã lưu
-          ...step4Data, // Dữ liệu từ step 4
-          email: email, // Email từ step 1
-          role: step4Data.role || 'patient',
-          dateOfBirth: step4Data.dateOfBirth ? step4Data.dateOfBirth.format('YYYY-MM-DD') : formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null
+        // 🆕 Nhiệm vụ 3.1: Create staff without OTP using userService.createStaff
+        const staffData = {
+          email: values.email,
+          phone: values.phone,
+          fullName: values.fullName,
+          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null,
+          gender: values.gender,
+          role: values.role,
+          specialties: values.specialties || [], // Multi-specialty support
+          isActive: values.isActive !== undefined ? values.isActive : true,
+          description: values.description || ''
         };
-        
 
+        const result = await userService.createStaff(staffData);
         
-        const response = await fetch('http://localhost:3001/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(registerData)
-        });
-        
-        if (response.ok) {
-          toast.success('Thêm nhân viên thành công');
+        if (result.success) {
+          // Show success with employeeCode
+          Modal.success({
+            title: 'Tạo nhân viên thành công!',
+            content: (
+              <div>
+                <p><strong>Mã nhân viên:</strong> {result.employeeCode}</p>
+                <p><strong>Mật khẩu mặc định:</strong> {result.defaultPassword}</p>
+                <p style={{ color: '#ff4d4f', marginTop: '12px' }}>
+                  ⚠️ Nhân viên sẽ phải đổi mật khẩu khi đăng nhập lần đầu.
+                </p>
+              </div>
+            ),
+            okText: 'Đóng'
+          });
           
-          // Load lại tất cả users để có user mới
+          // Reload users
           loadUsers();
         } else {
-          const error = await response.json();
-          toast.error(error.message || 'Thêm nhân viên thất bại');
+          toast.error(result.message || 'Thêm nhân viên thất bại');
           return;
         }
       }
@@ -492,11 +493,8 @@ const UserManagement = () => {
       setModalVisible(false);
       form.resetFields();
       setCurrentStep(0);
-      setEmail('');
-      setOtpSent(false);
-      setOtpMessage('');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Thao tác thất bại');
+      toast.error(error.response?.data?.message || error.message || 'Thao tác thất bại');
     }
   };
 
@@ -584,41 +582,55 @@ const UserManagement = () => {
       title: 'Hành động',
       key: 'actions',
       width: 150,
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="Xem chi tiết">
-            <Button 
-              type="text" 
-              icon={<EyeOutlined />}
-              onClick={() => handleView(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button 
-              type="text" 
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            />
-          </Tooltip>
-          <Tooltip title={record.isActive ? 'Nhân viên nghỉ việc (Khóa tài khoản)' : 'Mở khóa tài khoản'}>
-            <Switch
-              size="small"
-              checked={record.isActive}
-              onChange={() => handleToggleStatus(record)}
-              checkedChildren="Mở"
-              unCheckedChildren="Khóa"
-            />
-          </Tooltip>
-          <Tooltip title="Xóa nhân viên">
-            <Button 
-              type="text" 
-              danger 
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record)}
-            />
-          </Tooltip>
-        </Space>
-      )
+      render: (_, record) => {
+        // 🆕 Task 3.5: Check permission to manage this user
+        const canManage = canManageUsers(currentUser, record);
+        
+        return (
+          <Space>
+            <Tooltip title="Xem chi tiết">
+              <Button 
+                type="text" 
+                icon={<EyeOutlined />}
+                onClick={() => handleView(record)}
+              />
+            </Tooltip>
+            <Tooltip title={canManage ? "Chỉnh sửa" : "Không có quyền chỉnh sửa"}>
+              <Button 
+                type="text" 
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+                disabled={!canManage}
+              />
+            </Tooltip>
+            <Tooltip title={
+              !canManage 
+                ? "Không có quyền thay đổi trạng thái"
+                : record.isActive 
+                  ? 'Nhân viên nghỉ việc (Khóa tài khoản)' 
+                  : 'Mở khóa tài khoản'
+            }>
+              <Switch
+                size="small"
+                checked={record.isActive}
+                onChange={() => handleToggleStatus(record)}
+                checkedChildren="Mở"
+                unCheckedChildren="Khóa"
+                disabled={!canManage}
+              />
+            </Tooltip>
+            <Tooltip title={canManage ? "Xóa nhân viên" : "Không có quyền xóa"}>
+              <Button 
+                type="text" 
+                danger 
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(record)}
+                disabled={!canManage}
+              />
+            </Tooltip>
+          </Space>
+        );
+      }
     }
   ];
 
@@ -780,9 +792,6 @@ const UserManagement = () => {
           setModalVisible(false);
           form.resetFields();
           setCurrentStep(0);
-          setEmail('');
-          setOtpSent(false);
-          setOtpMessage('');
         }}
         footer={null}
         width={1000}
@@ -806,195 +815,54 @@ const UserManagement = () => {
               <Steps 
                 current={currentStep} 
                 items={selectedUser ? [
-
                   {
                     title: 'Thông tin cá nhân',
                     description: 'Nhập thông tin cơ bản',
                   },
                   {
                     title: 'Thông tin công việc',
-                    description: 'Vai trò, Loại công việc, Trạng thái',
+                    description: 'Vai trò, Chuyên khoa, Trạng thái',
                   }
                 ] : [
-
-                  {
-                    title: 'Xác thực Email',
-                    description: 'Nhập email để nhận mã OTP',
-                  },
-                  {
-                    title: 'Xác thực OTP',
-                    description: 'Nhập mã OTP để xác thực',
-                  },
                   {
                     title: 'Thông tin cá nhân',
                     description: 'Nhập thông tin cơ bản',
                   },
                   {
                     title: 'Thông tin công việc',
-                    description: 'Vai trò, Loại công việc, Trạng thái',
+                    description: 'Vai trò, Chuyên khoa, Trạng thái',
                   }
                 ]}
                 style={{ marginBottom: '40px' }}
               />
-
-              {/* Success Alerts */}
-              {otpSent && currentStep === 1 && (
-                <Alert
-                  message={otpMessage || "OTP đã được gửi đến email!"}
-                  type="success"
-                  showIcon
-                  icon={<CheckCircleOutlined />}
-                  style={{ marginBottom: '24px' }}
-                />
-              )}
 
               <Form
                 form={form}
                 layout="vertical"
                 onFinish={handleUpdate}
               >
-                {/* Step 1: Email Verification */}
-                {!selectedUser && currentStep === 0 && (
-                  <div>
-                    <Form.Item
-                      name="email"
-                      label="Email"
-                      rules={getAntDesignFormRules.email()}
-                    >
-                      <Input placeholder="Nhập email của nhân viên" />
-                    </Form.Item>
-
-                    <Button
-                      type="primary"
-                      onClick={async () => {
-                        const emailValue = form.getFieldValue('email');
-                        if (emailValue) {
-                          try {
-
-                            setLocalLoading(true);
-                            // Sử dụng fetch trực tiếp để tránh global loading
-                            const response = await fetch('http://localhost:3001/api/auth/send-otp-register', {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({ email: emailValue })
-                            });
-                            
-                            if (response.ok) {
-                              const data = await response.json();
-
-                              setEmail(emailValue);
-                              setOtpMessage(data.message || 'OTP đã được gửi đến email!');
-                              setOtpSent(true);
-                              setCurrentStep(1);
-                            } else {
-                              const error = await response.json();
-                              toast.error(error.message || 'Gửi OTP thất bại!');
-                            }
-                            setLocalLoading(false);
-                          } catch (error) {
-                            console.error('Error sending OTP:', error);
-                            toast.error('Có lỗi xảy ra khi gửi OTP!');
-                            setLocalLoading(false);
-                          }
-                        }
-                      }}
-                      loading={localLoading}
-                      block
-                      style={{
-                        background: '#2596be',
-                        border: 'none',
-                        borderRadius: '8px',
-                        height: '48px'
-                      }}
-                    >
-                      {localLoading ? 'Đang gửi OTP...' : 'Gửi mã OTP'}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Step 2: OTP Verification */}
-                {!selectedUser && currentStep === 1 && (
-                  <div>
-                    <Form.Item
-                      name="otp"
-                      label="Mã OTP"
-                      rules={getAntDesignFormRules.otp()}
-                    >
-                      <Input 
-                        placeholder="Nhập 6 chữ số OTP"
-                        maxLength={6}
-                        style={{ 
-                          textAlign: 'center', 
-                          fontSize: '18px', 
-                          letterSpacing: '4px'
-                        }}
-                      />
-                    </Form.Item>
-
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      <Button
-                        type="primary"
-                        onClick={async () => {
-                          const otpValue = form.getFieldValue('otp');
-                          if (otpValue) {
-                            try {
-                              // Sử dụng fetch trực tiếp để tránh global loading
-                              const response = await fetch('http://localhost:3001/api/auth/verify-otp-register', {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ 
-                                  email: email, 
-                                  otp: otpValue 
-                                })
-                              });
-                              
-                              if (response.ok) {
-                                setCurrentStep(2);
-                              } else {
-                                const error = await response.json();
-                                toast.error(error.message || 'Mã OTP không chính xác!');
-                              }
-                            } catch (error) {
-                              console.error('Error verifying OTP:', error);
-                              toast.error('Có lỗi xảy ra khi xác thực OTP!');
-                            }
-                          }
-                        }}
-                        block
-                        style={{
-                          background: '#2596be',
-                          border: 'none',
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
-                      >
-                        Xác thực OTP
-                      </Button>
-
-                      <Button
-                        type="default"
-                        icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(0)}
-                        block
-                        style={{
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
-                      >
-                        Quay lại
-                      </Button>
-                    </Space>
-                  </div>
-                )}
-
-                {/* Step 3: Personal Information */}
-                {currentStep === 2 && (
+                {/* 🆕 Step 1: Personal Information (was Step 3) */}
+                {currentStep === 0 && (
                   <div>
                     <Row gutter={[16, 16]}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="email"
+                          label="Email"
+                          rules={getAntDesignFormRules.email()}
+                        >
+                          <Input placeholder="Nhập email của nhân viên" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="phone"
+                          label="Số điện thoại"
+                          rules={getAntDesignFormRules.phone()}
+                        >
+                          <Input placeholder="Nhập số điện thoại" />
+                        </Form.Item>
+                      </Col>
                       <Col xs={24} sm={12}>
                         <Form.Item
                           name="fullName"
@@ -1005,15 +873,6 @@ const UserManagement = () => {
                             placeholder="Nhập họ và tên" 
                             onBlur={(e) => handleFullNameFormat(e, (field, value) => form.setFieldsValue({ [field]: value }))}
                           />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="phone"
-                          label="Số điện thoại"
-                          rules={getAntDesignFormRules.phone()}
-                        >
-                          <Input placeholder="Nhập số điện thoại" />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12}>
@@ -1050,10 +909,9 @@ const UserManagement = () => {
                       <Button
                         type="primary"
                         onClick={() => {
-                          // Save step 3 data before proceeding
-                          const step3Data = form.getFieldsValue(['fullName', 'phone', 'dateOfBirth', 'gender']);
-                          setFormData(prev => ({ ...prev, ...step3Data }));
-                          setCurrentStep(3);
+                          form.validateFields(['email', 'phone', 'fullName', 'dateOfBirth', 'gender'])
+                            .then(() => setCurrentStep(1))
+                            .catch((err) => console.log('Validation failed:', err));
                         }}
                         block
                         style={{
@@ -1065,26 +923,21 @@ const UserManagement = () => {
                       >
                         Tiếp theo
                       </Button>
-
-                      <Button
-                        type="default"
-                        icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(selectedUser ? 0 : 1)}
-                        block
-                        style={{
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
-                      >
-                        Quay lại
-                      </Button>
                     </Space>
                   </div>
                 )}
 
-                {/* Step 4: Work Information */}
-                {currentStep === 3 && (
+                {/* 🆕 Step 2: Work Information (was Step 4) */}
+                {currentStep === 1 && (
                   <div>
+                    <Alert
+                      message="Lưu ý về mật khẩu"
+                      description="Mật khẩu mặc định sẽ được tự động tạo bằng mã nhân viên. Nhân viên sẽ phải đổi mật khẩu khi đăng nhập lần đầu."
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: '24px' }}
+                    />
+                    
                     <Row gutter={[16, 16]}>
                       <Col xs={24} sm={12}>
                         <Form.Item
@@ -1092,7 +945,15 @@ const UserManagement = () => {
                           label="Vai trò"
                           rules={getAntDesignFormRules.role()}
                         >
-                          <Select placeholder="Chọn vai trò">
+                          <Select 
+                            placeholder="Chọn vai trò"
+                            onChange={(value) => {
+                              // Clear specialties if role changes to non-dentist
+                              if (value !== 'dentist') {
+                                form.setFieldsValue({ specialties: [] });
+                              }
+                            }}
+                          >
                             <Option value="admin">Quản trị viên</Option>
                             <Option value="manager">Quản lý</Option>
                             <Option value="dentist">Nha sĩ</Option>
@@ -1101,6 +962,40 @@ const UserManagement = () => {
                           </Select>
                         </Form.Item>
                       </Col>
+                      
+                      {/* 🆕 Nhiệm vụ 3.1: Specialties field (dentist only) */}
+                      <Form.Item noStyle shouldUpdate>
+                        {({ getFieldValue }) => {
+                          const role = getFieldValue('role');
+                          return role === 'dentist' ? (
+                            <Col xs={24} sm={12}>
+                              <Form.Item
+                                name="specialties"
+                                label="Chuyên khoa"
+                                rules={[{ 
+                                  required: true, 
+                                  message: 'Vui lòng chọn ít nhất 1 chuyên khoa!' 
+                                }]}
+                              >
+                                <Select
+                                  mode="multiple"
+                                  placeholder="Chọn chuyên khoa (có thể chọn nhiều)"
+                                  options={[
+                                    { label: 'Chỉnh nha', value: 'Chỉnh nha' },
+                                    { label: 'Răng sứ thẩm mỹ', value: 'Răng sứ thẩm mỹ' },
+                                    { label: 'Implant', value: 'Implant' },
+                                    { label: 'Nội nha', value: 'Nội nha' },
+                                    { label: 'Phục hồi', value: 'Phục hồi' },
+                                    { label: 'Nha chu', value: 'Nha chu' },
+                                    { label: 'Tổng quát', value: 'Tổng quát' }
+                                  ]}
+                                />
+                              </Form.Item>
+                            </Col>
+                          ) : null;
+                        }}
+                      </Form.Item>
+                      
                       <Col xs={24} sm={12}>
                         <Form.Item
                           name="isActive"
@@ -1111,39 +1006,6 @@ const UserManagement = () => {
                             <Option value={true}>Hoạt động</Option>
                             <Option value={false}>Không hoạt động</Option>
                           </Select>
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    {/* Password Fields */}
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="password"
-                          label="Mật khẩu"
-                          rules={getAntDesignFormRules.password()}
-                        >
-                          <Input.Password placeholder="Nhập mật khẩu (8-16 ký tự)" />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="confirmPassword"
-                          label="Xác nhận mật khẩu"
-                          dependencies={['password']}
-                          rules={[
-                            ...getAntDesignFormRules.confirmPassword(),
-                            ({ getFieldValue }) => ({
-                              validator(_, value) {
-                                if (!value || getFieldValue('password') === value) {
-                                  return Promise.resolve();
-                                }
-                                return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
-                              },
-                            }),
-                          ]}
-                        >
-                          <Input.Password placeholder="Nhập lại mật khẩu để xác nhận" />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -1164,6 +1026,7 @@ const UserManagement = () => {
                       <Button
                         type="primary"
                         htmlType="submit"
+                        loading={loading}
                         block
                         style={{
                           background: '#2596be',
@@ -1172,13 +1035,13 @@ const UserManagement = () => {
                           height: '48px'
                         }}
                       >
-                        {selectedUser ? 'Cập nhật' : 'Thêm mới'}
+                        {selectedUser ? 'Cập nhật' : 'Tạo nhân viên'}
                       </Button>
 
                       <Button
                         type="default"
                         icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(selectedUser ? 0 : 2)}
+                        onClick={() => setCurrentStep(0)}
                         block
                         style={{
                           borderRadius: '8px',

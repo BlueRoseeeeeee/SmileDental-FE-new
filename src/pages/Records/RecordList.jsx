@@ -44,6 +44,7 @@ import dayjs from 'dayjs';
 import recordService from '../../services/recordService';
 import RecordFormModal from './RecordFormModal';
 import RecordDetailDrawer from './RecordDetailDrawer';
+import PaymentModal from '../../components/Payment/PaymentModal';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -69,6 +70,7 @@ const RecordList = () => {
   // Modals
   const [showFormModal, setShowFormModal] = useState(false);
   const [showDetailDrawer, setShowDetailDrawer] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [formMode, setFormMode] = useState('create'); // 'create' or 'edit'
 
@@ -143,6 +145,18 @@ const RecordList = () => {
     setShowFormModal(true);
   };
 
+  // Handle start treatment button
+  const handleStart = async (record) => {
+    try {
+      await recordService.updateRecordStatus(record._id, 'in_progress');
+      message.success('Đã bắt đầu khám');
+      loadRecords();
+    } catch (error) {
+      console.error('Start record error:', error);
+      message.error('Không thể bắt đầu khám');
+    }
+  };
+
   // Handle view button
   const handleView = (record) => {
     setSelectedRecord(record);
@@ -163,6 +177,10 @@ const RecordList = () => {
           if (response.success) {
             message.success('Hồ sơ đã được hoàn thành');
             loadRecords();
+            
+            // Show payment modal after completion
+            setSelectedRecord(record);
+            setShowPaymentModal(true);
           }
         } catch (error) {
           console.error('Complete record error:', error);
@@ -354,7 +372,20 @@ const RecordList = () => {
             />
           </Tooltip>
           
-          {record.status !== 'completed' && (
+          {record.status === 'pending' && (
+            <Tooltip title="Bắt đầu khám">
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => handleStart(record)}
+                style={{ fontSize: 11 }}
+              >
+                Bắt đầu
+              </Button>
+            </Tooltip>
+          )}
+          
+          {record.status === 'in_progress' && (
             <Tooltip title="Hoàn thành">
               <Button
                 type="text"
@@ -522,6 +553,23 @@ const RecordList = () => {
           onEdit={handleEdit}
           onComplete={handleComplete}
           onPrint={handlePrint}
+        />
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedRecord && (
+        <PaymentModal
+          visible={showPaymentModal}
+          recordId={selectedRecord._id}
+          onCancel={() => {
+            setShowPaymentModal(false);
+            setSelectedRecord(null);
+          }}
+          onSuccess={(payment) => {
+            console.log('✅ Payment completed:', payment);
+            message.success('Thanh toán thành công!');
+            loadRecords(); // Reload to update payment status
+          }}
         />
       )}
     </div>

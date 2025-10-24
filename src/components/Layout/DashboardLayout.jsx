@@ -120,6 +120,13 @@ const DashboardLayout = () => {
           icon: <UserAddOutlined />,
           label: 'Quản lý hàng đợi',
         },
+        
+        // Lịch khám của nhân viên
+        {
+          key: '/dashboard/staff-schedule',
+          icon: <CalendarOutlined />,
+          label: 'Lịch khám nhân viên',
+        },
 
         // Quản lý hồ sơ & bệnh án
         {
@@ -163,6 +170,11 @@ const DashboardLayout = () => {
     if (user?.role === 'dentist') {
       roleBasedItems.push(
         {
+          key: '/dashboard/staff-schedule',
+          icon: <CalendarOutlined />,
+          label: 'Lịch khám của tôi',
+        },
+        {
           key: '/dashboard/certificates',
           icon: <FileTextOutlined />,
           label: 'Quản lý chứng chỉ',
@@ -183,6 +195,11 @@ const DashboardLayout = () => {
     // ==================== NURSE ====================
     if (user?.role === 'nurse') {
       roleBasedItems.push(
+        {
+          key: '/dashboard/staff-schedule',
+          icon: <CalendarOutlined />,
+          label: 'Lịch làm việc của tôi',
+        },
         {
           key: '/patients',
           icon: <HeartOutlined />,
