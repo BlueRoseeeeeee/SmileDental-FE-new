@@ -336,329 +336,113 @@ function App() {
           }>
             {/* Default redirect */}
             <Route index element={<Dashboard />} />
-          </Route>
-          
-          {/* Queue Dashboard */}
-          <Route path="/queue" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<QueueDashboard />} />
-          </Route>
-          
-          {/* Profile - Direct access with DashboardLayout */}
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Profile />} />
-          </Route> 
-          
-          {/* User Management */}
-          <Route path="/users" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<UserManagement />} />
-          </Route>
-          <Route path="/users/edit/:id" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<EditUser />} />
-          </Route>
-          <Route path="/users/detail/:id" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<DetailStaff />} />
-          </Route>
-          
-          {/* Patient Appointments Management */}
-          <Route path="/patient-appointments" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AdminPatientAppointments />} />
-          </Route>
-          
-          {/* Patient Management */}
-          <Route path="/patients" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<PatientManagement />} />
-          </Route>
-          
-          {/* Walk-in Appointments */}
-          <Route path="/walk-in-appointments" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<WalkInAppointmentForm />} />
-          </Route>
-          
-          {/* Medical Records */}
-          <Route path="/records" element={
-            <ProtectedRoute roles={['admin', 'manager', 'dentist']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<RecordList />} />
-          </Route>
-          
-          {/* Invoices */}
-          <Route path="/invoices" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<InvoiceList />} />
-          </Route>
-          
-          {/* Statistics Dashboard */}
-          <Route path="/statistics" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<StatisticsDashboard />} />
-          </Route>
-          
-          {/* Room Management */}
-          <Route path="/rooms" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<RoomList />} />
-          </Route>
-          <Route path="/rooms/:roomId" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<RoomList />} />
-          </Route>
-          
-          {/* Service Management */}
-          <Route path="/services" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ServiceList />} />
-          </Route>
-          <Route path="/services/add" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AddService />} />
-          </Route>
-          <Route path="/services/:serviceId" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ServiceDetails />} />
-          </Route>
-          <Route path="/services/:serviceId/edit" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<EditService />} />
-          </Route>
-          <Route path="/services/:serviceId/addons/:addonId/edit" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<EditServiceAddOn />} />
-          </Route>
-          <Route path="/services/:serviceId/addons/add" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AddServiceAddOn />} />
-          </Route>
-          
-          {/* Schedule Management */}
-          <Route path="/schedules" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ScheduleConfig />} />
-          </Route>
-          <Route path="/schedules/holidays" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<HolidayManagementPage />} />
-          </Route>
-          <Route path="/schedules/create-for-room" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<CreateScheduleForRoom />} />
-          </Route>
-          <Route path="/schedules/calendar" element={
-            <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ScheduleCalendar />} />
-          </Route>
-          <Route path="/schedules/staff-assignment" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<StaffAssignmentUnified />} />
-          </Route>
-          <Route path="/schedules/staff-assignment/detail" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<StaffAssignmentDetail />} />
-          </Route>
-          <Route path="/schedules/staff-assignment/assign" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AssignStaffForm />} />
-          </Route>
-          <Route path="/schedules/staff-replacement" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<StaffReplacement />} />
-          </Route>
-          
-          {/* Certificate Management */}
-          <Route path="/certificates" element={
-            <ProtectedRoute roles={['dentist']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<CertificateManagement />} />
-          </Route>
-          
-          {/* Settings */}
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Settings />} />
             
             {/* Profile */}
             <Route path="profile" element={<Profile />} />
             
-            {/* Change Password */}
-            <Route path="change-password" element={<ChangePassword />} />
-            
-            {/* Admin/Manager routes */}
+            {/* User Management */}
             <Route path="users" element={<UserManagement />} />
             <Route path="users/edit/:id" element={<EditUser />} />
             <Route path="users/detail/:id" element={<DetailStaff />} />
             
-            {/* Patient Appointments Management (Admin/Manager only) */}
+            {/* Queue Dashboard */}
+            <Route path="queue" element={<QueueDashboard />} />
+            
+            {/* Patient Appointments Management */}
             <Route path="patient-appointments" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <AdminPatientAppointments />
               </ProtectedRoute>
             } />
             
-            {/* Walk-in Appointments & Cash Payment (Admin/Manager only) */}
+            {/* Patient Management */}
+            <Route path="patients" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <PatientManagement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Walk-in Appointments */}
             <Route path="walk-in-appointments" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <WalkInAppointmentForm />
               </ProtectedRoute>
             } />
             
-            {/* Medical Records Management (Admin/Manager/Dentist) */}
+            {/* Medical Records */}
             <Route path="records" element={
               <ProtectedRoute roles={['admin', 'manager', 'dentist']}>
                 <RecordList />
               </ProtectedRoute>
             } />
             
-            {/* Invoice Management (Admin/Manager) */}
+            {/* Invoices */}
             <Route path="invoices" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <InvoiceList />
               </ProtectedRoute>
             } />
             
-            {/* Room Management (Admin/Manager only) */}
+            {/* Statistics Dashboard */}
+            <Route path="statistics" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StatisticsDashboard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Room Management */}
             <Route path="rooms" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <RoomList />
               </ProtectedRoute>
             } />
+            <Route path="rooms/:roomId" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <RoomList />
+              </ProtectedRoute>
+            } />
             
-            {/* Service Management (Admin/Manager only) */}
+            {/* Service Management */}
             <Route path="services" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <ServiceList />
               </ProtectedRoute>
             } />
-            
-            {/* Add Service (Admin/Manager only) - Phải đặt trước services/:serviceId */}
             <Route path="services/add" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <AddService />
               </ProtectedRoute>
             } />
-            
             <Route path="services/:serviceId" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <ServiceDetails />
               </ProtectedRoute>
             } />
-            
-            {/* Edit Service (Admin/Manager only) */}
             <Route path="services/:serviceId/edit" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <EditService />
               </ProtectedRoute>
             } />
-            
-            {/* Add Service Add-On (Admin/Manager only) */}
+            <Route path="services/:serviceId/addons/:addonId/edit" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <EditServiceAddOn />
+              </ProtectedRoute>
+            } />
             <Route path="services/:serviceId/addons/add" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <AddServiceAddOn />
               </ProtectedRoute>
             } />
             
-            {/* Edit Service Add-On (Admin/Manager only) */}
-            <Route path="services/:serviceId/addons/:addOnId/edit" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <EditServiceAddOn />
-              </ProtectedRoute>
-            } />
-
-            {/* Schedule Management (Admin/Manager only) */}
+            {/* Schedule Management */}
             <Route path="schedules" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <ScheduleConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/holidays" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <HolidayManagementPage />
               </ProtectedRoute>
             } />
             <Route path="schedules/create-for-room" element={
@@ -669,11 +453,6 @@ function App() {
             <Route path="schedules/calendar" element={
               <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
                 <ScheduleCalendar />
-              </ProtectedRoute>
-            } />
-            <Route path="schedules/holidays" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <HolidayManagementPage />
               </ProtectedRoute>
             } />
             <Route path="schedules/staff-assignment" element={
@@ -691,14 +470,16 @@ function App() {
                 <AssignStaffForm />
               </ProtectedRoute>
             } />
-            <Route path="schedules/staff-assignment-unified" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <StaffAssignmentUnified />
-              </ProtectedRoute>
-            } />
             <Route path="schedules/staff-replacement" element={
               <ProtectedRoute roles={['admin', 'manager']}>
                 <StaffReplacement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Certificate Management */}
+            <Route path="certificates" element={
+              <ProtectedRoute roles={['dentist']}>
+                <CertificateManagement />
               </ProtectedRoute>
             } />
           </Route>
