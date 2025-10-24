@@ -342,16 +342,24 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
   return (
     <Modal
       title={
-        <Space>
-          <EnvironmentOutlined />
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px',
+          fontSize: '16px',
+          fontWeight: '600',
+          color: '#262626'
+        }}>
+          <EnvironmentOutlined style={{ fontSize: '18px', color: '#1890ff' }} />
           {room ? 'Chỉnh sửa phòng khám' : 'Tạo phòng khám mới'}
-        </Space>
+        </div>
       }
       open={isOpen}
       onCancel={handleCancel}
       footer={null}
       width={600}
       destroyOnHidden
+      style={{ top: 20 }}
     >
       <Form
         form={form}
@@ -390,7 +398,13 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
               label="Loại phòng"
               rules={[{ required: true, message: 'Vui lòng chọn loại phòng' }]}
             >
-              <Select placeholder="Chọn loại phòng">
+              <Select 
+                placeholder="Chọn loại phòng"
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              >
                 {Object.entries(roomTypes).map(([key, value]) => (
                   <Select.Option key={value} value={value}>
                     {getRoomTypeLabel(value)}

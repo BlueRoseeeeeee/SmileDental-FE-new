@@ -99,7 +99,7 @@
   font-size: 14px; 
   border: 1px solid #d9d9d9;
   border-radius: 6px; 
-  transition: border-color 0.3s;
+  /* Transition removed for better performance */
   position: relative;
   z-index: 1;
 }

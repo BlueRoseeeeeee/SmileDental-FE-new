@@ -253,14 +253,54 @@ const PublicServiceAddOnDetail = () => {
               
               {/* Price */}
               <div style={{ marginBottom: '8px' }}>
-                <span style={{ 
-                  color: '#313B79',
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  lineHeight: '28px'
-                }}>
-                  {formatPrice(addOn.price || 0)}
-                </span>
+                {addOn.isPriceModified && addOn.effectivePrice ? (
+                  <div>
+                    {/* Original Price - Strikethrough */}
+                    <div style={{ marginBottom: '4px' }}>
+                      <span style={{ 
+                        color: '#999',
+                        fontSize: '16px',
+                        textDecoration: 'line-through',
+                        lineHeight: '24px'
+                      }}>
+                        {formatPrice(addOn.basePrice || addOn.price)}
+                      </span>
+                    </div>
+                    
+                    {/* Effective Price - Bold */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ 
+                        color: '#ff4d4f',
+                        fontSize: '20px',
+                        fontWeight: 600,
+                        lineHeight: '28px'
+                      }}>
+                        {formatPrice(addOn.effectivePrice)}
+                      </span>
+                    </div>
+                    
+                    {/* Promotion Period */}
+                    <div>
+                      <Text style={{ 
+                        fontSize: '12px',
+                        fontStyle: 'italic',
+                        color: '#666',
+                        lineHeight: '16px'
+                      }}>
+                        * Giá áp dụng từ {new Date(addOn.priceSchedules?.[0]?.startDate).toLocaleDateString('vi-VN')} đến {new Date(addOn.priceSchedules?.[0]?.endDate).toLocaleDateString('vi-VN')}
+                      </Text>
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{ 
+                    color: '#313B79',
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    lineHeight: '28px'
+                  }}>
+                    {formatPrice(addOn.price || 0)}
+                  </span>
+                )}
               </div>
               
             </div>

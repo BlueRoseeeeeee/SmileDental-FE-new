@@ -225,6 +225,67 @@ const PatientAppointments = () => {
   const getServiceTypeTag = (type) => {
     return type === 'exam' ? <Tag color="green">Khám</Tag> : <Tag color="orange">Điều trị</Tag>;
   };
+  const patientColumns = [
+    {
+      title: 'Bệnh nhân',
+      key: 'patient',
+      render: (_, record) => (
+        <Space>
+          <Avatar 
+            icon={<UserOutlined />} 
+            {...(record.profilePicture ? { src: record.profilePicture } : {})}
+          />
+          <div>
+            <div style={{ fontWeight: 500 }}>{record.fullName}</div>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.email}
+            </Text>
+          </div>
+        </Space>
+      )
+    },
+    {
+      title: 'Số điện thoại',
+      dataIndex: 'phone',
+      key: 'phone',
+      render: (phone) => (
+        <Space>
+          <PhoneOutlined />
+          <Text>{phone || 'Chưa có'}</Text>
+        </Space>
+      )
+    },
+    {
+      title: 'Ngày sinh',
+      dataIndex: 'dateOfBirth',
+      key: 'dateOfBirth',
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : 'Chưa có'
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (isActive) => (
+        <Badge 
+          status={isActive ? 'success' : 'error'} 
+          text={isActive ? 'Hoạt động' : 'Tạm khóa'}
+        />
+      )
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      render: (_, record) => (
+        <Button 
+          type="primary" 
+          icon={<EyeOutlined />}
+          onClick={() => handleSelectPatient(record)}
+        >
+          Xem lịch khám
+        </Button>
+      )
+    }
+  ];
 
   const columns = [
     {
@@ -348,9 +409,99 @@ const PatientAppointments = () => {
               <Input
                 placeholder="Tìm kiếm (tên, SĐT, mã lịch hẹn, nha sĩ, dịch vụ...)"
                 prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                allowClear
+                value={searchPatient}
+                onChange={(e) => setSearchPatient(e.target.value)}
+                style={{ width: 250 }}
+              />
+            }
+          >
+            <Table
+              dataSource={filteredPatients}
+              columns={patientColumns}
+              rowKey="_id"
+              loading={loadingPatients}
+              pagination={{
+                pageSize: 10,
+                showTotal: (total) => `Tổng ${total} bệnh nhân`
+              }}
+              scroll={{ x: 800 }}
+            />
+          </Card>
+        </Col>
+
+        {/* Right: Selected Patient's Appointments */}
+        <Col xs={24} lg={14}>
+          <Card
+            title={
+              selectedPatient ? (
+                <Space>
+                  <Avatar 
+                    icon={<UserOutlined />} 
+                    {...(selectedPatient.profilePicture ? { src: selectedPatient.profilePicture } : {})}
+                  />
+                  <div>
+                    <div>Lịch khám của {selectedPatient.fullName}</div>
+                    <Text type="secondary" style={{ fontSize: 12, fontWeight: 'normal' }}>
+                      {selectedPatient.email}
+                    </Text>
+                  </div>
+                </Space>
+              ) : (
+                'Lịch khám'
+              )
+            }
+            extra={
+              selectedPatient && (
+                <Space>
+                  <RangePicker
+                    value={dateRange}
+                    onChange={setDateRange}
+                    format="DD/MM/YYYY"
+                    placeholder={['Từ ngày', 'Đến ngày']}
+                  />
+                  <Select
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    style={{ width: 150 }}
+                  >
+                    <Option value="all">Tất cả trạng thái</Option>
+                    <Option value="pending">Chờ xác nhận</Option>
+                    <Option value="confirmed">Đã xác nhận</Option>
+                    <Option value="in_progress">Đang khám</Option>
+                    <Option value="completed">Hoàn thành</Option>
+                    <Option value="cancelled">Đã hủy</Option>
+                    <Option value="no_show">Không đến</Option>
+                  </Select>
+                  <Input
+                    placeholder="Tìm kiếm lịch khám..."
+                    prefix={<SearchOutlined />}
+                    value={searchAppointment}
+                    onChange={(e) => setSearchAppointment(e.target.value)}
+                    style={{ width: 200 }}
+                  />
+                </Space>
+              )
+            }
+          >
+            {!selectedPatient ? (
+              <Empty
+                description="Vui lòng chọn một bệnh nhân để xem lịch khám"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ) : loadingAppointments ? (
+              <div style={{ textAlign: 'center', padding: '50px 0' }}>
+                <Spin size="large" />
+              </div>
+            ) : (
+              <Table
+                dataSource={filteredAppointments}
+                columns={appointmentColumns}
+                rowKey="_id"
+                pagination={{
+                  pageSize: 10,
+                  showTotal: (total) => `Tổng ${total} lịch khám`
+                }}
+                scroll={{ x: 1000 }}
               />
             </Col>
             <Col span={4}>

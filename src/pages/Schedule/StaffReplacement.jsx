@@ -311,7 +311,7 @@ const StaffReplacement = () => {
           <Space>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/schedule')}
+              onClick={() => navigate('/dashboard/schedule')}
             >
               Quay lại
             </Button>

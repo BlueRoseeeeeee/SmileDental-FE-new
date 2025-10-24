@@ -1,42 +1,6 @@
-/* ===================================
-   ROOM MANAGEMENT - SMILECARE DESIGN
-   =================================== */
-
-/* Page animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Table row animations */
-.ant-table-tbody > tr.table-row-light,
-.ant-table-tbody > tr.table-row-dark {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: slideIn 0.4s ease-out;
-}
-
 .ant-table-tbody > tr.table-row-light:hover,
 .ant-table-tbody > tr.table-row-dark:hover {
   background-color: #eff6ff !important;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-  transform: scale(1.01);
 }
 
 .ant-table-tbody > tr.table-row-light {
@@ -45,38 +9,6 @@
 
 .ant-table-tbody > tr.table-row-dark {
   background-color: #f9fafb;
-}
-
-/* Card animations */
-.ant-card {
-  animation: fadeInUp 0.5s ease-out;
-}
-
-/* Button hover effects */
-.ant-btn {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.ant-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-}
-
-.ant-btn-primary:hover:not(:disabled) {
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
-}
-
-.ant-btn-danger:hover:not(:disabled) {
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
-}
-
-/* Switch styling */
-.ant-switch {
-  transition: all 0.3s ease;
-}
-
-.ant-switch:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Input focus effects */
@@ -95,7 +27,7 @@
 
 /* Table header styling */
 .ant-table-thead > tr > th {
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%) !important;
+  background: #f5f5f5 !important;
   font-weight: 600;
   color: #374151;
   border-bottom: 2px solid #e5e7eb !important;
@@ -104,12 +36,10 @@
 
 /* Tag styling */
 .ant-tag {
-  transition: all 0.3s ease;
   border: none;
 }
 
 .ant-tag:hover {
-  transform: scale(1.05);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
@@ -137,10 +67,6 @@
   border-radius: 0 0 16px 16px !important;
 }
 
-/* Statistic card styling */
-.ant-statistic {
-  animation: fadeInUp 0.6s ease-out;
-}
 
 .ant-statistic-title {
   font-weight: 500;
@@ -167,25 +93,7 @@
   border-color: #e5e7eb;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-}
+/* Scrollbar styling removed - using default browser scrollbar */
 
 /* Tooltip styling */
 .ant-tooltip-inner {
@@ -213,7 +121,7 @@
 
 .ant-pagination-item:hover {
   border-color: #3b82f6;
-  transform: translateY(-2px);
+  /* Transform removed for better performance */
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
 }
 
@@ -261,41 +169,3 @@
   }
 }
 
-/* Pulse animation for loading */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.ant-spin-dot {
-  animation: pulse 1.2s ease-in-out infinite;
-}
-
-/* Success message animation */
-@keyframes successSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.ant-message {
-  animation: successSlide 0.3s ease-out;
-}
-
-/* Icon container hover effect */
-.icon-container {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.icon-container:hover {
-  transform: scale(1.1) rotate(5deg);
-}

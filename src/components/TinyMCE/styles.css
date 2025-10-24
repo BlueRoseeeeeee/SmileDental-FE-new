@@ -31,7 +31,7 @@
   box-shadow: none !important;
   background: #ffffff !important;
   overflow: hidden !important;
-  transition: all 0.2s ease-in-out !important;
+  /* Transition removed for better performance */
   width: 100% !important;
   max-width: 100% !important;
   height: 100% !important;
@@ -90,7 +90,7 @@
 /* Toolbar Buttons - Modern Style */
 .smile-dental-tiny-mce .tox-tbtn {
   border-radius: 2px !important;
-  transition: all 0.15s ease !important;
+  /* Transition removed for better performance */
   color: #374151 !important;
   background: transparent !important;
   border: none !important;

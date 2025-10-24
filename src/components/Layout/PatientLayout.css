@@ -52,7 +52,7 @@
 .user-info {
   padding: 8px 12px;
   border-radius: 8px;
-  transition: all 0.3s;
+  /* Transition removed for better performance */
 }
 
 .user-info:hover {

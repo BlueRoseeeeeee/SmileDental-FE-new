@@ -202,9 +202,9 @@ const ServiceDetails = () => {
     try {
       const response = await servicesService.getServiceById(serviceId);
       setService(response);
-    } catch (error) {
+    } catch {
       toastService.error('Không thể tải chi tiết dịch vụ');
-      navigate('/services');
+      navigate('/dashboard/services');
     } finally {
       setLoading(false);
     }
@@ -256,7 +256,7 @@ const ServiceDetails = () => {
       setService(updatedService);
       toastService.success('Cập nhật dịch vụ thành công!');
       setShowUpdateModal(false);
-    } catch (error) {
+    } catch {
       toastService.error('Lỗi khi cập nhật dịch vụ');
     } finally {
       setUpdateLoading(false);
@@ -555,7 +555,7 @@ const ServiceDetails = () => {
       }}>
         <Text type="secondary">Không tìm thấy dịch vụ</Text>
         <br />
-        <Button onClick={() => navigate('/services')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate('/dashboard/services')} style={{ marginTop: 16 }}>
           Quay lại danh sách
         </Button>
       </div>
@@ -568,7 +568,7 @@ const ServiceDetails = () => {
       <div style={{ marginBottom: 24 }}>
         <Button 
           icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate('/services')}
+          onClick={() => navigate('/dashboard/services')}
           style={{ marginBottom: 16 }}
         >
           Quay lại danh sách
@@ -585,7 +585,7 @@ const ServiceDetails = () => {
               <Button
                 type="primary"
                 icon={<EditOutlined />}
-                onClick={() => navigate(`/services/${serviceId}/edit`)}
+                onClick={() => navigate(`/dashboard/services/${serviceId}/edit`)}
               >
                 Chỉnh sửa
               </Button>
@@ -677,7 +677,7 @@ const ServiceDetails = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => navigate(`/services/${serviceId}/addons/add`)}
+                onClick={() => navigate(`/dashboard/services/${serviceId}/addons/add`)}
                 size="small"
               >
                 Thêm tùy chọn
@@ -701,7 +701,7 @@ const ServiceDetails = () => {
                     title: 'Tên tùy chọn',
                     dataIndex: 'name',
                     key: 'name',
-                    render: (text, record) => (
+                    render: (text) => (
                       <div>
                         <Text strong>{text}</Text>
                       </div>
@@ -773,7 +773,7 @@ const ServiceDetails = () => {
                         <Button
                           type="text"
                           icon={<EditOutlined />}
-                          onClick={() => navigate(`/services/${serviceId}/addons/${record._id}/edit`)}
+                          onClick={() => navigate(`/dashboard/services/${serviceId}/addons/${record._id}/edit`)}
                           size="small"
                         />
                         <Switch
@@ -800,7 +800,7 @@ const ServiceDetails = () => {
                 <Button 
                   type="dashed" 
                   icon={<PlusOutlined />}
-                  onClick={() => navigate(`/services/${serviceId}/addons/add`)}
+                  onClick={() => navigate(`/dashboard/services/${serviceId}/addons/add`)}
                   style={{ marginTop: 8 }}
                 >
                   Thêm tùy chọn đầu tiên
@@ -903,7 +903,7 @@ const ServiceDetails = () => {
               placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
               style={{ width: '100%' }}
             >
-              {Object.entries(roomTypes).map(([key, value]) => (
+              {Object.values(roomTypes).map((value) => (
                 <Select.Option key={value} value={value}>
                   {getRoomTypeLabel(value)}
                 </Select.Option>
@@ -1055,7 +1055,18 @@ const ServiceDetails = () => {
 
       {/* 🆕 Price Schedule Management Modal */}
       <Modal
-        title={`Quản lý lịch giá - ${selectedAddOnForPrice?.name || ''}`}
+        title={
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            fontSize: '16px',
+            fontWeight: '600',
+            color: '#262626'
+          }}>
+            Quản lý lịch giá - {selectedAddOnForPrice?.name || ''}
+          </div>
+        }
         open={showPriceScheduleModal}
         onCancel={() => setShowPriceScheduleModal(false)}
         footer={[
@@ -1064,6 +1075,7 @@ const ServiceDetails = () => {
           </Button>
         ]}
         width={900}
+        style={{ top: 20 }}
       >
         {selectedAddOnForPrice && (
           <div>
@@ -1422,10 +1434,11 @@ const ServiceDetails = () => {
             label="Ghi chú"
           >
             <Input.TextArea
-              placeholder="Ghi chú cho lịch giá (VD: Khuyến mãi Tết, Giảm giá mùa hè...)"
+              placeholder="Nhập ghi chú cho lịch giá (VD: Khuyến mãi Tết, Giảm giá mùa hè...)"
               rows={3}
               maxLength={500}
               showCount
+              className="price-schedule-textarea"
             />
           </Form.Item>
 

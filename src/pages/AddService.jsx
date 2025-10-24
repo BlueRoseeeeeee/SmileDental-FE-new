@@ -68,13 +68,15 @@ const AddService = () => {
     { 
       name: '', 
       price: 0, 
-      durationMinutes: 0, 
+      durationMinutes: null, 
       unit: '', 
       description: '', 
       isActive: true,
       imageFile: null 
     }
   ]);
+  const [showDescriptionEditor, setShowDescriptionEditor] = useState(false);
+  const [serviceDescription, setServiceDescription] = useState('');
 
   // Fetch room types on mount
   React.useEffect(() => {
@@ -84,6 +86,21 @@ const AddService = () => {
         setRoomTypes(types);
       } catch (error) {
         console.error('Error fetching room types:', error);
+        // Fallback data nếu API lỗi
+        const fallbackTypes = {
+          CONSULTATION: 'CONSULTATION',
+          GENERAL_TREATMENT: 'GENERAL_TREATMENT', 
+          SURGERY: 'SURGERY',
+          ORTHODONTIC: 'ORTHODONTIC',
+          COSMETIC: 'COSMETIC',
+          PEDIATRIC: 'PEDIATRIC',
+          X_RAY: 'X_RAY',
+          STERILIZATION: 'STERILIZATION',
+          LAB: 'LAB',
+          RECOVERY: 'RECOVERY',
+          SUPPORT: 'SUPPORT'
+        };
+        setRoomTypes(fallbackTypes);
       }
     };
     fetchRoomTypes();
@@ -135,7 +152,7 @@ const AddService = () => {
       formData.append('serviceAddOns', JSON.stringify(addOnsData));
       
       // Add image files (if any)
-      validAddOns.forEach((addon, index) => {
+      validAddOns.forEach((addon) => {
         if (addon.imageFile && addon.imageFile.originFileObj) {
           formData.append('images', addon.imageFile.originFileObj);
         }
@@ -145,7 +162,7 @@ const AddService = () => {
       toastService.success('Thêm dịch vụ thành công!');
       
       // Quay về trang danh sách
-      navigate('/services');
+      navigate('/dashboard/services');
     } catch (error) {
       if (error.errorFields) {
         toastService.error('Vui lòng kiểm tra lại thông tin form!');
@@ -175,7 +192,7 @@ const AddService = () => {
     setServiceAddOns([...serviceAddOns, { 
       name: '', 
       price: 0, 
-      durationMinutes: 0,
+      durationMinutes: null,
       unit: '',
       description: '',
       isActive: true,
@@ -241,7 +258,7 @@ const AddService = () => {
           <Col>
             <Button 
               icon={<ArrowLeftOutlined />} 
-              onClick={() => navigate('/services')}
+              onClick={() => navigate('/dashboard/services')}
               size="large"
               style={{
                 height: '48px',
@@ -325,9 +342,37 @@ const AddService = () => {
                   >
                     <Select 
                       size="large"
+                      style={{ width: '100%' }}
                     >
                       <Option value="treatment">Điều trị</Option>
                       <Option value="exam">Khám</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="allowedRoomTypes"
+                    label="Loại phòng cho phép"
+                    rules={[
+                      { required: true, message: 'Vui lòng chọn ít nhất 1 loại phòng!' }
+                    ]}
+                  >
+                    <Select
+                      mode="multiple"
+                      size="large"
+                      placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
+                      style={{ width: '100%' }}
+                      maxTagCount="responsive"
+                      showSearch
+                      filterOption={(input, option) =>
+                        option?.children?.toLowerCase().includes(input.toLowerCase())
+                      }
+                    >
+                      {Object.values(roomTypes).map((value) => (
+                        <Option key={value} value={value}>
+                          {getRoomTypeLabel(value)}
+                        </Option>
+                      ))}
                     </Select>
                   </Form.Item>
                 </Col>
@@ -354,31 +399,6 @@ const AddService = () => {
                         Dịch vụ này có yêu cầu bệnh nhân phải khám trước khi thực hiện
                       </Text>
                     </div>
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={24}>
-                  <Form.Item
-                    name="allowedRoomTypes"
-                    label="Loại phòng cho phép"
-                    rules={[
-                      { required: true, message: 'Vui lòng chọn ít nhất 1 loại phòng!' }
-                    ]}
-                  >
-                    <Select
-                      mode="multiple"
-                      size="large"
-                      placeholder="Chọn các loại phòng có thể thực hiện dịch vụ này"
-                      style={{ width: '100%' }}
-                    >
-                      {Object.entries(roomTypes).map(([key, value]) => (
-                        <Option key={value} value={value}>
-                          {getRoomTypeLabel(value)}
-                        </Option>
-                      ))}
-                    </Select>
                   </Form.Item>
                 </Col>
               </Row>
@@ -541,6 +561,32 @@ const AddService = () => {
                     </div>
 
                     <Row gutter={[16, 16]}>
+                      <Col xs={24}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ color: '#262626' }}>Hình ảnh (Tùy chọn)</Text>
+                        </div>
+                        <Upload
+                          listType="picture-card"
+                          fileList={addon.imageFile ? [addon.imageFile] : []}
+                          onChange={(info) => {
+                            const file = info.fileList[0];
+                            updateServiceAddOn(index, 'imageFile', file);
+                          }}
+                          beforeUpload={() => false}
+                          maxCount={1}
+                          accept="image/*"
+                        >
+                          {!addon.imageFile && (
+                            <div>
+                              <UploadOutlined />
+                              <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                            </div>
+                          )}
+                        </Upload>
+                      </Col>
+                    </Row>
+
+                    <Row gutter={[16, 16]}>
                       <Col xs={24} sm={12} md={9}>
                         <div style={{ marginBottom: '8px' }}>
                           <Text strong style={{ color: '#262626' }}>Tên tùy chọn *</Text>
@@ -556,44 +602,6 @@ const AddService = () => {
                          />
                       </Col>
                       
-                      <Col xs={24} sm={12} md={5}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Giá (VNĐ) *</Text>
-                        </div>
-                         <InputNumber
-                           style={{ 
-                             width: '100%',
-                             borderRadius: '8px'
-                           }}
-                           placeholder="500,000"
-                           value={addon.price}
-                           onChange={(value) => updateServiceAddOn(index, 'price', value)}
-                           formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                           parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                           min={0}
-                           size="large"
-                           addonAfter="VNĐ"
-                         />
-                      </Col>
-
-                      <Col xs={24} sm={12} md={5}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Thời gian (phút) *</Text>
-                        </div>
-                         <InputNumber
-                           style={{ 
-                             width: '100%',
-                             borderRadius: '8px'
-                           }}
-                           placeholder="30"
-                           value={addon.durationMinutes}
-                           onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
-                           min={1}
-                           size="large"
-                           addonAfter="phút"
-                         />
-                      </Col>
-
                       <Col xs={24} sm={12} md={5}>
                         <div style={{ marginBottom: '8px' }}>
                           <Text strong style={{ color: '#262626' }}>Đơn vị *</Text>
@@ -615,46 +623,46 @@ const AddService = () => {
                            <Option value="Lần">Lần</Option>
                          </Select>
                       </Col>
-                    </Row>
 
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} md={12}>
+                      <Col xs={24} sm={12} md={5}>
                         <div style={{ marginBottom: '8px' }}>
                           <Text strong style={{ color: '#262626' }}>Thời gian (phút) *</Text>
                         </div>
-                        <InputNumber
-                          style={{ 
-                            width: '100%',
-                            borderRadius: '8px'
-                          }}
-                          placeholder="30"
-                          value={addon.durationMinutes}
-                          onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
-                          min={1}
-                          size="large"
-                          addonAfter="phút"
-                        />
+                         <InputNumber
+                           style={{ 
+                             width: '100%',
+                             borderRadius: '8px'
+                           }}
+                           placeholder="Nhập thời gian"
+                           value={addon.durationMinutes}
+                           onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
+                           min={1}
+                           size="large"
+                           addonAfter="phút"
+                         />
                       </Col>
-                      
-                      <Col xs={24} md={12}>
+
+                      <Col xs={24} sm={12} md={5}>
                         <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Đơn vị *</Text>
+                          <Text strong style={{ color: '#262626' }}>Giá (VNĐ) *</Text>
                         </div>
-                        <Select
-                          style={{ width: '100%' }}
-                          placeholder="Chọn đơn vị"
-                          value={addon.unit || undefined}
-                          onChange={(value) => updateServiceAddOn(index, 'unit', value)}
-                          size="large"
-                        >
-                          <Option value="Răng">Răng</Option>
-                          <Option value="Hàm">Hàm</Option>
-                          <Option value="Trụ">Trụ</Option>
-                          <Option value="Cái">Cái</Option>
-                          <Option value="Lần">Lần</Option>
-                        </Select>
+                         <InputNumber
+                           style={{ 
+                             width: '100%',
+                             borderRadius: '8px'
+                           }}
+                           placeholder="500,000"
+                           value={addon.price}
+                           onChange={(value) => updateServiceAddOn(index, 'price', value)}
+                           formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                           parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                           min={0}
+                           size="large"
+                           addonAfter="VNĐ"
+                         />
                       </Col>
                     </Row>
+
 
                     <Row gutter={[16, 16]}>
                         <Col xs={24}>
@@ -713,32 +721,6 @@ const AddService = () => {
                         </Col>
                       </Row>
 
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Hình ảnh (Tùy chọn)</Text>
-                        </div>
-                        <Upload
-                          listType="picture-card"
-                          fileList={addon.imageFile ? [addon.imageFile] : []}
-                          onChange={(info) => {
-                            const file = info.fileList[0];
-                            updateServiceAddOn(index, 'imageFile', file);
-                          }}
-                          beforeUpload={() => false}
-                          maxCount={1}
-                          accept="image/*"
-                        >
-                          {!addon.imageFile && (
-                            <div>
-                              <UploadOutlined />
-                              <div style={{ marginTop: 8 }}>Chọn ảnh</div>
-                            </div>
-                          )}
-                        </Upload>
-                      </Col>
-                    </Row>
-
                   </Card>
                 ))}
 
@@ -777,7 +759,7 @@ const AddService = () => {
                 gap: '16px'
               }}>
                 <Button 
-                  onClick={() => navigate('/services')}
+                  onClick={() => navigate('/dashboard/services')}
                   size="large"
                   style={{
                     height: '48px',

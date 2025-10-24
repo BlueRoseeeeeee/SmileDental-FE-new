@@ -66,7 +66,7 @@ const DashboardLayout = () => {
         key: '/dashboard',
         icon: <HomeOutlined />,
         label: 'Trang chủ',
-      },
+      }
     ];
 
     const roleBasedItems = [];
@@ -80,7 +80,7 @@ const DashboardLayout = () => {
           icon: <TeamOutlined />,
           label: 'Quản lý nhân sự',
           children: [
-            { key: '/users', label: 'Danh sách nhân viên', icon: <UserSwitchOutlined /> },
+            { key: '/dashboard/users', label: 'Danh sách nhân viên', icon: <UserSwitchOutlined /> },
             { key: '/schedules/staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined /> },
           ]
         },
@@ -91,10 +91,10 @@ const DashboardLayout = () => {
           icon: <ClockCircleOutlined />,
           label: 'Quản lý lịch làm việc',
           children: [
-            { key: '/schedules', label: 'Cấu hình hệ thống' },
-            { key: '/schedules/calendar', label: 'Lịch làm việc' },
-            { key: '/schedules/create-for-room', label: 'Tạo lịch cho phòng' },
-            { key: '/schedules/holidays', label: 'Quản lý ngày nghỉ' },
+            { key: '/dashboard/schedules', label: 'Cấu hình hệ thống' },
+            { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc' },
+            { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng' },
+            { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ' },
           ]
         },
 
@@ -107,6 +107,11 @@ const DashboardLayout = () => {
             { key: '/patient-appointments', label: 'Lịch khám bệnh nhân', icon: <CalendarOutlined /> },
             { key: '/walk-in-appointments', label: 'Lịch hẹn Walk-in', icon: <UserAddOutlined /> },
           ]
+        },
+        {
+          key: '/dashboard/services',
+          icon: <MedicineBoxOutlined />,
+          label: 'Quản lý dịch vụ',
         },
 
         // Quản lý hàng đợi
@@ -140,7 +145,7 @@ const DashboardLayout = () => {
 
         // Quản lý tài chính
         {
-          key: '/invoices',
+          key: '/dashboard/invoices',
           icon: <DollarOutlined />,
           label: 'Quản lý hóa đơn',
         },
@@ -158,12 +163,12 @@ const DashboardLayout = () => {
     if (user?.role === 'dentist') {
       roleBasedItems.push(
         {
-          key: '/certificates',
+          key: '/dashboard/certificates',
           icon: <FileTextOutlined />,
           label: 'Quản lý chứng chỉ',
         },
         {
-          key: '/records',
+          key: '/dashboard/records',
           icon: <FileDoneOutlined />,
           label: 'Hồ sơ bệnh án',
         },
@@ -216,12 +221,12 @@ const DashboardLayout = () => {
     // ==================== COMMON ITEMS ====================
     const commonItems = [
       {
-        key: '/profile',
+        key: '/dashboard/profile'',
         icon: <UserOutlined />,
         label: 'Hồ sơ cá nhân',
       },
       {
-        key: '/settings',
+        key: '/dashboard/settings',
         icon: <SettingOutlined />,
         label: 'Cài đặt',
       }
@@ -235,19 +240,19 @@ const DashboardLayout = () => {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Hồ sơ cá nhân',
-      onClick: () => navigate('/profile'),
+      onClick: () => navigate('/dashboard/profile'),
     },
     {
       key: 'change-password',
       icon: <SafetyOutlined />,
       label: 'Đổi mật khẩu',
-      onClick: () => navigate('/change-password'),
+      onClick: () => navigate('/dashboard/change-password'),
     },
     {
       key: 'settings',
       icon: <SettingOutlined />,
       label: 'Cài đặt',
-      onClick: () => navigate('/settings'),
+      onClick: () => navigate('/dashboard/settings'),
     },
     {
       type: 'divider',
