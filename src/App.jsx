@@ -347,13 +347,11 @@ function App() {
             <Route path="users/detail/:id" element={<DetailStaff />} />
             
             {/* Queue Dashboard */}
-          <Route path="/queue" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<QueueManagement />} /> {/* 🔥 New Queue UI */}
-          </Route>
+            <Route path="queue" element={
+              <ProtectedRoute>
+                <QueueManagement />
+              </ProtectedRoute>
+            } />
             
             {/* Patient Appointments Management */}
             <Route path="patient-appointments" element={
