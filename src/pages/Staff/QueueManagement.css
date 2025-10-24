@@ -1,72 +1,170 @@
 .queue-management-container {
   padding: 24px;
-  background: #f0f2f5;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: calc(100vh - 64px);
 }
 
 .queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
-  text-align: center;
+  padding: 20px 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.room-queue-card {
+.queue-header h2 {
+  color: #1890ff;
+}
+
+.current-time-display {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border: 2px solid #1890ff;
+}
+
+/* Room Card Styles */
+.room-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
   height: 100%;
-  min-height: 400px;
+  overflow: hidden;
 }
 
-.room-queue-card .ant-card-head {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.room-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-.room-queue-card .ant-card-head-title {
-  color: white;
+.room-busy {
+  border-left: 5px solid #1890ff;
+  background: linear-gradient(to bottom, #ffffff 0%, #f0f9ff 100%);
 }
 
-.current-patient-section {
+.room-empty {
+  border-left: 5px solid #d9d9d9;
+  background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
+}
+
+.room-header {
+  padding-bottom: 8px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 6px 0;
+}
+
+.current-patient-box {
   padding: 12px;
   background: #e6f7ff;
   border-radius: 8px;
-  border-left: 4px solid #1890ff;
+  border-left: 3px solid #1890ff;
+  margin-top: 8px;
 }
 
-.waiting-list-section {
+.next-patient-box {
   padding: 12px;
   background: #fffbe6;
   border-radius: 8px;
-  border-left: 4px solid #faad14;
+  border-left: 3px solid #faad14;
+  margin-top: 8px;
 }
 
-.patient-card {
-  transition: all 0.3s ease;
-  margin-bottom: 8px;
+.patient-info-compact {
+  font-size: 13px;
 }
 
-.patient-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.patient-info-compact .ant-space-item {
+  width: 100%;
 }
 
-.active-patient {
-  border-left: 4px solid #1890ff;
-  background: #f0f9ff;
+.upcoming-info {
+  margin-top: 12px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  text-align: center;
 }
 
-.waiting-patient {
-  border-left: 4px solid #faad14;
-  background: #fffef9;
-}
-
-.patient-card .ant-card-body {
-  padding: 12px;
-}
-
+/* Responsive */
 @media (max-width: 768px) {
   .queue-management-container {
     padding: 12px;
   }
 
-  .room-queue-card {
-    min-height: 300px;
+  .queue-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
   }
+
+  .current-time-display {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .room-card {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .queue-header h2 {
+    font-size: 20px;
+  }
+
+  .current-time-display {
+    font-size: 14px;
+  }
+
+  .current-time-display > div > div {
+    font-size: 24px !important;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.room-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Status Tags */
+.ant-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Badge */
+.ant-badge-count {
+  font-weight: bold;
+}
+
+/* Empty State */
+.ant-empty {
+  margin: 8px 0;
+}
+
+.ant-empty-description {
+  font-size: 12px;
+  color: #8c8c8c;
 }

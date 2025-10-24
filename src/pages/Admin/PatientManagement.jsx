@@ -56,8 +56,12 @@ const PatientManagement = () => {
       setLoading(true);
       const response = await userService.getAllPatients(1, 1000);
       
-      if (response.success && response.data) {
-        const patientData = response.data.users || response.data || [];
+      console.log('📊 API Response:', response); // Debug log
+      
+      if (response.success) {
+        // API trả về users ở root level, không phải trong data
+        const patientData = response.users || [];
+        console.log('👥 Patients loaded:', patientData.length);
         setPatients(patientData);
         setFilteredPatients(patientData);
       }

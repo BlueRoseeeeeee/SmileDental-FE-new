@@ -54,6 +54,7 @@ import WalkInAppointmentForm from './components/CashPayment/WalkInAppointmentFor
 
 // Medical Records Management
 import QueueDashboard from './pages/QueueDashboard.jsx';
+import QueueManagement from './pages/Staff/QueueManagement.jsx'; // 🔥 New Queue UI
 import RecordList from './pages/Records/RecordList.jsx';
 import RecordFormModal from './pages/Records/RecordFormModal.jsx';
 import PrescriptionForm from './pages/Records/PrescriptionForm.jsx';
@@ -346,7 +347,11 @@ function App() {
             <Route path="users/detail/:id" element={<DetailStaff />} />
             
             {/* Queue Dashboard */}
-            <Route path="queue" element={<QueueDashboard />} />
+            <Route path="queue" element={
+              <ProtectedRoute>
+                <QueueManagement />
+              </ProtectedRoute>
+            } />
             
             {/* Patient Appointments Management */}
             <Route path="patient-appointments" element={

@@ -64,6 +64,12 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isNewPatient, setIsNewPatient] = useState(false);
+  const [newPatientInfo, setNewPatientInfo] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    birthYear: null
+  }); // ⭐ Store new patient info in state
   
   // Services & Dentists
   const [services, setServices] = useState([]);
@@ -451,7 +457,13 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      console.log('📝 Form values:', values);
+      console.log('📝 Full Form values:', values);
+      console.log('📝 Patient fields:', {
+        patientName: values.patientName,
+        patientPhone: values.patientPhone,
+        patientEmail: values.patientEmail,
+        patientBirthYear: values.patientBirthYear
+      });
       setLoading(true);
 
       // ⭐ Validate slot group selection
@@ -461,9 +473,13 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         return;
       }
 
+      // Debug: Check selectedPatient state
+      console.log('🔍 [DEBUG] selectedPatient:', selectedPatient);
+      console.log('🔍 [DEBUG] newPatientInfo state:', newPatientInfo);
+
       // ⭐ Prepare patient info
       // If existing patient selected, use selectedPatient data
-      // If new patient, use form values
+      // If new patient, use newPatientInfo state
       let patientInfo;
       
       if (selectedPatient) {
@@ -478,16 +494,16 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           email: selectedPatient.email || '',
           birthYear: birthYear
         };
-        console.log('� Using existing patient info:', patientInfo);
+        console.log('👥 Using existing patient info:', patientInfo);
       } else {
-        // New patient - use form values
+        // New patient - use state
         patientInfo = {
-          name: values.patientName,
-          phone: values.patientPhone,
-          email: values.patientEmail || '',
-          birthYear: values.patientBirthYear
+          name: newPatientInfo.name,
+          phone: newPatientInfo.phone,
+          email: newPatientInfo.email || '',
+          birthYear: newPatientInfo.birthYear
         };
-        console.log('👤 Using new patient info:', patientInfo);
+        console.log('👤 Using new patient info from state:', patientInfo);
       }
 
       // Prepare appointment data
@@ -623,9 +639,10 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           <Step title="Ngày & Giờ" icon={<CalendarOutlined />} />
         </Steps>
 
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit} preserve={true}>
           {/* Step 0: Patient Search and Info */}
-          {currentStep === 0 && (
+          <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
+            {currentStep === 0 && (
             <>
               <Alert
                 message="Hướng dẫn"
@@ -713,6 +730,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       <Input 
                         placeholder="Nguyễn Văn A" 
                         disabled={!!selectedPatient}
+                        onChange={(e) => setNewPatientInfo({...newPatientInfo, name: e.target.value})}
                       />
                     </Form.Item>
                   </Col>
@@ -728,6 +746,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       <Input 
                         placeholder="0912345678" 
                         disabled={!!selectedPatient}
+                        onChange={(e) => setNewPatientInfo({...newPatientInfo, phone: e.target.value})}
                       />
                     </Form.Item>
                   </Col>
@@ -745,6 +764,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       <Input 
                         placeholder="example@email.com" 
                         disabled={!!selectedPatient}
+                        onChange={(e) => setNewPatientInfo({...newPatientInfo, email: e.target.value})}
                       />
                     </Form.Item>
                   </Col>
@@ -766,6 +786,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                         placeholder="1990" 
                         style={{ width: '100%' }}
                         disabled={!!selectedPatient}
+                        onChange={(value) => setNewPatientInfo({...newPatientInfo, birthYear: value})}
                       />
                     </Form.Item>
                   </Col>
@@ -773,8 +794,10 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
               </Card>
             </>
           )}
+          </div>
 
           {/* Step 1: Service and Dentist Selection */}
+          <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
           {currentStep === 1 && (
             <>
               <Card title={<Space><MedicineBoxOutlined />Chọn dịch vụ</Space>} style={{ marginBottom: 16 }}>
@@ -927,8 +950,10 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
               </Card>
             </>
           )}
+          </div>
 
           {/* Step 2: Date and Time Slot Selection */}
+          <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
           {currentStep === 2 && (
             <>
               <Card title={<Space><CalendarOutlined />Chọn ngày khám</Space>} style={{ marginBottom: 16 }}>
@@ -1076,6 +1101,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
               </Card>
             </>
           )}
+          </div>
 
           {/* Navigation Buttons */}
           <div style={{ marginTop: 24, textAlign: 'right' }}>
@@ -1096,9 +1122,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   htmlType="submit"
                   loading={loading}
                   icon={<CheckCircleOutlined />}
-                  disabled={!selectedPatient && !isNewPatient}
                 >
-                  Tạo lịch & Check-in
+                  Tạo phiếu
                 </Button>
               )}
 
