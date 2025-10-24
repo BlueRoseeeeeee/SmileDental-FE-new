@@ -75,8 +75,6 @@ const AddService = () => {
       imageFile: null 
     }
   ]);
-  const [showDescriptionEditor, setShowDescriptionEditor] = useState(false);
-  const [serviceDescription, setServiceDescription] = useState('');
 
   // Fetch room types on mount
   React.useEffect(() => {

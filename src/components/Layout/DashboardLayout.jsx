@@ -221,7 +221,7 @@ const DashboardLayout = () => {
     // ==================== COMMON ITEMS ====================
     const commonItems = [
       {
-        key: '/dashboard/profile'',
+        key: '/dashboard/profile',
         icon: <UserOutlined />,
         label: 'Hồ sơ cá nhân',
       },
