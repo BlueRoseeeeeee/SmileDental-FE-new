@@ -104,8 +104,8 @@ const DashboardLayout = () => {
           icon: <CalendarOutlined />,
           label: 'Quản lý lịch hẹn',
           children: [
-            { key: '/patient-appointments', label: 'Lịch khám bệnh nhân', icon: <CalendarOutlined /> },
-            { key: '/walk-in-appointments', label: 'Lịch hẹn Walk-in', icon: <UserAddOutlined /> },
+            { key: '/dashboard/patient-appointments', label: 'Lịch khám bệnh nhân', icon: <CalendarOutlined /> },
+            { key: '/dashboard/walk-in-appointments', label: 'Lịch hẹn Walk-in', icon: <UserAddOutlined /> },
           ]
         },
         {
@@ -116,7 +116,7 @@ const DashboardLayout = () => {
 
         // Quản lý hàng đợi
         {
-          key: '/queue',
+          key: '/dashboard/queue',
           icon: <UserAddOutlined />,
           label: 'Quản lý hàng đợi',
         },
@@ -195,12 +195,12 @@ const DashboardLayout = () => {
     if (user?.role === 'receptionist' || user?.role === 'staff') {
       roleBasedItems.push(
         {
-          key: '/queue',
+          key: '/dashboard/queue',
           icon: <UserAddOutlined />,
           label: 'Quản lý hàng đợi',
         },
         {
-          key: '/patient-appointments',
+          key: '/dashboard/patient-appointments',
           icon: <CalendarOutlined />,
           label: 'Lịch hẹn',
         }
