@@ -3,106 +3,6 @@
  * ScheduleManagement.css - SmileCare Design System
  */
 
-/* ===================================
-   SmileCare Schedule Management Styles
-   =================================== */
-
-/* Keyframe Animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-/* Apply animations to cards */
-.ant-card {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-/* Hero card animation */
-.ant-card:first-child {
-  animation: fadeInUp 0.8s ease-out;
-}
-
-/* Feature cards stagger animation */
-.ant-col:nth-child(1) > div {
-  animation: slideInFromRight 0.5s ease-out;
-  animation-delay: 0.1s;
-  animation-fill-mode: backwards;
-}
-
-.ant-col:nth-child(2) > div {
-  animation: slideInFromRight 0.5s ease-out;
-  animation-delay: 0.2s;
-  animation-fill-mode: backwards;
-}
-
-.ant-col:nth-child(3) > div {
-  animation: slideInFromRight 0.5s ease-out;
-  animation-delay: 0.3s;
-  animation-fill-mode: backwards;
-}
-
-/* Button hover effects */
-.ant-btn-primary:hover {
-  transform: translateY(-3px) !important;
-  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.5) !important;
-}
-
-.ant-btn-primary:active {
-  transform: translateY(-1px) !important;
-}
-
-/* Alert box animation */
-.ant-alert {
-  animation: fadeInUp 0.7s ease-out;
-}
-
-/* Icon container animation */
-.ant-card .anticon-calendar {
-  animation: float 3s ease-in-out infinite;
-}
-
-/* Smooth transitions for all interactive elements */
-.ant-btn,
-.ant-card,
-.ant-alert {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
 
 /* Feature card hover glow effect */
 .ant-col > div:hover {
@@ -152,29 +52,8 @@
   }
 }
 
-/* Loading state animation */
-.ant-spin-container {
-  animation: fadeInUp 0.5s ease-out;
-}
 
-/* Custom scrollbar for better UX */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-}
+/* Scrollbar styling removed - using default browser scrollbar */
 
 /* Text selection styling */
 ::selection {

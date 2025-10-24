@@ -3288,7 +3288,7 @@ const StaffAssignmentUnified = () => {
               <Button
                 type="text"
                 icon={<ArrowLeftOutlined style={{ fontSize: 20 }} />}
-                onClick={() => navigate('/schedule')}
+                onClick={() => navigate('/dashboard/schedule')}
                 style={{ padding: '4px 8px' }}
               />
               <Title level={3} style={{ margin: 0 }}>

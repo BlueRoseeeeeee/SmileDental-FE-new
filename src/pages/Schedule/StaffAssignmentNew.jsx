@@ -11,7 +11,7 @@ const StaffAssignment = () => {
 
   useEffect(() => {
     // Redirect to unified staff assignment interface
-    navigate('/schedules/staff-assignment-unified', { replace: true });
+    navigate('/dashboard/schedules/staff-assignment-unified', { replace: true });
   }, [navigate]);
 
   return null; // Component redirects immediately

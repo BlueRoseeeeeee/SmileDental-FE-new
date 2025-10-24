@@ -53,11 +53,11 @@ const DetailStaff = () => {
         setCertificates(data.user.certificates || []);
       } else {
         message.error('Không thể tải thông tin nhân viên');
-        navigate('/users');
+        navigate('/dashboard/users');
       }
     } catch (error) {
       message.error('Lỗi khi tải thông tin nhân viên');
-      navigate('/users');
+      navigate('/dashboard/users');
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ const DetailStaff = () => {
         <Title level={3} style={{ color: '#ff4d4f' }}>
           Không tìm thấy nhân viên
         </Title>
-        <Button onClick={() => navigate('/users')}>
+        <Button onClick={() => navigate('/dashboard/users')}>
           Quay lại danh sách
         </Button>
       </div>
@@ -179,14 +179,14 @@ const DetailStaff = () => {
           </div>
           <Space>
             <Button 
-              onClick={() => navigate(`/users/edit/${id}`)}
+              onClick={() => navigate(`/dashboard/users/edit/${id}`)}
               type="primary"
               style={{ borderRadius: '8px' }}
             >
               Chỉnh sửa
             </Button>
             <Button 
-              onClick={() => navigate('/users')}
+              onClick={() => navigate('/dashboard/users')}
               style={{ borderRadius: '8px' }}
             >
               Quay lại
@@ -293,9 +293,11 @@ const DetailStaff = () => {
                               color: '#333',
                               fontWeight: '400',
                               lineHeight: '1.5'
-                            }}>
-                              {user.description || 'Không có mô tả'}
-                            </div>
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: user.description || 'Không có mô tả'
+                            }}
+                            />
                           </div>
                         </div>
                       )

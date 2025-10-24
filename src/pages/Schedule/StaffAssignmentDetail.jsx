@@ -169,8 +169,7 @@ const StaffAssignmentDetail = () => {
 
   // Handle assign staff to slot
   const handleAssignSlot = (slotId) => {
-    // Navigate to assignment form or show modal
-    navigate('/schedules/staff-assignment/assign', {
+    navigate('/dashboard/schedules/staff-assignment/assign', {
       state: {
         slotId,
         room,

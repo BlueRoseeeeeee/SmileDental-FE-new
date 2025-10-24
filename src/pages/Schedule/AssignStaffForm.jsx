@@ -58,7 +58,7 @@ const AssignStaffForm = () => {
   useEffect(() => {
     if (!slotId) {
       toast.error('Thiếu thông tin slot');
-      navigate(returnPath || '/schedules/staff-assignment');
+      navigate(returnPath || '/dashboard/schedules/staff-assignment');
       return;
     }
     fetchStaffAndSlot();
@@ -119,7 +119,7 @@ const AssignStaffForm = () => {
 
       if (response.success) {
         toast.success('Phân công nhân sự thành công!');
-        navigate(returnPath || '/schedules/staff-assignment');
+        navigate(returnPath || '/dashboard/schedules/staff-assignment');
       } else {
         toast.error(response.message || 'Lỗi khi phân công');
       }
@@ -138,7 +138,7 @@ const AssignStaffForm = () => {
           <Space>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(returnPath || '/schedules/staff-assignment')}
+              onClick={() => navigate(returnPath || '/dashboard/schedules/staff-assignment')}
             >
               Quay lại
             </Button>
@@ -302,7 +302,7 @@ const AssignStaffForm = () => {
               >
                 Lưu phân công
               </Button>
-              <Button onClick={() => navigate(returnPath || '/schedules/staff-assignment')}>
+              <Button onClick={() => navigate(returnPath || '/dashboard/schedules/staff-assignment')}>
                 Hủy
               </Button>
             </Space>

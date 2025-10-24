@@ -41,25 +41,7 @@ html, body {
   --border-radius-xl: 16px;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
+/* Scrollbar styling removed - using default browser scrollbar */
 
 /* Ant Design Theme Customization */
 .ant-layout {
@@ -169,7 +151,13 @@ html, body {
 }
 
 /* Universal Form Elements - Thống nhất toàn cục */
-.ant-input,
+.ant-input[type="text"],
+.ant-input[type="email"],
+.ant-input[type="password"],
+.ant-input[type="number"],
+.ant-input[type="tel"],
+.ant-input[type="url"],
+.ant-input[type="search"],
 .ant-input-affix-wrapper,
 .ant-picker,
 .ant-select .ant-select-selector {
@@ -423,11 +411,11 @@ html, body {
 .ant-btn {
   border-radius: 8px !important;
   font-weight: 500 !important;
-  transition: all 0.3s ease !important;
+  /* Transition removed for better performance */
 }
 
 .ant-btn:hover {
-  transform: translateY(-1px) !important;
+  /* Transform removed for better performance */
   box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
 }
 
@@ -580,4 +568,89 @@ html, body {
 .custom-textarea .ant-input {
   min-height: 120px !important;
   height: 120px !important;
+}
+
+/* TextArea specific styles - Override global styles */
+.ant-input-textarea {
+  min-height: 80px !important;
+  height: auto !important;
+  max-height: none !important;
+  line-height: 1.5 !important;
+  padding: 8px 12px !important;
+  resize: vertical !important;
+  border-radius: var(--border-radius) !important;
+  border: 1px solid var(--border-color) !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+.ant-input-textarea .ant-input {
+  min-height: 80px !important;
+  height: auto !important;
+  max-height: none !important;
+  line-height: 1.5 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 14px !important;
+  resize: vertical !important;
+}
+
+/* Focus styles for textarea */
+.ant-input-textarea:focus,
+.ant-input-textarea:focus-within {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* Placeholder styles for textarea */
+.ant-input-textarea .ant-input::placeholder {
+  color: #bfbfbf !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* Ensure textarea content is properly positioned */
+.ant-input-textarea .ant-input {
+  vertical-align: top !important;
+  text-align: left !important;
+  line-height: 1.5 !important;
+}
+
+/* Override any conflicting line-height from global styles */
+.ant-input-textarea {
+  line-height: 1.5 !important;
+}
+
+.ant-input-textarea .ant-input {
+  line-height: 1.5 !important;
+}
+
+/* Custom textarea class for price schedule modal */
+.price-schedule-textarea {
+  min-height: 80px !important;
+  height: auto !important;
+  max-height: none !important;
+  line-height: 1.5 !important;
+  padding: 8px 12px !important;
+  resize: vertical !important;
+  border-radius: 6px !important;
+  border: 1px solid #d9d9d9 !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.price-schedule-textarea:focus {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+  outline: none !important;
+}
+
+.price-schedule-textarea::placeholder {
+  color: #bfbfbf !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
 }

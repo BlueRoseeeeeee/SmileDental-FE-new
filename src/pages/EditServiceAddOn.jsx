@@ -118,13 +118,8 @@ const EditServiceAddOn = () => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      console.error('Error response:', error.response);
-      console.error('Error message:', error.message);
-      toastService.error('Không thể tải dữ liệu: ' + (error.response?.data?.message || error.message));
-      // Don't navigate away immediately, show error
-      setTimeout(() => {
-        navigate(`/services/${serviceId}/edit`);
-      }, 2000);
+      toastService.error('Không thể tải dữ liệu: ' + error.message);
+      navigate(`/dashboard/services/${serviceId}/edit`);
     } finally {
       console.log('Setting loading to false');
       setLoading(false);
@@ -195,7 +190,7 @@ const EditServiceAddOn = () => {
       setHasUnsavedChanges(false);
       clearDraft();
       toastService.success('Cập nhật tùy chọn dịch vụ thành công!');
-      navigate(`/services/${serviceId}/edit`);
+      navigate(`/dashboard/services/${serviceId}/edit`);
     } catch (error) {
       toastService.error('Lỗi khi cập nhật tùy chọn dịch vụ');
     } finally {
@@ -209,7 +204,7 @@ const EditServiceAddOn = () => {
       const confirmed = window.confirm('Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời khỏi trang?');
       if (!confirmed) return;
     }
-    navigate(`/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`);
   };
 
   if (loading) {
@@ -236,7 +231,7 @@ const EditServiceAddOn = () => {
       }}>
         <Text type="secondary">Không tìm thấy dữ liệu</Text>
         <br />
-        <Button onClick={() => navigate('/services')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate('/dashboard/services')} style={{ marginTop: 16 }}>
           Quay lại danh sách
         </Button>
       </div>
