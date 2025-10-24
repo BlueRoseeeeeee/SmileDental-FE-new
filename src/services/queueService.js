@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+// Use appointment-service URL for queue endpoints
+const API_BASE_URL = import.meta.env.VITE_APPOINTMENT_SERVICE_URL || 'http://localhost:3006';
 
 // Create axios instance with interceptor for token
 const queueApi = axios.create({
