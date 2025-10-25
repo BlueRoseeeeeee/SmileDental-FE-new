@@ -2,23 +2,96 @@
 * @author: HoTram
 */
 import React, { useState } from 'react';
-import { Card, Button, Upload, Avatar, Typography, Row, Col, message, Divider, Tag } from 'antd';
+import { 
+  Card, 
+  Button, 
+  Upload, 
+  Avatar, 
+  Typography, 
+  Row, 
+  Col, 
+  message, 
+  Divider, 
+  Tag,
+  Form,
+  Input,
+  DatePicker,
+  Select,
+  Modal,
+  Space
+} from 'antd';
 import { 
   CameraOutlined, 
   UserOutlined, 
   MailOutlined, 
   PhoneOutlined, 
-  CalendarOutlined
+  CalendarOutlined,
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { userService } from '../services/userService.js';
+import { toast } from '../services/toastService.js';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [form] = Form.useForm();
+
+  // Handle start editing
+  const handleStartEdit = () => {
+    form.setFieldsValue({
+      fullName: user?.fullName,
+      email: user?.email,
+      phone: user?.phone,
+      dateOfBirth: user?.dateOfBirth ? dayjs(user.dateOfBirth) : null,
+      gender: user?.gender,
+    });
+    setIsEditing(true);
+  };
+
+  // Handle cancel editing
+  const handleCancelEdit = () => {
+    form.resetFields();
+    setIsEditing(false);
+  };
+
+  // Handle save profile
+  const handleSaveProfile = async () => {
+    try {
+      const values = await form.validateFields();
+      setLoading(true);
+
+      // Only send editable fields: email and phone
+      const updateData = {
+        email: values.email,
+        phone: values.phone,
+      };
+
+      const response = await userService.updateProfile(updateData);
+      
+      // Update user in context
+      updateUser(response.user);
+      
+      toast.success('Cập nhật thông tin thành công!');
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      if (error.errorFields) {
+        toast.error('Vui lòng kiểm tra lại thông tin đã nhập');
+      } else {
+        toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật thông tin');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAvatarUpload = async (file) => {
     setLoading(true);
@@ -124,11 +197,41 @@ const Profile = () => {
         {/* Profile Information Display */}
         <Col xs={24} lg={16}>
           <Card 
-            title="Thông tin cá nhân" 
+            title="Thông tin cá nhân"
+            extra={
+              !isEditing ? (
+                <Button 
+                  type="primary" 
+                  icon={<EditOutlined />}
+                  onClick={handleStartEdit}
+                >
+                  Chỉnh sửa
+                </Button>
+              ) : (
+                <Space>
+                  <Button 
+                    icon={<CloseOutlined />}
+                    onClick={handleCancelEdit}
+                  >
+                    Hủy
+                  </Button>
+                  <Button 
+                    type="primary"
+                    icon={<SaveOutlined />}
+                    onClick={handleSaveProfile}
+                    loading={loading}
+                  >
+                    Lưu
+                  </Button>
+                </Space>
+              )
+            }
             style={{ borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           >
             <div style={{ padding: '8px 0' }}>
-              <Row gutter={[24, 24]}>
+              {!isEditing ? (
+                // Display Mode
+                <Row gutter={[24, 24]}>
                 {/* Thông tin cơ bản */}
                 <Col xs={24}>
                   <Title level={5} style={{ color: '#1890ff', marginBottom: '16px', textDecoration: 'underline' }}>
@@ -332,6 +435,145 @@ const Profile = () => {
                   </Row>
                 </Col>
               </Row>
+              ) : (
+                // Edit Mode
+                <Form
+                  form={form}
+                  layout="vertical"
+                  requiredMark="optional"
+                >
+                  <Row gutter={[24, 24]}>
+                    <Col xs={24}>
+                      <Title level={5} style={{ color: '#1890ff', marginBottom: '16px' }}>
+                        Chỉnh sửa thông tin cá nhân
+                      </Title>
+                    </Col>
+
+                    {/* Họ tên - DISABLED */}
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        label="Họ và tên"
+                        name="fullName"
+                      >
+                        <Input 
+                          prefix={<UserOutlined />}
+                          placeholder="Họ và tên"
+                          size="large"
+                          disabled
+                          style={{ 
+                            backgroundColor: '#f5f5f5',
+                            color: '#8c8c8c',
+                            cursor: 'not-allowed'
+                          }}
+                        />
+                      </Form.Item>
+                      <Text type="secondary" style={{ fontSize: '12px', marginTop: '-16px', display: 'block' }}>
+                        Họ tên không thể thay đổi
+                      </Text>
+                    </Col>
+
+                    {/* Email */}
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        label="Email"
+                        name="email"
+                        rules={[
+                          { required: true, message: 'Vui lòng nhập email!' },
+                          { type: 'email', message: 'Email không hợp lệ!' }
+                        ]}
+                      >
+                        <Input 
+                          prefix={<MailOutlined />}
+                          placeholder="Nhập email"
+                          size="large"
+                        />
+                      </Form.Item>
+                    </Col>
+
+                    {/* Số điện thoại */}
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        label="Số điện thoại"
+                        name="phone"
+                        rules={[
+                          { required: true, message: 'Vui lòng nhập số điện thoại!' },
+                          { 
+                            pattern: /^0\d{9,10}$/,
+                            message: 'Số điện thoại phải bắt đầu bằng 0 và có 10-11 số'
+                          }
+                        ]}
+                      >
+                        <Input 
+                          prefix={<PhoneOutlined />}
+                          placeholder="Nhập số điện thoại"
+                          size="large"
+                        />
+                      </Form.Item>
+                    </Col>
+
+                    {/* Ngày sinh - DISABLED */}
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        label="Ngày sinh"
+                        name="dateOfBirth"
+                      >
+                        <DatePicker
+                          placeholder="Ngày sinh"
+                          format="DD/MM/YYYY"
+                          style={{ width: '100%' }}
+                          size="large"
+                          disabled
+                        />
+                      </Form.Item>
+                      <Text type="secondary" style={{ fontSize: '12px', marginTop: '-16px', display: 'block' }}>
+                        Ngày sinh không thể thay đổi
+                      </Text>
+                    </Col>
+
+                    {/* Giới tính - DISABLED */}
+                    <Col xs={24} sm={12}>
+                      <Form.Item
+                        label="Giới tính"
+                        name="gender"
+                      >
+                        <Select 
+                          placeholder="Giới tính"
+                          size="large"
+                          disabled
+                        >
+                          <Option value="male">Nam</Option>
+                          <Option value="female">Nữ</Option>
+                          <Option value="other">Khác</Option>
+                        </Select>
+                      </Form.Item>
+                      <Text type="secondary" style={{ fontSize: '12px', marginTop: '-16px', display: 'block' }}>
+                        Giới tính không thể thay đổi
+                      </Text>
+                    </Col>
+
+                    {/* Mã nhân viên (readonly) */}
+                    {user?.employeeCode && (
+                      <Col xs={24} sm={12}>
+                        <Form.Item label="Mã nhân viên">
+                          <Input 
+                            value={user.employeeCode}
+                            disabled
+                            size="large"
+                            style={{ 
+                              backgroundColor: '#f5f5f5',
+                              color: '#8c8c8c',
+                              cursor: 'not-allowed'
+                            }}
+                          />
+                          <Text type="secondary" style={{ fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                            Mã nhân viên không thể thay đổi
+                          </Text>
+                        </Form.Item>
+                      </Col>
+                    )}
+                  </Row>
+                </Form>
+              )}
             </div>
           </Card>
         </Col>

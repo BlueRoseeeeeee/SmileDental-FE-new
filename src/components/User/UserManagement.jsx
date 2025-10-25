@@ -38,6 +38,7 @@ import {
   DeleteOutlined, 
   UserOutlined,
   EyeOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import { userService } from '../../services/userService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -91,6 +92,12 @@ const UserManagement = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUserForDelete, setSelectedUserForDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Reset password modal states
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState(null);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [defaultPassword, setDefaultPassword] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -423,15 +430,57 @@ const UserManagement = () => {
     setSelectedUserForToggle(null);
   };
 
+  // 🆕 Handle show reset password modal
+  const handleResetPassword = (user) => {
+    setSelectedUserForReset(user);
+    setShowResetPasswordModal(true);
+  };
+
+  // 🆕 Handle confirm reset password
+  const handleConfirmResetPassword = async () => {
+    if (!selectedUserForReset) return;
+    
+    try {
+      setResetPasswordLoading(true);
+      const response = await userService.resetUserPassword(selectedUserForReset._id);
+      
+      setDefaultPassword(response.defaultPassword);
+      
+      toast.success(`Đã reset mật khẩu cho "${selectedUserForReset.fullName}" thành công!`);
+      
+      // Reload users để cập nhật isFirstLogin status
+      loadUsers();
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error(error.response?.data?.message || 'Reset mật khẩu thất bại');
+      setShowResetPasswordModal(false);
+      setSelectedUserForReset(null);
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  // 🆕 Handle close reset password modal
+  const handleCloseResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setSelectedUserForReset(null);
+    setDefaultPassword('');
+  };
+
   const handleUpdate = async (values) => {
+    // ✅ Lấy tất cả form values (bao gồm cả fields từ step khác)
+    const allValues = form.getFieldsValue(true);
+    console.log('🔵 [handleUpdate] Received values from onFinish:', values);
+    console.log('🔵 [handleUpdate] All form values:', allValues);
+    
     try {
       if (selectedUser) {
         // Edit user - update profile information
-        const {...formData } = values;
+        const {...formData } = allValues;
         const updateData = {
           ...formData,
-          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null,
-          specialties: values.specialties || [] // 🆕 Include specialties
+          dateOfBirth: allValues.dateOfBirth ? allValues.dateOfBirth.format('YYYY-MM-DD') : null,
+          specialties: allValues.specialties || [] // 🆕 Include specialties
         };
 
         const response = await fetch(`http://localhost:3001/api/user/update/${selectedUser._id}`, {
@@ -453,18 +502,19 @@ const UserManagement = () => {
       } else {
         // 🆕 Nhiệm vụ 3.1: Create staff without OTP using userService.createStaff
         const staffData = {
-          email: values.email,
-          phone: values.phone,
-          fullName: values.fullName,
-          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null,
-          gender: values.gender,
-          role: values.role,
-          specialties: values.specialties || [], // Multi-specialty support
-          isActive: values.isActive !== undefined ? values.isActive : true,
-          description: values.description || ''
+          email: allValues.email,
+          phone: allValues.phone,
+          fullName: allValues.fullName,
+          dateOfBirth: allValues.dateOfBirth ? allValues.dateOfBirth.format('YYYY-MM-DD') : null,
+          gender: allValues.gender,
+          roles: allValues.roles || [], // ✅ Multiple roles
+          isActive: allValues.isActive !== undefined ? allValues.isActive : true,
+          description: allValues.description || ''
         };
 
+        console.log('🔵 [UserManagement] Creating staff with data:', staffData);
         const result = await userService.createStaff(staffData);
+        console.log('✅ [UserManagement] Create staff result:', result);
         
         if (result.success) {
           // Show success with employeeCode
@@ -510,6 +560,21 @@ const UserManagement = () => {
     
     const config = roleConfig[role] || { color: 'default', text: role };
     return <Tag color={config.color} style={{ fontSize: '16px' }}>{config.text}</Tag>;
+  };
+  
+  // ✅ Render multiple roles
+  const getRolesTags = (roles) => {
+    if (!roles || !Array.isArray(roles)) {
+      return <Tag color="default">N/A</Tag>;
+    }
+    
+    return (
+      <Space size={[0, 4]} wrap>
+        {roles.map((role, index) => (
+          <span key={index}>{getRoleTag(role)}</span>
+        ))}
+      </Space>
+    );
   };
 
 
@@ -566,10 +631,13 @@ const UserManagement = () => {
     },
     {
       title: 'Vai trò',
-      dataIndex: 'role',
-      key: 'role',
-      sorter: true,
-      render: (role) => getRoleTag(role)
+      dataIndex: 'roles',
+      key: 'roles',
+      render: (roles, record) => {
+        // ✅ Support both old 'role' and new 'roles'
+        const rolesToDisplay = roles || [record.role];
+        return getRolesTags(rolesToDisplay);
+      }
     },
     {
       title: 'Ngày cập nhật',
@@ -601,6 +669,15 @@ const UserManagement = () => {
                 icon={<EditOutlined />}
                 onClick={() => handleEdit(record)}
                 disabled={!canManage}
+              />
+            </Tooltip>
+            <Tooltip title={canManage ? "Reset mật khẩu" : "Không có quyền reset mật khẩu"}>
+              <Button 
+                type="text" 
+                icon={<KeyOutlined />}
+                onClick={() => handleResetPassword(record)}
+                disabled={!canManage}
+                style={{ color: '#faad14' }}
               />
             </Tooltip>
             <Tooltip title={
@@ -939,63 +1016,52 @@ const UserManagement = () => {
                     />
                     
                     <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={12}>
+                      <Col xs={24}>
                         <Form.Item
-                          name="role"
+                          name="roles"
                           label="Vai trò"
-                          rules={getAntDesignFormRules.role()}
+                          rules={[{ 
+                            required: true, 
+                            message: 'Vui lòng chọn ít nhất 1 vai trò!',
+                            type: 'array',
+                            min: 1
+                          }]}
                         >
                           <Select 
-                            placeholder="Chọn vai trò"
-                            onChange={(value) => {
-                              // Clear specialties if role changes to non-dentist
-                              if (value !== 'dentist') {
-                                form.setFieldsValue({ specialties: [] });
-                              }
-                            }}
+                            mode="multiple"
+                            placeholder="Chọn vai trò (có thể chọn nhiều)"
+                            maxTagCount="responsive"
                           >
-                            <Option value="admin">Quản trị viên</Option>
-                            <Option value="manager">Quản lý</Option>
-                            <Option value="dentist">Nha sĩ</Option>
-                            <Option value="nurse">Y tá</Option>
-                            <Option value="receptionist">Lễ tân</Option>
+                            {/* ✅ Role hierarchy: Admin cannot create Admin, Manager cannot create Admin/Manager */}
+                            {currentUser?.role === 'admin' ? (
+                              <>
+                                {/* Admin can create: manager, dentist, nurse, receptionist */}
+                                <Option value="manager">Quản lý</Option>
+                                <Option value="dentist">Nha sĩ</Option>
+                                <Option value="nurse">Y tá</Option>
+                                <Option value="receptionist">Lễ tân</Option>
+                              </>
+                            ) : currentUser?.role === 'manager' ? (
+                              <>
+                                {/* Manager can create: dentist, nurse, receptionist */}
+                                <Option value="dentist">Nha sĩ</Option>
+                                <Option value="nurse">Y tá</Option>
+                                <Option value="receptionist">Lễ tân</Option>
+                              </>
+                            ) : (
+                              <>
+                                {/* Fallback: all roles (should not happen) */}
+                                <Option value="admin">Quản trị viên</Option>
+                                <Option value="manager">Quản lý</Option>
+                                <Option value="dentist">Nha sĩ</Option>
+                                <Option value="nurse">Y tá</Option>
+                                <Option value="receptionist">Lễ tân</Option>
+                              </>
+                            )}
                           </Select>
                         </Form.Item>
                       </Col>
-                      
-                      {/* 🆕 Nhiệm vụ 3.1: Specialties field (dentist only) */}
-                      <Form.Item noStyle shouldUpdate>
-                        {({ getFieldValue }) => {
-                          const role = getFieldValue('role');
-                          return role === 'dentist' ? (
-                            <Col xs={24} sm={12}>
-                              <Form.Item
-                                name="specialties"
-                                label="Chuyên khoa"
-                                rules={[{ 
-                                  required: true, 
-                                  message: 'Vui lòng chọn ít nhất 1 chuyên khoa!' 
-                                }]}
-                              >
-                                <Select
-                                  mode="multiple"
-                                  placeholder="Chọn chuyên khoa (có thể chọn nhiều)"
-                                  options={[
-                                    { label: 'Chỉnh nha', value: 'Chỉnh nha' },
-                                    { label: 'Răng sứ thẩm mỹ', value: 'Răng sứ thẩm mỹ' },
-                                    { label: 'Implant', value: 'Implant' },
-                                    { label: 'Nội nha', value: 'Nội nha' },
-                                    { label: 'Phục hồi', value: 'Phục hồi' },
-                                    { label: 'Nha chu', value: 'Nha chu' },
-                                    { label: 'Tổng quát', value: 'Tổng quát' }
-                                  ]}
-                                />
-                              </Form.Item>
-                            </Col>
-                          ) : null;
-                        }}
-                      </Form.Item>
-                      
+                    
                       <Col xs={24} sm={12}>
                         <Form.Item
                           name="isActive"
@@ -1120,6 +1186,110 @@ const UserManagement = () => {
               <li>Được khôi phục quyền truy cập đầy đủ</li>
               <li>Trạng thái chuyển thành "Đang làm việc"</li>
             </ul>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reset Password Confirmation Modal */}
+      <Modal
+        title="Reset mật khẩu về mặc định"
+        open={showResetPasswordModal}
+        onOk={defaultPassword ? handleCloseResetPasswordModal : handleConfirmResetPassword}
+        onCancel={handleCloseResetPasswordModal}
+        confirmLoading={resetPasswordLoading}
+        okText={defaultPassword ? "Đóng" : "Reset mật khẩu"}
+        cancelText={defaultPassword ? null : "Hủy bỏ"}
+        okType={defaultPassword ? "primary" : "danger"}
+        centered
+        width={550}
+        cancelButtonProps={{ style: { display: defaultPassword ? 'none' : 'inline-block' } }}
+      >
+        {selectedUserForReset && !defaultPassword && (
+          <div>
+            <p style={{ fontSize: '16px', lineHeight: '1.6' }}>
+              Bạn có chắc chắn muốn <strong style={{ color: '#faad14' }}>reset mật khẩu</strong> cho{' '}
+              <strong>{selectedUserForReset.employeeCode || selectedUserForReset.email} | {selectedUserForReset.fullName}</strong>
+              ?
+            </p>
+            
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: '#fffbe6', 
+              borderLeft: '4px solid #faad14',
+              borderRadius: '6px',
+              marginTop: '16px'
+            }}>
+              <p style={{ margin: 0, color: '#d48806', fontWeight: '500' }}>
+                 <strong>Lưu ý:</strong>
+              </p>
+              <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#d48806' }}>
+                <li>Mật khẩu sẽ được reset về giá trị mặc định</li>
+                <li>
+                  {selectedUserForReset.role === 'patient' || (selectedUserForReset.roles?.includes('patient') && selectedUserForReset.roles?.length === 1)
+                    ? 'Mật khẩu mặc định cho bệnh nhân: 12345678'
+                    : `Mật khẩu mặc định cho nhân viên: ${selectedUserForReset.employeeCode || '[Mã nhân viên]'}`
+                  }
+                </li>
+                <li>Người dùng sẽ được yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo</li>
+              </ul>
+            </div>
+          </div>
+        )}
+        
+        {defaultPassword && (
+          <div>
+            <div style={{ 
+              padding: '20px', 
+              backgroundColor: '#f6ffed', 
+              borderLeft: '4px solid #52c41a',
+              borderRadius: '6px',
+              marginBottom: '16px'
+            }}>
+              <p style={{ margin: 0, color: '#389e0d', fontWeight: '500', fontSize: '16px' }}>
+                ✓ Reset mật khẩu thành công!
+              </p>
+            </div>
+            
+            <div style={{
+              padding: '20px',
+              backgroundColor: '#fff7e6',
+              border: '2px dashed #faad14',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#595959' }}>
+                Mật khẩu mặc định của <strong>{selectedUserForReset.fullName}</strong>:
+              </p>
+              <p style={{ 
+                margin: 0, 
+                fontSize: '24px', 
+                fontWeight: 'bold',
+                color: '#fa8c16',
+                letterSpacing: '2px',
+                fontFamily: 'monospace'
+              }}>
+                {defaultPassword}
+              </p>
+              <Button
+                type="link"
+                onClick={() => {
+                  navigator.clipboard.writeText(defaultPassword);
+                  toast.success('Đã copy mật khẩu vào clipboard!');
+                }}
+                style={{ marginTop: '12px' }}
+              >
+                📋 Copy mật khẩu
+              </Button>
+            </div>
+            
+            <p style={{ 
+              marginTop: '16px', 
+              fontSize: '14px', 
+              color: '#8c8c8c',
+              textAlign: 'center'
+            }}>
+              Vui lòng thông báo mật khẩu này cho người dùng
+            </p>
           </div>
         )}
       </Modal>

@@ -27,12 +27,14 @@ const Login = () => {
   const location = useLocation();
   const [form] = Form.useForm();
   
-  // 🆕 Nhiệm vụ 3.2: State cho first login và specialty selection
+  // 🆕 Nhiệm vụ 3.2: State cho first login và role selection
   const [showPasswordChangeModal, setShowPasswordChangeModal] = React.useState(false);
   const [showSpecialtyModal, setShowSpecialtyModal] = React.useState(false);
+  const [showRoleSelectionModal, setShowRoleSelectionModal] = React.useState(false); // 🆕 Role selection
   const [tempLoginData, setTempLoginData] = React.useState(null);
   const [passwordChangeForm] = Form.useForm();
   const [specialtyForm] = Form.useForm();
+  const [roleSelectionForm] = Form.useForm(); // 🆕 Role selection form
 
   // Kiểm tra xem người dùng đã từng chọn "Ghi nhớ đăng nhập" chưa
   React.useEffect(() => {
@@ -106,6 +108,11 @@ const Login = () => {
   const onFinish = async (values) => {
     try {
       clearError();
+      console.log('🔵 [Login] Submitting login form with:', { 
+        login: values.login, 
+        hasPassword: !!values.password 
+      });
+      
       // Truyền giá trị remember vào login function
       const response = await login({
         login: values.login,
@@ -113,9 +120,23 @@ const Login = () => {
         remember: values.remember || false
       });
       
+      console.log('✅ [Login] Login successful, response:', response);
+      console.log('📋 [Login] response.pendingData:', response.pendingData);
+      console.log('📋 [Login] typeof response.pendingData:', typeof response.pendingData);
+      console.log('📋 [Login] !!response.pendingData:', !!response.pendingData);
+      
       // 🆕 Nhiệm vụ 3.2: Kiểm tra pendingData từ authService
       if (response.pendingData) {
+        console.log('🎯 [Login] ENTERING pendingData block');
         setTempLoginData(response.pendingData);
+        
+        // ✅ Multiple roles - must select one
+        if (response.pendingData.requiresRoleSelection) {
+          console.log('🎯 [Login] Setting showRoleSelectionModal to TRUE');
+          setShowRoleSelectionModal(true);
+          toast.info('Bạn có nhiều vai trò. Vui lòng chọn vai trò để đăng nhập.');
+          return;
+        }
         
         // First-time login - must change password
         if (response.pendingData.requiresPasswordChange) {
@@ -149,8 +170,18 @@ const Login = () => {
       // Redirect to previous page or dashboard
       const from = location.state?.from || '/dashboard';
       navigate(from);
-    } catch {
-      // Error is handled by AuthContext
+    } catch (error) {
+      console.error('❌ [Login] Login failed:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // ✅ Hiển thị lỗi rõ ràng cho người dùng
+      const errorMessage = error.response?.data?.message || error.message || 'Đăng nhập thất bại. Vui lòng thử lại!';
+      toast.error(errorMessage);
+      
+      // Error is already set by AuthContext, Alert will also show
     }
   };
 
@@ -159,10 +190,11 @@ const Login = () => {
     try {
       const { authService } = await import('../../services/authService.js');
       
-      // Call completeFirstLogin API with tempToken
-      const result = await authService.completeFirstLogin(
+      // Call completePasswordChange API with tempToken
+      const result = await authService.completePasswordChange(
         tempLoginData.tempToken,
-        values.newPassword
+        values.newPassword,
+        values.confirmPassword
       );
       
       toast.success('Đổi mật khẩu thành công!');
@@ -173,16 +205,10 @@ const Login = () => {
       setShowPasswordChangeModal(false);
       passwordChangeForm.resetFields();
       
-      // Check if need specialty selection
-      if (result.user.specialties && result.user.specialties.length > 1) {
-        setTempLoginData({ ...tempLoginData, user: result.user });
-        setShowSpecialtyModal(true);
-      } else {
-        // Navigate to dashboard
-        setTempLoginData(null);
-        const from = location.state?.from || '/dashboard';
-        navigate(from);
-      }
+      // Navigate to dashboard (password change is the final step)
+      setTempLoginData(null);
+      const from = location.state?.from || '/dashboard';
+      navigate(from);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Đổi mật khẩu thất bại');
     }
@@ -213,6 +239,52 @@ const Login = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
     }
+  };
+
+  // 🆕 Handle role selection (for users with multiple roles)
+  const handleRoleSelection = async (values) => {
+    try {
+      const { authService } = await import('../../services/authService.js');
+      
+      console.log('🔵 [Login] Selecting role:', values.selectedRole);
+      console.log('🔵 [Login] tempToken:', tempLoginData?.tempToken);
+      
+      // Call selectRole API
+      const result = await authService.selectRole(
+        tempLoginData.tempToken,
+        values.selectedRole
+      );
+      
+      console.log('✅ [Login] Role selection successful:', result);
+      
+      // Update AuthContext with logged-in user
+      completeLogin(result.user);
+      
+      toast.success(`Đã chọn vai trò: ${getRoleLabel(values.selectedRole)}`);
+      setShowRoleSelectionModal(false);
+      roleSelectionForm.resetFields();
+      setTempLoginData(null);
+      
+      // Navigate to dashboard
+      const from = location.state?.from || '/dashboard';
+      navigate(from);
+    } catch (error) {
+      console.error('❌ [Login] Role selection failed:', error);
+      toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
+    }
+  };
+
+  // Helper function to get role label in Vietnamese
+  const getRoleLabel = (role) => {
+    const roleLabels = {
+      admin: 'Quản trị viên',
+      manager: 'Quản lý',
+      dentist: 'Nha sĩ',
+      nurse: 'Y tá',
+      receptionist: 'Lễ tân',
+      patient: 'Bệnh nhân'
+    };
+    return roleLabels[role] || role;
   };
 
   return (
@@ -545,6 +617,63 @@ const Login = () => {
           <Form.Item>
             <Button type="primary" htmlType="submit" block>
               Tiếp tục
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 🆕 Modal chọn vai trò (for users with multiple roles) */}
+      <Modal
+        title="Chọn vai trò đăng nhập"
+        open={showRoleSelectionModal}
+        onCancel={() => {
+          setShowRoleSelectionModal(false);
+          setTempLoginData(null);
+        }}
+        footer={null}
+        centered
+        width={500}
+      >
+        <Alert
+          message="Bạn có nhiều vai trò"
+          description="Tài khoản của bạn có nhiều vai trò. Vui lòng chọn vai trò bạn muốn sử dụng cho phiên đăng nhập này."
+          type="info"
+          showIcon
+          style={{ marginBottom: 20 }}
+        />
+        <Form
+          form={roleSelectionForm}
+          layout="vertical"
+          onFinish={handleRoleSelection}
+        >
+          <Form.Item
+            name="selectedRole"
+            label="Vai trò"
+            rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
+          >
+            <Select
+              placeholder="Chọn vai trò"
+              size="large"
+              options={tempLoginData?.roles?.map(role => ({
+                label: getRoleLabel(role),
+                value: role
+              })) || []}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              block
+              style={{
+                background: '#2596be',
+                border: 'none',
+                height: '48px',
+                fontSize: '16px'
+              }}
+            >
+              Đăng nhập
             </Button>
           </Form.Item>
         </Form>

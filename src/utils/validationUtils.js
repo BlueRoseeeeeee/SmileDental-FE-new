@@ -302,7 +302,7 @@ export const getReactHookFormRules = {
  */
 export const getAntDesignFormRules = {
   email: () => [
-    { required: true, message: 'Vui lòng nhập email!' },
+    { required: false }, // ✅ Email is optional for staff
     { type: 'email', message: 'Email không đúng định dạng!' }
   ],
 

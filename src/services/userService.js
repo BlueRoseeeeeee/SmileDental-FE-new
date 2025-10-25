@@ -91,7 +91,17 @@ export const userService = {
 
   // 🆕 Nhiệm vụ 3.1: Create staff without OTP
   createStaff: async (staffData) => {
+    console.log('🔵 [userService] Sending create-staff request:', staffData);
     const response = await userApi.post('/user/create-staff', staffData);
+    console.log('✅ [userService] Create-staff response:', response.data);
+    return response.data;
+  },
+
+  // 🆕 Reset user password to default (Admin/Manager only)
+  resetUserPassword: async (userId) => {
+    console.log('🔵 [userService] Resetting password for user:', userId);
+    const response = await userApi.post(`/user/${userId}/reset-password`);
+    console.log('✅ [userService] Reset password response:', response.data);
     return response.data;
   },
 };

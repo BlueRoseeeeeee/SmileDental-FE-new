@@ -39,6 +39,7 @@ import {
 import dayjs from 'dayjs';
 import { toast } from '../services/toastService';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
+import { useAuth } from '../contexts/AuthContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -47,6 +48,7 @@ const { TextArea } = AntInput;
 const EditUser = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth(); // ✅ Get current user
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -119,18 +121,28 @@ const EditUser = () => {
         // Set form values - loại bỏ certificates khỏi form
         const { certificates, description: userDescription, ...formData } = userData;
         try {
+          // ✅ Convert role to roles array if needed
+          const rolesArray = userData.roles && userData.roles.length > 0 
+            ? userData.roles 
+            : (userData.role ? [userData.role] : []);
+          
           form.setFieldsValue({
             ...formData,
+            roles: rolesArray, // ✅ Use roles array
             dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
           });
         } catch (formError) {
           console.error('Form Set Fields Error:', formError);
           // Set basic fields if form setting fails
+          const rolesArray = userData.roles && userData.roles.length > 0 
+            ? userData.roles 
+            : (userData.role ? [userData.role] : []);
+          
           form.setFieldsValue({
             fullName: userData.fullName || '',
             email: userData.email || '',
             phone: userData.phone || '',
-            role: userData.role || '',
+            roles: rolesArray, // ✅ Use roles array
             isActive: userData.isActive !== undefined ? userData.isActive : true,
             dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
           });
@@ -725,7 +737,6 @@ const EditUser = () => {
                               prefix={<MailOutlined />}
                               placeholder="Nhập email"
                               style={{ borderRadius: '8px' }}
-                              disabled
                             />
                           </Form.Item>
                         </Col>
@@ -734,12 +745,15 @@ const EditUser = () => {
                           <Form.Item
                             name="phone"
                             label="Số điện thoại"
+                            rules={[
+                              { required: true, message: 'Vui lòng nhập số điện thoại!' },
+                              { pattern: /^0\d{9,10}$/, message: 'Số điện thoại không hợp lệ!' }
+                            ]}
                           >
                             <Input 
                               prefix={<PhoneOutlined />}
                               placeholder="Nhập số điện thoại"
                               style={{ borderRadius: '8px' }}
-                              disabled
                             />
                           </Form.Item>
                         </Col>
@@ -803,16 +817,43 @@ const EditUser = () => {
                       <Row gutter={[16, 16]}>
                         <Col xs={24} sm={12}>
                           <Form.Item
-                            name="role"
+                            name="roles"
                             label="Vai trò"
-                            rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
+                            rules={[
+                              { required: true, message: 'Vui lòng chọn ít nhất một vai trò!' },
+                              { type: 'array', min: 1, message: 'Phải có ít nhất một vai trò!' }
+                            ]}
                           >
-                            <Select placeholder="Chọn vai trò" style={{ borderRadius: '8px' }} disabled>
-                              <Option value="admin">Quản trị viên</Option>
-                              <Option value="manager">Quản lý</Option>
-                              <Option value="dentist">Nha sĩ</Option>
-                              <Option value="nurse">Y tá</Option>
-                              <Option value="receptionist">Lễ tân</Option>
+                            <Select 
+                              mode="multiple"
+                              placeholder="Chọn vai trò (có thể chọn nhiều)" 
+                              style={{ borderRadius: '8px' }}
+                              maxTagCount="responsive"
+                            >
+                              {/* ✅ Role hierarchy based on current user's permission */}
+                              {currentUser?.role === 'admin' ? (
+                                <>
+                                  {/* Admin can assign: manager, dentist, nurse, receptionist (NOT admin) */}
+                                  <Option value="manager">Quản lý</Option>
+                                  <Option value="dentist">Nha sĩ</Option>
+                                  <Option value="nurse">Y tá</Option>
+                                  <Option value="receptionist">Lễ tân</Option>
+                                </>
+                              ) : currentUser?.role === 'manager' ? (
+                                <>
+                                  {/* Manager can assign: dentist, nurse, receptionist (NOT admin, manager) */}
+                                  <Option value="dentist">Nha sĩ</Option>
+                                  <Option value="nurse">Y tá</Option>
+                                  <Option value="receptionist">Lễ tân</Option>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Fallback: should not happen */}
+                                  <Option value="dentist">Nha sĩ</Option>
+                                  <Option value="nurse">Y tá</Option>
+                                  <Option value="receptionist">Lễ tân</Option>
+                                </>
+                              )}
                             </Select>
                           </Form.Item>
                         </Col>

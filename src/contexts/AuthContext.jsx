@@ -50,13 +50,33 @@ export const AuthProvider = ({ children }) => {
       
       // Call your existing authService (đã tự lưu localStorage)
       const { authService } = await import('../services/authService.js');
+      
+      console.log('🔵 [AuthContext] Calling authService.login with:', { 
+        login: credentials.login, 
+        hasPassword: !!credentials.password,
+        remember: credentials.remember 
+      });
+      
       const response = await authService.login(credentials);
+      
+      console.log('✅ [AuthContext] Login response:', {
+        hasUser: !!response.user,
+        hasAccessToken: !!response.accessToken,
+        hasPendingData: !!response.pendingData,
+        userRole: response.user?.role,
+        userRoles: response.user?.roles
+      });
+      console.log('✅ [AuthContext] Full response:', response);
+      console.log('📋 [AuthContext] response.pendingData:', response.pendingData);
       
       // 🆕 Nhiệm vụ 3.2: Nếu có pendingData, không cập nhật state (chưa hoàn tất login)
       if (response.pendingData) {
+        console.log('🎯 [AuthContext] HAS PENDING DATA - returning to Login.jsx');
         setLoading(false);
         return response; // Return pendingData to Login.jsx
       }
+      
+      console.log('🎯 [AuthContext] NO PENDING DATA - completing login');
       
       // Update state (không cần lưu localStorage nữa vì authService đã lưu)
       setIsAuthenticated(true);
@@ -65,6 +85,13 @@ export const AuthProvider = ({ children }) => {
       
       return response;
     } catch (error) {
+      console.error('❌ [AuthContext] Login error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        isAccountDisabled: error.isAccountDisabled
+      });
+      
       // Không hiển thị Alert nếu là lỗi tài khoản bị khóa (đã có toast)
       if (!error.isAccountDisabled) {
         setError(error.response?.data?.message || error.message || 'Đăng nhập thất bại');

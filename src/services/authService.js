@@ -25,72 +25,91 @@ export const authService = {
 
   // Login user (supports email or employeeCode)
   login: async (credentials) => {
-    // 🆕 Nhiệm vụ 3.2: Tự động phát hiện role dựa vào format của login
-    // Email: có @
-    // EmployeeCode: NV00000001 format
     const { login: loginValue, password, remember } = credentials;
     
-    let role = null;
-    if (loginValue) {
-      // Nếu có @ → patient (email)
-      if (loginValue.includes('@')) {
-        role = 'patient';
-      } 
-      // Nếu bắt đầu bằng NV và 8 số → staff
-      else if (/^NV\d{8}$/.test(loginValue)) {
-        role = 'staff'; // BE sẽ tìm trong tất cả staff roles
-      }
-    }
-    
-    const response = await authApi.post('/auth/login', {
-      login: loginValue,
-      password,
-      role // 🆕 Gửi role cho BE
+    console.log('🔵 [authService] Login request:', { 
+      loginValue, 
+      hasPassword: !!password,
+      remember 
     });
     
-    const { accessToken, refreshToken, user } = response.data;
-    
-    // Kiểm tra trạng thái tài khoản
-    if (!user.isActive) {
-      // Import và hiển thị toast ngay lập tức
-      const { toast } = await import('./toastService.js');
-      toast.error('Tài khoản đã bị tạm khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+    try {
+      const response = await authApi.post('/auth/login', {
+        login: loginValue,
+        password
+        // ❌ Không gửi role - để backend tự tìm user
+      });
       
-      // Throw error đặc biệt để AuthContext biết không cần hiển thị Alert
-      const error = new Error('ACCOUNT_DISABLED');
-      error.isAccountDisabled = true;
+      console.log('✅ [authService] Login API success - RAW response:', response);
+      console.log('✅ [authService] Login API success - response.data:', response.data);
+      console.log('📋 [authService] response.data.pendingData:', response.data.pendingData);
+      console.log('📋 [authService] typeof response.data.pendingData:', typeof response.data.pendingData);
+      
+      // ✅ Check if has pendingData (multiple roles, first login, etc)
+      if (response.data.pendingData) {
+        console.log('📋 [authService] Has pendingData:', response.data.pendingData);
+        console.log('🎯 [authService] RETURNING response.data (with pendingData)');
+        return response.data;
+      }
+      
+      console.log('🎯 [authService] NO pendingData - processing normal login');
+      
+      const { accessToken, refreshToken, user } = response.data;
+      
+      console.log('✅ [authService] Extracted data:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        hasUser: !!user,
+        userRole: user?.role,
+        userRoles: user?.roles,
+        isActive: user?.isActive,
+        isFirstLogin: user?.isFirstLogin
+      });
+      
+      // Backend đã kiểm tra isActive, nếu tài khoản bị khóa sẽ throw error
+      // Error handling sẽ được xử lý ở catch block bên dưới
+      
+      // 🆕 Kiểm tra isFirstLogin - nếu true, trả về flag để FE xử lý
+      if (user.isFirstLogin) {
+        response.data.requirePasswordChange = true;
+      }
+      
+      // 🆕 Kiểm tra specialties - nếu có nhiều hơn 1, yêu cầu chọn
+      if (user.specialties && Array.isArray(user.specialties) && user.specialties.length > 1) {
+        response.data.requireSpecialtySelection = true;
+      }
+      
+      // Save tokens and user info to localStorage
+      // 🆕 Chỉ lưu tạm thời nếu cần đổi mật khẩu hoặc chọn specialty
+      if (remember && !response.data.requirePasswordChange && !response.data.requireSpecialtySelection) {
+        console.log('💾 [authService] Saving to localStorage (remember=true)');
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
+      } else if (!response.data.requirePasswordChange && !response.data.requireSpecialtySelection) {
+        console.log('💾 [authService] Saving to sessionStorage (remember=false)');
+        // Không remember → dùng sessionStorage
+        sessionStorage.setItem('accessToken', accessToken);
+        sessionStorage.setItem('refreshToken', refreshToken);
+        sessionStorage.setItem('user', JSON.stringify(user));
+      } else {
+        console.log('💾 [authService] Saving to temp sessionStorage (pending action)');
+        // Cần đổi mật khẩu hoặc chọn specialty → lưu tạm vào sessionStorage
+        sessionStorage.setItem('tempAccessToken', accessToken);
+        sessionStorage.setItem('tempRefreshToken', refreshToken);
+        sessionStorage.setItem('tempUser', JSON.stringify(user));
+      }
+      
+      console.log('✅ [authService] Returning response.data:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [authService] Login API error - Full error:', error);
+      console.error('❌ [authService] Login API error - message:', error.message);
+      console.error('❌ [authService] Login API error - response:', error.response);
+      console.error('❌ [authService] Login API error - response.data:', error.response?.data);
+      console.error('❌ [authService] Login API error - response.status:', error.response?.status);
       throw error;
     }
-    
-    // 🆕 Kiểm tra isFirstLogin - nếu true, trả về flag để FE xử lý
-    if (user.isFirstLogin) {
-      response.data.requirePasswordChange = true;
-    }
-    
-    // 🆕 Kiểm tra specialties - nếu có nhiều hơn 1, yêu cầu chọn
-    if (user.specialties && Array.isArray(user.specialties) && user.specialties.length > 1) {
-      response.data.requireSpecialtySelection = true;
-    }
-    
-    // Save tokens and user info to localStorage
-    // 🆕 Chỉ lưu tạm thời nếu cần đổi mật khẩu hoặc chọn specialty
-    if (remember && !response.data.requirePasswordChange && !response.data.requireSpecialtySelection) {
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
-    } else if (!response.data.requirePasswordChange && !response.data.requireSpecialtySelection) {
-      // Không remember → dùng sessionStorage
-      sessionStorage.setItem('accessToken', accessToken);
-      sessionStorage.setItem('refreshToken', refreshToken);
-      sessionStorage.setItem('user', JSON.stringify(user));
-    } else {
-      // Cần đổi mật khẩu hoặc chọn specialty → lưu tạm vào sessionStorage
-      sessionStorage.setItem('tempAccessToken', accessToken);
-      sessionStorage.setItem('tempRefreshToken', refreshToken);
-      sessionStorage.setItem('tempUser', JSON.stringify(user));
-    }
-    
-    return response.data;
   },
 
   // Logout user with refresh token
@@ -229,6 +248,45 @@ export const authService = {
   getTempUser: () => {
     const tempUser = sessionStorage.getItem('tempUser');
     return tempUser ? JSON.parse(tempUser) : null;
+  },
+
+  // 🆕 Select role (for users with multiple roles)
+  selectRole: async (tempToken, selectedRole) => {
+    console.log('🔵 [authService] Selecting role:', { tempToken, selectedRole });
+    const response = await authApi.post('/auth/select-role', {
+      tempToken,
+      selectedRole
+    });
+    console.log('✅ [authService] Select role response:', response.data);
+    
+    const { accessToken, refreshToken, user } = response.data;
+    
+    // Save tokens and user to localStorage
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    
+    return response.data;
+  },
+
+  // 🆕 Complete forced password change (default password or first login)
+  completePasswordChange: async (tempToken, newPassword, confirmPassword) => {
+    console.log('🔵 [authService] Completing password change');
+    const response = await authApi.post('/auth/complete-password-change', {
+      tempToken,
+      newPassword,
+      confirmPassword
+    });
+    console.log('✅ [authService] Password change response:', response.data);
+    
+    const { accessToken, refreshToken, user } = response.data;
+    
+    // Save tokens and user to localStorage
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    
+    return response.data;
   }
 };
 
