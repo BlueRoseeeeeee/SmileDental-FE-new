@@ -36,18 +36,42 @@ const FlexibleSlotDisableModal = ({
     try {
       setLoading(true);
       
-      const payload = {
-        dateRange: values.dateRange 
-          ? [
-              values.dateRange[0].format('YYYY-MM-DD'),
-              values.dateRange[1].format('YYYY-MM-DD')
-            ]
-          : null,
-        shifts: values.shifts || [],
-        roomIds: values.roomIds || [],
-        dentistIds: values.dentistIds || [],
-        notifyPatients: values.notifyPatients !== false // Default true
-      };
+      // Build payload theo API backend
+      const payload = {};
+      
+      // 1. Date/Date range
+      if (values.dateRange) {
+        if (values.dateRange.length === 2) {
+          payload.startDate = values.dateRange[0].format('YYYY-MM-DD');
+          payload.endDate = values.dateRange[1].format('YYYY-MM-DD');
+        }
+      }
+      
+      // 2. Shift names (convert từ key sang tên ca)
+      if (values.shifts && values.shifts.length > 0) {
+        const shiftNameMap = {
+          'morning': 'Ca Sáng',
+          'afternoon': 'Ca Chiều',
+          'evening': 'Ca Tối'
+        };
+        // Backend chỉ nhận 1 shiftName, nếu chọn nhiều ca thì phải gọi nhiều lần
+        // Hoặc backend hỗ trợ array - cần check
+        payload.shiftName = shiftNameMap[values.shifts[0]]; // Tạm thời chỉ lấy ca đầu tiên
+      }
+      
+      // 3. Room and SubRoom
+      if (values.roomIds && values.roomIds.length > 0) {
+        payload.roomId = values.roomIds[0]; // Backend nhận 1 roomId
+      }
+      
+      if (values.subRoomId) {
+        payload.subRoomId = values.subRoomId;
+      }
+      
+      // 4. Dentist
+      if (values.dentistIds && values.dentistIds.length > 0) {
+        payload.dentistId = values.dentistIds[0]; // Backend nhận 1 dentistId
+      }
 
       let result;
       if (mode === 'disable') {
@@ -58,22 +82,26 @@ const FlexibleSlotDisableModal = ({
 
       if (result.success) {
         const message = mode === 'disable' 
-          ? `Đã tắt ${result.affectedSlotsCount} slot thành công`
-          : `Đã bật ${result.affectedSlotsCount} slot thành công`;
+          ? `Đã tắt ${result.disabledCount || 0} slot thành công`
+          : `Đã bật ${result.enabledCount || 0} slot thành công`;
         
         toast.success(message);
 
         // Show result modal if mode is disable and has affected patients
-        if (mode === 'disable' && result.affectedPatients) {
-          setAffectedPatients(result.affectedPatients);
+        if (mode === 'disable' && (result.emailsSent?.length > 0 || result.needsManualContact?.length > 0)) {
+          setAffectedPatients({
+            emailsSent: result.emailsSent || [],
+            needsManualContact: result.needsManualContact || []
+          });
           setShowResultModal(true);
         }
 
         form.resetFields();
-        onSuccess();
+        if (onSuccess) onSuccess();
         onClose();
       }
     } catch (error) {
+      console.error('Toggle slots error:', error);
       toast.error(error.response?.data?.message || `${mode === 'disable' ? 'Tắt' : 'Bật'} slot thất bại`);
     } finally {
       setLoading(false);
@@ -148,26 +176,26 @@ const FlexibleSlotDisableModal = ({
 
           <Form.Item
             name="shifts"
-            label="Ca làm việc (tùy chọn)"
+            label="Ca làm việc (tùy chọn - chỉ chọn 1 ca)"
+            tooltip="Hiện tại chỉ hỗ trợ chọn 1 ca tại một thời điểm"
           >
             <Select
-              mode="multiple"
               placeholder="Chọn ca (để trống = tất cả ca)"
               allowClear
               options={[
-                { label: 'Ca sáng', value: 'morning' },
-                { label: 'Ca chiều', value: 'afternoon' },
-                { label: 'Ca tối', value: 'evening' }
+                { label: 'Ca Sáng', value: 'morning' },
+                { label: 'Ca Chiều', value: 'afternoon' },
+                { label: 'Ca Tối', value: 'evening' }
               ]}
             />
           </Form.Item>
 
           <Form.Item
             name="roomIds"
-            label="Phòng khám (tùy chọn)"
+            label="Phòng khám (tùy chọn - chỉ chọn 1 phòng)"
+            tooltip="Hiện tại chỉ hỗ trợ chọn 1 phòng tại một thời điểm"
           >
             <Select
-              mode="multiple"
               placeholder="Chọn phòng (để trống = tất cả phòng)"
               allowClear
             >
@@ -181,10 +209,10 @@ const FlexibleSlotDisableModal = ({
 
           <Form.Item
             name="dentistIds"
-            label="Nha sĩ (tùy chọn)"
+            label="Nha sĩ (tùy chọn - chỉ chọn 1 nha sĩ)"
+            tooltip="Hiện tại chỉ hỗ trợ chọn 1 nha sĩ tại một thời điểm"
           >
             <Select
-              mode="multiple"
               placeholder="Chọn nha sĩ (để trống = tất cả nha sĩ)"
               allowClear
             >
@@ -197,15 +225,13 @@ const FlexibleSlotDisableModal = ({
           </Form.Item>
 
           {mode === 'disable' && (
-            <Form.Item
-              name="notifyPatients"
-              valuePropName="checked"
-              initialValue={true}
-            >
-              <Checkbox>
-                Tự động gửi email thông báo cho bệnh nhân bị ảnh hưởng
-              </Checkbox>
-            </Form.Item>
+            <Alert
+              message="Thông báo tự động"
+              description="Hệ thống sẽ tự động gửi email cho bệnh nhân có email. Bệnh nhân không có email sẽ được liệt kê để nhân viên liên hệ qua số điện thoại."
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
           )}
 
           {affectedCount !== null && (

@@ -30,7 +30,8 @@ import {
   ArrowLeftOutlined,
   PlusOutlined,
   SearchOutlined,
-  EyeOutlined
+  EyeOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../../services/toastService';
@@ -42,6 +43,7 @@ import { debounce } from '../../utils/searchUtils';
 import EditScheduleModal from '../../components/Schedule/EditScheduleModal';
 import BulkRoomScheduleModal from '../../components/Schedule/BulkRoomScheduleModal';
 import BulkCreateScheduleModal from '../../components/Schedule/BulkCreateScheduleModal';
+import OverrideHolidayModal from '../../components/Schedule/OverrideHolidayModal';
 import './CreateScheduleForRoom.css'; // Import CSS file
 
 const { Title, Text } = Typography;
@@ -173,6 +175,7 @@ const CreateScheduleForRoom = () => {
   const [creatingSchedule, setCreatingSchedule] = useState(false);
   const [holidayPreview, setHolidayPreview] = useState(null); // 🆕 Holiday preview data
   const [loadingHolidayPreview, setLoadingHolidayPreview] = useState(false); // 🆕
+  const [showOverrideModal, setShowOverrideModal] = useState(false); // 🆕 Override holiday modal
 
   // Schedule list modal filters
   const [scheduleListFilterType, setScheduleListFilterType] = useState('all'); // 'all' | 'missing' | 'complete'
@@ -1667,6 +1670,32 @@ const CreateScheduleForRoom = () => {
                 </Text>
               </div>
             </Space>
+          </Col>
+          <Col>
+            <Button
+              icon={<WarningOutlined />}
+              onClick={() => setShowOverrideModal(true)}
+              size="large"
+              style={{
+                background: 'rgba(245, 158, 11, 0.15)',
+                color: '#fff',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                fontWeight: 500,
+                height: 44,
+                borderRadius: 10,
+                transition: 'all 0.3s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.3)';
+                e.currentTarget.style.borderColor = '#fff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }}
+            >
+              Tạo lịch làm việc ngày nghỉ
+            </Button>
           </Col>
         </Row>
       </Card>
@@ -4084,6 +4113,17 @@ const CreateScheduleForRoom = () => {
         onCancel={() => setShowBulkCreateModal(false)}
         selectedRooms={selectedRoomIds.map(id => selectedRoomsMap[id]).filter(Boolean)}
         onSuccess={handleBulkCreateSuccess}
+      />
+
+      {/* 🆕 Override Holiday Modal - Create schedule in holiday */}
+      <OverrideHolidayModal
+        visible={showOverrideModal}
+        onClose={() => setShowOverrideModal(false)}
+        onSuccess={() => {
+          loadRooms(); // Refresh danh sách phòng
+          toast.success('Đã tạo lịch override thành công!');
+        }}
+        rooms={rooms}
       />
     </div>
   );

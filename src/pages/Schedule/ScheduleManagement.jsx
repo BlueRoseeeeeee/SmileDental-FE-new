@@ -1,25 +1,34 @@
 /**
  * Schedule Management Component
  * @author: HoTram
- * @updated: SmileCare Design System Polish
+ * @updated: SmileCare Design System Polish + Task 3.3
  * Simplified: Removed quarter-based schedule generation
+ * Added: Flexible slot disable/enable
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, Row, Col, Typography, Button, Space, Alert
 } from 'antd';
 import { 
   CalendarOutlined, PlusOutlined, ClockCircleOutlined,
-  CheckCircleOutlined, InfoCircleOutlined
+  CheckCircleOutlined, InfoCircleOutlined, StopOutlined,
+  PlayCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import smileCareTheme from '../../theme/smileCareTheme';
+import FlexibleSlotDisableModal from '../../components/Schedule/FlexibleSlotDisableModal';
 import './ScheduleManagement.css';
 
 const { Title, Text } = Typography;
 
 const ScheduleManagement = () => {
   const navigate = useNavigate();
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [showEnableModal, setShowEnableModal] = useState(false);
+  
+  // TODO: Load rooms and dentists data
+  const rooms = [];
+  const dentists = [];
 
 
   return (
@@ -249,33 +258,71 @@ const ScheduleManagement = () => {
 
                   {/* CTA Button */}
                   <div style={{ textAlign: 'center', paddingTop: 16 }}>
-                    <Button 
-                      type="primary" 
-                      icon={<PlusOutlined />}
-                      size="large"
-                      onClick={() => navigate('/schedules/create-for-room')}
-                      style={{
-                        height: 56,
-                        fontSize: 17,
-                        fontWeight: 600,
-                        borderRadius: 14,
-                        padding: '0 48px',
-                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                        border: 'none',
-                        boxShadow: '0 6px 20px rgba(59, 130, 246, 0.4)',
-                        transition: 'all 0.3s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-3px)';
-                        e.currentTarget.style.boxShadow = '0 10px 30px rgba(59, 130, 246, 0.5)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.4)';
-                      }}
-                    >
-                      🚀 Tạo lịch cho phòng khám
-                    </Button>
+                    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                      <Button 
+                        type="primary" 
+                        icon={<PlusOutlined />}
+                        size="large"
+                        onClick={() => navigate('/schedules/create-for-room')}
+                        style={{
+                          height: 56,
+                          fontSize: 17,
+                          fontWeight: 600,
+                          borderRadius: 14,
+                          padding: '0 48px',
+                          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                          border: 'none',
+                          boxShadow: '0 6px 20px rgba(59, 130, 246, 0.4)',
+                          transition: 'all 0.3s'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-3px)';
+                          e.currentTarget.style.boxShadow = '0 10px 30px rgba(59, 130, 246, 0.5)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.4)';
+                        }}
+                      >
+                        🚀 Tạo lịch cho phòng khám
+                      </Button>
+                      
+                      {/* 🆕 Task 3.3, 3.4: Additional Management Buttons */}
+                      <Space size={12} wrap style={{ justifyContent: 'center' }}>
+                        <Button 
+                          danger
+                          icon={<StopOutlined />}
+                          size="large"
+                          onClick={() => setShowDisableModal(true)}
+                          style={{
+                            height: 48,
+                            fontSize: 15,
+                            fontWeight: 500,
+                            borderRadius: 12,
+                            padding: '0 32px'
+                          }}
+                        >
+                          Tắt slot linh hoạt
+                        </Button>
+                        
+                        <Button 
+                          type="primary"
+                          ghost
+                          icon={<PlayCircleOutlined />}
+                          size="large"
+                          onClick={() => setShowEnableModal(true)}
+                          style={{
+                            height: 48,
+                            fontSize: 15,
+                            fontWeight: 500,
+                            borderRadius: 12,
+                            padding: '0 32px'
+                          }}
+                        >
+                          Bật lại slot
+                        </Button>
+                      </Space>
+                    </Space>
                     
                     <div style={{ marginTop: 16 }}>
                       <Text type="secondary" style={{ fontSize: 13, lineHeight: 1.6 }}>
@@ -289,6 +336,29 @@ const ScheduleManagement = () => {
           </Row>
         </Col>
       </Row>
+      
+      {/* 🆕 Task 3.3: Flexible Slot Disable/Enable Modals */}
+      <FlexibleSlotDisableModal
+        visible={showDisableModal}
+        onClose={() => setShowDisableModal(false)}
+        onSuccess={() => {
+          // Refresh data if needed
+        }}
+        rooms={rooms}
+        dentists={dentists}
+        mode="disable"
+      />
+      
+      <FlexibleSlotDisableModal
+        visible={showEnableModal}
+        onClose={() => setShowEnableModal(false)}
+        onSuccess={() => {
+          // Refresh data if needed
+        }}
+        rooms={rooms}
+        dentists={dentists}
+        mode="enable"
+      />
     </div>
   );
 };

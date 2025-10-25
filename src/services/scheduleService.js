@@ -251,14 +251,15 @@ const scheduleService = {
   },
 
   // 🆕 Cập nhật lịch (reactive scheduling - admin only)
-  updateSchedule: async (scheduleId, { isActive, reactivateShifts, deactivateShifts, reactivateSubRooms, toggleSubRoom }) => {
+  updateSchedule: async (scheduleId, { isActive, reactivateShifts, deactivateShifts, reactivateSubRooms, toggleSubRoom, dateRange }) => {
     try {
       const response = await scheduleApi.put(`/schedule/${scheduleId}`, {
         isActive,
         reactivateShifts,
         deactivateShifts,
         reactivateSubRooms,
-        toggleSubRoom
+        toggleSubRoom,
+        dateRange // 🆕 Khoảng ngày áp dụng
       });
       return response.data;
     } catch (error) {

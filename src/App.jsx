@@ -3,6 +3,7 @@
 */
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { App as AntApp } from 'antd'; // 🆕 Import App từ antd
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { ToastContainer } from 'react-toastify';
 
@@ -186,21 +187,22 @@ const Settings = () => (
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <Routes>
+    <AntApp>
+      <AuthProvider>
+        <Router>
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+          <Routes>
           {/* Root redirect - redirect based on auth status */}
           <Route path="/" element={<RootRedirect />} />
           
@@ -505,6 +507,7 @@ function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </AntApp>
   );
 }
 

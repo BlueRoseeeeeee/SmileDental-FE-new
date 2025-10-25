@@ -57,6 +57,42 @@ const scheduleConfigService = {
   getBlockedDateRanges: async () => {
     const response = await scheduleApi.get('/schedule/config/holidays/blocked-ranges');
     return response.data;
+  },
+
+  // 🆕 Nhiệm vụ 3.3: Tắt slot linh hoạt (theo ngày, ca, phòng, nha sĩ)
+  disableSlotsFlexible: async (criteria) => {
+    const response = await scheduleApi.post('/slot/disable', criteria);
+    return response.data;
+  },
+
+  // 🆕 Nhiệm vụ 3.3: Bật lại slot đã tắt
+  enableSlotsFlexible: async (criteria) => {
+    const response = await scheduleApi.post('/slot/enable', criteria);
+    return response.data;
+  },
+
+  // 🆕 Nhiệm vụ 3.3: Preview số lượng slot sẽ bị ảnh hưởng
+  previewAffectedSlots: async (criteria) => {
+    const response = await scheduleApi.post('/slot/preview-affected', criteria);
+    return response.data;
+  },
+
+  // 🆕 Nhiệm vụ 2.3: Tạo lịch override trong ngày nghỉ (admin/manager only)
+  createScheduleOverrideHoliday: async (data) => {
+    const response = await scheduleApi.post('/schedule/override-holiday', data);
+    return response.data;
+  },
+
+  // 🆕 Validate holiday từ holidaySnapshot của schedule cụ thể
+  validateHolidayFromSchedule: async (params) => {
+    const response = await scheduleApi.get('/schedule/validate-holiday-from-schedule', { params });
+    return response.data;
+  },
+
+  // 🆕 Bulk disable schedule cho nhiều ngày/ca/buồng
+  bulkDisableSchedule: async (data) => {
+    const response = await scheduleApi.post('/schedule/bulk-disable', data);
+    return response.data;
   }
 };
 

@@ -11,21 +11,23 @@ const { Text } = Typography;
 const { TabPane } = Tabs;
 
 const DisableSlotResultModal = ({ visible, onClose, affectedPatients = {} }) => {
-  const { emailedPatients = [], manualContactPatients = [] } = affectedPatients;
+  // Backend trả về: { emailsSent: [], needsManualContact: [] }
+  const { emailsSent = [], needsManualContact = [] } = affectedPatients;
 
   // Columns for emailed patients
+  // Backend: { appointmentId, slotId, patientName, patientEmail, startTime, endTime, shiftName }
   const emailedColumns = [
     {
       title: 'Tên bệnh nhân',
-      dataIndex: ['patientInfo', 'name'],
+      dataIndex: 'patientName',
       key: 'name',
       width: 200,
     },
     {
       title: 'Email',
-      dataIndex: ['patientInfo', 'email'],
+      dataIndex: 'patientEmail',
       key: 'email',
-      width: 200,
+      width: 220,
       render: (email) => (
         <Space>
           <MailOutlined style={{ color: '#1890ff' }} />
@@ -34,22 +36,27 @@ const DisableSlotResultModal = ({ visible, onClose, affectedPatients = {} }) => 
       ),
     },
     {
-      title: 'Thời gian hẹn',
-      key: 'appointment',
+      title: 'Thời gian',
+      key: 'time',
       width: 200,
       render: (_, record) => (
         <div>
-          <div>{new Date(record.appointmentDate).toLocaleDateString('vi-VN')}</div>
-          <Text type="secondary">{record.startTime} - {record.endTime}</Text>
+          <div>{new Date(record.startTime).toLocaleDateString('vi-VN')}</div>
+          <Text type="secondary">
+            {new Date(record.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} 
+            {' - '}
+            {new Date(record.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
+          </Text>
         </div>
       ),
     },
     {
-      title: 'Slot',
-      key: 'slot',
-      width: 150,
-      render: (_, record) => (
-        <Tag color="blue">{record.slotIds?.length || 0} slot</Tag>
+      title: 'Ca',
+      dataIndex: 'shiftName',
+      key: 'shift',
+      width: 100,
+      render: (shift) => (
+        <Tag color="blue">{shift}</Tag>
       ),
     },
     {
@@ -65,64 +72,71 @@ const DisableSlotResultModal = ({ visible, onClose, affectedPatients = {} }) => 
   ];
 
   // Columns for manual contact patients
+  // Backend: { appointmentId, slotId, patientName, patientPhone, startTime, endTime, shiftName, reason }
   const manualColumns = [
     {
       title: 'Tên bệnh nhân',
-      dataIndex: ['patientInfo', 'name'],
+      dataIndex: 'patientName',
       key: 'name',
-      width: 200,
+      width: 180,
     },
     {
       title: 'Số điện thoại',
-      dataIndex: ['patientInfo', 'phone'],
+      dataIndex: 'patientPhone',
       key: 'phone',
       width: 150,
       render: (phone) => (
         <Space>
           <PhoneOutlined style={{ color: '#52c41a' }} />
-          <Text strong copyable>{phone}</Text>
+          <Text strong copyable>{phone || 'N/A'}</Text>
         </Space>
       ),
     },
     {
-      title: 'Thời gian hẹn',
-      key: 'appointment',
+      title: 'Thời gian',
+      key: 'time',
       width: 200,
       render: (_, record) => (
         <div>
-          <div>{new Date(record.appointmentDate).toLocaleDateString('vi-VN')}</div>
-          <Text type="secondary">{record.startTime} - {record.endTime}</Text>
+          <div>{new Date(record.startTime).toLocaleDateString('vi-VN')}</div>
+          <Text type="secondary">
+            {new Date(record.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
+            {' - '}
+            {new Date(record.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}
+          </Text>
         </div>
       ),
     },
     {
-      title: 'Slot',
-      key: 'slot',
-      width: 150,
-      render: (_, record) => (
-        <Tag color="orange">{record.slotIds?.length || 0} slot</Tag>
+      title: 'Ca',
+      dataIndex: 'shiftName',
+      key: 'shift',
+      width: 100,
+      render: (shift) => (
+        <Tag color="orange">{shift}</Tag>
       ),
     },
     {
       title: 'Lý do',
+      dataIndex: 'reason',
       key: 'reason',
       width: 200,
-      render: () => (
-        <Text type="secondary">Email không khả dụng</Text>
+      render: (reason) => (
+        <Text type="secondary">{reason || 'Email không khả dụng'}</Text>
       ),
     },
   ];
 
   // Export to Excel
   const handleExportExcel = () => {
-    const worksheetData = manualContactPatients.map((patient, index) => ({
+    const worksheetData = needsManualContact.map((patient, index) => ({
       'STT': index + 1,
-      'Tên bệnh nhân': patient.patientInfo.name,
-      'Số điện thoại': patient.patientInfo.phone,
-      'Ngày hẹn': new Date(patient.appointmentDate).toLocaleDateString('vi-VN'),
-      'Giờ hẹn': `${patient.startTime} - ${patient.endTime}`,
-      'Số slot': patient.slotIds?.length || 0,
-      'Ghi chú': 'Cần liên hệ thủ công'
+      'Tên bệnh nhân': patient.patientName || 'N/A',
+      'Số điện thoại': patient.patientPhone || 'N/A',
+      'Ngày hẹn': new Date(patient.startTime).toLocaleDateString('vi-VN'),
+      'Giờ hẹn': `${new Date(patient.startTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} - ${new Date(patient.endTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})}`,
+      'Ca làm việc': patient.shiftName || 'N/A',
+      'Lý do': patient.reason || 'Cần liên hệ thủ công'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -161,18 +175,18 @@ const DisableSlotResultModal = ({ visible, onClose, affectedPatients = {} }) => 
           tab={
             <span>
               <MailOutlined />
-              Đã gửi email ({emailedPatients.length})
+              Đã gửi email ({emailsSent.length})
             </span>
           }
           key="emailed"
         >
-          {emailedPatients.length === 0 ? (
+          {emailsSent.length === 0 ? (
             <Empty description="Không có bệnh nhân nào được gửi email" />
           ) : (
             <Table
               columns={emailedColumns}
-              dataSource={emailedPatients}
-              rowKey={(record) => record._id || record.appointmentCode}
+              dataSource={emailsSent}
+              rowKey={(record) => record.slotId || record.appointmentId}
               pagination={{
                 pageSize: 5,
                 showTotal: (total) => `Tổng ${total} bệnh nhân`
@@ -186,12 +200,12 @@ const DisableSlotResultModal = ({ visible, onClose, affectedPatients = {} }) => 
           tab={
             <span>
               <PhoneOutlined />
-              Cần liên hệ thủ công ({manualContactPatients.length})
+              Cần liên hệ thủ công ({needsManualContact.length})
             </span>
           }
           key="manual"
         >
-          {manualContactPatients.length === 0 ? (
+          {needsManualContact.length === 0 ? (
             <Empty description="Không có bệnh nhân cần liên hệ thủ công" />
           ) : (
             <>
@@ -209,8 +223,8 @@ const DisableSlotResultModal = ({ visible, onClose, affectedPatients = {} }) => 
               </Space>
               <Table
                 columns={manualColumns}
-                dataSource={manualContactPatients}
-                rowKey={(record) => record._id || record.appointmentCode}
+                dataSource={needsManualContact}
+                rowKey={(record) => record.slotId || record.appointmentId}
                 pagination={{
                   pageSize: 5,
                   showTotal: (total) => `Tổng ${total} bệnh nhân`
