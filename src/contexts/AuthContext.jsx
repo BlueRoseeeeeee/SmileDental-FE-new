@@ -201,6 +201,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Change password (requires current password)
+  const changePassword = async (passwordData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { authService } = await import('../services/authService.js');
+      const response = await authService.changePassword(passwordData);
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Đổi mật khẩu thất bại');
+      setLoading(false);
+      throw error;
+    }
+  };
+
   // Update user info
   const updateUser = async (userData) => {
     try {
@@ -233,6 +249,7 @@ export const AuthProvider = ({ children }) => {
     register,
     sendOtpResetPassword,
     resetPassword,
+    changePassword,
     updateUser,
     completeLogin // 🆕 Export completeLogin
   };

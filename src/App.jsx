@@ -341,6 +341,9 @@ function App() {
             {/* Profile */}
             <Route path="profile" element={<Profile />} />
             
+            {/* Change Password */}
+            <Route path="change-password" element={<ChangePassword />} />
+            
             {/* User Management */}
             <Route path="users" element={<UserManagement />} />
             <Route path="users/edit/:id" element={<EditUser />} />
