@@ -196,6 +196,26 @@ const slotService = {
       reason
     });
     return response.data;
+  },
+
+  // 🆕 Disable all slots in a day (emergency closure - ALL ROOMS)
+  disableAllDaySlots: async (date, reason) => {
+    console.log('[API] disableAllDaySlots payload:', { date, reason });
+    const response = await scheduleApi.post('/slot/disable-all-day', {
+      date,
+      reason
+    });
+    return response.data;
+  },
+
+  // 🆕 Enable all slots in a day (reactivate - ALL ROOMS)
+  enableAllDaySlots: async (date, reason = null) => {
+    console.log('[API] enableAllDaySlots payload:', { date, reason });
+    const response = await scheduleApi.post('/slot/enable-all-day', {
+      date,
+      reason
+    });
+    return response.data;
   }
 };
 

@@ -9,7 +9,8 @@ import {
 } from 'antd';
 import { 
   CalendarOutlined, UserOutlined,
-  LeftOutlined, RightOutlined, MedicineBoxOutlined
+  LeftOutlined, RightOutlined, MedicineBoxOutlined,
+  CloseCircleOutlined, ExclamationCircleOutlined
 } from '@ant-design/icons';
 import smileCareTheme from '../../theme/smileCareTheme';
 import dayjs from 'dayjs';
@@ -74,6 +75,18 @@ const ScheduleCalendar = () => {
   const [togglingSlots, setTogglingSlots] = useState(false);
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [disableReason, setDisableReason] = useState('');
+  
+  // 🆕 Emergency Day Closure States
+  const [showEmergencyClosureModal, setShowEmergencyClosureModal] = useState(false);
+  const [emergencyClosureDate, setEmergencyClosureDate] = useState(null);
+  const [emergencyClosureReason, setEmergencyClosureReason] = useState('');
+  const [emergencyClosing, setEmergencyClosing] = useState(false);
+  
+  // 🆕 Emergency Day Enable States
+  const [showEmergencyEnableModal, setShowEmergencyEnableModal] = useState(false);
+  const [emergencyEnableDate, setEmergencyEnableDate] = useState(null);
+  const [emergencyEnableReason, setEmergencyEnableReason] = useState('');
+  const [emergencyEnabling, setEmergencyEnabling] = useState(false);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(0); // page=0 là tuần hiện tại
@@ -1051,6 +1064,97 @@ const ScheduleCalendar = () => {
     }
   };
 
+  // 🆕 Handle Emergency Day Closure
+  const handleEmergencyDayClosure = (date) => {
+    if (!user || user.role !== 'admin') {
+      toast.error('Chỉ admin mới có quyền tắt toàn bộ lịch trong ngày');
+      return;
+    }
+
+    setEmergencyClosureDate(date);
+    setEmergencyClosureReason('');
+    setShowEmergencyClosureModal(true);
+  };
+
+  const handleConfirmEmergencyClosure = async () => {
+    if (!emergencyClosureDate) {
+      toast.warning('Vui lòng chọn ngày cần tắt lịch');
+      return;
+    }
+
+    if (!emergencyClosureReason.trim() || emergencyClosureReason.length < 10) {
+      toast.warning('Vui lòng nhập lý do tắt lịch (ít nhất 10 ký tự)');
+      return;
+    }
+
+    try {
+      setEmergencyClosing(true);
+      
+      const result = await slotService.disableAllDaySlots(
+        emergencyClosureDate.format('YYYY-MM-DD'),
+        emergencyClosureReason
+      );
+      
+      if (result.success) {
+        toast.success(result.message || `Đã tắt ${result.disabledCount} slots của ${result.affectedRooms} phòng và gửi ${result.emailsQueued} email thông báo`);
+        setShowEmergencyClosureModal(false);
+        setEmergencyClosureDate(null);
+        setEmergencyClosureReason('');
+        await loadScheduleData();
+      } else {
+        toast.error(result.message || 'Có lỗi xảy ra');
+      }
+    } catch (error) {
+      console.error('Error emergency closure:', error);
+      toast.error(error.response?.data?.message || error.message || 'Không thể tắt toàn bộ lịch');
+    } finally {
+      setEmergencyClosing(false);
+    }
+  };
+
+  // 🆕 Handle Emergency Day Enable (Reactivate)
+  const handleEmergencyDayEnable = (date) => {
+    if (!user || user.role !== 'admin') {
+      toast.error('Chỉ admin mới có quyền bật lại toàn bộ lịch trong ngày');
+      return;
+    }
+
+    setEmergencyEnableDate(date);
+    setEmergencyEnableReason('');
+    setShowEmergencyEnableModal(true);
+  };
+
+  const handleConfirmEmergencyEnable = async () => {
+    if (!emergencyEnableDate) {
+      toast.warning('Vui lòng chọn ngày cần bật lại lịch');
+      return;
+    }
+
+    try {
+      setEmergencyEnabling(true);
+      
+      const result = await slotService.enableAllDaySlots(
+        emergencyEnableDate.format('YYYY-MM-DD'),
+        emergencyEnableReason.trim() || 'Kích hoạt lại lịch khám'
+      );
+      
+      if (result.success) {
+        toast.success(result.message || `Đã bật ${result.enabledCount} slots của ${result.affectedRooms} phòng và gửi ${result.emailsQueued} email thông báo`);
+        setShowEmergencyEnableModal(false);
+        setEmergencyEnableDate(null);
+        setEmergencyEnableReason('');
+        await loadScheduleData();
+      } else {
+        toast.error(result.message || 'Có lỗi xảy ra');
+      }
+    } catch (error) {
+      console.error('Error emergency enable:', error);
+      toast.error(error.response?.data?.message || error.message || 'Không thể bật lại toàn bộ lịch');
+    } finally {
+      setEmergencyEnabling(false);
+    }
+  };
+
   // Render dentist selector
   const DentistSelector = () => (
     <Select
@@ -1589,6 +1693,41 @@ const ScheduleCalendar = () => {
               </Space>
             </div>
 
+            {/* 🆕 Emergency Day Closure Button - Admin Only */}
+            {user?.role === 'admin' && (
+              <Card size="small" style={{ marginTop: 16, background: '#fff2e8', borderColor: '#ffbb96' }}>
+                <Space>
+                  <ExclamationCircleOutlined style={{ color: '#ff7a45', fontSize: 18 }} />
+                  <Text strong style={{ color: '#d4380d' }}>Quản lý lịch khẩn cấp (toàn bộ phòng)</Text>
+                  <Button
+                    danger
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => {
+                      setEmergencyClosureDate(null);
+                      setEmergencyClosureReason('');
+                      setShowEmergencyClosureModal(true);
+                    }}
+                  >
+                    Tắt Lịch Cả Ngày
+                  </Button>
+                  <Button
+                    type="primary"
+                    style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                    onClick={() => {
+                      setEmergencyEnableDate(null);
+                      setEmergencyEnableReason('');
+                      setShowEmergencyEnableModal(true);
+                    }}
+                  >
+                    Bật Lại Lịch Cả Ngày
+                  </Button>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    (Tắt/Bật tất cả slots của mọi phòng trong 1 ngày)
+                  </Text>
+                </Space>
+              </Card>
+            )}
+
             {/* 🆕 Toggle Slots Controls - Only for admin/manager in room view */}
             {(user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room' && selectedRoom && (
               <Card size="small" style={{ marginTop: 16, background: '#f0f5ff' }}>
@@ -2070,6 +2209,209 @@ const ScheduleCalendar = () => {
               })}
             </div>
           </div>
+        </Space>
+      </Modal>
+
+      {/* 🆕 Emergency Day Closure Modal */}
+      <Modal
+        open={showEmergencyClosureModal}
+        onCancel={() => {
+          if (!emergencyClosing) {
+            setShowEmergencyClosureModal(false);
+            setEmergencyClosureDate(null);
+            setEmergencyClosureReason('');
+          }
+        }}
+        onOk={handleConfirmEmergencyClosure}
+        confirmLoading={emergencyClosing}
+        okText="Xác Nhận Tắt Lịch"
+        okButtonProps={{ danger: true, size: 'large' }}
+        cancelText="Hủy"
+        cancelButtonProps={{ disabled: emergencyClosing }}
+        width={700}
+        closable={!emergencyClosing}
+        maskClosable={false}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          {/* Warning Header */}
+          <div style={{ textAlign: 'center', padding: '16px 0' }}>
+            <ExclamationCircleOutlined style={{ fontSize: 48, color: '#ff4d4f' }} />
+            <Title level={4} style={{ color: '#ff4d4f', marginTop: 16, marginBottom: 8 }}>
+              ⚠️ CẢNH BÁO: Tắt Toàn Bộ Lịch Của TẤT CẢ Phòng
+            </Title>
+          </div>
+
+          {/* Date Picker */}
+          <div>
+            <Text strong style={{ fontSize: 16 }}>
+              * Chọn ngày cần tắt lịch:
+            </Text>
+            <DatePicker
+              value={emergencyClosureDate}
+              onChange={(date) => setEmergencyClosureDate(date)}
+              format="DD/MM/YYYY"
+              placeholder="Chọn ngày"
+              style={{ width: '100%', marginTop: 8 }}
+              disabled={emergencyClosing}
+              disabledDate={(current) => {
+                // Không cho chọn ngày quá khứ
+                return current && current < dayjs().startOf('day');
+              }}
+            />
+          </div>
+
+          {/* Warning Messages */}
+          <Alert
+            type="error"
+            showIcon
+            message="Hành động này sẽ:"
+            description={
+              <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+                <li><strong>Tắt TẤT CẢ slots của TẤT CẢ phòng khám</strong> trong ngày đã chọn</li>
+                <li>Tự động gửi email hủy lịch cho bệnh nhân đã đặt</li>
+                <li>Gửi thông báo cho nha sĩ và y tá được phân công</li>
+                <li>Thao tác này KHÔNG THỂ hoàn tác tự động</li>
+              </ul>
+            }
+          />
+
+          <Alert
+            type="warning"
+            showIcon
+            message="Chỉ sử dụng trong trường hợp khẩn cấp"
+            description="Ví dụ: Sự cố kỹ thuật, thiên tai, hoặc toàn bộ phòng khám buộc phải đóng cửa đột xuất"
+          />
+
+          {/* Reason Input */}
+          <div>
+            <Text strong style={{ color: 'red', fontSize: 16 }}>
+              * Lý do tắt toàn bộ lịch (bắt buộc, tối thiểu 10 ký tự):
+            </Text>
+            <Input.TextArea
+              value={emergencyClosureReason}
+              onChange={(e) => setEmergencyClosureReason(e.target.value)}
+              placeholder="Ví dụ: Sự cố mất điện toàn bộ phòng khám, cần tạm ngừng hoạt động cả ngày để khắc phục..."
+              rows={4}
+              maxLength={500}
+              showCount
+              style={{ marginTop: 8 }}
+              disabled={emergencyClosing}
+            />
+            {emergencyClosureReason.length > 0 && emergencyClosureReason.length < 10 && (
+              <Text type="danger" style={{ fontSize: 12 }}>
+                Lý do phải có ít nhất 10 ký tự
+              </Text>
+            )}
+          </div>
+
+          {/* Confirmation Checkbox */}
+          <Alert
+            type="info"
+            message="Lưu ý"
+            description="Hệ thống sẽ tự động gửi email thông báo hủy lịch cho tất cả bệnh nhân, nha sĩ và y tá liên quan."
+          />
+        </Space>
+      </Modal>
+
+      {/* 🆕 Emergency Enable Modal (Reactivate All Day Slots) */}
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ fontSize: 20, color: '#52c41a' }} />
+            <span style={{ fontSize: 18, fontWeight: 'bold' }}>BẬT LẠI TOÀN BỘ LỊCH CẢ NGÀY</span>
+          </Space>
+        }
+        open={showEmergencyEnableModal}
+        onCancel={() => {
+          if (!emergencyEnabling) {
+            setShowEmergencyEnableModal(false);
+            setEmergencyEnableDate(null);
+            setEmergencyEnableReason('');
+          }
+        }}
+        onOk={handleConfirmEmergencyEnable}
+        confirmLoading={emergencyEnabling}
+        okText="Xác Nhận Bật Lại Lịch"
+        okButtonProps={{ 
+          type: 'primary',
+          size: 'large',
+          style: { background: '#52c41a', borderColor: '#52c41a' }
+        }}
+        cancelText="Hủy"
+        cancelButtonProps={{ disabled: emergencyEnabling }}
+        width={700}
+        closable={!emergencyEnabling}
+        maskClosable={false}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          {/* Success Header */}
+          <div style={{ textAlign: 'center', padding: '16px 0' }}>
+            <ExclamationCircleOutlined style={{ fontSize: 48, color: '#52c41a' }} />
+            <Title level={4} style={{ color: '#52c41a', marginTop: 16, marginBottom: 8 }}>
+              ✅ BẬT LẠI Toàn Bộ Lịch Đã Tắt Của TẤT CẢ Phòng
+            </Title>
+          </div>
+
+          {/* Date Picker */}
+          <div>
+            <Text strong style={{ fontSize: 16 }}>
+              * Chọn ngày cần bật lại lịch:
+            </Text>
+            <DatePicker
+              value={emergencyEnableDate}
+              onChange={(date) => setEmergencyEnableDate(date)}
+              format="DD/MM/YYYY"
+              placeholder="Chọn ngày"
+              style={{ width: '100%', marginTop: 8 }}
+              disabled={emergencyEnabling}
+            />
+          </div>
+
+          {/* Success Messages */}
+          <Alert
+            type="success"
+            showIcon
+            message="Hành động này sẽ:"
+            description={
+              <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+                <li><strong>Bật lại TẤT CẢ slots đã bị tắt</strong> của TẤT CẢ phòng khám trong ngày đã chọn</li>
+                <li>Tự động gửi email thông báo kích hoạt lại cho bệnh nhân đã đặt</li>
+                <li>Gửi thông báo cho nha sĩ và y tá được phân công</li>
+                <li>Lịch có thể sử dụng ngay lập tức sau khi bật</li>
+              </ul>
+            }
+          />
+
+          <Alert
+            type="info"
+            showIcon
+            message="Lưu ý"
+            description="Chỉ các slot ĐÃ BỊ TẮT (isActive = false) mới được bật lại. Các slot đang hoạt động bình thường sẽ không bị ảnh hưởng."
+          />
+
+          {/* Reason Input (Optional) */}
+          <div>
+            <Text strong style={{ fontSize: 16 }}>
+              Lý do bật lại lịch (tùy chọn):
+            </Text>
+            <Input.TextArea
+              value={emergencyEnableReason}
+              onChange={(e) => setEmergencyEnableReason(e.target.value)}
+              placeholder="Ví dụ: Sự cố đã được khắc phục, phòng khám hoạt động trở lại bình thường..."
+              rows={3}
+              maxLength={500}
+              showCount
+              style={{ marginTop: 8 }}
+              disabled={emergencyEnabling}
+            />
+          </div>
+
+          {/* Confirmation Info */}
+          <Alert
+            type="warning"
+            message="Thông báo email"
+            description="Hệ thống sẽ tự động gửi email thông báo kích hoạt lại lịch cho tất cả bệnh nhân, nha sĩ và y tá liên quan."
+          />
         </Space>
       </Modal>
     </div>

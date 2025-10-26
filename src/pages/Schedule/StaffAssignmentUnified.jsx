@@ -43,7 +43,8 @@ import {
   HomeOutlined,
   LeftOutlined,
   RightOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  MedicineBoxOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../../services/toastService';
@@ -134,17 +135,55 @@ const buildStaffSearchKeywords = (staff, displayName, employeeCode, assignmentRo
     .join(' ');
 };
 
+// 🆕 Helper: Check if staff has a specific role (supports multi-roles)
+const staffHasRole = (staff, targetRole) => {
+  if (!staff) return false;
+  
+  // Check roles array first (new multi-role system)
+  if (Array.isArray(staff.roles)) {
+    return staff.roles.includes(targetRole);
+  }
+  
+  // Fallback to single role field
+  const role = staff.role === 'doctor' ? 'dentist' : staff.role;
+  return role === targetRole;
+};
+
+// 🆕 Helper: Get all valid assignment roles for a staff member
+const getStaffAssignmentRoles = (staff) => {
+  if (!staff) return [];
+  
+  // Check roles array first (new multi-role system)
+  if (Array.isArray(staff.roles)) {
+    return staff.roles
+      .map(r => r === 'doctor' ? 'dentist' : r)
+      .filter(r => r === 'dentist' || r === 'nurse');
+  }
+  
+  // Fallback to single role field
+  const role = staff.role === 'doctor' ? 'dentist' : staff.role;
+  if (role === 'dentist' || role === 'nurse') {
+    return [role];
+  }
+  
+  return [];
+};
+
 const normalizeStaffRecord = (staff) => {
   if (!staff || typeof staff !== 'object') {
     return {
       assignmentRole: '',
+      assignmentRoles: [], // 🆕 Array of valid assignment roles
       displayName: 'Chưa cập nhật tên',
       employeeCode: '',
       searchKeywords: ''
     };
   }
 
-  const assignmentRole = staff.role === 'doctor' ? 'dentist' : staff.role;
+  // 🆕 Support multi-roles
+  const assignmentRoles = getStaffAssignmentRoles(staff);
+  const assignmentRole = assignmentRoles[0] || ''; // Primary role for backward compatibility
+  
   const displayName = buildStaffDisplayName(staff);
   const employeeCode = normalizeText(staff.employeeCode || staff.code || staff.employee_code);
   const searchKeywords = buildStaffSearchKeywords(staff, displayName, employeeCode, assignmentRole);
@@ -152,6 +191,7 @@ const normalizeStaffRecord = (staff) => {
   return {
     ...staff,
     assignmentRole,
+    assignmentRoles, // 🆕 Array of valid assignment roles
     displayName,
     employeeCode,
     searchKeywords
@@ -772,6 +812,11 @@ const StaffAssignmentUnified = () => {
   const [loadingStaffSchedule, setLoadingStaffSchedule] = useState(false);
   const [showStaffScheduleModal, setShowStaffScheduleModal] = useState(false);
   
+  // 🆕 Role selection modal for multi-role users
+  const [showRoleSelectionModal, setShowRoleSelectionModal] = useState(false);
+  const [pendingStaffForRoleSelection, setPendingStaffForRoleSelection] = useState(null);
+  const [selectedRoleForViewing, setSelectedRoleForViewing] = useState(null);
+  
   // Calendar view states for Workflow 2 - Tương tự như phòng
   const [currentMonthForStaff, setCurrentMonthForStaff] = useState(dayjs().startOf('month'));
   const [currentPageForStaff, setCurrentPageForStaff] = useState(0); // 0 = tháng hiện tại
@@ -846,17 +891,17 @@ const StaffAssignmentUnified = () => {
   const filteredAllStaff = useMemo(() => {
     let filtered = allStaff;
 
-    // Filter by role - CHỈ hiển thị dentist và nurse
+    // Filter by role - CHỈ hiển thị staff có role dentist hoặc nurse (hỗ trợ multi-roles)
     filtered = filtered.filter(staff => {
-      const role = staff.assignmentRole || staff.role;
-      return role === 'dentist' || role === 'nurse';
+      const roles = staff.assignmentRoles || [];
+      return roles.includes('dentist') || roles.includes('nurse');
     });
 
-    // Filter by role selection
+    // Filter by role selection (hỗ trợ multi-roles)
     if (staffRoleFilter !== 'all') {
       filtered = filtered.filter(staff => {
-        const role = staff.assignmentRole || staff.role;
-        return role === staffRoleFilter;
+        const roles = staff.assignmentRoles || [];
+        return roles.includes(staffRoleFilter);
       });
     }
 
@@ -1241,8 +1286,8 @@ const StaffAssignmentUnified = () => {
         setAllStaff(normalizedStaff);
 
         // 🆕 Check schedule for all staff (group by role)
-        const dentists = normalizedStaff.filter(s => (s.assignmentRole || s.role) === 'dentist');
-        const nurses = normalizedStaff.filter(s => (s.assignmentRole || s.role) === 'nurse');
+        const dentists = normalizedStaff.filter(s => staffHasRole(s, 'dentist'));
+        const nurses = normalizedStaff.filter(s => staffHasRole(s, 'nurse'));
         
         const scheduleMap = {};
         
@@ -1253,7 +1298,8 @@ const StaffAssignmentUnified = () => {
             const dentistScheduleResponse = await slotService.checkStaffHasSchedule(dentistIds, 'dentist');
             if (dentistScheduleResponse.success) {
               dentistScheduleResponse.data.forEach(item => {
-                scheduleMap[item.staffId] = item.hasSchedule;
+                // 🔥 Use OR logic for multi-role users: if has schedule in ANY role, show as hasSchedule
+                scheduleMap[item.staffId] = scheduleMap[item.staffId] || item.hasSchedule;
               });
             }
           } catch (error) {
@@ -1268,7 +1314,8 @@ const StaffAssignmentUnified = () => {
             const nurseScheduleResponse = await slotService.checkStaffHasSchedule(nurseIds, 'nurse');
             if (nurseScheduleResponse.success) {
               nurseScheduleResponse.data.forEach(item => {
-                scheduleMap[item.staffId] = item.hasSchedule;
+                // 🔥 Use OR logic for multi-role users: if has schedule in ANY role, show as hasSchedule
+                scheduleMap[item.staffId] = scheduleMap[item.staffId] || item.hasSchedule;
               });
             }
           } catch (error) {
@@ -1289,7 +1336,25 @@ const StaffAssignmentUnified = () => {
 
   // Handle select staff for viewing schedule (Workflow 2)
   const handleSelectStaffForReplacement = async (staff) => {
+    // 🔥 Check if staff has multiple roles
+    const assignmentRoles = staff.assignmentRoles || [staff.assignmentRole || staff.role];
+    const validRoles = assignmentRoles.filter(r => r === 'dentist' || r === 'nurse');
+    
+    if (validRoles.length > 1) {
+      // Multi-role user → Show role selection modal
+      setPendingStaffForRoleSelection(staff);
+      setShowRoleSelectionModal(true);
+    } else {
+      // Single role → Directly show schedule
+      const role = validRoles[0] || staff.assignmentRole || staff.role;
+      await openStaffScheduleModal(staff, role);
+    }
+  };
+  
+  // 🆕 Open staff schedule modal with selected role
+  const openStaffScheduleModal = async (staff, role) => {
     setSelectedStaffForReplacement(staff);
+    setSelectedRoleForViewing(role);
     setShowStaffScheduleModal(true);
     setCurrentPageForStaff(0); // Reset về tháng hiện tại
     setSelectedSlotsForReplacement([]); // Clear selections
@@ -1298,7 +1363,7 @@ const StaffAssignmentUnified = () => {
     // ⭐ Reset month state khi chọn nhân sự mới
     setMonthStateForStaff({});
     
-    await fetchStaffCalendar(staff._id, staff.assignmentRole || staff.role, 0);
+    await fetchStaffCalendar(staff._id, role, 0);
   };
 
   // Fetch staff calendar theo tháng (tương tự fetchRoomCalendar)
@@ -1980,6 +2045,51 @@ const StaffAssignmentUnified = () => {
       const { conflictingDentists, conflictingNurses, conflictDetails, staffStats } = conflictResponse.data;
       console.log(`✅ Replacement conflicts found: ${conflictingDentists.length} dentists, ${conflictingNurses.length} nurses`);
 
+      // 🔥 VALIDATION: Check if selectedStaffForReplacement is in multiple roles in selected slots
+      const staffIdToReplace = selectedStaffForReplacement?._id;
+      const rolesInSelectedSlots = new Set();
+      const roleConflictDetails = { asDentist: [], asNurse: [] };
+      
+      if (staffIdToReplace && conflictDetails[staffIdToReplace]) {
+        conflictDetails[staffIdToReplace].forEach(entry => {
+          // Check if this conflict is in the selected slots
+          const isInSelectedSlots = selectedDetails.some(d => 
+            d.slotId === entry.slotId || 
+            (d.date === entry.dateStr && d.shiftName === entry.shiftName)
+          );
+          
+          if (isInSelectedSlots) {
+            rolesInSelectedSlots.add(entry.assignedAs);
+            if (entry.assignedAs === 'dentist') {
+              roleConflictDetails.asDentist.push(entry);
+            } else if (entry.assignedAs === 'nurse') {
+              roleConflictDetails.asNurse.push(entry);
+            }
+          }
+        });
+      }
+      
+      // If staff is in BOTH roles in selected slots, cannot replace
+      if (rolesInSelectedSlots.size > 1) {
+        const errorMessage = `❌ Không thể thay thế: ${selectedStaffForReplacement.displayName || selectedStaffForReplacement.fullName} đang làm NHIỀU vị trí trong các slot đã chọn!\n\n` +
+          `📋 Chi tiết:\n` +
+          (roleConflictDetails.asDentist.length > 0 ? `• Nha sỹ: ${roleConflictDetails.asDentist.length} slot\n` : '') +
+          (roleConflictDetails.asNurse.length > 0 ? `• Y tá: ${roleConflictDetails.asNurse.length} slot\n` : '') +
+          `\n⚠️ Vui lòng chọn các slot mà nhân sự chỉ làm 1 vị trí duy nhất.`;
+        
+        toast.error(errorMessage, { duration: 6000 });
+        setLoadingReplacementStaff(false);
+        return;
+      }
+      
+      // Determine the actual role to replace based on selected slots
+      const currentRole = rolesInSelectedSlots.size === 1 
+        ? Array.from(rolesInSelectedSlots)[0]
+        : (selectedStaffForReplacement?.assignmentRole || 
+           (selectedStaffForReplacement?.role === 'doctor' ? 'dentist' : selectedStaffForReplacement?.role));
+
+      console.log(`✅ Replacing ${selectedStaffForReplacement.displayName} as ${currentRole}`);
+
       // ⚡ STEP 2: Get all staff
       const response = await userService.getAllStaff(1, 1000);
       
@@ -1988,27 +2098,30 @@ const StaffAssignmentUnified = () => {
         return;
       }
 
-      const currentRole = selectedStaffForReplacement?.assignmentRole ||
-        (selectedStaffForReplacement?.role === 'doctor' ? 'dentist' : selectedStaffForReplacement?.role);
-
+      // currentRole already determined in validation above
       const filteredStaff = (response.users || [])
         .map(normalizeStaffRecord)
         .filter(staff => {
-          const staffRole = staff.assignmentRole || staff.role;
-          return staffRole === currentRole && staff._id !== selectedStaffForReplacement._id;
+          // 🔥 Support multi-role: check if replacement staff has the required role
+          return staffHasRole(staff, currentRole) && staff._id !== selectedStaffForReplacement._id;
         });
 
       // ⚡ STEP 3: Map conflicts to replacement staff (NO LOOP - just Set.has())
       const enrichedStaff = filteredStaff.map(staff => {
         const staffId = staff._id;
-        const role = staff.assignmentRole || staff.role;
-        const hasConflict = (role === 'dentist' && conflictingDentists.includes(staffId)) ||
-                           (role === 'nurse' && conflictingNurses.includes(staffId));
+        
+        // 🔥 NEW LOGIC: Check conflicts in BOTH roles
+        // A person cannot work in 2 positions (dentist + nurse) at the same time
+        const hasDentistConflict = conflictingDentists.includes(staffId);
+        const hasNurseConflict = conflictingNurses.includes(staffId);
+        const hasAnyConflict = hasDentistConflict || hasNurseConflict;
 
         let conflicts = [];
-        if (hasConflict && conflictDetails[staffId]) {
-          // Filter future conflicts only
+        if (hasAnyConflict && conflictDetails[staffId]) {
+          // 🔥 Show ALL conflicts (both dentist and nurse)
+          // Because a person cannot work in 2 positions simultaneously
           conflicts = conflictDetails[staffId].filter(entry => {
+            // Check if conflict is in the future
             const entryStart = parseDateTimeSafe(
               entry.dateStr,
               entry.startDateTime,
@@ -2904,7 +3017,7 @@ const StaffAssignmentUnified = () => {
 
       const filteredStaff = (response.users || [])
         .map(normalizeStaffRecord)
-        .filter(staff => (staff.assignmentRole === 'dentist' || staff.assignmentRole === 'nurse'));
+        .filter(staff => staffHasRole(staff, 'dentist') || staffHasRole(staff, 'nurse'));
 
       // ⚡ STEP 3: Map conflicts to staff (NO LOOP - just Set.has())
       const now = dayjs();
@@ -2912,28 +3025,42 @@ const StaffAssignmentUnified = () => {
       
       const enrichedStaff = filteredStaff.map(staff => {
         const staffId = staff._id;
-        const role = staff.assignmentRole || staff.role;
-        const hasConflict = (role === 'dentist' && conflictingDentists.includes(staffId)) ||
-                           (role === 'nurse' && conflictingNurses.includes(staffId));
-
-        let conflicts = [];
-        if (hasConflict && conflictDetails[staffId]) {
-          // Filter future conflicts only
-          conflicts = conflictDetails[staffId].filter(entry => {
-            const entryStart = parseDateTimeSafe(
-              entry.dateStr,
-              entry.startDateTime,
-              entry.startTime,
-              null
-            );
-            return entryStart && entryStart.isAfter(fiveMinutesLater);
-          });
-        }
+        
+        // 🔥 For multi-role users, separate conflicts by role
+        // Check conflicts for each role the staff has
+        const staffRoles = staff.assignmentRoles || [staff.assignmentRole || staff.role];
+        
+        const conflictsByRole = {}; // { dentist: [...], nurse: [...] }
+        
+        staffRoles.forEach(role => {
+          const hasConflict = (role === 'dentist' && conflictingDentists.includes(staffId)) ||
+                             (role === 'nurse' && conflictingNurses.includes(staffId));
+          
+          let roleConflicts = [];
+          if (hasConflict && conflictDetails[staffId]) {
+            // Filter: only conflicts when assigned as THIS specific role
+            roleConflicts = conflictDetails[staffId].filter(entry => {
+              const entryStart = parseDateTimeSafe(
+                entry.dateStr,
+                entry.startDateTime,
+                entry.startTime,
+                null
+              );
+              const isFuture = entryStart && entryStart.isAfter(fiveMinutesLater);
+              const isSameRole = entry.assignedAs === role;
+              
+              return isFuture && isSameRole;
+            });
+          }
+          
+          conflictsByRole[role] = roleConflicts;
+        });
 
         return {
           ...staff,
-          conflicts,
-          canAssign: conflicts.length === 0,
+          conflicts: conflictDetails[staffId] || [], // Keep all conflicts for reference
+          conflictsByRole, // 🔥 NEW: Conflicts separated by role
+          canAssign: Object.values(conflictsByRole).every(c => c.length === 0),
           assignmentStats: staffStats[staffId] || { total: 0, asDentist: 0, asNurse: 0 }
         };
       });
@@ -3906,23 +4033,28 @@ const StaffAssignmentUnified = () => {
                                 allowClear
                               >
                               {staffList
-                                .filter(staff => (staff.assignmentRole || staff.role) === 'dentist')
+                                .filter(staff => staffHasRole(staff, 'dentist'))
+                                .filter(staff => !selectedNurses.includes(staff._id)) // 🔥 Mutual exclusion: exclude if already selected as nurse
                                 .filter(staff => {
+                                  // 🔥 Use role-specific conflicts for dentist
+                                  const dentistConflicts = staff.conflictsByRole?.dentist || [];
                                   if (dentistConflictFilter === 'no-conflict') {
-                                    return !staff.conflicts || staff.conflicts.length === 0;
+                                    return dentistConflicts.length === 0;
                                   }
                                   if (dentistConflictFilter === 'has-conflict') {
-                                    return staff.conflicts && staff.conflicts.length > 0;
+                                    return dentistConflicts.length > 0;
                                   }
                                   return true;
                                 })
                                 .map(staff => {
-                                  const conflictCount = staff.conflicts?.length || 0;
-                                  const summarizedConflicts = summarizeConflictRanges(staff.conflicts || []);
+                                  // 🔥 Use role-specific conflicts for dentist display
+                                  const dentistConflicts = staff.conflictsByRole?.dentist || [];
+                                  const conflictCount = dentistConflicts.length;
+                                  const summarizedConflicts = summarizeConflictRanges(dentistConflicts);
                                   const previewConflicts = summarizedConflicts.slice(0, 2);
                                   const employeeCode = staff.employeeCode;
-                                  const roleLabel = getRoleLabel(staff.assignmentRole || staff.role);
-                                  const roleColor = getRoleTagColor(staff.assignmentRole || staff.role);
+                                  // 🔥 Show all roles for multi-role users
+                                  const assignmentRoles = staff.assignmentRoles || [staff.assignmentRole || staff.role];
                                   return (
                                     <Option
                                       key={staff._id}
@@ -3935,7 +4067,12 @@ const StaffAssignmentUnified = () => {
                                           <Space size={6} align="center">
                                             {employeeCode && <Tag color="blue" bordered={false}>{employeeCode}</Tag>}
                                             <Text strong style={{ color: conflictCount > 0 ? '#d9d9d9' : 'inherit' }}>{staff.displayName}</Text>
-                                            <Tag color={roleColor} bordered={false}>{roleLabel}</Tag>
+                                            {/* 🔥 Display multiple role tags */}
+                                            {assignmentRoles.map(role => (
+                                              <Tag key={role} color={getRoleTagColor(role)} bordered={false}>
+                                                {getRoleLabel(role)}
+                                              </Tag>
+                                            ))}
                                           </Space>
                                           {conflictCount === 0 ? (
                                             <Tag color="green" size="small">Không trùng</Tag>
@@ -4005,23 +4142,28 @@ const StaffAssignmentUnified = () => {
                                 allowClear
                               >
                               {staffList
-                                .filter(staff => (staff.assignmentRole || staff.role) === 'nurse')
+                                .filter(staff => staffHasRole(staff, 'nurse'))
+                                .filter(staff => !selectedDentists.includes(staff._id)) // 🔥 Mutual exclusion: exclude if already selected as dentist
                                 .filter(staff => {
+                                  // 🔥 Use role-specific conflicts for nurse
+                                  const nurseConflicts = staff.conflictsByRole?.nurse || [];
                                   if (nurseConflictFilter === 'no-conflict') {
-                                    return !staff.conflicts || staff.conflicts.length === 0;
+                                    return nurseConflicts.length === 0;
                                   }
                                   if (nurseConflictFilter === 'has-conflict') {
-                                    return staff.conflicts && staff.conflicts.length > 0;
+                                    return nurseConflicts.length > 0;
                                   }
                                   return true;
                                 })
                                 .map(staff => {
-                                  const conflictCount = staff.conflicts?.length || 0;
-                                  const summarizedConflicts = summarizeConflictRanges(staff.conflicts || []);
+                                  // 🔥 Use role-specific conflicts for nurse display
+                                  const nurseConflicts = staff.conflictsByRole?.nurse || [];
+                                  const conflictCount = nurseConflicts.length;
+                                  const summarizedConflicts = summarizeConflictRanges(nurseConflicts);
                                   const previewConflicts = summarizedConflicts.slice(0, 2);
                                   const employeeCode = staff.employeeCode;
-                                  const roleLabel = getRoleLabel(staff.assignmentRole || staff.role);
-                                  const roleColor = getRoleTagColor(staff.assignmentRole || staff.role);
+                                  // 🔥 Show all roles for multi-role users
+                                  const assignmentRoles = staff.assignmentRoles || [staff.assignmentRole || staff.role];
                                   return (
                                     <Option
                                       key={staff._id}
@@ -4034,7 +4176,12 @@ const StaffAssignmentUnified = () => {
                                           <Space size={6} align="center">
                                             {employeeCode && <Tag color="green" bordered={false}>{employeeCode}</Tag>}
                                             <Text strong style={{ color: conflictCount > 0 ? '#d9d9d9' : 'inherit' }}>{staff.displayName}</Text>
-                                            <Tag color={roleColor} bordered={false}>{roleLabel}</Tag>
+                                            {/* 🔥 Display multiple role tags */}
+                                            {assignmentRoles.map(role => (
+                                              <Tag key={role} color={getRoleTagColor(role)} bordered={false}>
+                                                {getRoleLabel(role)}
+                                              </Tag>
+                                            ))}
                                           </Space>
                                           {conflictCount === 0 ? (
                                             <Tag color="green" size="small">Không trùng</Tag>
@@ -4545,11 +4692,16 @@ const StaffAssignmentUnified = () => {
                         dataIndex: 'role',
                         key: 'role',
                         render: (_, record) => {
-                          const role = record.assignmentRole || record.role;
+                          // 🔥 Show all assignment roles for multi-role users
+                          const roles = record.assignmentRoles || [record.assignmentRole || record.role];
                           return (
-                            <Tag color={getRoleTagColor(role)}>
-                              {getRoleLabel(role)}
-                            </Tag>
+                            <Space size={4} wrap>
+                              {roles.map(role => (
+                                <Tag key={role} color={getRoleTagColor(role)}>
+                                  {getRoleLabel(role)}
+                                </Tag>
+                              ))}
+                            </Space>
                           );
                         }
                       },
@@ -4592,6 +4744,11 @@ const StaffAssignmentUnified = () => {
                       <CalendarOutlined style={{ color: '#1890ff' }} />
                       <span style={{ color: '#000' }}>
                         <strong>Lịch làm việc của:</strong> {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn nhân sự'}
+                        {selectedRoleForViewing && (
+                          <Tag color={getRoleTagColor(selectedRoleForViewing)} style={{ marginLeft: 8 }}>
+                            {getRoleLabel(selectedRoleForViewing)}
+                          </Tag>
+                        )}
                       </span>
                     </Space>
                   }
@@ -5053,8 +5210,8 @@ const StaffAssignmentUnified = () => {
                                             const conflictCount = staff.conflicts?.length || 0;
                                             const summarizedConflicts = summarizeConflictRanges(staff.conflicts || []);
                                             const previewConflicts = summarizedConflicts.slice(0, 2);
-                                            const roleLabel = getRoleLabel(staff.assignmentRole || staff.role);
-                                            const roleColor = getRoleTagColor(staff.assignmentRole || staff.role);
+                                            // 🔥 Show all roles for multi-role users
+                                            const assignmentRoles = staff.assignmentRoles || [staff.assignmentRole || staff.role];
                                             return (
                                               <Option
                                                 key={staff._id}
@@ -5069,7 +5226,12 @@ const StaffAssignmentUnified = () => {
                                                         <Tag color="blue" bordered={false}>{staff.employeeCode}</Tag>
                                                       )}
                                                       <Text strong style={{ color: conflictCount > 0 ? '#d9d9d9' : 'inherit' }}>{staff.displayName}</Text>
-                                                      <Tag color={roleColor} bordered={false}>{roleLabel}</Tag>
+                                                      {/* 🔥 Display multiple role tags */}
+                                                      {assignmentRoles.map(role => (
+                                                        <Tag key={role} color={getRoleTagColor(role)} bordered={false}>
+                                                          {getRoleLabel(role)}
+                                                        </Tag>
+                                                      ))}
                                                     </Space>
                                                     {conflictCount === 0 ? (
                                                       <Tag color="green" size="small">Không trùng</Tag>
@@ -5130,6 +5292,53 @@ const StaffAssignmentUnified = () => {
                       )}
                     </Space>
                     </>
+                  )}
+                </Modal>
+                
+                {/* 🆕 Role Selection Modal for Multi-Role Users */}
+                <Modal
+                  title="Chọn vai trò để xem lịch"
+                  open={showRoleSelectionModal}
+                  onCancel={() => {
+                    setShowRoleSelectionModal(false);
+                    setPendingStaffForRoleSelection(null);
+                  }}
+                  footer={null}
+                  width={500}
+                >
+                  {pendingStaffForRoleSelection && (
+                    <Space direction="vertical" style={{ width: '100%' }} size="large">
+                      <div>
+                        <Text strong>Nhân sự: </Text>
+                        <Text>{pendingStaffForRoleSelection.displayName || pendingStaffForRoleSelection.fullName}</Text>
+                      </div>
+                      
+                      <div>
+                        <Text strong>Nhân sự này có nhiều vai trò. Vui lòng chọn vai trò để xem lịch làm việc:</Text>
+                      </div>
+                      
+                      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                        {(pendingStaffForRoleSelection.assignmentRoles || [pendingStaffForRoleSelection.assignmentRole || pendingStaffForRoleSelection.role])
+                          .filter(r => r === 'dentist' || r === 'nurse')
+                          .map(role => (
+                            <Button
+                              key={role}
+                              type="primary"
+                              size="large"
+                              block
+                              icon={role === 'dentist' ? <UserOutlined /> : <MedicineBoxOutlined />}
+                              onClick={async () => {
+                                setShowRoleSelectionModal(false);
+                                await openStaffScheduleModal(pendingStaffForRoleSelection, role);
+                                setPendingStaffForRoleSelection(null);
+                              }}
+                            >
+                              Xem lịch làm việc với vai trò: {getRoleLabel(role)}
+                            </Button>
+                          ))
+                        }
+                      </Space>
+                    </Space>
                   )}
                 </Modal>
               </>
