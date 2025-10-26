@@ -165,10 +165,18 @@ const EditUser = () => {
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
+      console.log('📤 Form values before processing:', values);
+      
       // Loại bỏ certificates và employeeCode khỏi dữ liệu update
-      const { certificates, employeeCode, ...updateData } = values;
+      const { certificates, employeeCode, phone, ...updateData } = values;
+      
+      // ✅ Convert field names to match backend
+      if (phone) updateData.phoneNumber = phone; // phone → phoneNumber
+      
       updateData.dateOfBirth = values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null;
       updateData.description = description;
+      
+      console.log('📤 Update data to send:', updateData);
 
       const response = await fetch(`http://localhost:3001/api/user/${id}`, {
         method: 'PUT',
@@ -181,12 +189,17 @@ const EditUser = () => {
         body: JSON.stringify(updateData)
       });
 
+      console.log('📥 Response status:', response.status);
+
       if (response.ok) {
+        const responseData = await response.json();
+        console.log('✅ Update successful:', responseData);
         toast.success('Cập nhật thông tin thành công');
-        navigate('/dashboard/users');
+        // ✅ Reload user data để hiển thị thông tin mới
+        await loadUser();
       } else {
         const errorData = await response.json();
-        console.error('Update User Error:', errorData);
+        console.error('❌ Update User Error:', errorData);
         
         // Ưu tiên hiển thị lỗi từ backend
         if (errorData.message) {
@@ -202,7 +215,8 @@ const EditUser = () => {
         }
       }
     } catch (error) {
-      toast.error('Lỗi khi cập nhật thông tin');
+      console.error('❌ Exception in handleSubmit:', error);
+      toast.error(`Lỗi khi cập nhật thông tin: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -229,6 +243,8 @@ const EditUser = () => {
         const userData = responseData.data || responseData.user;
         setUser(prev => ({ ...prev, avatar: userData.avatar }));
         toast.success('Cập nhật avatar thành công');
+        // ✅ Reload user data để force refresh
+        await loadUser();
       } else {
         const errorData = await response.json();
         console.error('Avatar Upload Error:', errorData);

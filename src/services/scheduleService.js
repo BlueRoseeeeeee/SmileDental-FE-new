@@ -330,8 +330,27 @@ const scheduleService = {
       }
       throw error;
     }
+  },
+
+  /**
+   * 🆕 Bulk toggle dates - Tắt/bật lịch cho nhiều ngày - toàn bộ room và subroom
+   * @param {object} payload - {roomId, dateRange: {startDate, endDate}, isActive, reason}
+   * @returns {Promise<object>} - Result
+   */
+  bulkToggleScheduleDates: async (payload) => {
+    try {
+      const response = await api.post('/schedules/bulk-toggle-dates', payload);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error bulkToggleScheduleDates:', error);
+      if (error.response?.data) {
+        throw error;
+      }
+      throw error;
+    }
   }
 };
 
 export const updateSchedule = scheduleService.updateSchedule;
+export const bulkToggleScheduleDates = scheduleService.bulkToggleScheduleDates;
 export default scheduleService;

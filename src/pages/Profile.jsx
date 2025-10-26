@@ -69,15 +69,22 @@ const Profile = () => {
       setLoading(true);
 
       // Only send editable fields: email and phone
+      // ✅ Convert phone → phoneNumber to match backend
       const updateData = {
         email: values.email,
-        phone: values.phone,
+        phoneNumber: values.phone, // phone → phoneNumber
       };
 
       const response = await userService.updateProfile(updateData);
       
-      // Update user in context
-      updateUser(response.user);
+      // ✅ Update local user state with updated data
+      const updatedUser = {
+        ...user,
+        email: values.email,
+        phone: values.phone,
+        phoneNumber: values.phone
+      };
+      updateUser(updatedUser);
       
       toast.success('Cập nhật thông tin thành công!');
       setIsEditing(false);
@@ -97,7 +104,16 @@ const Profile = () => {
     setLoading(true);
     try {
       const response = await userService.uploadAvatar(user._id, file);
-      updateUser({ avatar: response.user.avatar });
+      
+      // ✅ Update local user state with new avatar URL from response
+      if (response.avatarUrl) {
+        const updatedUser = {
+          ...user,
+          avatar: response.avatarUrl
+        };
+        updateUser(updatedUser);
+      }
+      
       message.success('Cập nhật avatar thành công!');
       return false; // Prevent default upload behavior
     } catch (error) {

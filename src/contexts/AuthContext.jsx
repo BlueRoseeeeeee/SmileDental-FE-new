@@ -230,6 +230,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ Refetch user from server to get latest data
+  const refetchUser = async () => {
+    try {
+      const { userService } = await import('../services/userService.js');
+      const response = await userService.getProfile();
+      const freshUser = response.user || response;
+      
+      // Update both localStorage and state
+      localStorage.setItem('user', JSON.stringify(freshUser));
+      setUser(freshUser);
+      
+      return freshUser;
+    } catch (error) {
+      console.error('Refetch user error:', error);
+      // Don't throw - just return current user to avoid logout
+      return user;
+    }
+  };
+
   // 🆕 Nhiệm vụ 3.2: Complete login after password change or specialty selection
   const completeLogin = (userData) => {
     setIsAuthenticated(true);
@@ -251,6 +270,7 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     changePassword,
     updateUser,
+    refetchUser, // ✅ Export refetchUser
     completeLogin // 🆕 Export completeLogin
   };
 

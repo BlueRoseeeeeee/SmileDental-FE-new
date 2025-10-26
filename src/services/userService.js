@@ -7,12 +7,24 @@ import { userApi } from './apiFactory.js';
 export const userService = {
   // Profile management - Used in Profile.jsx
   getProfile: async () => {
-    const response = await userApi.get('/user/profile');
+    const response = await userApi.get('/user/profile', {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      // ✅ Force refresh từ server
+      params: { _t: new Date().getTime() }
+    });
     return response.data;
   },
 
   updateProfile: async (userData) => {
-    const response = await userApi.put('/user/profile', userData);
+    const response = await userApi.put('/user/profile', userData, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     return response.data;
   },
 
@@ -52,6 +64,8 @@ export const userService = {
     const response = await userApi.put(`/user/avatar/${userId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       },
     });
     return response.data;

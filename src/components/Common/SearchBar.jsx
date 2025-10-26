@@ -138,6 +138,7 @@ const SearchBar = ({
               </div>
               <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                 <Select
+                  mode={filter.multiple ? "multiple" : undefined}
                   style={{ 
                     width: '100%',
                     borderRadius: '8px'
@@ -148,6 +149,7 @@ const SearchBar = ({
                   size={size}
                   suffixIcon={<FilterOutlined style={{ color: '#2596be' }} />}
                   placeholder={filter.placeholder}
+                  maxTagCount={filter.multiple ? 'responsive' : undefined}
                   onClear={() => {
                     const newFilterValues = { ...localFilterValues };
                     delete newFilterValues[filter.key];

@@ -341,7 +341,11 @@ function App() {
             <Route index element={<Dashboard />} />
             
             {/* Profile */}
-            <Route path="profile" element={<Profile />} />
+            <Route path="profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
             
             {/* Change Password */}
             <Route path="change-password" element={<ChangePassword />} />

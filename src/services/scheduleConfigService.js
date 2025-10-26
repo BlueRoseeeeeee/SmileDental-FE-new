@@ -93,6 +93,12 @@ const scheduleConfigService = {
   bulkDisableSchedule: async (data) => {
     const response = await scheduleApi.post('/schedule/bulk-disable', data);
     return response.data;
+  },
+
+  // 🆕 Override holiday cho tất cả rooms/subrooms
+  createOverrideHolidayForAllRooms: async (data) => {
+    const response = await scheduleApi.post('/schedule/override-holiday-all-rooms', data);
+    return response.data;
   }
 };
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Switch, Checkbox, Space, Tag, Alert, message, Spin, Button, DatePicker, Input, App } from 'antd';
 import { WarningOutlined, CalendarOutlined, StopOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import { updateSchedule } from '../../services/scheduleService';
+import { updateSchedule, bulkToggleScheduleDates } from '../../services/scheduleService';
 import scheduleConfigService from '../../services/scheduleConfigService';
 import dayjs from 'dayjs';
+
+const { RangePicker } = DatePicker;
 
 const SHIFT_COLORS = {
   morning: 'gold',
@@ -44,10 +46,16 @@ const EditScheduleModal = ({
   const [validHolidayDates, setValidHolidayDates] = useState([]); // 🆕 Danh sách ngày nghỉ hợp lệ
   const [checkingHoliday, setCheckingHoliday] = useState(false);
   const [creatingOverride, setCreatingOverride] = useState(false);
+  const [selectedSubRoomsForOverride, setSelectedSubRoomsForOverride] = useState([]); // 🆕 Array of subRoomIds/scheduleIds to create override
   
-  // 🆕 Bulk Disable states - REMOVED (không cần section riêng)
-  // Thay vào đó, thêm date filter vào các section hiện có
+  // 🆕 Toggle Schedule states - Form mới: Bật/Tắt lịch làm việc
+  const [showToggleSection, setShowToggleSection] = useState(false);
   const [filterDates, setFilterDates] = useState([]); // Array of dayjs dates để filter khi toggle
+
+  // REMOVED: Bulk Toggle Room states (xóa section này)
+  // const [bulkToggleDateRange, setBulkToggleDateRange] = useState([]);
+  // const [bulkToggleReason, setBulkToggleReason] = useState('');
+  // const [bulkTogglingRoom, setBulkTogglingRoom] = useState(false);
 
   // Initialize state when modal opens
   useEffect(() => {
@@ -64,8 +72,10 @@ const EditScheduleModal = ({
       setOverrideNote('');
       setHolidayInfo(null);
       setValidHolidayDates([]);
+      setSelectedSubRoomsForOverride([]);
       
-      // Reset filter dates
+      // Reset toggle schedule states
+      setShowToggleSection(false);
       setFilterDates([]);
     }
   }, [visible, scheduleListData]);
@@ -263,26 +273,49 @@ const EditScheduleModal = ({
     try {
       setCreatingOverride(true);
       
-      // Get room info from first schedule
-      const firstSchedule = scheduleListData?.schedules?.[0];
-      const subRoomId = firstSchedule?.subRoom?._id;
+      // 🆕 Loop through selected schedules
+      let successCount = 0;
+      let totalSlotsCreated = 0;
+      const totalSchedules = selectedSubRoomsForOverride.length;
       
-      const payload = {
-        roomId: roomId,
-        subRoomId: subRoomId || null,
-        month: month,
-        year: year,
-        date: overrideDate.format('YYYY-MM-DD'),
-        shifts: overrideShifts, // ['morning', 'afternoon', 'evening']
-        note: overrideNote || `Lịch override ngày nghỉ tháng ${month}/${year}`
-      };
+      for (const scheduleId of selectedSubRoomsForOverride) {
+        // Find the schedule from scheduleListData
+        const schedule = scheduleListData.schedules.find(s => s._id === scheduleId);
+        if (!schedule) {
+          console.warn(`⚠️ Schedule not found: ${scheduleId}`);
+          continue;
+        }
+        
+        const subRoomId = schedule?.subRoom?._id;
+        
+        const payload = {
+          roomId: roomId,
+          subRoomId: subRoomId || null,
+          month: month,
+          year: year,
+          date: overrideDate.format('YYYY-MM-DD'),
+          shifts: overrideShifts,
+          note: overrideNote || `Lịch override ngày nghỉ tháng ${month}/${year}`
+        };
+        
+        console.log(`📤 Creating override holiday for schedule ${scheduleId}:`, payload);
+        
+        try {
+          const result = await scheduleConfigService.createScheduleOverrideHoliday(payload);
+          
+          if (result.success) {
+            successCount++;
+            totalSlotsCreated += result.slotsCreated || 0;
+          }
+        } catch (error) {
+          console.error(`❌ Error creating override for schedule ${scheduleId}:`, error);
+        }
+      }
       
-      console.log('📤 Creating override holiday:', payload);
-      
-      const result = await scheduleConfigService.createScheduleOverrideHoliday(payload);
-      
-      if (result.success) {
-        message.success(`Đã tạo lịch override thành công: ${result.slotsCreated} slots`);
+      if (successCount > 0) {
+        message.success(
+          `Đã tạo lịch override cho ${successCount}/${totalSchedules} phòng/buồng. Tổng ${totalSlotsCreated} slots`
+        );
         
         // Reset override section
         setShowOverrideSection(false);
@@ -290,11 +323,14 @@ const EditScheduleModal = ({
         setOverrideShifts([]);
         setOverrideNote('');
         setHolidayInfo(null);
+        setSelectedSubRoomsForOverride([]);
         
         // Callback to refresh data
         if (onSuccess) {
           onSuccess();
         }
+      } else {
+        message.warning('Không có schedule nào được tạo thành công');
       }
     } catch (error) {
       console.error('Override holiday error:', error);
@@ -302,6 +338,13 @@ const EditScheduleModal = ({
     } finally {
       setCreatingOverride(false);
     }
+  };
+
+  /**
+   * 🆕 Handler: Bulk toggle toàn bộ phòng (room + all subrooms)
+   */
+  const handleBulkToggleRoom = async (isActive) => {
+    // REMOVED: Xóa handler này vì đã xóa section Bulk Toggle Room
   };
 
   if (!scheduleListData || !scheduleListData.schedules || scheduleListData.schedules.length === 0) {
@@ -356,7 +399,7 @@ const EditScheduleModal = ({
           scheduleId: schedule.scheduleId,
           subRoomId: schedule.subRoom._id,
           subRoomName: schedule.subRoom.name,
-          isActive: schedule.isActiveSubRoom !== false // ✅ FIX: Lấy từ schedule.isActiveSubRoom, KHÔNG phải schedule.subRoom.isActiveSubRoom
+          isActiveSubRoom: schedule.isActiveSubRoom !== false // ✅ Trạng thái buồng trong lịch
         });
       }
     });
@@ -370,9 +413,14 @@ const EditScheduleModal = ({
   });
   
   // 🆕 Lấy startDate và endDate từ schedule đầu tiên (tất cả schedule cùng tháng có cùng range)
+  // ⚠️ Convert từ UTC sang VN timezone (UTC+7)
   const firstSchedule = scheduleListData?.schedules?.[0];
-  const scheduleStartDate = firstSchedule?.startDate ? dayjs(firstSchedule.startDate) : null;
-  const scheduleEndDate = firstSchedule?.endDate ? dayjs(firstSchedule.endDate) : null;
+  const scheduleStartDate = firstSchedule?.startDate 
+    ? dayjs(firstSchedule.startDate).add(7, 'hour').startOf('day') 
+    : null;
+  const scheduleEndDate = firstSchedule?.endDate 
+    ? dayjs(firstSchedule.endDate).add(7, 'hour').endOf('day') 
+    : null;
 
   return (
     <Modal
@@ -395,16 +443,16 @@ const EditScheduleModal = ({
           description={`${scheduleListData?.schedules?.filter(s => s.month === month && s.year === year).length || 0} lịch trong tháng này`}
         />
         
-        {/* 🆕 Danh sách ngày đã tắt */}
+        {/* 🆕 Danh sách ngày nghỉ (từ holidaySnapshot.computedDaysOff) */}
         {(() => {
-          // Lấy disabledDates từ schedule đầu tiên
+          // Lấy computedDaysOff từ schedule đầu tiên
           const firstSchedule = scheduleListData?.schedules?.[0];
-          const disabledDates = firstSchedule?.disabledDates || [];
+          const computedDaysOff = firstSchedule?.holidaySnapshot?.computedDaysOff || [];
           
-          if (disabledDates.length === 0) return null;
+          if (computedDaysOff.length === 0) return null;
           
           // Sắp xếp theo ngày
-          const sortedDates = [...disabledDates].sort((a, b) => 
+          const sortedDates = [...computedDaysOff].sort((a, b) => 
             new Date(a.date) - new Date(b.date)
           );
           
@@ -421,7 +469,7 @@ const EditScheduleModal = ({
                 color: '#cf1322',
                 fontSize: 14
               }}>
-                <StopOutlined /> Lịch sử tắt lịch ({disabledDates.length} ngày)
+                <StopOutlined /> Ngày nghỉ trong tháng ({computedDaysOff.length} ngày)
               </div>
               
               <div style={{ 
@@ -429,11 +477,8 @@ const EditScheduleModal = ({
                 overflowY: 'auto',
                 fontSize: 12
               }}>
-                {sortedDates.map((dateEntry, idx) => {
-                  const date = dayjs(dateEntry.date);
-                  const disabledShifts = dateEntry.shifts.filter(s => !s.isActive);
-                  
-                  if (disabledShifts.length === 0) return null;
+                {sortedDates.map((dayOff, idx) => {
+                  const date = dayjs(dayOff.date);
                   
                   return (
                     <div 
@@ -449,24 +494,9 @@ const EditScheduleModal = ({
                       <div style={{ fontWeight: 500, marginBottom: 4 }}>
                         📅 {date.format('DD/MM/YYYY')} ({date.format('dddd')})
                       </div>
-                      <Space wrap>
-                        {disabledShifts.map(shift => {
-                          const shiftNames = {
-                            morning: 'Ca Sáng',
-                            afternoon: 'Ca Chiều', 
-                            evening: 'Ca Tối'
-                          };
-                          return (
-                            <Tag 
-                              key={shift.shiftType} 
-                              color="red"
-                              icon={<StopOutlined />}
-                            >
-                              {shiftNames[shift.shiftType]}
-                            </Tag>
-                          );
-                        })}
-                      </Space>
+                      <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                        🏖️ {dayOff.reason || 'Ngày nghỉ'}
+                      </div>
                     </div>
                   );
                 })}
@@ -557,6 +587,186 @@ const EditScheduleModal = ({
             </div>
           );
         })()}
+        
+        {/* 🆕 Kích hoạt lại ca/buồng bị tắt */}
+        {(() => {
+          // Lấy danh sách ca bị tắt (isActive = false)
+          const inactiveShifts = allShifts.filter(shift => shift.isActive === false);
+          
+          // Lấy danh sách buồng bị tắt (isActiveSubRoom = false)
+          const inactiveSubRooms = allSubRooms ? allSubRooms.filter(sr => 
+            sr.isActiveSubRoom === false
+          ) : [];
+          
+          // Nếu không có ca hoặc buồng nào bị tắt, không hiển thị section này
+          if (inactiveShifts.length === 0 && inactiveSubRooms.length === 0) {
+            return null;
+          }
+          
+          return (
+            <div style={{ 
+              border: '2px dashed #faad14',
+              borderRadius: 8,
+              padding: 12,
+              background: '#fffbf0'
+            }}>
+              <div style={{ 
+                marginBottom: 8, 
+                fontWeight: 600, 
+                color: '#fa8c16',
+                fontSize: 14
+              }}>
+                <WarningOutlined /> Kích hoạt lại ca/buồng bị tắt
+              </div>
+              
+              <Alert
+                type="warning"
+                showIcon
+                message="Ca/buồng bị tắt trong cấu hình"
+                description="Những ca/buồng sau đây đã bị tắt trong cấu hình lịch. Bạn có thể kích hoạt lại để cho phép tạo slots."
+                style={{ marginBottom: 12, fontSize: 11 }}
+              />
+              
+              {/* Danh sách ca bị tắt */}
+              {inactiveShifts.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ marginBottom: 8, fontWeight: 500, fontSize: 12 }}>
+                    Ca làm việc bị tắt:
+                  </div>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {inactiveShifts.map(shift => {
+                      const isChecked = reactivateShifts.includes(shift.key);
+                      
+                      return (
+                        <div 
+                          key={shift.key}
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            padding: 8,
+                            border: '1px solid #ffd591',
+                            borderRadius: 4,
+                            background: 'white'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Tag color={shift.color}>{shift.name}</Tag>
+                            <span style={{ fontSize: 11, color: '#666' }}>
+                              {shift.startTime} - {shift.endTime}
+                            </span>
+                            <Tag color="red" icon={<StopOutlined />}>Đã tắt</Tag>
+                          </div>
+                          <Checkbox
+                            checked={isChecked}
+                            onChange={(e) => handleShiftCheckboxChange(shift.key, e.target.checked)}
+                          >
+                            Kích hoạt lại
+                          </Checkbox>
+                        </div>
+                      );
+                    })}
+                  </Space>
+                </div>
+              )}
+              
+              {/* Danh sách buồng bị tắt */}
+              {inactiveSubRooms.length > 0 && (
+                <div>
+                  <div style={{ marginBottom: 8, fontWeight: 500, fontSize: 12 }}>
+                    Buồng bị tắt:
+                  </div>
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {inactiveSubRooms.map(subRoom => {
+                      const isChecked = reactivateSubRooms.some(item => 
+                        item.scheduleId === subRoom.scheduleId && item.subRoomId === subRoom.subRoomId
+                      );
+                      
+                      return (
+                        <div 
+                          key={`${subRoom.scheduleId}-${subRoom.subRoomId}`}
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            padding: 8,
+                            border: '1px solid #ffd591',
+                            borderRadius: 4,
+                            background: 'white'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontWeight: 500 }}>{subRoom.subRoomName}</span>
+                            <Tag color="red" icon={<StopOutlined />}>Đã tắt</Tag>
+                          </div>
+                          <Checkbox
+                            checked={isChecked}
+                            onChange={(e) => handleSubRoomCheckboxChange(
+                              subRoom.scheduleId, 
+                              subRoom.subRoomId, 
+                              subRoom.subRoomName, 
+                              e.target.checked
+                            )}
+                          >
+                            Kích hoạt lại
+                          </Checkbox>
+                        </div>
+                      );
+                    })}
+                  </Space>
+                </div>
+              )}
+              
+              {(reactivateShifts.length > 0 || reactivateSubRooms.length > 0) && (
+                <Alert
+                  type="success"
+                  showIcon
+                  message={`Sẽ kích hoạt lại: ${reactivateShifts.length} ca, ${reactivateSubRooms.length} buồng`}
+                  style={{ marginTop: 12, fontSize: 11 }}
+                />
+              )}
+            </div>
+          );
+        })()}
+
+        {/* 🆕 FORM 2: Bật/Tắt lịch làm việc (theo ca, theo buồng, theo ngày) */}
+        <div>
+          <Button
+            type="default"
+            onClick={() => {
+              setShowToggleSection(!showToggleSection);
+              if (!showToggleSection) {
+                // Reset states khi mở form
+                setFilterDates([]);
+                setDeactivateShifts([]);
+                setToggleSubRooms([]);
+              }
+            }}
+            block
+            style={{
+              borderColor: '#1890ff',
+              color: '#1890ff'
+            }}
+          >
+            {showToggleSection ? 'Ẩn' : 'Bật/Tắt lịch làm việc'}
+          </Button>
+          
+          {showToggleSection && (
+            <div style={{ 
+              marginTop: 16, 
+              padding: 16, 
+              border: '2px dashed #1890ff', 
+              borderRadius: 8,
+              background: '#f0f5ff'
+            }}>
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Bật/Tắt lịch làm việc"
+                  description="Chọn khoảng ngày, chọn ca và buồng cần bật/tắt. Thay đổi sẽ được áp dụng khi nhấn nút 'Lưu thay đổi' ở cuối."
+                  style={{ fontSize: 12 }}
+                />
 
         {/* 🆕 Bật/Tắt ca làm việc - Gộp TẤT CẢ CA (inactive + generated + missing) */}
         {allShifts.length > 0 && (
@@ -736,8 +946,8 @@ const EditScheduleModal = ({
                 const toggledSubRoom = toggleSubRooms.find(item => 
                   item.scheduleId === subRoom.scheduleId && item.subRoomId === subRoom.subRoomId
                 );
-                // Ưu tiên dùng toggled state, nếu không thì dùng subRoom.isActive
-                const currentIsActive = toggledSubRoom ? toggledSubRoom.isActive : subRoom.isActive;
+                // Ưu tiên dùng toggled state, nếu không thì dùng subRoom.isActiveSubRoom
+                const currentIsActive = toggledSubRoom ? toggledSubRoom.isActive : subRoom.isActiveSubRoom;
                 
                 return (
                   <div 
@@ -795,8 +1005,12 @@ const EditScheduleModal = ({
             )}
           </div>
         )}
+              </Space>
+            </div>
+          )}
+        </div>
         
-        {/* 🆕 Tạo lịch override trong ngày nghỉ */}
+        {/* 🆕 FORM 1: Tạo lịch override trong ngày nghỉ */}
         <div>
           <Button
             type="dashed"
@@ -815,54 +1029,23 @@ const EditScheduleModal = ({
                     return;
                   }
                   
-                  const { recurringHolidays, nonRecurringHolidays } = firstSchedule.holidaySnapshot;
-                  const scheduleStart = dayjs(firstSchedule.startDate);
-                  const scheduleEnd = dayjs(firstSchedule.endDate);
+                  // ✅ Sử dụng computedDaysOff (đã tính sẵn từ BE)
+                  const { computedDaysOff = [] } = firstSchedule.holidaySnapshot;
+                  const overriddenHolidays = firstSchedule.overriddenHolidays || [];
                   
-                  const validDates = [];
+                  // Lấy danh sách ngày đã được override (đã tạo lịch)
+                  const overriddenDates = overriddenHolidays.map(oh => 
+                    dayjs(oh.date).format('YYYY-MM-DD')
+                  );
                   
-                  // 1. Tính ngày nghỉ định kỳ (recurring) trong khoảng startDate - endDate
-                  if (recurringHolidays && recurringHolidays.length > 0) {
-                    let currentDate = dayjs(scheduleStart);
-                    while (currentDate.isBefore(scheduleEnd, 'day') || currentDate.isSame(scheduleEnd, 'day')) {
-                      const dayOfWeek = currentDate.day() === 0 ? 7 : currentDate.day(); // Chuyển 0 (CN) thành 7
-                      
-                      // Kiểm tra xem ngày này có trong recurringHolidays không
-                      const isRecurringHoliday = recurringHolidays.some(h => h.dayOfWeek === dayOfWeek);
-                      
-                      if (isRecurringHoliday) {
-                        validDates.push(currentDate.format('YYYY-MM-DD'));
-                      }
-                      
-                      currentDate = currentDate.add(1, 'day');
-                    }
-                  }
+                  // Lọc ngày nghỉ chưa được override
+                  const validDates = computedDaysOff
+                    .map(dayOff => dayOff.date) // Extract date string
+                    .filter(dateStr => !overriddenDates.includes(dateStr)) // Loại bỏ ngày đã override
+                    .sort(); // Sắp xếp theo thứ tự tăng dần
                   
-                  // 2. Thêm ngày nghỉ không định kỳ (non-recurring)
-                  if (nonRecurringHolidays && nonRecurringHolidays.length > 0) {
-                    nonRecurringHolidays.forEach(holiday => {
-                      const holidayStart = dayjs(holiday.startDate);
-                      const holidayEnd = dayjs(holiday.endDate);
-                      
-                      let currentDate = dayjs(holidayStart);
-                      while (currentDate.isBefore(holidayEnd, 'day') || currentDate.isSame(holidayEnd, 'day')) {
-                        // Chỉ thêm nếu nằm trong schedule range
-                        if ((currentDate.isAfter(scheduleStart, 'day') || currentDate.isSame(scheduleStart, 'day')) &&
-                            (currentDate.isBefore(scheduleEnd, 'day') || currentDate.isSame(scheduleEnd, 'day'))) {
-                          const dateStr = currentDate.format('YYYY-MM-DD');
-                          if (!validDates.includes(dateStr)) {
-                            validDates.push(dateStr);
-                          }
-                        }
-                        currentDate = currentDate.add(1, 'day');
-                      }
-                    });
-                  }
-                  
-                  // Sắp xếp theo thứ tự tăng dần
-                  validDates.sort();
-                  
-                  console.log('📅 Valid holiday dates from holidaySnapshot:', validDates);
+                  console.log('📅 Valid holiday dates (chưa override):', validDates);
+                  console.log('� Overridden dates (đã tạo lịch):', overriddenDates);
                   setValidHolidayDates(validDates);
                   
                 } catch (error) {
@@ -894,7 +1077,7 @@ const EditScheduleModal = ({
                   showIcon
                   icon={<WarningOutlined />}
                   message="Quyền đặc biệt: Admin/Manager"
-                  description="Tạo lịch cho ngày nghỉ đã được đánh dấu. Lịch này sẽ có flag 'isHolidayOverride'."
+                  description="Tạo lịch làm việc trong ngày nghỉ (override). Chỉ có thể chọn ngày nghỉ chưa được tạo lịch."
                   style={{ fontSize: 12 }}
                 />
                 
@@ -903,8 +1086,13 @@ const EditScheduleModal = ({
                   <div style={{ marginBottom: 4, fontWeight: 500 }}>
                     Chọn ngày nghỉ từ danh sách:
                     {validHolidayDates.length > 0 && (
-                      <span style={{ fontSize: 11, color: '#999', marginLeft: 4 }}>
-                        ({validHolidayDates.length} ngày nghỉ trong tháng này)
+                      <span style={{ fontSize: 11, color: '#1890ff', marginLeft: 4 }}>
+                        ({validHolidayDates.length} ngày nghỉ chưa tạo lịch)
+                      </span>
+                    )}
+                    {validHolidayDates.length === 0 && (
+                      <span style={{ fontSize: 11, color: '#ff4d4f', marginLeft: 4 }}>
+                        (Không còn ngày nghỉ chưa tạo lịch)
                       </span>
                     )}
                   </div>
@@ -919,8 +1107,9 @@ const EditScheduleModal = ({
                       }
                     }}
                     format="DD/MM/YYYY"
-                    placeholder="Chọn ngày nghỉ"
+                    placeholder="Chọn ngày nghỉ chưa tạo lịch"
                     style={{ width: '100%' }}
+                    disabled={validHolidayDates.length === 0}
                     disabledDate={(current) => {
                       if (!current) return false;
                       // Disable past dates
@@ -974,7 +1163,7 @@ const EditScheduleModal = ({
                 {validHolidayDates.length > 0 && !overrideDate && (
                   <Alert
                     type="info"
-                    message="Ngày nghỉ có thể chọn"
+                    message="Ngày nghỉ chưa tạo lịch (có thể chọn)"
                     description={
                       <div style={{ maxHeight: 100, overflowY: 'auto' }}>
                         {validHolidayDates.map((dateStr, idx) => (
@@ -984,6 +1173,17 @@ const EditScheduleModal = ({
                         ))}
                       </div>
                     }
+                    style={{ fontSize: 11 }}
+                  />
+                )}
+                
+                {/* Alert khi không còn ngày nghỉ nào */}
+                {validHolidayDates.length === 0 && showOverrideSection && (
+                  <Alert
+                    type="warning"
+                    message="Không còn ngày nghỉ chưa tạo lịch"
+                    description="Tất cả ngày nghỉ trong tháng này đã được tạo lịch override hoặc chưa có ngày nghỉ nào được cấu hình."
+                    showIcon
                     style={{ fontSize: 11 }}
                   />
                 )}
@@ -1009,6 +1209,44 @@ const EditScheduleModal = ({
                       </Checkbox.Group>
                     </div>
                     
+                    {/* 🆕 Chọn subrooms để tạo override */}
+                    <div style={{ 
+                      padding: 12, 
+                      backgroundColor: '#f0f5ff', 
+                      border: '1px solid #adc6ff',
+                      borderRadius: 6
+                    }}>
+                      <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                        Chọn phòng/buồng để tạo lịch:
+                      </div>
+                      <Checkbox.Group
+                        value={selectedSubRoomsForOverride}
+                        onChange={setSelectedSubRoomsForOverride}
+                        style={{ width: '100%' }}
+                      >
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                          {/* Chỉ hiển thị subrooms - dùng allSubRooms như phần Bật/Tắt buồng */}
+                          {allSubRooms.map(subRoom => (
+                            <Checkbox 
+                              key={`${subRoom.scheduleId}-${subRoom.subRoomId}`} 
+                              value={subRoom.scheduleId}
+                            >
+                              {subRoom.subRoomName}
+                            </Checkbox>
+                          ))}
+                        </Space>
+                      </Checkbox.Group>
+                      
+                      {selectedSubRoomsForOverride.length > 0 && (
+                        <Alert
+                          type="info"
+                          message={`Đã chọn ${selectedSubRoomsForOverride.length} phòng/buồng`}
+                          showIcon
+                          style={{ marginTop: 8, fontSize: 11 }}
+                        />
+                      )}
+                    </div>
+                    
                     {/* Ghi chú */}
                     <div>
                       <div style={{ marginBottom: 4, fontWeight: 500 }}>Ghi chú:</div>
@@ -1026,10 +1264,17 @@ const EditScheduleModal = ({
                       danger
                       loading={creatingOverride}
                       onClick={handleOverrideHoliday}
-                      disabled={!overrideDate || !holidayInfo || overrideShifts.length === 0}
+                      disabled={
+                        !overrideDate || 
+                        !holidayInfo || 
+                        overrideShifts.length === 0 || 
+                        selectedSubRoomsForOverride.length === 0
+                      }
                       block
                     >
-                      {creatingOverride ? 'Đang tạo...' : 'Tạo lịch Override'}
+                      {creatingOverride 
+                        ? 'Đang tạo...' 
+                        : `Tạo lịch Override (${selectedSubRoomsForOverride.length} phòng/buồng)`}
                     </Button>
                   </>
                 )}

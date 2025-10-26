@@ -1182,11 +1182,26 @@ const CreateScheduleForRoom = () => {
     console.log('📝 Opening edit modal for room:', roomId, 'month:', month, 'year:', year);
     console.log('📊 Schedule list data:', scheduleListData);
     
+    // ✅ Filter schedules theo tháng/năm được chọn
+    const filteredSchedules = scheduleListData?.schedules?.filter(
+      s => s.month === month && s.year === year
+    ) || [];
+    
+    console.log(`🔍 Filtered ${filteredSchedules.length} schedules for ${month}/${year}`);
+    
+    if (filteredSchedules.length === 0) {
+      message.warning(`Không tìm thấy lịch tháng ${month}/${year}`);
+      return;
+    }
+    
     setEditingSchedule({
       roomId,
       month,
       year,
-      scheduleListData
+      scheduleListData: {
+        ...scheduleListData,
+        schedules: filteredSchedules // ✅ Chỉ pass schedules của tháng này
+      }
     });
     setShowEditModal(true);
   };

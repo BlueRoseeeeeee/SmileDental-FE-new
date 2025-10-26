@@ -28,8 +28,10 @@ const CreateOverrideScheduleModal = ({ visible, onClose, onSuccess, rooms = [], 
     
     return holidays.some(holiday => {
       if (holiday.isFixedHoliday) {
-        // Check dayOfWeek
-        return dayjs(date).day() === holiday.dayOfWeek;
+        // Convention: 1=Sunday, 2=Monday, 3=Tuesday, ..., 7=Saturday
+        // dayjs.day(): 0=Sunday, 1=Monday, ..., 6=Saturday
+        const dayOfWeek = dayjs(date).day() + 1; // Convert: 0->1, 1->2, ..., 6->7
+        return dayOfWeek === holiday.dayOfWeek;
       } else {
         // Check date range
         return dayjs(date).isBetween(
