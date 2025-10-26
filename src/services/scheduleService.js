@@ -348,6 +348,42 @@ const scheduleService = {
       }
       throw error;
     }
+  },
+
+  /**
+   * 🆕 Get available override shifts - Kiểm tra ca nào đã/chưa tạo cho ngày nghỉ
+   * @param {object} payload - {roomId, month, year, date, scheduleIds}
+   * @returns {Promise<object>} - {availableShifts, overriddenShifts}
+   */
+  getAvailableOverrideShifts: async (payload) => {
+    try {
+      const response = await scheduleApi.post('/schedule/get-available-override-shifts', payload);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error getAvailableOverrideShifts:', error);
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * 🆕 Create schedule override holiday - Tạo lịch trong ngày nghỉ
+   * @param {object} payload - {roomId, subRoomId, month, year, date, shifts, note}
+   * @returns {Promise<object>} - Result
+   */
+  createScheduleOverrideHoliday: async (payload) => {
+    try {
+      const response = await scheduleApi.post('/schedule/override-holiday', payload);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error createScheduleOverrideHoliday:', error);
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   }
 };
 

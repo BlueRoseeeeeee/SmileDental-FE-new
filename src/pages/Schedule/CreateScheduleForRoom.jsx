@@ -602,29 +602,30 @@ const CreateScheduleForRoom = () => {
       const suggestedStart = scheduleListData?.summary?.suggestedStartDate;
       const startDateToUse = suggestedStart ? dayjs(suggestedStart) : dayjs().add(1, 'day');
       
-      // 🆕 Tìm tháng đầu tiên chưa có lịch
+      // 🆕 Tìm tháng CHƯA CÓ LỊCH GẦN NHẤT với tháng hiện tại (có thể là quá khứ hoặc tương lai)
       const currentYear = dayjs().year();
       const currentMonth = dayjs().month() + 1;
-      let firstAvailableMonth = null;
-      let firstAvailableYear = startDateToUse.year();
+      const availableMonths = [];
       
-      // Bắt đầu từ tháng suggested hoặc tháng hiện tại
-      for (let year = firstAvailableYear; year <= firstAvailableYear + 2; year++) {
-        const startMonth = year === startDateToUse.year() ? (startDateToUse.month() + 1) : 1;
-        
-        for (let m = startMonth; m <= 12; m++) {
-          const isPastMonth = year === currentYear && m < currentMonth;
+      // Quét từ 2 năm trước đến 2 năm sau để tìm tháng chưa có lịch
+      for (let year = currentYear - 2; year <= currentYear + 2; year++) {
+        for (let m = 1; m <= 12; m++) {
           const hasSchedule = isMonthScheduled(m, year);
           
-          if (!isPastMonth && !hasSchedule) {
-            firstAvailableMonth = m;
-            firstAvailableYear = year;
-            break;
+          if (!hasSchedule) {
+            // Tính khoảng cách từ tháng hiện tại
+            const monthDiff = Math.abs((year - currentYear) * 12 + (m - currentMonth));
+            availableMonths.push({ month: m, year, distance: monthDiff });
           }
         }
-        
-        if (firstAvailableMonth) break;
       }
+      
+      // Sắp xếp theo khoảng cách gần nhất
+      availableMonths.sort((a, b) => a.distance - b.distance);
+      
+      const firstAvailable = availableMonths[0];
+      let firstAvailableMonth = firstAvailable?.month || null;
+      let firstAvailableYear = firstAvailable?.year || startDateToUse.year();
       
       if (firstAvailableMonth) {
         setFromMonth(firstAvailableMonth);
@@ -818,16 +819,16 @@ const CreateScheduleForRoom = () => {
       }
     }
     
-    // Validate: Nếu có suggested start date, phải tuân theo
-    if (scheduleListData?.summary?.suggestedStartDate && !isEditingExistingSchedule) {
-      const suggestedStart = dayjs(scheduleListData.summary.suggestedStartDate).startOf('day');
-      if (startDate.isBefore(suggestedStart)) {
-        toast.error(
-          `Phải tạo lịch liên tục từ ngày ${suggestedStart.format('DD/MM/YYYY')}. Không được để trống khoảng thời gian.`
-        );
-        return;
-      }
-    }
+    // ❌ REMOVED: Không bắt buộc tạo lịch liên tục - Cho phép tạo lịch bất kỳ tháng nào chưa có lịch
+    // if (scheduleListData?.summary?.suggestedStartDate && !isEditingExistingSchedule) {
+    //   const suggestedStart = dayjs(scheduleListData.summary.suggestedStartDate).startOf('day');
+    //   if (startDate.isBefore(suggestedStart)) {
+    //     toast.error(
+    //       `Phải tạo lịch liên tục từ ngày ${suggestedStart.format('DD/MM/YYYY')}. Không được để trống khoảng thời gian.`
+    //     );
+    //     return;
+    //   }
+    // }
 
     setCreatingSchedule(true);
     try {
@@ -3897,7 +3898,7 @@ const CreateScheduleForRoom = () => {
               }}
               format="DD/MM/YYYY"
               disabledDate={disabledDate}
-              disabled={isEditingExistingSchedule}
+              disabled={true}
               style={{ width: '100%', marginTop: 8 }}
               defaultPickerValue={(() => {
                 // 🆕 Tự động mở tháng và hiển thị ngày đầu tiên có thể chọn
