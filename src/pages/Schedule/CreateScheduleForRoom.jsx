@@ -2624,7 +2624,7 @@ const CreateScheduleForRoom = () => {
                                        'Thêm ca thiếu'}
                                     </Button>
                                   </Tooltip>,
-                                  <Tooltip title={group.isExpired ? 'Lịch đã quá hạn, không thể chỉnh sửa' : 'Chỉnh sửa cấu hình lịch'}>
+                                  <Tooltip title={group.isExpired ? 'Lịch đã quá hạn, không thể tạo lịch ngày nghỉ' : 'Tạo lịch làm việc trong ngày nghỉ'}>
                                     <Button
                                       type="link"
                                       onClick={() => {
@@ -2639,7 +2639,7 @@ const CreateScheduleForRoom = () => {
                                       disabled={group.isExpired}
                                       style={group.isExpired ? { color: '#d9d9d9' } : { color: '#1890ff' }}
                                     >
-                                      Chỉnh sửa
+                                      Tạo lịch ngày nghỉ
                                     </Button>
                                   </Tooltip>
                                 ]
@@ -2647,7 +2647,7 @@ const CreateScheduleForRoom = () => {
                                 <Tag icon={<CheckCircleOutlined />} color="success">
                                   Đầy đủ
                                 </Tag>,
-                                <Tooltip title={group.isExpired ? 'Lịch đã quá hạn, không thể chỉnh sửa' : 'Chỉnh sửa cấu hình lịch'}>
+                                <Tooltip title={group.isExpired ? 'Lịch đã quá hạn, không thể tạo lịch ngày nghỉ' : 'Tạo lịch làm việc trong ngày nghỉ'}>
                                   <Button
                                     type="link"
                                     onClick={() => {
@@ -2661,7 +2661,7 @@ const CreateScheduleForRoom = () => {
                                     disabled={group.isExpired}
                                     style={group.isExpired ? { color: '#d9d9d9' } : { color: '#1890ff' }}
                                   >
-                                    Chỉnh sửa
+                                    Tạo lịch ngày nghỉ
                                   </Button>
                                 </Tooltip>
                               ]

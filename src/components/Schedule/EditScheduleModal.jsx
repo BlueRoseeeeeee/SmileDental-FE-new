@@ -69,13 +69,12 @@ const EditScheduleModal = ({
       setReactivateSubRooms([]);
       setToggleSubRooms([]); // 🆕 Reset toggle subrooms
       
-      // Reset override holiday states
-      setShowOverrideSection(false);
+      // Reset override holiday states - AUTO SHOW OVERRIDE SECTION
+      setShowOverrideSection(true); // ✅ Auto-show override form
       setOverrideDate(null);
       setOverrideShifts([]);
       setOverrideNote('');
       setHolidayInfo(null);
-      setValidHolidayDates([]);
       setSelectedSubRoomsForOverride([]);
       setCheckingHoliday(false); // ✅ Reset checking state
       setAvailableShiftsInfo(null); // ✅ Reset shifts info
@@ -84,6 +83,43 @@ const EditScheduleModal = ({
       // Reset toggle schedule states
       setShowToggleSection(false);
       setFilterDates([]);
+
+      // 🔧 Load valid holiday dates when modal opens
+      const loadValidHolidayDates = async () => {
+        try {
+          const firstSchedule = scheduleListData?.schedules?.[0];
+          
+          if (!firstSchedule || !firstSchedule.holidaySnapshot) {
+            setValidHolidayDates([]);
+            return;
+          }
+          
+          // ✅ Sử dụng computedDaysOff (đã tính sẵn từ BE)
+          const { computedDaysOff = [] } = firstSchedule.holidaySnapshot;
+          const overriddenHolidays = firstSchedule.overriddenHolidays || [];
+          
+          // Lấy danh sách ngày đã được override (đã tạo lịch)
+          const overriddenDates = overriddenHolidays.map(oh => 
+            dayjs(oh.date).format('YYYY-MM-DD')
+          );
+          
+          // Lọc ngày nghỉ chưa được override
+          const validDates = computedDaysOff
+            .map(dayOff => dayOff.date) // Extract date string
+            .filter(dateStr => !overriddenDates.includes(dateStr)) // Loại bỏ ngày đã override
+            .sort(); // Sắp xếp theo thứ tự tăng dần
+          
+          console.log('📅 Valid holiday dates (chưa override):', validDates);
+          console.log('🚫 Overridden dates (đã tạo lịch):', overriddenDates);
+          setValidHolidayDates(validDates);
+          
+        } catch (error) {
+          console.error('Error loading valid holiday dates:', error);
+          setValidHolidayDates([]);
+        }
+      };
+
+      loadValidHolidayDates();
     }
   }, [visible, scheduleListData]);
 
@@ -583,7 +619,7 @@ const EditScheduleModal = ({
 
   return (
     <Modal
-      title="Chỉnh sửa lịch làm việc"
+      title="Tạo lịch làm việc trong ngày nghỉ"
       open={visible}
       onCancel={onCancel}
       onOk={showOverrideSection ? null : handleSubmit}
@@ -893,340 +929,9 @@ const EditScheduleModal = ({
           );
         })()}
 
-        {/* 🆕 FORM 2: Bật/Tắt lịch làm việc (theo ca, theo buồng, theo ngày) */}
-        <div>
-          <Button
-            type="default"
-            onClick={() => {
-              setShowToggleSection(!showToggleSection);
-              if (!showToggleSection) {
-                // Reset states khi mở form
-                setFilterDates([]);
-                setDeactivateShifts([]);
-                setToggleSubRooms([]);
-              }
-            }}
-            block
-            style={{
-              borderColor: '#1890ff',
-              color: '#1890ff'
-            }}
-          >
-            {showToggleSection ? 'Ẩn' : 'Bật/Tắt lịch làm việc'}
-          </Button>
-          
-          {showToggleSection && (
-            <div style={{ 
-              marginTop: 16, 
-              padding: 16, 
-              border: '2px dashed #1890ff', 
-              borderRadius: 8,
-              background: '#f0f5ff'
-            }}>
-              <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                <Alert
-                  type="info"
-                  showIcon
-                  message="Bật/Tắt lịch làm việc"
-                  description="Chọn khoảng ngày, chọn ca và buồng cần bật/tắt. Thay đổi sẽ được áp dụng khi nhấn nút 'Lưu thay đổi' ở cuối."
-                  style={{ fontSize: 12 }}
-                />
-
-        {/* 🆕 Bật/Tắt ca làm việc - Gộp TẤT CẢ CA (inactive + generated + missing) */}
-        {allShifts.length > 0 && (
-          <div>
-            <div style={{ marginBottom: 8 }}>
-              <strong>Bật/Tắt ca làm việc:</strong>
-            </div>
-            
-            {/* 🆕 Date filter - BẮT BUỘC chọn ngày */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ marginBottom: 4, fontSize: 12, color: '#ff4d4f', fontWeight: 500 }}>
-                * Bắt buộc chọn khoảng ngày cần áp dụng:
-                {scheduleStartDate && scheduleEndDate && (
-                  <span style={{ color: '#666', fontWeight: 400, marginLeft: 8 }}>
-                    (Từ {scheduleStartDate.format('DD/MM/YYYY')} đến {scheduleEndDate.format('DD/MM/YYYY')})
-                  </span>
-                )}
-              </div>
-              <DatePicker.RangePicker
-                value={filterDates.length > 0 ? [filterDates[0], filterDates[filterDates.length - 1]] : null}
-                onChange={(dates) => {
-                  if (dates && dates[0] && dates[1]) {
-                    // Generate all dates between start and end
-                    const allDates = [];
-                    let current = dayjs(dates[0]);
-                    const end = dayjs(dates[1]);
-                    
-                    while (current.isBefore(end, 'day') || current.isSame(end, 'day')) {
-                      allDates.push(current);
-                      current = current.add(1, 'day');
-                    }
-                    
-                    setFilterDates(allDates);
-                    // Reset deactivate shifts khi thay đổi date range
-                    setDeactivateShifts([]);
-                  } else {
-                    setFilterDates([]);
-                    setDeactivateShifts([]);
-                  }
-                }}
-                disabledDate={(current) => {
-                  if (!current) return false;
-                  
-                  // Disable nếu ngoài phạm vi startDate - endDate của schedule
-                  if (scheduleStartDate && current.isBefore(scheduleStartDate, 'day')) {
-                    return true;
-                  }
-                  if (scheduleEndDate && current.isAfter(scheduleEndDate, 'day')) {
-                    return true;
-                  }
-                  
-                  return false;
-                }}
-                format="DD/MM/YYYY"
-                placeholder={['Từ ngày', 'Đến ngày']}
-                style={{ width: '100%' }}
-              />
-              {filterDates.length > 0 ? (
-                <div style={{ marginTop: 4, fontSize: 11, color: '#52c41a' }}>
-                  ✓ Áp dụng cho {filterDates.length} ngày (từ {filterDates[0].format('DD/MM')} đến {filterDates[filterDates.length - 1].format('DD/MM')})
-                </div>
-              ) : (
-                <Alert
-                  type="warning"
-                  showIcon
-                  message="Vui lòng chọn khoảng ngày trước khi tắt/bật ca"
-                  style={{ marginTop: 4, fontSize: 11 }}
-                />
-              )}
-            </div>
-            
-            <Alert
-              type="info"
-              showIcon
-              message="Lưu ý"
-              description="Tắt ca sẽ ẩn tất cả slots của ca đó khỏi hệ thống đặt lịch (hoặc không cho phép tạo nếu chưa có slots). Bật lại ca sẽ hiển thị lại các slots."
-              style={{ marginBottom: 8, fontSize: 12 }}
-            />
-            <Space direction="vertical" style={{ width: '100%' }}>
-              {/* 🔥 Hiển thị TẤT CẢ CA (inactive + generated + missing) */}
-              {allShifts.map(shift => {
-                // Check if this shift has been toggled
-                const toggledShift = deactivateShifts.find(item => item.shiftKey === shift.key);
-                // Ưu tiên dùng toggled state, nếu không thì dùng shift.isActive
-                const currentIsActive = toggledShift ? toggledShift.isActive : shift.isActive;
-                
-                return (
-                  <div 
-                    key={shift.key} 
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between', 
-                      width: '100%', 
-                      padding: '12px', 
-                      border: '1px solid #d9d9d9', 
-                      borderRadius: '4px',
-                      backgroundColor: shift.isGenerated ? '#fff' : '#fffbf0',
-                      opacity: filterDates.length === 0 ? 0.5 : 1
-                    }}
-                  >
-                    <Space size="middle">
-                      <Tag color={shift.color} style={{ fontSize: '13px', padding: '2px 8px' }}>
-                        {shift.name}
-                      </Tag>
-                      <span style={{ color: '#595959', fontSize: '13px' }}>
-                        {shift.startTime} - {shift.endTime}
-                      </span>
-                      <Tag color={shift.isGenerated ? 'blue' : 'orange'}>
-                        {shift.isGenerated ? 'Đã tạo slots' : 'Chưa tạo slots'}
-                      </Tag>
-                      <Tag color={currentIsActive ? 'green' : 'red'}>
-                        {currentIsActive ? 'Đang bật' : 'Đang tắt'}
-                      </Tag>
-                    </Space>
-                    <Switch
-                      checked={currentIsActive}
-                      onChange={() => {
-                        if (filterDates.length === 0) {
-                          messageApi.warning('Vui lòng chọn khoảng ngày trước');
-                          return;
-                        }
-                        handleShiftToggle(shift.key, currentIsActive);
-                      }}
-                      disabled={filterDates.length === 0}
-                      checkedChildren="Bật"
-                      unCheckedChildren="Tắt"
-                    />
-                  </div>
-                );
-              })}
-            </Space>
-            {deactivateShifts.length > 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                message={`Sẽ cập nhật ${deactivateShifts.length} ca`}
-                description={deactivateShifts.map(item => {
-                  // Tìm shift từ allShifts
-                  const shift = allShifts.find(s => s.key === item.shiftKey);
-                  return `${shift?.name}: ${item.isActive ? 'Bật' : 'Tắt'}`;
-                }).join(', ')}
-                style={{ marginTop: 8, fontSize: 11 }}
-              />
-            )}
-          </div>
-        )}
-        
-        {/* 🆕 Bật/Tắt buồng - Gộp TẤT CẢ BUỒNG (active + inactive) */}
-        {allSubRooms.length > 0 && (
-          <div>
-            <div style={{ marginBottom: 8 }}>
-              <strong>Bật/Tắt buồng:</strong>
-            </div>
-            
-            {/* Alert yêu cầu chọn ngày */}
-            {filterDates.length === 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                message="Vui lòng chọn khoảng ngày ở phần 'Bật/Tắt ca làm việc' trước"
-                style={{ marginBottom: 8, fontSize: 11 }}
-              />
-            )}
-            
-            <Alert
-              type="info"
-              showIcon
-              message="Lưu ý"
-              description="Tắt buồng sẽ ẩn tất cả slots của buồng đó khỏi hệ thống đặt lịch. Bật lại buồng sẽ hiển thị lại các slots."
-              style={{ marginBottom: 8, fontSize: 12 }}
-            />
-            <Space direction="vertical" style={{ width: '100%' }}>
-              {/* 🔥 Hiển thị TẤT CẢ BUỒNG (active + inactive) */}
-              {allSubRooms.map(subRoom => {
-                // Check if this subroom has been toggled
-                const toggledSubRoom = toggleSubRooms.find(item => 
-                  item.scheduleId === subRoom.scheduleId && item.subRoomId === subRoom.subRoomId
-                );
-                // Ưu tiên dùng toggled state, nếu không thì dùng subRoom.isActiveSubRoom
-                const currentIsActive = toggledSubRoom ? toggledSubRoom.isActive : subRoom.isActiveSubRoom;
-                
-                return (
-                  <div 
-                    key={`${subRoom.scheduleId}-${subRoom.subRoomId}`} 
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between', 
-                      width: '100%', 
-                      padding: '12px', 
-                      border: '1px solid #d9d9d9', 
-                      borderRadius: '4px',
-                      opacity: filterDates.length === 0 ? 0.5 : 1
-                    }}
-                  >
-                    <Space size="middle">
-                      <Tag color="cyan" style={{ fontSize: '13px', padding: '2px 8px' }}>
-                        {subRoom.subRoomName}
-                      </Tag>
-                      <Tag color={currentIsActive ? 'green' : 'red'}>
-                        {currentIsActive ? 'Đang bật' : 'Đang tắt'}
-                      </Tag>
-                    </Space>
-                    <Switch
-                      checked={currentIsActive}
-                      onChange={() => {
-                        if (filterDates.length === 0) {
-                          messageApi.warning('Vui lòng chọn khoảng ngày ở phần "Bật/Tắt ca làm việc" trước');
-                          return;
-                        }
-                        handleSubRoomToggle(subRoom.scheduleId, subRoom.subRoomId, currentIsActive);
-                      }}
-                      disabled={filterDates.length === 0}
-                      checkedChildren="Bật"
-                      unCheckedChildren="Tắt"
-                    />
-                  </div>
-                );
-              })}
-            </Space>
-            {toggleSubRooms.length > 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                message={`Sẽ cập nhật ${toggleSubRooms.length} buồng`}
-                description={toggleSubRooms.map(item => {
-                  // Tìm subRoom từ allSubRooms
-                  const subRoom = allSubRooms.find(sr => 
-                    sr.scheduleId === item.scheduleId && sr.subRoomId === item.subRoomId
-                  );
-                  return `${subRoom?.subRoomName}: ${item.isActive ? 'Bật' : 'Tắt'}`;
-                }).join(', ')}
-                style={{ marginTop: 8, fontSize: 11 }}
-              />
-            )}
-          </div>
-        )}
-              </Space>
-            </div>
-          )}
-        </div>
-        
         {/* 🆕 FORM 1: Tạo lịch override trong ngày nghỉ */}
         <div>
-          <Button
-            type="dashed"
-            icon={<CalendarOutlined />}
-            onClick={async () => {
-              const willShow = !showOverrideSection;
-              setShowOverrideSection(willShow);
-              
-              // Load valid holiday dates when opening section
-              if (willShow) {
-                try {
-                  const firstSchedule = scheduleListData?.schedules?.[0];
-                  
-                  if (!firstSchedule || !firstSchedule.holidaySnapshot) {
-                    setValidHolidayDates([]);
-                    return;
-                  }
-                  
-                  // ✅ Sử dụng computedDaysOff (đã tính sẵn từ BE)
-                  const { computedDaysOff = [] } = firstSchedule.holidaySnapshot;
-                  const overriddenHolidays = firstSchedule.overriddenHolidays || [];
-                  
-                  // Lấy danh sách ngày đã được override (đã tạo lịch)
-                  const overriddenDates = overriddenHolidays.map(oh => 
-                    dayjs(oh.date).format('YYYY-MM-DD')
-                  );
-                  
-                  // Lọc ngày nghỉ chưa được override
-                  const validDates = computedDaysOff
-                    .map(dayOff => dayOff.date) // Extract date string
-                    .filter(dateStr => !overriddenDates.includes(dateStr)) // Loại bỏ ngày đã override
-                    .sort(); // Sắp xếp theo thứ tự tăng dần
-                  
-                  console.log('📅 Valid holiday dates (chưa override):', validDates);
-                  console.log('� Overridden dates (đã tạo lịch):', overriddenDates);
-                  setValidHolidayDates(validDates);
-                  
-                } catch (error) {
-                  console.error('Error loading valid holiday dates:', error);
-                  setValidHolidayDates([]);
-                }
-              }
-            }}
-            block
-            style={{
-              borderColor: '#faad14',
-              color: '#fa8c16'
-            }}
-          >
-            {showOverrideSection ? 'Ẩn' : 'Tạo lịch làm việc trong ngày nghỉ (Override)'}
-          </Button>
-          
+          {/* Auto-show form by default - no toggle button needed */}
           {showOverrideSection && (
             <div style={{ 
               marginTop: 16, 
