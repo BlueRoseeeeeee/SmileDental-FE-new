@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Card, Row, Col, Typography, Button, Space, Select, Tag, Spin, Empty, Divider, Badge,
-  Segmented, DatePicker, Tooltip, Modal, Checkbox, Radio,
+  Segmented, DatePicker, Tooltip, Modal, Checkbox, Radio, Input, Alert
 } from 'antd';
 import { 
   CalendarOutlined, UserOutlined,
@@ -67,6 +67,13 @@ const ScheduleCalendar = () => {
   const [loadingModalSlots, setLoadingModalSlots] = useState(false);
   const [selectedSlots, setSelectedSlots] = useState([]); // Array of selected slot IDs
   const [slotFilter, setSlotFilter] = useState('all'); // 'all', 'assigned', 'unassigned'
+  const [modalMode, setModalMode] = useState('assign'); // 🆕 'assign' | 'toggle'
+  
+  // 🆕 Toggle Slots States - persist across weeks
+  const [selectedSlotsForToggle, setSelectedSlotsForToggle] = useState({}); // {slotId: {slotData, date, shift}}
+  const [togglingSlots, setTogglingSlots] = useState(false);
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [disableReason, setDisableReason] = useState('');
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(0); // page=0 là tuần hiện tại
@@ -275,6 +282,46 @@ const ScheduleCalendar = () => {
     return days;
   }, [currentWeek, calendarData]);
 
+  const shiftActivitySummary = useMemo(() => {
+    const summary = {};
+
+    if (!calendarData?.periods?.[0]?.days) {
+      return summary;
+    }
+
+    calendarData.periods[0].days.forEach(day => {
+      const shifts = day.shifts || {};
+
+      Object.entries(shifts).forEach(([shiftName, shiftData]) => {
+        if (!summary[shiftName]) {
+          summary[shiftName] = { total: 0, inactive: 0 };
+        }
+
+        const slotsArray = Array.isArray(shiftData.slots) ? shiftData.slots : [];
+        let totalSlots = shiftData.totalSlots || 0;
+        let inactiveSlots = 0;
+
+        if (slotsArray.length > 0) {
+          totalSlots = slotsArray.length;
+          inactiveSlots = slotsArray.filter(slot => slot.isActive === false).length;
+        }
+
+        if (!inactiveSlots && shiftData.inactiveSlotsCount != null) {
+          inactiveSlots = shiftData.inactiveSlotsCount;
+        }
+
+        if (!inactiveSlots && totalSlots && shiftData.activeSlotsCount != null) {
+          inactiveSlots = Math.max(totalSlots - shiftData.activeSlotsCount, 0);
+        }
+
+        summary[shiftName].total += totalSlots;
+        summary[shiftName].inactive += inactiveSlots;
+      });
+    });
+
+    return summary;
+  }, [calendarData]);
+
   // Extract shift overview from calendar data
   // Room calendar has shiftOverview field, dentist/nurse calendar needs to extract from days
   const shiftOverview = useMemo(() => {
@@ -467,6 +514,9 @@ const ScheduleCalendar = () => {
     </Space>
   );
 
+  // 🔧 Helper: Get slot ID from various possible fields
+  const getSlotId = (slot) => slot._id || slot.id || slot.slotId;
+
   // Fetch slot details for a specific date and shift (for tooltip)
   const fetchSlotDetails = async (date, shiftName, shiftData) => {
     // Build cache key with entity ID to avoid cross-entity cache collision
@@ -637,6 +687,9 @@ const ScheduleCalendar = () => {
     // Check if viewing dentist/nurse calendar (only show time, no staff info)
     const isStaffView = viewMode === 'dentist' || viewMode === 'nurse';
     
+    // 🆕 Check if can toggle (admin/manager in room view)
+    const canToggle = (user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room';
+    
     // If we have cached slots, display them
     if (cachedSlots && Array.isArray(cachedSlots) && cachedSlots.length > 0) {
       const grouped = {};
@@ -656,6 +709,7 @@ const ScheduleCalendar = () => {
               {subRoomSlots.map((slot, idx) => {
                 const startTime = slot.startTimeVN || dayjs(slot.startTime).format('HH:mm');
                 const endTime = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
+                const isSelected = !!selectedSlotsForToggle[getSlotId(slot)];
                 
                 if (isStaffView) {
                   // Dentist/Nurse view: only show time
@@ -666,10 +720,21 @@ const ScheduleCalendar = () => {
                   );
                 }
                 
-                // Room view: show time + staff info
+                // Room view: show time + staff info (NO checkbox in tooltip - not interactive)
                 return (
-                  <div key={idx} style={{ lineHeight: '1.8', marginBottom: 8 }}>
-                    <div style={{ fontWeight: '500', marginBottom: 4, fontSize: '13px' }}>{startTime} - {endTime}</div>
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      lineHeight: '1.8', 
+                      marginBottom: 8,
+                      backgroundColor: isSelected ? '#e6f7ff' : 'transparent',
+                      padding: '4px',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    <div style={{ fontWeight: '500', marginBottom: 4, fontSize: '13px' }}>
+                      {isSelected && '✓ '}{startTime} - {endTime}
+                    </div>
                     {renderEmployeeInfo(slot.dentist, 'NS', '#1890ff')}
                     {renderEmployeeInfo(slot.nurse, 'YT', '#52c41a')}
                   </div>
@@ -703,6 +768,7 @@ const ScheduleCalendar = () => {
               {subRoomSlots.map((slot, idx) => {
                 const startTime = slot.startTimeVN || dayjs(slot.startTime).format('HH:mm');
                 const endTime = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
+                const isSelected = !!selectedSlotsForToggle[getSlotId(slot)];
                 
                 if (isStaffView) {
                   // Dentist/Nurse view: only show time
@@ -713,10 +779,21 @@ const ScheduleCalendar = () => {
                   );
                 }
                 
-                // Room view: show time + staff info
+                // Room view: show time + staff info (NO checkbox in tooltip - not interactive)
                 return (
-                  <div key={idx} style={{ lineHeight: '1.8', marginBottom: 8 }}>
-                    <div style={{ fontWeight: '500', marginBottom: 4, fontSize: '13px' }}>{startTime} - {endTime}</div>
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      lineHeight: '1.8', 
+                      marginBottom: 8,
+                      backgroundColor: isSelected ? '#e6f7ff' : 'transparent',
+                      padding: '4px',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    <div style={{ fontWeight: '500', marginBottom: 4, fontSize: '13px' }}>
+                      {isSelected && '✓ '}{startTime} - {endTime}
+                    </div>
                     {renderEmployeeInfo(slot.dentist, 'NS', '#1890ff')}
                     {renderEmployeeInfo(slot.nurse, 'YT', '#52c41a')}
                   </div>
@@ -769,7 +846,7 @@ const ScheduleCalendar = () => {
   // Handle select all slots
   const handleSelectAllSlots = (checked) => {
     if (checked) {
-      const filteredSlotIds = getFilteredSlots().map(slot => slot._id);
+      const filteredSlotIds = getFilteredSlots().map(slot => getSlotId(slot));
       setSelectedSlots(filteredSlotIds);
     } else {
       setSelectedSlots([]);
@@ -793,6 +870,185 @@ const ScheduleCalendar = () => {
     const selectedCount = selectedSlots.length;
 
     return { totalSlots, assignedSlots, selectedCount };
+  };
+
+  // 🆕 Toggle Slots Handlers
+  const handleToggleSlotSelection = React.useCallback((slot, date, shift) => {
+    console.log('[ToggleSelect] Full slot object:', slot);
+    const slotId = slot._id || slot.id || slot.slotId;
+    
+    if (!slotId) {
+      console.error('[ToggleSelect] ERROR: Slot has no _id, id, or slotId!', slot);
+      toast.error('Không thể chọn slot này (thiếu ID)');
+      return;
+    }
+    
+    console.log('[ToggleSelect] slotId:', slotId, 'date:', date?.format ? date.format('YYYY-MM-DD') : date, 'shift:', typeof shift === 'string' ? shift : shift?.name);
+    
+    setSelectedSlotsForToggle(prev => {
+      const newSelected = { ...prev };
+      if (newSelected[slotId]) {
+        // Already selected, remove it
+        console.log('[ToggleSelect] Deselecting slot:', slotId);
+        delete newSelected[slotId];
+      } else {
+        // Not selected, add it
+        console.log('[ToggleSelect] Selecting slot:', slotId);
+        // Ensure date is string format
+        const dateStr = typeof date === 'string' ? date : date?.format ? date.format('YYYY-MM-DD') : date;
+        const shiftName = typeof shift === 'string' ? shift : shift?.name || '';
+        
+        newSelected[slotId] = {
+          slotData: slot,
+          date: dateStr,
+          shift: shiftName,
+          roomId: slot.roomId,
+          subRoomId: slot.subRoomId,
+          isActive: slot.isActive
+        };
+      }
+      console.log('[ToggleSelect] New selection state:', Object.keys(newSelected));
+      return newSelected;
+    });
+  }, []);  // Empty deps - chỉ tạo 1 lần
+
+  const handleSelectAllSlotsInWeek = (shiftName) => {
+    // Select all slots of the given shift in current week
+    if (!calendarData?.periods?.[0]?.days) return;
+
+    const newSelected = { ...selectedSlotsForToggle };
+    const slotsInShift = [];
+    
+    calendarData.periods[0].days.forEach(dayData => {
+      const dayDate = dayjs(dayData.date);
+      // 🔧 FIX: shifts is an object, not array - access by key
+      const shiftData = dayData.shifts?.[shiftName];
+      
+      if (shiftData?.slots && Array.isArray(shiftData.slots)) {
+        shiftData.slots.forEach(slot => {
+          slotsInShift.push({ slot, dayDate });
+        });
+      }
+    });
+
+    if (slotsInShift.length === 0) {
+      toast.info(`Không có slot nào thuộc ${shiftName} trong tuần này`);
+      return;
+    }
+
+    const allSelected = slotsInShift.every(({ slot }) => newSelected[getSlotId(slot)]);
+
+    if (allSelected) {
+      slotsInShift.forEach(({ slot }) => {
+        delete newSelected[getSlotId(slot)];
+      });
+      setSelectedSlotsForToggle(newSelected);
+      toast.info(`Đã bỏ chọn toàn bộ slot ${shiftName} trong tuần`);
+    } else {
+      slotsInShift.forEach(({ slot, dayDate }) => {
+        newSelected[getSlotId(slot)] = {
+          slotData: slot,
+          date: dayDate.format('YYYY-MM-DD'),
+          shift: shiftName,
+          roomId: slot.roomId,
+          subRoomId: slot.subRoomId,
+          isActive: slot.isActive
+        };
+      });
+      setSelectedSlotsForToggle(newSelected);
+      toast.success(`Đã chọn tất cả slots của ${shiftName} trong tuần này`);
+    }
+  };
+
+  const handleClearAllSelections = () => {
+    setSelectedSlotsForToggle({});
+    toast.info('Đã xóa tất cả lựa chọn');
+  };
+
+  const handleToggleSlotsDirectly = async (mode) => {
+    const selectedCount = Object.keys(selectedSlotsForToggle).length;
+    if (selectedCount === 0) {
+      toast.warning('Vui lòng chọn ít nhất 1 slot');
+      return;
+    }
+
+    // Nếu disable thì mở modal nhập lý do (bắt buộc)
+    if (mode === 'disable') {
+      setShowDisableModal(true);
+      return;
+    }
+
+    // Enable - gọi trực tiếp
+    try {
+      setTogglingSlots(true);
+      
+      const slotIds = Object.keys(selectedSlotsForToggle);
+      console.log('[Toggle Enable] selected slot IDs:', slotIds);
+      console.log('[Toggle Enable] selectedSlotsForToggle:', selectedSlotsForToggle);
+      
+      // Validate slot IDs
+      const invalidIds = slotIds.filter(id => !id || typeof id !== 'string' || id.length !== 24);
+      if (invalidIds.length > 0) {
+        console.error('[Toggle Enable] Invalid slot IDs:', invalidIds);
+        toast.error(`Có ${invalidIds.length} slot ID không hợp lệ`);
+        return;
+      }
+      
+      const result = await slotService.toggleSlotsIsActive(slotIds, true, '');
+      
+      if (result.success) {
+        toast.success(`Bật thành công ${result.modifiedCount} slots`);
+        setSelectedSlotsForToggle({});
+        await loadScheduleData();
+      } else {
+        toast.error(result.message || 'Có lỗi xảy ra');
+      }
+    } catch (error) {
+      console.error('Error enabling slots:', error);
+      toast.error(error.response?.data?.message || error.message || 'Không thể bật slots');
+    } finally {
+      setTogglingSlots(false);
+    }
+  };
+
+  const handleConfirmDisable = async () => {
+    if (!disableReason.trim()) {
+      toast.warning('Vui lòng nhập lý do tắt lịch');
+      return;
+    }
+
+    try {
+      setTogglingSlots(true);
+      
+      const slotIds = Object.keys(selectedSlotsForToggle);
+      console.log('[Toggle Disable] selected slot IDs:', slotIds);
+      console.log('[Toggle Disable] selectedSlotsForToggle:', selectedSlotsForToggle);
+      
+      // Validate slot IDs
+      const invalidIds = slotIds.filter(id => !id || typeof id !== 'string' || id.length !== 24);
+      if (invalidIds.length > 0) {
+        console.error('[Toggle Disable] Invalid slot IDs:', invalidIds);
+        toast.error(`Có ${invalidIds.length} slot ID không hợp lệ`);
+        return;
+      }
+      
+      const result = await slotService.toggleSlotsIsActive(slotIds, false, disableReason);
+      
+      if (result.success) {
+        toast.success(`Tắt thành công ${result.modifiedCount} slots`);
+        setSelectedSlotsForToggle({});
+        setShowDisableModal(false);
+        setDisableReason('');
+        await loadScheduleData();
+      } else {
+        toast.error(result.message || 'Có lỗi xảy ra');
+      }
+    } catch (error) {
+      console.error('Error disabling slots:', error);
+      toast.error(error.response?.data?.message || error.message || 'Không thể tắt slots');
+    } finally {
+      setTogglingSlots(false);
+    }
   };
 
   // Render dentist selector
@@ -898,11 +1154,103 @@ const ScheduleCalendar = () => {
     const assignedSlotsCount = cachedSlots.filter(slot => slot.dentist || slot.nurse).length;
     const totalSlots = shiftData.totalSlots || 0;
 
+    // 🆕 Count selected slots in this cell
+    const selectedInThisCell = cachedSlots.filter(slot => 
+      selectedSlotsForToggle[getSlotId(slot)]
+    ).length;
+
+    // 🆕 Check if all slots in this cell are selected
+    const allSlotsInCellSelected = cachedSlots.length > 0 && selectedInThisCell === cachedSlots.length;
+
+    // 🆕 Handler to select/deselect all slots in this cell
+    const handleToggleAllSlotsInCell = async (e) => {
+      e.stopPropagation(); // Prevent opening modal
+      
+      // Fetch slots if not cached yet
+      let slotsToToggle = cachedSlots;
+      if (slotsToToggle.length === 0) {
+        slotsToToggle = await fetchSlotDetails(date, shift.name, shiftData);
+      }
+      
+      console.log('[ToggleCell] Slots to toggle:', slotsToToggle);
+      
+      // Validate slots have IDs
+      const validSlots = slotsToToggle.filter(slot => slot._id || slot.id || slot.slotId);
+      if (validSlots.length === 0) {
+        console.error('[ToggleCell] No valid slots with IDs found!');
+        toast.error('Không thể chọn slots (thiếu ID)');
+        return;
+      }
+      
+      const newSelected = { ...selectedSlotsForToggle };
+      
+      if (allSlotsInCellSelected) {
+        // Deselect all
+        validSlots.forEach(slot => {
+          const slotId = slot._id || slot.id || slot.slotId;
+          delete newSelected[slotId];
+        });
+        console.log('[ToggleCell] Deselected', validSlots.length, 'slots');
+      } else {
+        // Select all
+        validSlots.forEach(slot => {
+          const slotId = slot._id || slot.id || slot.slotId;
+          newSelected[slotId] = {
+            slotData: slot,
+            date: date.format('YYYY-MM-DD'),
+            shift: shift.name,
+            roomId: slot.roomId,
+            subRoomId: slot.subRoomId,
+            isActive: slot.isActive
+          };
+        });
+        console.log('[ToggleCell] Selected', validSlots.length, 'slots');
+      }
+      
+      setSelectedSlotsForToggle(newSelected);
+    };
+
     return (
       <div 
         className="calendar-cell"
+        onClick={async () => {
+          // Click to open slot details modal
+          if (totalSlots > 0) {
+            setSelectedCellDate(date);
+            setSelectedCellShift(shift);
+            setShowSlotModal(true);
+            setLoadingModalSlots(true);
+            
+            // 🆕 Open in toggle mode if admin/manager in room view
+            if ((user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room') {
+              setModalMode('toggle');
+            } else {
+              setModalMode('assign');
+            }
+            
+            // Fetch and set modal slots
+            const slots = await fetchSlotDetails(date, shift.name, shiftData);
+            setModalSlots(slots);
+            setLoadingModalSlots(false);
+          }
+        }}
+        style={{ 
+          cursor: totalSlots > 0 ? 'pointer' : 'default',
+          position: 'relative' 
+        }}
       >
         <div className="cell-content">
+          {/* 🆕 Quick select checkbox for admin/manager in room view */}
+          {(user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room' && totalSlots > 0 && (
+            <div style={{ position: 'absolute', top: 4, left: 4, zIndex: 10 }}>
+              <Checkbox
+                checked={allSlotsInCellSelected}
+                indeterminate={selectedInThisCell > 0 && !allSlotsInCellSelected}
+                onChange={handleToggleAllSlotsInCell}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
           <div className="cell-stats">
             <Tooltip 
               title={formatSlotTooltip(date, shift.name, shiftData)}
@@ -932,6 +1280,12 @@ const ScheduleCalendar = () => {
                   <Text type="secondary" style={{ fontSize: '11px' }}>
                     Click để xem
                   </Text>
+                )}
+                {/* 🆕 Show selected count */}
+                {selectedInThisCell > 0 && (
+                  <Tag color="purple" style={{ fontSize: '10px', marginTop: 2, padding: '0 4px' }}>
+                    Đã chọn: {selectedInThisCell}
+                  </Tag>
                 )}
               </div>
             </Tooltip>
@@ -995,6 +1349,29 @@ const ScheduleCalendar = () => {
                   Chưa phân công
                 </Tag>
               )}
+            </div>
+          )}
+
+          {/* 🆕 Show slot activity status */}
+          {cachedSlots.length > 0 && (
+            <div style={{ marginTop: 4 }}>
+              {(() => {
+                const inactiveCount = cachedSlots.filter(slot => slot.isActive === false).length;
+                
+                if (inactiveCount === 0) {
+                  return (
+                    <Tag color="green" size="small" style={{ fontSize: '10px' }}>
+                      Hoạt động
+                    </Tag>
+                  );
+                } else {
+                  return (
+                    <Tag color="orange" size="small" style={{ fontSize: '10px' }}>
+                      {inactiveCount} slot tắt
+                    </Tag>
+                  );
+                }
+              })()}
             </div>
           )}
 
@@ -1212,6 +1589,82 @@ const ScheduleCalendar = () => {
               </Space>
             </div>
 
+            {/* 🆕 Toggle Slots Controls - Only for admin/manager in room view */}
+            {(user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room' && selectedRoom && (
+              <Card size="small" style={{ marginTop: 16, background: '#f0f5ff' }}>
+                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                  <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+                    <Text strong style={{ color: '#1890ff' }}>
+                      Bật/Tắt Slots: {Object.keys(selectedSlotsForToggle).length} slot đã chọn
+                    </Text>
+                    {Object.keys(selectedSlotsForToggle).length > 0 && (
+                      <Button size="small" onClick={handleClearAllSelections}>
+                        Xóa tất cả
+                      </Button>
+                    )}
+                  </Space>
+                  
+                  <Space wrap>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Chọn nhanh theo ca:
+                    </Text>
+                    {shiftOverview && Object.values(shiftOverview).map(shift => (
+                          shift.isActive && (
+                        <Button
+                          key={shift.name}
+                          size="small"
+                          onClick={() => handleSelectAllSlotsInWeek(shift.name)}
+                        >
+                          {shift.name}
+                          {(() => {
+                            const summary = shiftActivitySummary[shift.name];
+                            if (!summary || summary.total === 0) return null;
+                            
+                            if (summary.inactive === 0) {
+                              return (
+                                <Tag color="green" style={{ marginLeft: 8 }}>
+                                  Hoạt động
+                                </Tag>
+                              );
+                            } else {
+                              return (
+                                <Tag color="orange" style={{ marginLeft: 8 }}>
+                                  {summary.inactive} slot tắt
+                                </Tag>
+                              );
+                            }
+                          })()}
+                        </Button>
+                      )
+                    ))}
+                  </Space>
+
+                  <Space wrap>
+                    <Button
+                      type="primary"
+                      disabled={Object.keys(selectedSlotsForToggle).length === 0}
+                      onClick={() => handleToggleSlotsDirectly('enable')}
+                      style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                      loading={togglingSlots}
+                    >
+                      Bật ({Object.keys(selectedSlotsForToggle).length} slot{Object.keys(selectedSlotsForToggle).length > 1 ? 's' : ''})
+                    </Button>
+                    <Button
+                      danger
+                      disabled={Object.keys(selectedSlotsForToggle).length === 0}
+                      onClick={() => handleToggleSlotsDirectly('disable')}
+                      loading={togglingSlots}
+                    >
+                      Tắt ({Object.keys(selectedSlotsForToggle).length} slot{Object.keys(selectedSlotsForToggle).length > 1 ? 's' : ''})
+                    </Button>
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                      💡 Click vào ô lịch để chọn slots cụ thể
+                    </Text>
+                  </Space>
+                </Space>
+              </Card>
+            )}
+
 
             {/* Calendar Grid */}
             {loading ? (
@@ -1245,9 +1698,33 @@ const ScheduleCalendar = () => {
                           {shift.startTime} - {shift.endTime}
                         </Text>
                         <br />
-                        <Text type={shift.isActive ? 'success' : 'secondary'} style={{ fontSize: 10 }}>
-                          {shift.isActive ? 'Hoạt động' : 'Tạm dừng'}
-                        </Text>
+                        {(() => {
+                          const summary = shiftActivitySummary[shift.name];
+                          const total = summary?.total || 0;
+                          const inactive = summary?.inactive || 0;
+                          
+                          if (!total) {
+                            return (
+                              <Text type="secondary" style={{ fontSize: 10 }}>
+                                Chưa có slot
+                              </Text>
+                            );
+                          }
+
+                          if (inactive === 0) {
+                            return (
+                              <Tag color="green" size="small" style={{ marginTop: 4 }}>
+                                Hoạt động
+                              </Tag>
+                            );
+                          }
+
+                          return (
+                            <Tag color="orange" size="small" style={{ marginTop: 4 }}>
+                              {inactive} slot tắt
+                            </Tag>
+                          );
+                        })()}
                       </div>
                     </div>
                     {weekDays.map((day, index) => (
@@ -1297,22 +1774,31 @@ const ScheduleCalendar = () => {
         title={
           <Space direction="vertical" size={0}>
             <Text strong>
-              Chi tiết slot - {selectedCellShift?.name} ({selectedCellDate?.format('DD/MM/YYYY')})
+              {modalMode === 'toggle' ? 'Chọn slot để bật/tắt' : 'Chi tiết slot'} - {selectedCellShift?.name} ({selectedCellDate?.format('DD/MM/YYYY')})
             </Text>
             {(() => {
-              const stats = getModalStats();
-              if (selectedSlots.length > 0) {
+              if (modalMode === 'toggle') {
+                const selectedCount = Object.keys(selectedSlotsForToggle).length;
                 return (
-                  <Text type="success" style={{ fontSize: '12px' }}>
-                    Đã chọn: {stats.selectedCount} / {stats.totalSlots} slot
+                  <Text type={selectedCount > 0 ? 'success' : 'secondary'} style={{ fontSize: '12px' }}>
+                    {selectedCount > 0 ? `Đã chọn: ${selectedCount} slot` : 'Chọn slot để bật/tắt'}
                   </Text>
                 );
               } else {
-                return (
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Đã phân công: {stats.assignedSlots} / {stats.totalSlots} slot
-                  </Text>
-                );
+                const stats = getModalStats();
+                if (selectedSlots.length > 0) {
+                  return (
+                    <Text type="success" style={{ fontSize: '12px' }}>
+                      Đã chọn: {stats.selectedCount} / {stats.totalSlots} slot
+                    </Text>
+                  );
+                } else {
+                  return (
+                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                      Đã phân công: {stats.assignedSlots} / {stats.totalSlots} slot
+                    </Text>
+                  );
+                }
               }
             })()}
           </Space>
@@ -1324,28 +1810,37 @@ const ScheduleCalendar = () => {
           setSlotFilter('all');
         }}
         width={800}
-        footer={[
-          <Button key="cancel" onClick={() => {
-            setShowSlotModal(false);
-            setSelectedSlots([]);
-            setSlotFilter('all');
-          }}>
-            Đóng
-          </Button>,
-          <Button 
-            key="assign" 
-            type="primary" 
-            disabled={selectedSlots.length === 0}
-            onClick={() => {
-              // TODO: Implement assignment logic
-              toast.success(`Đã chọn ${selectedSlots.length} slot để phân công`);
+        footer={
+          modalMode === 'toggle' ? [
+            <Button key="cancel" onClick={() => {
+              setShowSlotModal(false);
+              setSlotFilter('all');
+            }}>
+              Đóng
+            </Button>
+          ] : [
+            <Button key="cancel" onClick={() => {
               setShowSlotModal(false);
               setSelectedSlots([]);
-            }}
-          >
-            Phân công ({selectedSlots.length} slot)
-          </Button>
-        ]}
+              setSlotFilter('all');
+            }}>
+              Đóng
+            </Button>,
+            <Button 
+              key="assign" 
+              type="primary" 
+              disabled={selectedSlots.length === 0}
+              onClick={() => {
+                // TODO: Implement assignment logic
+                toast.success(`Đã chọn ${selectedSlots.length} slot để phân công`);
+                setShowSlotModal(false);
+                setSelectedSlots([]);
+              }}
+            >
+              Phân công ({selectedSlots.length} slot)
+            </Button>
+          ]
+        }
       >
         {loadingModalSlots ? (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -1354,42 +1849,50 @@ const ScheduleCalendar = () => {
           </div>
         ) : (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            {/* Filter and Select All Controls */}
-            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-              <Radio.Group 
-                value={slotFilter} 
-                onChange={(e) => setSlotFilter(e.target.value)}
-                buttonStyle="solid"
-              >
-                <Radio.Button value="all">
-                  Tất cả ({modalSlots.length})
-                </Radio.Button>
-                <Radio.Button value="assigned">
-                  Đã phân công ({modalSlots.filter(s => s.dentist || s.nurse).length})
-                </Radio.Button>
-                <Radio.Button value="unassigned">
-                  Chưa phân công ({modalSlots.filter(s => !s.dentist && !s.nurse).length})
-                </Radio.Button>
-              </Radio.Group>
-              
-              <Checkbox
-                checked={getFilteredSlots().length > 0 && selectedSlots.length === getFilteredSlots().length}
-                indeterminate={selectedSlots.length > 0 && selectedSlots.length < getFilteredSlots().length}
-                onChange={(e) => handleSelectAllSlots(e.target.checked)}
-              >
-                Chọn tất cả
-              </Checkbox>
-            </Space>
+            {/* Filter and Select All Controls - Only show in assign mode */}
+            {modalMode === 'assign' && (
+              <>
+                <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                  <Radio.Group 
+                    value={slotFilter} 
+                    onChange={(e) => setSlotFilter(e.target.value)}
+                    buttonStyle="solid"
+                  >
+                    <Radio.Button value="all">
+                      Tất cả ({modalSlots.length})
+                    </Radio.Button>
+                    <Radio.Button value="assigned">
+                      Đã phân công ({modalSlots.filter(s => s.dentist || s.nurse).length})
+                    </Radio.Button>
+                    <Radio.Button value="unassigned">
+                      Chưa phân công ({modalSlots.filter(s => !s.dentist && !s.nurse).length})
+                    </Radio.Button>
+                  </Radio.Group>
+                  
+                  <Checkbox
+                    checked={getFilteredSlots().length > 0 && selectedSlots.length === getFilteredSlots().length}
+                    indeterminate={selectedSlots.length > 0 && selectedSlots.length < getFilteredSlots().length}
+                    onChange={(e) => handleSelectAllSlots(e.target.checked)}
+                  >
+                    Chọn tất cả
+                  </Checkbox>
+                </Space>
 
-            <Divider style={{ margin: '8px 0' }} />
+                <Divider style={{ margin: '8px 0' }} />
+              </>
+            )}
 
             {/* Slot List */}
             <div style={{ maxHeight: '500px', overflow: 'auto' }}>
-              {getFilteredSlots().length === 0 ? (
-                <Empty description="Không có slot" />
-              ) : (
-                <Space direction="vertical" style={{ width: '100%' }} size="small">
-                  {getFilteredSlots().map((slot) => {
+              {(() => {
+                const slotsToDisplay = modalMode === 'toggle' ? modalSlots : getFilteredSlots();
+                if (slotsToDisplay.length === 0) {
+                  return <Empty description="Không có slot" />;
+                }
+                
+                return (
+                  <Space direction="vertical" style={{ width: '100%' }} size="small">
+                    {slotsToDisplay.map((slot) => {
                     const startTime = slot.startTimeVN || dayjs(slot.startTime).format('HH:mm');
                     const endTime = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
                     
@@ -1417,25 +1920,33 @@ const ScheduleCalendar = () => {
                       }
                     }
                     
-                    const isSelected = selectedSlots.includes(slot._id);
+                    // 🆕 Check selection based on mode
+                    const isSelected = modalMode === 'toggle' 
+                      ? !!selectedSlotsForToggle[getSlotId(slot)]
+                      : selectedSlots.includes(getSlotId(slot));
 
                     return (
                       <Card
-                        key={slot._id}
+                        key={getSlotId(slot)}
                         size="small"
                         style={{ 
                           cursor: 'pointer',
                           backgroundColor: isSelected ? '#e6f7ff' : 'white',
                           borderColor: isSelected ? '#1890ff' : '#d9d9d9'
                         }}
-                        onClick={() => handleSlotToggle(slot._id)}
                       >
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                           <Space>
                             <Checkbox 
                               checked={isSelected}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={() => handleSlotToggle(slot._id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (modalMode === 'toggle') {
+                                  handleToggleSlotSelection(slot, selectedCellDate, selectedCellShift);
+                                } else {
+                                  handleSlotToggle(getSlotId(slot));
+                                }
+                              }}
                             />
                             <div>
                               <Text strong style={{ fontSize: '14px' }}>
@@ -1444,6 +1955,16 @@ const ScheduleCalendar = () => {
                               {slot.subRoom?.name && (
                                 <Tag color="blue" size="small" style={{ marginLeft: 8 }}>
                                   {slot.subRoom.name}
+                                </Tag>
+                              )}
+                              {/* 🆕 Show isActive status in toggle mode */}
+                              {modalMode === 'toggle' && (
+                                <Tag 
+                                  color={slot.isActive ? 'green' : 'red'} 
+                                  size="small" 
+                                  style={{ marginLeft: 8 }}
+                                >
+                                  {slot.isActive ? 'Đang bật' : 'Đã tắt'}
                                 </Tag>
                               )}
                             </div>
@@ -1474,10 +1995,82 @@ const ScheduleCalendar = () => {
                     );
                   })}
                 </Space>
-              )}
+                );
+              })()}
             </div>
           </Space>
         )}
+      </Modal>
+
+      {/* 🆕 Disable Slots Modal - Only for disabling (reason required) */}
+      <Modal
+        title={
+          <Space>
+            <Tag color="red">TẮT LỊCH</Tag>
+            <Text strong>Nhập lý do tắt slots</Text>
+          </Space>
+        }
+        open={showDisableModal}
+        onCancel={() => {
+          setShowDisableModal(false);
+          setDisableReason('');
+        }}
+        onOk={handleConfirmDisable}
+        confirmLoading={togglingSlots}
+        okText="Tắt"
+        okButtonProps={{ danger: true }}
+        cancelText="Hủy"
+        width={600}
+      >
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Alert
+            type="warning"
+            showIcon
+            message={`Bạn đang tắt ${Object.keys(selectedSlotsForToggle).length} slots`}
+            description="Các slots này sẽ bị ẩn và không thể đặt lịch"
+          />
+
+          <div>
+            <Text strong style={{ color: 'red' }}>* Lý do tắt lịch (bắt buộc):</Text>
+            <Input.TextArea
+              value={disableReason}
+              onChange={(e) => setDisableReason(e.target.value)}
+              placeholder="Ví dụ: Bác sĩ nghỉ phép, Bảo trì phòng khám..."
+              rows={3}
+              maxLength={500}
+              showCount
+              style={{ marginTop: 8 }}
+            />
+          </div>
+
+          {/* Show selected slots summary */}
+          <div>
+            <Text strong>Danh sách slots sẽ tắt:</Text>
+            <div style={{ 
+              maxHeight: '200px', 
+              overflow: 'auto', 
+              marginTop: 8,
+              padding: '8px',
+              background: '#f5f5f5',
+              borderRadius: '4px'
+            }}>
+              {Object.values(selectedSlotsForToggle).map((item, index) => {
+                const slot = item.slotData;
+                const startTime = slot.startTimeVN || dayjs(slot.startTime).format('HH:mm');
+                const endTime = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
+                
+                return (
+                  <div key={getSlotId(slot)} style={{ marginBottom: 4 }}>
+                    <Text style={{ fontSize: '12px' }}>
+                      {index + 1}. {item.date} - {item.shift} ({startTime}-{endTime})
+                      {slot.subRoom?.name && ` - ${slot.subRoom.name}`}
+                    </Text>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Space>
       </Modal>
     </div>
   );

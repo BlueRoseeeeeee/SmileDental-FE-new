@@ -185,6 +185,17 @@ const slotService = {
       params: { serviceDuration }
     });
     return response.data;
+  },
+
+  // 🆕 Toggle isActive status of multiple slots
+  toggleSlotsIsActive: async (slotIds, isActive, reason = null) => {
+    console.log('[API] toggleSlotsIsActive payload:', { slotIds, isActive, reason });
+    const response = await scheduleApi.post('/slot/toggle-active', {
+      slotIds,
+      isActive,
+      reason
+    });
+    return response.data;
   }
 };
 
