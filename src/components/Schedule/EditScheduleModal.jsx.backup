@@ -91,117 +91,89 @@ const EditScheduleModal = ({
 
   // 🆕 Update valid holiday dates when selected subrooms change
   useEffect(() => {
-    const updateValidHolidayDates = async () => {
-      try {
-        const allSchedules = scheduleListData?.schedules || [];
-        
-        if (allSchedules.length === 0) {
-          setValidHolidayDates([]);
-          return;
-        }
-        
-        const firstSchedule = allSchedules[0];
-        
-        if (!firstSchedule || !firstSchedule.holidaySnapshot) {
-          setValidHolidayDates([]);
-          return;
-        }
-        
-        const allSubRooms = scheduleListData?.subRooms || [];
-        const hasSubRooms = allSubRooms.length > 0;
-        
-        // 🔥 Nếu có subroom nhưng chưa chọn → Không hiển thị ngày nào
-        if (hasSubRooms && selectedSubRoomsForOverride.length === 0) {
-          console.log('⚠️ Room có subrooms nhưng chưa chọn → Không hiển thị ngày nghỉ');
-          setValidHolidayDates([]);
-          return;
-        }
-        
-        // 🔥 Lọc schedules dựa vào subrooms đã chọn
-        let schedulesToCheck = allSchedules;
-        
-        if (hasSubRooms) {
-          // Chỉ check schedules của subrooms đã chọn
-          schedulesToCheck = allSchedules.filter(schedule => {
-            const scheduleId = schedule._id || schedule.scheduleId;
-            return selectedSubRoomsForOverride.includes(scheduleId);
+          
+          if (allSchedules.length === 0) {
+            setValidHolidayDates([]);
+            return;
+          }
+          
+          const firstSchedule = allSchedules[0];
+          
+          if (!firstSchedule || !firstSchedule.holidaySnapshot) {
+            setValidHolidayDates([]);
+            return;
+          }
+          
+          // ✅ Lấy computedDaysOff từ schedule đầu tiên (giống nhau cho tất cả schedules cùng room/month/year)
+          const { computedDaysOff = [] } = firstSchedule.holidaySnapshot;
+          
+          // 🆕 LOGIC MỚI: Chỉ hiển thị ngày nếu CÒN ÍT NHẤT 1 CA chưa override ở BẤT KỲ schedule nào
+          // Merge computedDaysOff từ TẤT CẢ schedules để kiểm tra trạng thái override của từng ca
+          const dateShiftsStatus = new Map(); // Map<dateStr, Set<availableScheduleIds>>
+          
+          allSchedules.forEach(schedule => {
+            const schedDaysOff = schedule.holidaySnapshot?.computedDaysOff || [];
+            
+            schedDaysOff.forEach(dayOff => {
+              const dateStr = dayOff.date;
+              
+              if (!dateShiftsStatus.has(dateStr)) {
+                dateShiftsStatus.set(dateStr, {
+                  morning: new Set(),
+                  afternoon: new Set(),
+                  evening: new Set()
+                });
+              }
+              
+              const shifts = dateShiftsStatus.get(dateStr);
+              
+              // Check từng ca: Nếu chưa override trong schedule này → Thêm scheduleId vào Set
+              if (dayOff.shifts?.morning && !dayOff.shifts.morning.isOverridden) {
+                shifts.morning.add(schedule._id || schedule.scheduleId);
+              }
+              if (dayOff.shifts?.afternoon && !dayOff.shifts.afternoon.isOverridden) {
+                shifts.afternoon.add(schedule._id || schedule.scheduleId);
+              }
+              if (dayOff.shifts?.evening && !dayOff.shifts.evening.isOverridden) {
+                shifts.evening.add(schedule._id || schedule.scheduleId);
+              }
+            });
           });
           
-          console.log(`🔍 Filtering schedules: Selected ${selectedSubRoomsForOverride.length} subrooms → ${schedulesToCheck.length} schedules to check`);
-        }
-        
-        if (schedulesToCheck.length === 0) {
-          setValidHolidayDates([]);
-          return;
-        }
-        
-        // 🆕 LOGIC: Chỉ hiển thị ngày nếu CÒN ÍT NHẤT 1 CA chưa override trong CÁC SCHEDULES ĐÃ CHỌN
-        const dateShiftsStatus = new Map();
-        
-        schedulesToCheck.forEach(schedule => {
-          const schedDaysOff = schedule.holidaySnapshot?.computedDaysOff || [];
+          // Lọc ngày: Chỉ giữ ngày nếu CÒN ÍT NHẤT 1 CA chưa override ở ÍT NHẤT 1 schedule
+          const validDates = Array.from(dateShiftsStatus.entries())
+            .filter(([dateStr, shifts]) => {
+              const hasAvailableShift = 
+                shifts.morning.size > 0 || 
+                shifts.afternoon.size > 0 || 
+                shifts.evening.size > 0;
+              return hasAvailableShift;
+            })
+            .map(([dateStr]) => dateStr)
+            .sort();
           
-          schedDaysOff.forEach(dayOff => {
-            const dateStr = dayOff.date;
-            
-            if (!dateShiftsStatus.has(dateStr)) {
-              dateShiftsStatus.set(dateStr, {
-                morning: new Set(),
-                afternoon: new Set(),
-                evening: new Set()
-              });
+          console.log('📅 Valid holiday dates (còn ít nhất 1 ca chưa override):', validDates);
+          console.log('� Date-shift status:', Array.from(dateShiftsStatus.entries()).map(([date, shifts]) => ({
+            date,
+            availableShifts: {
+              morning: shifts.morning.size,
+              afternoon: shifts.afternoon.size,
+              evening: shifts.evening.size
             }
-            
-            const shifts = dateShiftsStatus.get(dateStr);
-            
-            // Check từng ca: Nếu chưa override trong schedule này → Thêm scheduleId vào Set
-            if (dayOff.shifts?.morning && !dayOff.shifts.morning.isOverridden) {
-              shifts.morning.add(schedule._id || schedule.scheduleId);
-            }
-            if (dayOff.shifts?.afternoon && !dayOff.shifts.afternoon.isOverridden) {
-              shifts.afternoon.add(schedule._id || schedule.scheduleId);
-            }
-            if (dayOff.shifts?.evening && !dayOff.shifts.evening.isOverridden) {
-              shifts.evening.add(schedule._id || schedule.scheduleId);
-            }
-          });
-        });
-        
-        // Lọc ngày: Chỉ giữ ngày nếu CÒN ÍT NHẤT 1 CA chưa override ở ÍT NHẤT 1 schedule đã chọn
-        const validDates = Array.from(dateShiftsStatus.entries())
-          .filter(([dateStr, shifts]) => {
-            const hasAvailableShift = 
-              shifts.morning.size > 0 || 
-              shifts.afternoon.size > 0 || 
-              shifts.evening.size > 0;
-            return hasAvailableShift;
-          })
-          .map(([dateStr]) => dateStr)
-          .sort();
-        
-        console.log(`📅 Valid holiday dates (còn ít nhất 1 ca chưa override trong ${schedulesToCheck.length} schedules đã chọn):`, validDates);
-        
-        setValidHolidayDates(validDates);
-        
-        // 🔥 Nếu ngày đang chọn không còn valid → Clear selection
-        if (overrideDate && !validDates.includes(overrideDate.format('YYYY-MM-DD'))) {
-          console.log('⚠️ Ngày đang chọn không còn available → Clear selection');
-          setOverrideDate(null);
-          setAvailableShiftsInfo(null);
+          })));
+          console.log(`🔍 Checked ${allSchedules.length} schedules`);
+          
+          setValidHolidayDates(validDates);
+          
+        } catch (error) {
+          console.error('Error loading valid holiday dates:', error);
+          setValidHolidayDates([]);
         }
-        
-      } catch (error) {
-        console.error('Error updating valid holiday dates:', error);
-        setValidHolidayDates([]);
-      }
-    };
+      };
 
-    // Chỉ update nếu modal đang mở
-    if (visible && scheduleListData) {
-      updateValidHolidayDates();
+      loadValidHolidayDates();
     }
-  }, [visible, scheduleListData, selectedSubRoomsForOverride, overrideDate]);
-
+  }, [visible, scheduleListData]);
 
   // 🆕 Update valid holiday dates when selected subrooms change
   useEffect(() => {
@@ -1010,82 +982,10 @@ const EditScheduleModal = ({
                   style={{ fontSize: 12 }}
                 />
                 
-                {/* 🆕 BƯỚC 1: Chọn phòng/buồng (nếu có subroom) - PHẢI CHỌN TRƯỚC */}
-                {allSubRooms.length > 0 && (
-                  <div style={{ 
-                    padding: 12, 
-                    backgroundColor: '#f0f5ff', 
-                    border: '2px solid #1890ff',
-                    borderRadius: 6
-                  }}>
-                    <div style={{ marginBottom: 8, fontWeight: 600, color: '#1890ff' }}>
-                      Bước 1: Chọn phòng/buồng để tạo lịch
-                    </div>
-                    <Checkbox.Group
-                      value={selectedSubRoomsForOverride}
-                      onChange={setSelectedSubRoomsForOverride}
-                      style={{ width: '100%' }}
-                    >
-                      <Space direction="vertical" style={{ width: '100%' }}>
-                        {allSubRooms.map(subRoom => {
-                          const isInactive = subRoom.isActiveSubRoom === false;
-                          
-                          return (
-                            <Checkbox 
-                              key={`${subRoom.scheduleId}-${subRoom.subRoomId}`} 
-                              value={subRoom.scheduleId}
-                              disabled={isInactive}
-                            >
-                              <span style={{ opacity: isInactive ? 0.5 : 1 }}>
-                                {subRoom.subRoomName}
-                              </span>
-                              {isInactive && (
-                                <Tag color="red" style={{ marginLeft: 4, fontSize: 10 }}>
-                                  Đang tắt
-                                </Tag>
-                              )}
-                            </Checkbox>
-                          );
-                        })}
-                      </Space>
-                    </Checkbox.Group>
-                    
-                    {selectedSubRoomsForOverride.length > 0 && (
-                      <Alert
-                        type="success"
-                        message={`✓ Đã chọn ${selectedSubRoomsForOverride.length} phòng/buồng`}
-                        showIcon
-                        style={{ marginTop: 8, fontSize: 11 }}
-                      />
-                    )}
-                    
-                    {selectedSubRoomsForOverride.length === 0 && (
-                      <Alert
-                        type="warning"
-                        message="Chưa chọn phòng/buồng"
-                        description="Vui lòng chọn ít nhất 1 phòng/buồng để xem ngày nghỉ có thể tạo lịch"
-                        showIcon
-                        style={{ marginTop: 8, fontSize: 11 }}
-                      />
-                    )}
-                  </div>
-                )}
-                
-                {/* 🆕 Cảnh báo khi tất cả buồng đều bị tắt */}
-                {allSubRooms.length > 0 && allSubRooms.every(sr => sr.isActiveSubRoom === false) && (
-                  <Alert
-                    type="error"
-                    message="Không có buồng nào đang hoạt động"
-                    description="Tất cả buồng trong lịch này đều đã bị tắt. Vui lòng bật lại buồng trước khi tạo lịch ngày nghỉ."
-                    showIcon
-                    style={{ fontSize: 12 }}
-                  />
-                )}
-                
-                {/* BƯỚC 2: Chọn ngày nghỉ */}
+                {/* Chọn ngày nghỉ */}
                 <div>
-                  <div style={{ marginBottom: 4, fontWeight: 600, color: allSubRooms.length > 0 ? '#1890ff' : undefined }}>
-                    {allSubRooms.length > 0 ? 'Bước 2: ' : ''}Chọn ngày nghỉ từ danh sách:
+                  <div style={{ marginBottom: 4, fontWeight: 500 }}>
+                    Chọn ngày nghỉ từ danh sách:
                     {validHolidayDates.length > 0 && (
                       <span style={{ fontSize: 11, color: '#1890ff', marginLeft: 4 }}>
                         ({validHolidayDates.length} ngày nghỉ chưa tạo lịch)
@@ -1182,8 +1082,8 @@ const EditScheduleModal = ({
                 {holidayInfo && (
                   <>
                     <div>
-                      <div style={{ marginBottom: 4, fontWeight: 600, color: allSubRooms.length > 0 ? '#1890ff' : undefined }}>
-                        {allSubRooms.length > 0 ? 'Bước 3: ' : ''}Chọn ca làm việc:
+                      <div style={{ marginBottom: 4, fontWeight: 500 }}>
+                        Chọn ca làm việc:
                         {checkingShifts && <Spin size="small" style={{ marginLeft: 8 }} />}
                       </div>
                       
@@ -1277,6 +1177,69 @@ const EditScheduleModal = ({
                         </Space>
                       </Checkbox.Group>
                     </div>
+                    
+                    {/* 🆕 Chọn subrooms để tạo override - CHỈ hiển thị nếu có subroom */}
+                    {allSubRooms.length > 0 && (
+                      <div style={{ 
+                        padding: 12, 
+                        backgroundColor: '#f0f5ff', 
+                        border: '1px solid #adc6ff',
+                        borderRadius: 6
+                      }}>
+                        <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                          Chọn phòng/buồng để tạo lịch:
+                        </div>
+                        <Checkbox.Group
+                          value={selectedSubRoomsForOverride}
+                          onChange={setSelectedSubRoomsForOverride}
+                          style={{ width: '100%' }}
+                        >
+                          <Space direction="vertical" style={{ width: '100%' }}>
+                            {/* ✅ Hiển thị TẤT CẢ subrooms, disable những cái tắt */}
+                            {allSubRooms.map(subRoom => {
+                              const isInactive = subRoom.isActiveSubRoom === false;
+                              
+                              return (
+                                <Checkbox 
+                                  key={`${subRoom.scheduleId}-${subRoom.subRoomId}`} 
+                                  value={subRoom.scheduleId}
+                                  disabled={isInactive}
+                                >
+                                  <span style={{ opacity: isInactive ? 0.5 : 1 }}>
+                                    {subRoom.subRoomName}
+                                  </span>
+                                  {isInactive && (
+                                    <Tag color="red" style={{ marginLeft: 4, fontSize: 10 }}>
+                                      Đang tắt
+                                    </Tag>
+                                  )}
+                                </Checkbox>
+                              );
+                            })}
+                          </Space>
+                        </Checkbox.Group>
+                        
+                        {selectedSubRoomsForOverride.length > 0 && (
+                          <Alert
+                            type="info"
+                            message={`Đã chọn ${selectedSubRoomsForOverride.length} phòng/buồng`}
+                            showIcon
+                            style={{ marginTop: 8, fontSize: 11 }}
+                          />
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* 🆕 Cảnh báo khi tất cả buồng đều bị tắt */}
+                    {allSubRooms.length > 0 && allSubRooms.every(sr => sr.isActiveSubRoom === false) && (
+                      <Alert
+                        type="warning"
+                        message="Không có buồng nào đang hoạt động"
+                        description="Tất cả buồng trong lịch này đều đã bị tắt. Vui lòng bật lại buồng trước khi tạo lịch ngày nghỉ."
+                        showIcon
+                        style={{ fontSize: 12 }}
+                      />
+                    )}
                     
                     {/* 🆕 Thông báo phòng không có buồng */}
                     {allSubRooms.length === 0 && (

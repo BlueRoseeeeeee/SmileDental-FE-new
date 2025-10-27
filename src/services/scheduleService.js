@@ -384,6 +384,42 @@ const scheduleService = {
       }
       throw error;
     }
+  },
+
+  /**
+   * 🆕 Get schedule by ID - Lấy thông tin schedule theo ID
+   * @param {string} scheduleId - Schedule ID
+   * @returns {Promise<object>} - Schedule data
+   */
+  getScheduleById: async (scheduleId) => {
+    try {
+      const response = await scheduleApi.get(`/schedule/${scheduleId}`);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error getScheduleById:', error);
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * 🆕 Enable shifts and subrooms - Bật các ca/buồng bị tắt
+   * @param {object} payload - {scheduleId, shifts: ['morning', 'afternoon'], subRoomIds: [id1, id2]}
+   * @returns {Promise<object>} - Result
+   */
+  enableShiftsAndSubRooms: async (payload) => {
+    try {
+      const response = await scheduleApi.post('/schedule/enable-shifts-subrooms', payload);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error enableShiftsAndSubRooms:', error);
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   }
 };
 

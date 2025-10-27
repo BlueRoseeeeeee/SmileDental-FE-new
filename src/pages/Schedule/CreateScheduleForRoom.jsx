@@ -44,6 +44,7 @@ import EditScheduleModal from '../../components/Schedule/EditScheduleModal';
 import BulkRoomScheduleModal from '../../components/Schedule/BulkRoomScheduleModal';
 import BulkCreateScheduleModal from '../../components/Schedule/BulkCreateScheduleModal';
 import OverrideHolidayModal from '../../components/Schedule/OverrideHolidayModal';
+import EnableShiftsSubRoomsModal from '../../components/Schedule/EnableShiftsSubRoomsModal';
 import './CreateScheduleForRoom.css'; // Import CSS file
 
 const { Title, Text } = Typography;
@@ -176,6 +177,10 @@ const CreateScheduleForRoom = () => {
   const [holidayPreview, setHolidayPreview] = useState(null); // 🆕 Holiday preview data
   const [loadingHolidayPreview, setLoadingHolidayPreview] = useState(false); // 🆕
   const [showOverrideModal, setShowOverrideModal] = useState(false); // 🆕 Override holiday modal
+
+  // 🆕 Enable Shifts/SubRooms Modal
+  const [showEnableModal, setShowEnableModal] = useState(false);
+  const [enableModalData, setEnableModalData] = useState({ scheduleId: null, roomName: '', month: null, year: null });
 
   // Schedule list modal filters
   const [scheduleListFilterType, setScheduleListFilterType] = useState('all'); // 'all' | 'missing' | 'complete'
@@ -1250,6 +1255,42 @@ const CreateScheduleForRoom = () => {
     setEditingSchedule(null);
     // Không đóng showScheduleListModal - giữ modal danh sách lịch mở
   };
+
+  // 🆕 Handle Open Enable Modal
+  const handleOpenEnableModal = (groupData) => {
+    setEnableModalData(groupData); // Truyền toàn bộ group data
+    setShowEnableModal(true);
+  };
+
+  // 🆕 Handle Enable Success
+  const handleEnableSuccess = async () => {
+    toast.success('Đã kích hoạt ca/buồng thành công');
+    setShowEnableModal(false);
+    
+    // Reload schedule list
+    if (selectedRoom) {
+      setLoading(true);
+      try {
+        const response = await scheduleService.getRoomSchedulesWithShifts(
+          selectedRoom._id,
+          selectedSubRoom?._id
+        );
+        
+        if (response.success && response.data) {
+          setScheduleListData(null);
+          setTimeout(() => {
+            setScheduleListData(response.data);
+          }, 100);
+        }
+      } catch (error) {
+        console.error('Error reloading schedules:', error);
+        toast.error('Không thể tải lại danh sách lịch');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   // 🆕 Helper: Lấy danh sách các tháng/năm đã có lịch
   const getScheduledMonths = useCallback(() => {
     if (!scheduleListData?.schedules || scheduleListData.schedules.length === 0) {
@@ -2641,6 +2682,21 @@ const CreateScheduleForRoom = () => {
                                     >
                                       Tạo lịch ngày nghỉ
                                     </Button>
+                                  </Tooltip>,
+                                  <Tooltip title="Kích hoạt lại các ca/buồng bị tắt">
+                                    <Button
+                                      type="link"
+                                      onClick={() => {
+                                        // Truyền toàn bộ group data
+                                        handleOpenEnableModal({
+                                          ...group,
+                                          roomName: selectedRoom.name
+                                        });
+                                      }}
+                                      style={{ color: '#52c41a' }}
+                                    >
+                                      Bật ca/buồng tắt
+                                    </Button>
                                   </Tooltip>
                                 ]
                             : [
@@ -2662,6 +2718,21 @@ const CreateScheduleForRoom = () => {
                                     style={group.isExpired ? { color: '#d9d9d9' } : { color: '#1890ff' }}
                                   >
                                     Tạo lịch ngày nghỉ
+                                  </Button>
+                                </Tooltip>,
+                                <Tooltip title="Kích hoạt lại các ca/buồng bị tắt">
+                                  <Button
+                                    type="link"
+                                    onClick={() => {
+                                      // Truyền toàn bộ group data
+                                      handleOpenEnableModal({
+                                        ...group,
+                                        roomName: selectedRoom.name
+                                      });
+                                    }}
+                                    style={{ color: '#52c41a' }}
+                                  >
+                                    Bật ca/buồng tắt
                                   </Button>
                                 </Tooltip>
                               ]
@@ -4140,6 +4211,14 @@ const CreateScheduleForRoom = () => {
           toast.success('Đã tạo lịch override thành công!');
         }}
         rooms={rooms}
+      />
+
+      {/* 🆕 Enable Shifts SubRooms Modal - Enable disabled shifts/subrooms */}
+      <EnableShiftsSubRoomsModal
+        visible={showEnableModal}
+        onClose={() => setShowEnableModal(false)}
+        onSuccess={handleEnableSuccess}
+        groupData={enableModalData}
       />
     </div>
   );

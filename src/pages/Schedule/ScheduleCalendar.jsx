@@ -338,59 +338,47 @@ const ScheduleCalendar = () => {
   // Extract shift overview from calendar data
   // Room calendar has shiftOverview field, dentist/nurse calendar needs to extract from days
   const shiftOverview = useMemo(() => {
-    if (calendarData?.shiftOverview) {
+    // 🆕 Check if room/subroom is properly selected before showing shifts
+    if (viewMode === 'room') {
+      // If room has subrooms, must select a subroom first
+      if (selectedRoom?.hasSubRooms && !selectedSubRoom) {
+        return null; // Don't show shifts until subroom is selected
+      }
+      // If room doesn't have subrooms, just need room selection
+      if (!selectedRoom) {
+        return null; // Don't show shifts until room is selected
+      }
+    }
+    
+    // 🆕 Use shiftOverview from API response (priority)
+    if (calendarData?.shiftOverview && Object.keys(calendarData.shiftOverview).length > 0) {
       return calendarData.shiftOverview;
     }
     
-    // For dentist/nurse calendar, extract shift names from data OR use scheduleConfig as fallback
+    // Fallback: Use scheduleConfig to create all 3 shifts
     if (scheduleConfig) {
       const overview = {};
       
-      // Map shift names to scheduleConfig
-      const shiftMapping = {
-        'Ca Sáng': {
-          startTime: scheduleConfig.morningShift?.startTime || '--:--',
-          endTime: scheduleConfig.morningShift?.endTime || '--:--',
-          isActive: scheduleConfig.morningShift?.isActive !== false
-        },
-        'Ca Chiều': {
-          startTime: scheduleConfig.afternoonShift?.startTime || '--:--',
-          endTime: scheduleConfig.afternoonShift?.endTime || '--:--',
-          isActive: scheduleConfig.afternoonShift?.isActive !== false
-        },
-        'Ca Tối': {
-          startTime: scheduleConfig.eveningShift?.startTime || '--:--',
-          endTime: scheduleConfig.eveningShift?.endTime || '--:--',
-          isActive: scheduleConfig.eveningShift?.isActive !== false
-        }
-      };
+      const shifts = [
+        { key: 'Ca Sáng', config: scheduleConfig.morningShift },
+        { key: 'Ca Chiều', config: scheduleConfig.afternoonShift },
+        { key: 'Ca Tối', config: scheduleConfig.eveningShift }
+      ];
       
-      // If data exists, extract shift names from data
-      if (calendarData?.periods?.[0]?.days?.[0]?.shifts) {
-        const firstDayShifts = calendarData.periods[0].days[0].shifts;
-        Object.keys(firstDayShifts).forEach(shiftName => {
-          overview[shiftName] = {
-            name: shiftName,
-            startTime: shiftMapping[shiftName]?.startTime || '--:--',
-            endTime: shiftMapping[shiftName]?.endTime || '--:--',
-            isActive: shiftMapping[shiftName]?.isActive !== false
-          };
-        });
-      } else {
-        // No data - use all shifts from config (fallback for empty calendar)
-        Object.entries(shiftMapping).forEach(([shiftName, config]) => {
-          overview[shiftName] = {
-            name: shiftName,
-            ...config
-          };
-        });
-      }
+      shifts.forEach(({ key, config }) => {
+        overview[key] = {
+          name: key,
+          startTime: config?.startTime || '--:--',
+          endTime: config?.endTime || '--:--',
+          isActive: true
+        };
+      });
       
       return overview;
     }
     
     return null;
-  }, [calendarData, scheduleConfig]);
+  }, [calendarData, scheduleConfig, viewMode, selectedRoom, selectedSubRoom]);
 
   const getDayData = (date) => {
     if (!calendarData?.periods?.[0]?.days) return null;
@@ -1827,15 +1815,31 @@ const ScheduleCalendar = () => {
                 </div>
 
                 {/* Shift Rows - cột hiển thị tên ca-thời gian */}
-                {shiftOverview ? Object.values(shiftOverview).map(shift => (
+                {shiftOverview ? Object.values(shiftOverview).map(shift => {
+                  // Check if there are time variations across different months
+                  const hasTimeVariants = shift.timeVariants && shift.timeVariants.length > 1;
+                  
+                  return (
                   <div key={shift.name} className="calendar-row">
                     <div className="time-column">
                       <div className="shift-info">
                         <Text strong>{shift.name}</Text>
                         <br />
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {shift.startTime} - {shift.endTime}
-                        </Text>
+                        {hasTimeVariants ? (
+                          // Show all time variants with their months
+                          <div style={{ fontSize: 11 }}>
+                            {shift.timeVariants.map((variant, idx) => (
+                              <Text key={idx} type="secondary" style={{ display: 'block', marginBottom: 2 }}>
+                                {variant.startTime} - {variant.endTime} ({variant.months.join(', ')})
+                              </Text>
+                            ))}
+                          </div>
+                        ) : (
+                          // Single time range
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {shift.startTime} - {shift.endTime}
+                          </Text>
+                        )}
                         <br />
                         {(() => {
                           const summary = shiftActivitySummary[shift.name];
@@ -1872,7 +1876,8 @@ const ScheduleCalendar = () => {
                       </div>
                     ))}
                   </div>
-                )) : (
+                  );
+                }) : (
                   <div className="calendar-row">
                     <div style={{ padding: 20, textAlign: 'center', gridColumn: '1 / -1' }}>
                       {loading ? (
