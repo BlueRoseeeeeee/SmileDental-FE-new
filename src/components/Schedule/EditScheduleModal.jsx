@@ -327,8 +327,18 @@ const EditScheduleModal = ({
   // 🆕 Check available shifts when date and subrooms are selected
   useEffect(() => {
     const checkAvailableShifts = async () => {
+      console.log('🔍 checkAvailableShifts triggered:', {
+        overrideDate: overrideDate?.format('YYYY-MM-DD'),
+        roomId,
+        month,
+        year,
+        selectedSubRoomsForOverride,
+        selectedCount: selectedSubRoomsForOverride.length
+      });
+      
       // Only check if we have date and at least one schedule selected
       if (!overrideDate || !roomId || !month || !year) {
+        console.log('⏭️ Skipping API call: Missing required fields');
         setAvailableShiftsInfo(null);
         return;
       }
@@ -336,22 +346,33 @@ const EditScheduleModal = ({
       // Determine which schedules to check
       let scheduleIdsToCheck = [];
       
-      const allSubRooms = scheduleListData?.subRooms || [];
+      // ✅ Determine if room has subrooms by checking the schedules themselves
+      const schedulesForMonth = scheduleListData?.schedules?.filter(s => 
+        s.month === month && s.year === year
+      ) || [];
       
-      if (allSubRooms.length > 0) {
+      const hasSubRooms = schedulesForMonth.some(s => s.subRoom || s.subRoomId);
+      
+      console.log('🔍 checkAvailableShifts - Room structure:', {
+        schedulesForMonth: schedulesForMonth.length,
+        hasSubRooms,
+        selectedSubRoomsCount: selectedSubRoomsForOverride.length
+      });
+      
+      if (hasSubRooms) {
         // Room has subrooms - use selected subrooms
         if (selectedSubRoomsForOverride.length === 0) {
           // No subrooms selected yet
+          console.log('⏭️ Skipping API call: No subrooms selected');
           setAvailableShiftsInfo(null);
           return;
         }
         scheduleIdsToCheck = selectedSubRoomsForOverride;
       } else {
         // Room without subrooms - use main schedule
-        const mainSchedule = scheduleListData?.schedules?.find(s => 
-          s.month === month && s.year === year && !s.subRoom
-        );
+        const mainSchedule = schedulesForMonth.find(s => !s.subRoom && !s.subRoomId);
         if (!mainSchedule) {
+          console.log('⏭️ Skipping API call: Main schedule not found');
           setAvailableShiftsInfo(null);
           return;
         }
@@ -378,6 +399,18 @@ const EditScheduleModal = ({
         });
 
         console.log('✅ Available shifts result:', result);
+        console.log('📊 Detailed breakdown:', {
+          date: overrideDate.format('YYYY-MM-DD'),
+          selectedScheduleIds: scheduleIdsToCheck,
+          availableShifts: result.availableShifts?.map(s => ({
+            shift: s.name,
+            availableFor: s.availableFor?.map(x => `${x.subRoomName} (${x.scheduleId})`)
+          })),
+          overriddenShifts: result.overriddenShifts?.map(s => ({
+            shift: s.name,
+            overriddenFor: s.overriddenFor?.map(x => `${x.subRoomName} (${x.scheduleId}) [${x.source}]`)
+          }))
+        });
         
         if (result.success !== false) {
           setAvailableShiftsInfo(result);
@@ -663,64 +696,53 @@ const EditScheduleModal = ({
         return;
       }
       
-      // 🆕 Loop through selected schedules
-      let successCount = 0;
-      let totalSlotsCreated = 0;
-      const totalSchedules = scheduleIdsToProcess.length;
+      // 🆕 Use batch API with auto-skip logic
+      const payload = {
+        scheduleIds: scheduleIdsToProcess,
+        date: overrideDate.format('YYYY-MM-DD'),
+        shifts: overrideShifts,
+        note: overrideNote || `Lịch override ngày nghỉ tháng ${month}/${year}`
+      };
       
-      for (const scheduleId of scheduleIdsToProcess) {
-        // Find the schedule from scheduleListData
-        const schedule = scheduleListData.schedules.find(s => s.scheduleId === scheduleId); // ✅ Dùng scheduleId
-        if (!schedule) {
-          console.warn(`⚠️ Schedule not found: ${scheduleId}`);
-          continue;
+      console.log(`📤 Creating batch override holiday:`, payload);
+      
+      const result = await scheduleConfigService.createBatchScheduleOverrideHoliday(payload);
+      
+      if (result.success) {
+        // Show detailed results
+        const totalSchedules = scheduleIdsToProcess.length;
+        const successCount = result.results?.filter(r => r.slotsCreated > 0).length || 0;
+        const skippedCount = result.results?.filter(r => r.shiftsSkipped?.length > 0).length || 0;
+        
+        let message = `Đã tạo lịch override: ${result.totalSlotsCreated} slots`;
+        if (successCount > 0) {
+          message += ` cho ${successCount}/${totalSchedules} ${allSubRooms.length > 0 ? 'phòng/buồng' : 'phòng'}`;
+        }
+        if (skippedCount > 0) {
+          message += ` (${skippedCount} đã có lịch - tự động bỏ qua)`;
         }
         
-        const subRoomId = schedule?.subRoom?._id;
+        messageApi.success(message);
         
-        const payload = {
-          roomId: roomId,
-          subRoomId: subRoomId || null,
-          month: month,
-          year: year,
-          date: overrideDate.format('YYYY-MM-DD'),
-          shifts: overrideShifts,
-          note: overrideNote || `Lịch override ngày nghỉ tháng ${month}/${year}`
-        };
-        
-        console.log(`📤 Creating override holiday for schedule ${scheduleId}:`, payload);
-        
-        try {
-          const result = await scheduleConfigService.createScheduleOverrideHoliday(payload);
-          
-          if (result.success) {
-            successCount++;
-            totalSlotsCreated += result.slotsCreated || 0;
-          }
-        } catch (error) {
-          console.error(`❌ Error creating override for schedule ${scheduleId}:`, error);
+        // Callback to refresh data
+        if (onSuccess) {
+          onSuccess();
         }
-      }
-      
-      if (successCount > 0) {
-        messageApi.success(
-          `Đã tạo lịch override cho ${successCount}/${totalSchedules} ${allSubRooms.length > 0 ? 'phòng/buồng' : 'phòng'}. Tổng ${totalSlotsCreated} slots`
-        );
         
-        // Reset override section
+        // Reset override section and close modal
         setShowOverrideSection(false);
         setOverrideDate(null);
         setOverrideShifts([]);
         setOverrideNote('');
         setHolidayInfo(null);
         setSelectedSubRoomsForOverride([]);
+        setAvailableShiftsInfo(null); // Clear cached shift status
         
-        // Callback to refresh data
-        if (onSuccess) {
-          onSuccess();
-        }
+        // Close modal to force data refresh
+        onCancel();
+        
       } else {
-        messageApi.warning('Không có schedule nào được tạo thành công');
+        messageApi.warning(result.message || 'Không có schedule nào được tạo thành công');
       }
     } catch (error) {
       console.error('Override holiday error:', error);
@@ -1238,12 +1260,27 @@ const EditScheduleModal = ({
                       >
                         <Space direction="vertical">
                           {allShifts.map(shift => {
-                            // Check if this shift is overridden
-                            const isOverridden = availableShiftsInfo?.overriddenShifts?.some(
+                            // Check if this shift is overridden in ANY of the selected schedules
+                            const overriddenInfo = availableShiftsInfo?.overriddenShifts?.find(
                               os => os.shiftKey === shift.key
                             );
                             
-                            // Check if this shift is available
+                            // If partially overridden (some schedules have it, some don't)
+                            const isPartiallyOverridden = overriddenInfo && overriddenInfo.overriddenFor?.length > 0;
+                            
+                            // Check if ALL selected schedules have this shift overridden
+                            // 🔧 FIX: For room with subrooms, use actual selected count (don't fallback to 1)
+                            const hasSubRooms = allSubRooms.length > 0;
+                            const selectedCount = hasSubRooms 
+                              ? selectedSubRoomsForOverride.length 
+                              : 1; // Room without subrooms always count as 1
+                            
+                            const overriddenCount = overriddenInfo?.overriddenFor?.length || 0;
+                            
+                            // Only calculate isFullyOverridden if we have valid data
+                            const isFullyOverridden = selectedCount > 0 && overriddenCount === selectedCount;
+                            
+                            // Check if this shift is available in at least one schedule
                             const isAvailable = availableShiftsInfo?.availableShifts?.some(
                               as => as.shiftKey === shift.key
                             );
@@ -1251,19 +1288,41 @@ const EditScheduleModal = ({
                             // Ca bị tắt (isActive = false)
                             const isDisabled = !shift.isActive;
                             
+                            // Disable if fully overridden (all schedules) or if disabled in config
+                            const shouldDisable = isFullyOverridden || isDisabled;
+                            
+                            console.log(`🔍 Shift ${shift.name} (${shift.key}):`, {
+                              hasSubRooms,
+                              selectedSubRoomsCount: selectedSubRoomsForOverride.length,
+                              isPartiallyOverridden,
+                              isFullyOverridden,
+                              isAvailable,
+                              isDisabled,
+                              shouldDisable,
+                              overriddenCount,
+                              selectedCount,
+                              overriddenInfo,
+                              availableShiftsInfo
+                            });
+                            
                             return (
                               <Checkbox 
                                 key={shift.key} 
                                 value={shift.key}
-                                disabled={isOverridden || (!isAvailable && availableShiftsInfo !== null) || isDisabled}
+                                disabled={shouldDisable}
                               >
-                                <Tag color={isOverridden || isDisabled ? 'default' : shift.color}>
+                                <Tag color={shouldDisable ? 'default' : shift.color}>
                                   {shift.name}
                                 </Tag>
                                 <span style={{ fontSize: 12 }}>{shift.startTime} - {shift.endTime}</span>
-                                {isOverridden && (
+                                {isFullyOverridden && (
                                   <Tag color="orange" style={{ marginLeft: 4, fontSize: 10 }}>
-                                    Đã tạo
+                                    Đã tạo (tất cả)
+                                  </Tag>
+                                )}
+                                {isPartiallyOverridden && !isFullyOverridden && (
+                                  <Tag color="blue" style={{ marginLeft: 4, fontSize: 10 }}>
+                                    Đã tạo ({overriddenCount}/{selectedCount})
                                   </Tag>
                                 )}
                                 {isDisabled && (

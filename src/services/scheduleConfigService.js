@@ -83,6 +83,12 @@ const scheduleConfigService = {
     return response.data;
   },
 
+  // 🆕 Tạo lịch override cho nhiều schedule cùng lúc (batch) - Có auto-skip logic
+  createBatchScheduleOverrideHoliday: async (data) => {
+    const response = await scheduleApi.post('/schedule/batch-override-holiday', data);
+    return response.data;
+  },
+
   // 🆕 Validate holiday từ holidaySnapshot của schedule cụ thể
   validateHolidayFromSchedule: async (params) => {
     const response = await scheduleApi.get('/schedule/validate-holiday-from-schedule', { params });
