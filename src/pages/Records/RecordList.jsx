@@ -76,6 +76,7 @@ const RecordList = () => {
   const [formMode, setFormMode] = useState('create'); // 'create' or 'edit'
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const selectedRole = localStorage.getItem('selectedRole');
 
   // Load records on mount and when filters change
   useEffect(() => {
@@ -117,6 +118,11 @@ const RecordList = () => {
         startDate: dateRange?.[0]?.format('YYYY-MM-DD'),
         endDate: dateRange?.[1]?.format('YYYY-MM-DD')
       };
+
+      // Auto-filter by dentist/nurse for their own records
+      if (selectedRole === 'dentist' || selectedRole === 'nurse') {
+        params.dentistId = currentUser.userId;
+      }
 
       const response = await recordService.getAllRecords(params);
 
@@ -419,7 +425,7 @@ const RecordList = () => {
             />
           </Tooltip>
           
-          {currentUser.role === 'admin' && (
+          {selectedRole === 'admin' && (
             <Tooltip title="Xóa">
               <Button
                 type="text"
@@ -439,12 +445,10 @@ const RecordList = () => {
     <div>
       {/* Role-based info message */}
       {(() => {
-        const userRoles = currentUser.roles || [currentUser.role];
-        const isDentist = userRoles.includes('dentist');
-        const isNurse = userRoles.includes('nurse');
-        const isAdmin = userRoles.includes('admin') || userRoles.includes('manager');
+        const isDentist = selectedRole === 'dentist';
+        const isNurse = selectedRole === 'nurse';
         
-        if ((isDentist || isNurse) && !isAdmin) {
+        if (isDentist || isNurse) {
           return (
             <Card style={{ marginBottom: 16, backgroundColor: '#e6f7ff', borderColor: '#91d5ff' }}>
               <Space>
@@ -453,7 +457,7 @@ const RecordList = () => {
                   {isDentist && (
                     <>Bạn đang xem hồ sơ được tạo bởi <Text strong>nha sĩ {currentUser.fullName || 'bạn'}</Text></>
                   )}
-                  {isNurse && !isDentist && (
+                  {isNurse && (
                     <>Bạn đang xem hồ sơ từ các lịch hẹn được gán cho <Text strong>y tá {currentUser.fullName || 'bạn'}</Text></>
                   )}
                 </Text>

@@ -50,12 +50,17 @@ const StaffSchedule = () => {
     setCurrentUser(user);
     
     // If user is dentist or nurse, auto-select themselves
-    const userRoles = user.roles || [user.role]; // Support both roles array and legacy role
-    if (userRoles.includes('dentist') || userRoles.includes('nurse')) {
+    const selectedRole = localStorage.getItem('selectedRole');
+    const isDentistOrNurse = selectedRole === 'dentist' || selectedRole === 'nurse';
+    
+    if (isDentistOrNurse) {
       setSelectedStaff(user._id);
+      // Set the current user as the only staff in list for display
+      setStaffList([user]);
+    } else {
+      fetchStaffList();
     }
     
-    fetchStaffList();
     setupWebSocket();
 
     return () => {
@@ -159,10 +164,10 @@ const StaffSchedule = () => {
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: 13 }}>
-            <ClockCircleOutlined /> {record.startTime}
+            <ClockCircleOutlined /> {record.slotTime?.startTime || record.startTime}
           </Text>
           <Text type="secondary" style={{ fontSize: 11 }}>
-            đến {record.endTime}
+            đến {record.slotTime?.endTime || record.endTime}
           </Text>
         </Space>
       )
@@ -186,34 +191,42 @@ const StaffSchedule = () => {
       title: 'Dịch vụ',
       key: 'service',
       width: 200,
-      render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          <Space>
-            {record.serviceType === 'exam' ? (
-              <Tag color="green">Khám</Tag>
-            ) : (
-              <Tag color="orange">Điều trị</Tag>
+      render: (_, record) => {
+        const serviceName = record.service?.serviceName || record.serviceName;
+        const serviceAddOnName = record.service?.serviceAddOnName || record.serviceAddOnName;
+        const serviceType = record.service?.serviceType || record.serviceType;
+        
+        return (
+          <Space direction="vertical" size={0}>
+            <Space>
+              {serviceType === 'exam' ? (
+                <Tag color="green">Khám</Tag>
+              ) : (
+                <Tag color="orange">Điều trị</Tag>
+              )}
+              <Text style={{ fontSize: 12 }}>{serviceName}</Text>
+            </Space>
+            {serviceAddOnName && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                + {serviceAddOnName}
+              </Text>
             )}
-            <Text style={{ fontSize: 12 }}>{record.serviceName}</Text>
           </Space>
-          {record.serviceAddOnName && (
-            <Text type="secondary" style={{ fontSize: 11 }}>
-              + {record.serviceAddOnName}
-            </Text>
-          )}
-        </Space>
-      )
+        );
+      }
     },
     {
       title: 'Phòng',
-      dataIndex: 'roomName',
       key: 'room',
       width: 100,
-      render: (roomName) => (
-        <Text style={{ fontSize: 12 }}>
-          <HomeOutlined /> {roomName || 'Chưa xác định'}
-        </Text>
-      )
+      render: (_, record) => {
+        const roomName = record.room?.roomName || record.roomName;
+        return (
+          <Text style={{ fontSize: 12 }}>
+            <HomeOutlined /> {roomName || 'Chưa xác định'}
+          </Text>
+        );
+      }
     },
     {
       title: 'Trạng thái',
@@ -236,34 +249,69 @@ const StaffSchedule = () => {
   ];
 
   const selectedStaffInfo = staffList.find(s => s._id === selectedStaff);
+  
+  // Check if user logged in as dentist or nurse (using selectedRole)
+  const selectedRole = localStorage.getItem('selectedRole');
+  const isDentistOrNurse = selectedRole === 'dentist' || selectedRole === 'nurse';
+  
+  // Get primary role for display
+  const getPrimaryRole = () => {
+    return selectedRole || currentUser?.role || 'staff';
+  };
+  
+  const primaryRole = getPrimaryRole();
+  const roleIcon = primaryRole === 'dentist' ? '🦷' : '🩺';
+  const roleLabel = primaryRole === 'dentist' ? 'Nha sĩ' : 'Y tá';
 
   return (
     <div style={{ padding: '24px' }}>
       <Card>
         <Title level={3}>
-          <CalendarOutlined /> Lịch Khám Của Nhân Viên
+          <CalendarOutlined /> {isDentistOrNurse ? 'Lịch Khám Của Tôi' : 'Lịch Khám Của Nhân Viên'}
         </Title>
 
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={8}>
-            <Text strong>Chọn nhân viên:</Text>
-            <Select
-              style={{ width: '100%', marginTop: 8 }}
-              placeholder="Chọn nha sĩ hoặc y tá"
-              value={selectedStaff}
-              onChange={setSelectedStaff}
-              showSearch
-              filterOption={(input, option) =>
-                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-              }
-            >
-              {staffList.map(staff => (
-                <Option key={staff._id} value={staff._id}>
-                  {staff.role === 'dentist' ? '🦷' : '🩺'} {staff.fullName} ({staff.role === 'dentist' ? 'Nha sĩ' : 'Y tá'})
-                </Option>
-              ))}
-            </Select>
-          </Col>
+          {/* Only show staff selector for admin/manager */}
+          {!isDentistOrNurse && (
+            <Col span={8}>
+              <Text strong>Chọn nhân viên:</Text>
+              <Select
+                style={{ width: '100%', marginTop: 8 }}
+                placeholder="Chọn nha sĩ hoặc y tá"
+                value={selectedStaff}
+                onChange={setSelectedStaff}
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              >
+                {staffList.map(staff => (
+                  <Option key={staff._id} value={staff._id}>
+                    {staff.role === 'dentist' ? '🦷' : '🩺'} {staff.fullName} ({staff.role === 'dentist' ? 'Nha sĩ' : 'Y tá'})
+                  </Option>
+                ))}
+              </Select>
+            </Col>
+          )}
+          
+          {/* Show staff info for dentist/nurse */}
+          {isDentistOrNurse && (
+            <Col span={8}>
+              <Text strong>Nhân viên:</Text>
+              <Card size="small" style={{ marginTop: 8, backgroundColor: '#f0f5ff' }}>
+                <Space>
+                  <Text style={{ fontSize: 14 }}>
+                    {roleIcon} {roleLabel}:
+                  </Text>
+                  <Text strong style={{ fontSize: 14 }}>{currentUser?.fullName}</Text>
+                </Space>
+                <br />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Mã NV: {currentUser?.staffCode || currentUser?._id?.substring(0, 8)}
+                </Text>
+              </Card>
+            </Col>
+          )}
 
           <Col span={6}>
             <Text strong>Chọn ngày:</Text>
@@ -299,7 +347,11 @@ const StaffSchedule = () => {
           <Card size="small" style={{ marginBottom: 16, backgroundColor: '#f0f5ff' }}>
             <Space>
               <Text strong style={{ fontSize: 16 }}>
-                {selectedStaffInfo.role === 'dentist' ? '🦷 Nha sĩ:' : '🩺 Y tá:'}
+                {isDentistOrNurse ? (
+                  <>{roleIcon} {roleLabel}:</>
+                ) : (
+                  selectedStaffInfo.role === 'dentist' ? '🦷 Nha sĩ:' : '🩺 Y tá:'
+                )}
               </Text>
               <Text style={{ fontSize: 16 }}>{selectedStaffInfo.fullName}</Text>
               <Text type="secondary">|</Text>

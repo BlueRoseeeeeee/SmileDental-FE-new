@@ -31,10 +31,16 @@ const ScheduleCalendar = () => {
   // Get current user
   const { user } = useAuth();
   
+  // ✅ Helper function - check ONLY selectedRole
+  const hasRole = (roleToCheck) => {
+    const selectedRole = localStorage.getItem('selectedRole');
+    return selectedRole === roleToCheck;
+  };
+  
   // View mode state - mặc định dựa trên role
   const getDefaultViewMode = () => {
-    if (user?.role === 'dentist') return 'dentist';
-    if (user?.role === 'nurse') return 'nurse';
+    if (hasRole('dentist')) return 'dentist';
+    if (hasRole('nurse')) return 'nurse';
     return 'room'; // admin/manager mặc định xem theo phòng
   };
   
@@ -68,7 +74,7 @@ const ScheduleCalendar = () => {
   const [loadingModalSlots, setLoadingModalSlots] = useState(false);
   const [selectedSlots, setSelectedSlots] = useState([]); // Array of selected slot IDs
   const [slotFilter, setSlotFilter] = useState('all'); // 'all', 'assigned', 'unassigned'
-  const [modalMode, setModalMode] = useState('assign'); // 🆕 'assign' | 'toggle'
+  const [modalMode, setModalMode] = useState('assign'); // 🆕 'assign' | 'toggle' | 'dentist_view' | 'nurse_view'
   
   // 🆕 Toggle Slots States - persist across weeks
   const [selectedSlotsForToggle, setSelectedSlotsForToggle] = useState({}); // {slotId: {slotData, date, shift}}
@@ -130,22 +136,24 @@ const ScheduleCalendar = () => {
       
       if (res?.success) {
         const allStaff = res.users || [];
-        const dentistList = allStaff.filter(u => 
-          (u.role === 'dentist' || u.role === 'doctor') && u.isActive === true
-        );
-        const nurseList = allStaff.filter(u => 
-          u.role === 'nurse' && u.isActive === true
-        );
+        const dentistList = allStaff.filter(u => {
+          const roles = u.roles || [u.role];
+          return (roles.includes('dentist') || roles.includes('doctor')) && u.isActive === true;
+        });
+        const nurseList = allStaff.filter(u => {
+          const roles = u.roles || [u.role];
+          return roles.includes('nurse') && u.isActive === true;
+        });
         setDentists(dentistList);
         setNurses(nurseList);
         
         // Tự động chọn dentist/nurse hiện tại nếu đang là dentist/nurse
-        if (user?.role === 'dentist') {
+        if (hasRole('dentist')) {
           const currentDentist = dentistList.find(d => d._id === user._id);
           if (currentDentist) {
             setSelectedDentist({ id: currentDentist._id, ...currentDentist });
           }
-        } else if (user?.role === 'nurse') {
+        } else if (hasRole('nurse')) {
           const currentNurse = nurseList.find(n => n._id === user._id);
           if (currentNurse) {
             setSelectedNurse({ id: currentNurse._id, ...currentNurse });
@@ -685,14 +693,72 @@ const ScheduleCalendar = () => {
     const cachedSlots = slotDetailsCache[cacheKey];
     const totalSlots = shiftData?.totalSlots || shiftData?.slots?.length || 0;
     
-    // Check if viewing dentist/nurse calendar (only show time, no staff info)
+    // Check if viewing dentist/nurse calendar
     const isStaffView = viewMode === 'dentist' || viewMode === 'nurse';
     
     // 🆕 Check if can toggle (admin/manager in room view)
-    const canToggle = (user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room';
+    const canToggle = (hasRole('admin') || hasRole('manager')) && viewMode === 'room';
     
     // If we have cached slots, display them
     if (cachedSlots && Array.isArray(cachedSlots) && cachedSlots.length > 0) {
+      // 🆕 For dentist/nurse: Group by appointment
+      if (isStaffView) {
+        const groupedData = groupSlotsByAppointment(cachedSlots);
+        const appointmentGroups = Object.values(groupedData.withAppointment);
+        const slotsWithoutAppointment = groupedData.withoutAppointment;
+        
+        return (
+          <div style={{ maxHeight: '400px', overflow: 'auto', padding: '4px 0' }}>
+            {appointmentGroups.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <Text strong style={{ fontSize: '13px', color: '#1890ff' }}>
+                  📋 Phiếu khám ({appointmentGroups.length})
+                </Text>
+                {appointmentGroups.map((group, idx) => {
+                  const sortedSlots = group.slots.sort((a, b) => {
+                    const timeA = a.startTimeVN || dayjs(a.startTime).format('HH:mm');
+                    const timeB = b.startTimeVN || dayjs(b.startTime).format('HH:mm');
+                    return timeA.localeCompare(timeB);
+                  });
+                  const firstSlot = sortedSlots[0];
+                  const lastSlot = sortedSlots[sortedSlots.length - 1];
+                  const startTime = firstSlot.startTimeVN || dayjs(firstSlot.startTime).format('HH:mm');
+                  const endTime = lastSlot.endTimeVN || dayjs(lastSlot.endTime).format('HH:mm');
+                  
+                  return (
+                    <div 
+                      key={group.appointmentId}
+                      style={{ 
+                        marginTop: 8,
+                        padding: 8,
+                        backgroundColor: '#f6ffed',
+                        borderRadius: '4px',
+                        border: '1px solid #b7eb8f'
+                      }}
+                    >
+                      <div style={{ fontWeight: 'bold', color: '#52c41a', marginBottom: 4 }}>
+                        🧑 {group.patientInfo?.name || 'Chưa có thông tin'}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#666' }}>
+                        {startTime} - {endTime} ({group.slots.length} slot)
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {slotsWithoutAppointment.length > 0 && (
+              <div>
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  📭 Slots trống: {slotsWithoutAppointment.length}
+                </Text>
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      // For room view: Original grouping by subroom
       const grouped = {};
       cachedSlots.forEach(slot => {
         const key = slot.subRoom?.name || 'Chính';
@@ -884,6 +950,31 @@ const ScheduleCalendar = () => {
     const selectedCount = selectedSlots.length;
 
     return { totalSlots, assignedSlots, selectedCount };
+  };
+  
+  // 🆕 Helper: Group slots by appointmentId for dentist/nurse view
+  const groupSlotsByAppointment = (slots) => {
+    const grouped = {
+      withAppointment: {}, // { appointmentId: { slots: [...], patientInfo: {...} } }
+      withoutAppointment: [] // Slots without appointmentId
+    };
+    
+    slots.forEach(slot => {
+      if (slot.appointmentId) {
+        if (!grouped.withAppointment[slot.appointmentId]) {
+          grouped.withAppointment[slot.appointmentId] = {
+            appointmentId: slot.appointmentId,
+            slots: [],
+            patientInfo: slot.patientInfo || null
+          };
+        }
+        grouped.withAppointment[slot.appointmentId].slots.push(slot);
+      } else {
+        grouped.withoutAppointment.push(slot);
+      }
+    });
+    
+    return grouped;
   };
 
   // 🆕 Toggle Slots Handlers
@@ -1258,7 +1349,7 @@ const ScheduleCalendar = () => {
     const isShiftActive = shift.isActive;
     
     // 🆕 Check if can toggle this cell (admin/manager, room view, tomorrow or later)
-    const canToggleCell = (user?.role === 'admin' || user?.role === 'manager') 
+    const canToggleCell = (hasRole('admin') || hasRole('manager')) 
       && viewMode === 'room' 
       && isTomorrowOrLater(date);
 
@@ -1365,8 +1456,13 @@ const ScheduleCalendar = () => {
             setShowSlotModal(true);
             setLoadingModalSlots(true);
             
-            // 🆕 Open in toggle mode if admin/manager in room view AND tomorrow or later
-            if (canToggleCell) {
+            // 🆕 Determine modal mode based on role and view mode
+            if (hasRole('dentist')) {
+              setModalMode('dentist_view');
+            } else if (hasRole('nurse')) {
+              setModalMode('nurse_view');
+            } else if (canToggleCell) {
+              // Admin/Manager in room view AND tomorrow or later
               setModalMode('toggle');
             } else {
               setModalMode('assign');
@@ -1417,22 +1513,51 @@ const ScheduleCalendar = () => {
               }}
             >
               <div style={{ cursor: 'help' }}>
-                <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>
-                  {totalSlots} slot
-                </Text>
-                {cachedSlots.length > 0 ? (
-                  <Text 
-                    style={{ 
-                      fontSize: '11px', 
-                      color: assignedSlotsCount === totalSlots ? '#52c41a' : assignedSlotsCount > 0 ? '#faad14' : '#ff4d4f' 
-                    }}
-                  >
-                    PC: {assignedSlotsCount}/{totalSlots}
-                  </Text>
+                {/* 🆕 Dentist/Nurse view: Show appointment count */}
+                {(viewMode === 'dentist' || viewMode === 'nurse') && cachedSlots.length > 0 ? (
+                  (() => {
+                    const groupedData = groupSlotsByAppointment(cachedSlots);
+                    const appointmentCount = Object.keys(groupedData.withAppointment).length;
+                    const emptySlots = groupedData.withoutAppointment.length;
+                    
+                    return (
+                      <>
+                        <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>
+                          {totalSlots} slot
+                        </Text>
+                        {appointmentCount > 0 && (
+                          <Text strong style={{ fontSize: '12px', color: '#52c41a', display: 'block' }}>
+                            📋 {appointmentCount} phiếu
+                          </Text>
+                        )}
+                        {emptySlots > 0 && (
+                          <Text type="secondary" style={{ fontSize: '10px', display: 'block' }}>
+                            {emptySlots} trống
+                          </Text>
+                        )}
+                      </>
+                    );
+                  })()
                 ) : (
-                  <Text type="secondary" style={{ fontSize: '11px' }}>
-                    Click để xem
-                  </Text>
+                  <>
+                    <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>
+                      {totalSlots} slot
+                    </Text>
+                    {viewMode === 'room' && cachedSlots.length > 0 ? (
+                      <Text 
+                        style={{ 
+                          fontSize: '11px', 
+                          color: assignedSlotsCount === totalSlots ? '#52c41a' : assignedSlotsCount > 0 ? '#faad14' : '#ff4d4f' 
+                        }}
+                      >
+                        PC: {assignedSlotsCount}/{totalSlots}
+                      </Text>
+                    ) : (
+                      <Text type="secondary" style={{ fontSize: '11px' }}>
+                        Click để xem
+                      </Text>
+                    )}
+                  </>
                 )}
                 {/* 🆕 Show selected count */}
                 {selectedInThisCell > 0 && (
@@ -1587,7 +1712,7 @@ const ScheduleCalendar = () => {
             bodyStyle={{ padding: '24px 28px' }}
           >
             {/* View Mode Segmented - chỉ hiển thị cho admin/manager */}
-            {(user?.role === 'admin' || user?.role === 'manager') && (
+            {(hasRole('admin') || hasRole('manager')) && (
               <Segmented
                 value={viewMode}
                 onChange={(value) => {
@@ -1685,7 +1810,7 @@ const ScheduleCalendar = () => {
             <div className="calendar-controls">
               <Space wrap>
                 {/* Chỉ hiển thị selector cho admin/manager */}
-                {(user?.role === 'admin' || user?.role === 'manager') && (
+                {(hasRole('admin') || hasRole('manager')) && (
                   <>
                     {viewMode === 'room' && <RoomSelector />}
                     {viewMode === 'dentist' && <DentistSelector />}
@@ -1742,8 +1867,8 @@ const ScheduleCalendar = () => {
               </Space>
             </div>
 
-            {/* 🆕 Emergency Day Closure Button - Admin Only */}
-            {user?.role === 'admin' && (
+            {/* 🆕 Emergency Day Closure Button - Admin & Manager */}
+            {(hasRole('admin') || hasRole('manager')) && (
               <Card size="small" style={{ marginTop: 16, background: '#fff2e8', borderColor: '#ffbb96' }}>
                 <Space>
                   <ExclamationCircleOutlined style={{ color: '#ff7a45', fontSize: 18 }} />
@@ -1778,7 +1903,7 @@ const ScheduleCalendar = () => {
             )}
 
             {/* 🆕 Toggle Slots Controls - Only for admin/manager in room view */}
-            {(user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room' && selectedRoom && (
+            {(hasRole('admin') || hasRole('manager')) && viewMode === 'room' && selectedRoom && (
               <Card size="small" style={{ marginTop: 16, background: '#f0f5ff' }}>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
                   <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -1987,9 +2112,25 @@ const ScheduleCalendar = () => {
         title={
           <Space direction="vertical" size={0}>
             <Text strong>
-              {modalMode === 'toggle' ? 'Chọn slot để bật/tắt' : 'Chi tiết slot'} - {selectedCellShift?.name} ({selectedCellDate?.format('DD/MM/YYYY')})
+              {modalMode === 'toggle' ? 'Chọn slot để bật/tắt' : 
+               modalMode === 'dentist_view' || modalMode === 'nurse_view' ? 'Lịch làm việc chi tiết' :
+               'Chi tiết slot'} - {selectedCellShift?.name} ({selectedCellDate?.format('DD/MM/YYYY')})
             </Text>
             {(() => {
+              if (modalMode === 'dentist_view' || modalMode === 'nurse_view') {
+                const stats = getModalStats();
+                const groupedData = groupSlotsByAppointment(modalSlots);
+                const appointmentCount = Object.keys(groupedData.withAppointment).length;
+                const slotsWithoutAppointment = groupedData.withoutAppointment.length;
+                
+                return (
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    {appointmentCount > 0 && `${appointmentCount} phiếu khám • `}
+                    {stats.totalSlots} slot tổng cộng
+                    {slotsWithoutAppointment > 0 && ` (${slotsWithoutAppointment} slot trống)`}
+                  </Text>
+                );
+              }
               if (modalMode === 'toggle') {
                 const selectedCount = Object.keys(selectedSlotsForToggle).length;
                 const canToggle = isTomorrowOrLater(selectedCellDate);
@@ -2034,7 +2175,15 @@ const ScheduleCalendar = () => {
         }}
         width={800}
         footer={
-          modalMode === 'toggle' ? [
+          modalMode === 'dentist_view' || modalMode === 'nurse_view' ? [
+            // Dentist/Nurse: Only close button
+            <Button key="close" type="primary" onClick={() => {
+              setShowSlotModal(false);
+              setSlotFilter('all');
+            }}>
+              Đóng
+            </Button>
+          ] : modalMode === 'toggle' ? [
             <Button key="cancel" onClick={() => {
               setShowSlotModal(false);
               setSlotFilter('all');
@@ -2072,7 +2221,7 @@ const ScheduleCalendar = () => {
           </div>
         ) : (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            {/* Filter and Select All Controls - Only show in assign mode */}
+            {/* Filter and Select All Controls - Only show in assign mode (not for dentist/nurse view) */}
             {modalMode === 'assign' && (
               <>
                 <Space style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -2108,6 +2257,196 @@ const ScheduleCalendar = () => {
             {/* Slot List */}
             <div style={{ maxHeight: '500px', overflow: 'auto' }}>
               {(() => {
+                // 🆕 Dentist/Nurse View - Group by appointment
+                if (modalMode === 'dentist_view' || modalMode === 'nurse_view') {
+                  if (modalSlots.length === 0) {
+                    return <Empty description="Không có slot" />;
+                  }
+                  
+                  const groupedData = groupSlotsByAppointment(modalSlots);
+                  const appointmentGroups = Object.values(groupedData.withAppointment);
+                  const slotsWithoutAppointment = groupedData.withoutAppointment;
+                  
+                  return (
+                    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                      {/* Slots WITH appointments */}
+                      {appointmentGroups.length > 0 && (
+                        <>
+                          <div>
+                            <Text strong style={{ fontSize: '14px', color: '#1890ff' }}>
+                              📋 Phiếu khám ({appointmentGroups.length})
+                            </Text>
+                          </div>
+                          {appointmentGroups.map((group, groupIndex) => {
+                            const sortedSlots = group.slots.sort((a, b) => {
+                              const timeA = a.startTimeVN || dayjs(a.startTime).format('HH:mm');
+                              const timeB = b.startTimeVN || dayjs(b.startTime).format('HH:mm');
+                              return timeA.localeCompare(timeB);
+                            });
+                            
+                            const firstSlot = sortedSlots[0];
+                            const lastSlot = sortedSlots[sortedSlots.length - 1];
+                            const startTime = firstSlot.startTimeVN || dayjs(firstSlot.startTime).format('HH:mm');
+                            const endTime = lastSlot.endTimeVN || dayjs(lastSlot.endTime).format('HH:mm');
+                            
+                            return (
+                              <Card 
+                                key={group.appointmentId}
+                                size="small"
+                                style={{ 
+                                  backgroundColor: '#f6ffed',
+                                  borderColor: '#b7eb8f'
+                                }}
+                              >
+                                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                  {/* Patient Info Header */}
+                                  <div style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    borderBottom: '1px solid #d9f7be',
+                                    paddingBottom: 8
+                                  }}>
+                                    <Space>
+                                      <Tag color="green">Phiếu #{groupIndex + 1}</Tag>
+                                      {group.patientInfo?.name ? (
+                                        <Text strong style={{ fontSize: '15px' }}>
+                                          🧑 {group.patientInfo.name}
+                                        </Text>
+                                      ) : (
+                                        <Text type="secondary">🧑 Chưa có thông tin bệnh nhân</Text>
+                                      )}
+                                    </Space>
+                                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                                      {startTime} - {endTime}
+                                    </Text>
+                                  </div>
+                                  
+                                  {/* Slot Details */}
+                                  <div>
+                                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                                      Chi tiết slots ({group.slots.length}):
+                                    </Text>
+                                    <div style={{ marginTop: 8 }}>
+                                      {sortedSlots.map((slot, idx) => {
+                                        const slotStart = slot.startTimeVN || dayjs(slot.startTime).format('HH:mm');
+                                        const slotEnd = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
+                                        
+                                        return (
+                                          <div 
+                                            key={getSlotId(slot)}
+                                            style={{ 
+                                              padding: '6px 12px',
+                                              backgroundColor: 'white',
+                                              borderRadius: '4px',
+                                              marginBottom: 6,
+                                              display: 'flex',
+                                              justifyContent: 'space-between',
+                                              alignItems: 'center'
+                                            }}
+                                          >
+                                            <Space>
+                                              <Text strong style={{ minWidth: 90 }}>
+                                                {slotStart} - {slotEnd}
+                                              </Text>
+                                              {slot.subRoom?.name && (
+                                                <Tag color="blue" size="small">
+                                                  {slot.subRoom.name}
+                                                </Tag>
+                                              )}
+                                              <Tag 
+                                                color={slot.isActive ? 'green' : 'red'} 
+                                                size="small"
+                                              >
+                                                {slot.isActive ? 'Hoạt động' : 'Tạm ngừng'}
+                                              </Tag>
+                                            </Space>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Additional Info */}
+                                  {group.patientInfo && (
+                                    <div style={{ 
+                                      fontSize: '12px',
+                                      color: '#666',
+                                      borderTop: '1px solid #d9f7be',
+                                      paddingTop: 8
+                                    }}>
+                                      {group.patientInfo.phone && (
+                                        <div>📱 {group.patientInfo.phone}</div>
+                                      )}
+                                      {group.patientInfo.email && (
+                                        <div>✉️ {group.patientInfo.email}</div>
+                                      )}
+                                    </div>
+                                  )}
+                                </Space>
+                              </Card>
+                            );
+                          })}
+                        </>
+                      )}
+                      
+                      {/* Slots WITHOUT appointments */}
+                      {slotsWithoutAppointment.length > 0 && (
+                        <>
+                          <Divider style={{ margin: '8px 0' }} />
+                          <div>
+                            <Text strong style={{ fontSize: '14px', color: '#8c8c8c' }}>
+                              📭 Slots trống ({slotsWithoutAppointment.length})
+                            </Text>
+                          </div>
+                          {slotsWithoutAppointment
+                            .sort((a, b) => {
+                              const timeA = a.startTimeVN || dayjs(a.startTime).format('HH:mm');
+                              const timeB = b.startTimeVN || dayjs(b.startTime).format('HH:mm');
+                              return timeA.localeCompare(timeB);
+                            })
+                            .map((slot) => {
+                              const startTime = slot.startTimeVN || dayjs(slot.startTime).format('HH:mm');
+                              const endTime = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
+                              
+                              return (
+                                <Card
+                                  key={getSlotId(slot)}
+                                  size="small"
+                                  style={{ 
+                                    backgroundColor: '#fafafa',
+                                    borderColor: '#d9d9d9'
+                                  }}
+                                >
+                                  <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                                    <Space>
+                                      <Text strong style={{ minWidth: 90 }}>
+                                        {startTime} - {endTime}
+                                      </Text>
+                                      {slot.subRoom?.name && (
+                                        <Tag color="blue" size="small">
+                                          {slot.subRoom.name}
+                                        </Tag>
+                                      )}
+                                      <Tag 
+                                        color={slot.isActive ? 'green' : 'red'} 
+                                        size="small"
+                                      >
+                                        {slot.isActive ? 'Hoạt động' : 'Tạm ngừng'}
+                                      </Tag>
+                                    </Space>
+                                    <Tag color="default" size="small">Chưa có phiếu khám</Tag>
+                                  </Space>
+                                </Card>
+                              );
+                            })}
+                        </>
+                      )}
+                    </Space>
+                  );
+                }
+                
+                // Admin/Manager View - Original code
                 const slotsToDisplay = modalMode === 'toggle' ? modalSlots : getFilteredSlots();
                 if (slotsToDisplay.length === 0) {
                   return <Empty description="Không có slot" />;
@@ -2236,6 +2575,16 @@ const ScheduleCalendar = () => {
                                 YT: Chưa phân công
                               </Tag>
                             )}
+                            {/* 🆕 Display patient name if appointment exists */}
+                            {slot.patientInfo?.name ? (
+                              <Tag color="purple" size="small">
+                                BN: {slot.patientInfo.name}
+                              </Tag>
+                            ) : slot.appointmentId ? (
+                              <Tag color="default" size="small">
+                                BN: Đang tải...
+                              </Tag>
+                            ) : null}
                           </Space>
                         </Space>
                       </Card>

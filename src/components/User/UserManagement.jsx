@@ -711,7 +711,10 @@ const UserManagement = () => {
     }
   ];
 
-  if (!['admin', 'manager'].includes(currentUser?.role)) {
+  // ✅ Check selectedRole from localStorage instead of currentUser.role
+  const selectedRole = localStorage.getItem('selectedRole');
+  
+  if (!['admin', 'manager'].includes(selectedRole)) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
         <Title level={3} style={{ color: '#ff4d4f' }}>
@@ -975,7 +978,6 @@ const UserManagement = () => {
                             <Space direction="horizontal" size="large">
                               <Radio value="male">Nam</Radio>
                               <Radio value="female">Nữ</Radio>
-                              <Radio value="other">Khác</Radio>
                             </Space>
                           </Radio.Group>
                         </Form.Item>
@@ -1033,31 +1035,41 @@ const UserManagement = () => {
                             maxTagCount="responsive"
                           >
                             {/* ✅ Role hierarchy: Admin cannot create Admin, Manager cannot create Admin/Manager */}
-                            {currentUser?.role === 'admin' ? (
-                              <>
-                                {/* Admin can create: manager, dentist, nurse, receptionist */}
-                                <Option value="manager">Quản lý</Option>
-                                <Option value="dentist">Nha sĩ</Option>
-                                <Option value="nurse">Y tá</Option>
-                                <Option value="receptionist">Lễ tân</Option>
-                              </>
-                            ) : currentUser?.role === 'manager' ? (
-                              <>
-                                {/* Manager can create: dentist, nurse, receptionist */}
-                                <Option value="dentist">Nha sĩ</Option>
-                                <Option value="nurse">Y tá</Option>
-                                <Option value="receptionist">Lễ tân</Option>
-                              </>
-                            ) : (
-                              <>
-                                {/* Fallback: all roles (should not happen) */}
-                                <Option value="admin">Quản trị viên</Option>
-                                <Option value="manager">Quản lý</Option>
-                                <Option value="dentist">Nha sĩ</Option>
-                                <Option value="nurse">Y tá</Option>
-                                <Option value="receptionist">Lễ tân</Option>
-                              </>
-                            )}
+                            {(() => {
+                              const selectedRole = localStorage.getItem('selectedRole');
+                              
+                              if (selectedRole === 'admin') {
+                                return (
+                                  <>
+                                    {/* Admin can create: manager, dentist, nurse, receptionist */}
+                                    <Option value="manager">Quản lý</Option>
+                                    <Option value="dentist">Nha sĩ</Option>
+                                    <Option value="nurse">Y tá</Option>
+                                    <Option value="receptionist">Lễ tân</Option>
+                                  </>
+                                );
+                              } else if (selectedRole === 'manager') {
+                                return (
+                                  <>
+                                    {/* Manager can create: dentist, nurse, receptionist */}
+                                    <Option value="dentist">Nha sĩ</Option>
+                                    <Option value="nurse">Y tá</Option>
+                                    <Option value="receptionist">Lễ tân</Option>
+                                  </>
+                                );
+                              } else {
+                                return (
+                                  <>
+                                    {/* Fallback: all roles (should not happen) */}
+                                    <Option value="admin">Quản trị viên</Option>
+                                    <Option value="manager">Quản lý</Option>
+                                    <Option value="dentist">Nha sĩ</Option>
+                                    <Option value="nurse">Y tá</Option>
+                                    <Option value="receptionist">Lễ tân</Option>
+                                  </>
+                                );
+                              }
+                            })()}
                           </Select>
                         </Form.Item>
                       </Col>

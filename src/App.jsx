@@ -67,6 +67,9 @@ import InvoiceFormModal from './pages/Invoices/InvoiceFormModal.jsx';
 import InvoiceDetailDrawer from './pages/Invoices/InvoiceDetailDrawer.jsx';
 import InvoiceTemplate from './pages/Invoices/InvoiceTemplate.jsx';
 
+// Payment Management
+import PaymentList from './pages/Payment/PaymentList.jsx';
+
 // Statistics Dashboard
 import StatisticsDashboard from './pages/Statistics/StatisticsDashboard.jsx';
 
@@ -103,8 +106,7 @@ import PaymentFailed from './pages/Patient/PaymentFailed.jsx';
 import { Result, Button } from 'antd';
 import { 
   HomeOutlined, 
-  LockOutlined, 
-  SettingOutlined,
+  LockOutlined,
   CalendarOutlined,
   HeartOutlined,
   TeamOutlined
@@ -171,19 +173,6 @@ const RootRedirect = () => {
   
   return <HomepageLayout><Homepage /></HomepageLayout>;
 };
-
-// Placeholder pages for development
-const Settings = () => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <SettingOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Cài đặt</h1>
-    </div>
-    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <p style={{ color: '#8c8c8c', margin: 0 }}>Trang cài đặt sẽ được phát triển ở đây...</p>
-    </div>
-  </div>
-);
 
 function App() {
   return (
@@ -324,11 +313,6 @@ function App() {
                 <PatientInvoices />
               </ProtectedRoute>
             } />
-            <Route path="settings" element={
-              <ProtectedRoute roles={['patient']}>
-                <Settings />
-              </ProtectedRoute>
-            } />
           </Route>
           
           {/* Protected routes - Dashboard cho người đã đăng nhập */}
@@ -357,7 +341,14 @@ function App() {
             
             {/* Queue Dashboard */}
             <Route path="queue" element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <QueueManagement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Queue Dashboard (Receptionist alias) */}
+            <Route path="queue-receptionist" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
                 <QueueManagement />
               </ProtectedRoute>
             } />
@@ -371,36 +362,50 @@ function App() {
             
             {/* Patient Appointments Management */}
             <Route path="patient-appointments" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <AdminPatientAppointments />
+              </ProtectedRoute>
+            } />
+            
+            {/* Patient Appointments (Receptionist alias) */}
+            <Route path="patient-appointments-receptionist" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
                 <AdminPatientAppointments />
               </ProtectedRoute>
             } />
             
             {/* Patient Management */}
             <Route path="patients" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
                 <PatientManagement />
               </ProtectedRoute>
             } />
             
             {/* Walk-in Appointments */}
             <Route path="walk-in-appointments" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
                 <WalkInAppointmentForm />
               </ProtectedRoute>
             } />
             
             {/* Medical Records */}
             <Route path="records" element={
-              <ProtectedRoute roles={['admin', 'manager', 'dentist']}>
+              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
                 <RecordList />
               </ProtectedRoute>
             } />
             
             {/* Invoices */}
             <Route path="invoices" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
                 <InvoiceList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Payments */}
+            <Route path="payments" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <PaymentList />
               </ProtectedRoute>
             } />
             

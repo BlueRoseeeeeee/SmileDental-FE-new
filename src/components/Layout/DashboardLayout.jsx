@@ -1,4 +1,4 @@
-/*
+﻿/*
 * @author: HoTram
 */
 import React, { useState } from 'react';
@@ -8,7 +8,6 @@ import {
   MenuOutlined,
   HomeOutlined,
   UserOutlined,
-  SettingOutlined,
   LogoutOutlined,
   BellOutlined,
   SearchOutlined,
@@ -59,9 +58,22 @@ const DashboardLayout = () => {
     return roleNames[role] || role;
   };
 
-  // ✅ Get primary role to display (priority: admin > manager > dentist > nurse > receptionist > patient)
+  // ✅ Get primary role to display based on selectedRole from login
   const getPrimaryRole = () => {
     const userRoles = user?.roles || (user?.role ? [user.role] : []);
+    
+    // If user has only 1 role, return it directly (no need for selectedRole)
+    if (userRoles.length === 1) {
+      return userRoles[0];
+    }
+    
+    // Priority 1: Use the role selected during login (only if it's valid)
+    const selectedRole = localStorage.getItem('selectedRole');
+    if (selectedRole && userRoles.includes(selectedRole)) {
+      return selectedRole;
+    }
+    
+    // Priority 2: Fall back to role priority if selectedRole is invalid or doesn't exist
     const rolePriority = ['admin', 'manager', 'dentist', 'nurse', 'receptionist', 'patient'];
     for (const role of rolePriority) {
       if (userRoles.includes(role)) return role;
@@ -80,190 +92,176 @@ const DashboardLayout = () => {
     ];
 
     const roleBasedItems = [];
+    const addedKeys = new Set(['/dashboard']); // Track added keys to prevent duplicates
 
-    // ✅ Support both roles array and legacy single role
-    const userRoles = user?.roles || (user?.role ? [user.role] : []);
-    const hasRole = (roleToCheck) => userRoles.includes(roleToCheck);
+    // ✅ Check ONLY selectedRole - user sees menu of the role they logged in as
+    const selectedRole = localStorage.getItem('selectedRole');
+    const hasRole = (roleToCheck) => selectedRole === roleToCheck;
+
+    // Helper function to add item only if key doesn't exist
+    const addMenuItem = (item) => {
+      if (!addedKeys.has(item.key)) {
+        addedKeys.add(item.key);
+        roleBasedItems.push(item);
+      }
+    };
 
     // ==================== ADMIN & MANAGER ====================
     if (hasRole('admin') || hasRole('manager')) {
-      roleBasedItems.push(
-        // Quản lý nhân sự
-        {
-          key: 'staff-management',
-          icon: <TeamOutlined />,
-          label: 'Quản lý nhân sự',
-          children: [
-            { key: '/dashboard/users', label: 'Danh sách nhân viên', icon: <UserSwitchOutlined /> },
-            { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined /> },
-          ]
-        },
-        
-        // Quản lý lịch làm việc
-        {
-          key: 'schedules-menu',
-          icon: <ClockCircleOutlined />,
-          label: 'Quản lý lịch làm việc',
-          children: [
-            { key: '/dashboard/schedules', label: 'Cấu hình hệ thống' },
-            { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc' },
-            { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng' },
-            { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ' },
-          ]
-        },
+      // 🧩 I. HỆ THỐNG & NHÂN SỰ
+      addMenuItem({
+        key: 'system-staff',
+        icon: <TeamOutlined />,
+        label: 'Hệ thống & Nhân sự',
+        children: [
+          { key: '/dashboard/users', label: 'Danh sách nhân viên', icon: <UserSwitchOutlined /> },
+          { key: '/dashboard/schedules/staff-assignment', label: 'Phân công ca', icon: <CalendarOutlined /> },
+          { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
+          { key: '/dashboard/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
+        ]
+      });
 
-        // Quản lý lịch hẹn
-        {
-          key: 'appointments-menu',
-          icon: <CalendarOutlined />,
-          label: 'Quản lý lịch hẹn',
-          children: [
-            { key: '/dashboard/patient-appointments', label: 'Lịch khám bệnh nhân', icon: <CalendarOutlined /> },
-            { key: '/dashboard/walk-in-appointments', label: 'Lịch hẹn Walk-in', icon: <UserAddOutlined /> },
-          ]
-        },
-        {
-          key: '/dashboard/services',
-          icon: <MedicineBoxOutlined />,
-          label: 'Quản lý dịch vụ',
-        },
+      // 📅 II. LỊCH & VẬN HÀNH
+      addMenuItem({
+        key: 'schedules-operations',
+        icon: <CalendarOutlined />,
+        label: 'Lịch & Vận hành',
+        children: [
+          { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc tổng', icon: <CalendarOutlined /> },
+          { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng', icon: <CalendarOutlined /> },
+          { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ', icon: <CalendarOutlined /> },
+          { key: '/dashboard/walk-in-appointments', label: 'Lịch Walk-in', icon: <UserAddOutlined /> },
+          { key: '/dashboard/queue', label: 'Hàng đợi khám', icon: <UserAddOutlined /> },
+        ]
+      });
 
-        // Quản lý hàng đợi
-        {
-          key: '/dashboard/queue',
-          icon: <UserAddOutlined />,
-          label: 'Quản lý hàng đợi',
-        },
-        
-        // Lịch khám của nhân viên
-        {
-          key: '/dashboard/staff-schedule',
-          icon: <CalendarOutlined />,
-          label: 'Lịch khám nhân viên',
-        },
+      // 🩺 III. KHÁM & ĐIỀU TRỊ
+      addMenuItem({
+        key: 'medical-treatment',
+        icon: <MedicineBoxOutlined />,
+        label: 'Khám & Điều trị',
+        children: [
+          { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
+          { key: '/dashboard/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
+        ]
+      });
 
-        // Quản lý hồ sơ & bệnh án
-        {
-          key: '/dashboard/medical-records',
-          icon: <FileDoneOutlined />,
-          label: 'Hồ sơ & Bệnh án',
-          children: [
-            { key: '/dashboard/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
-            { key: '/dashboard/patients', label: 'Quản lý bệnh nhân', icon: <HeartOutlined /> },
-          ]
-        },
-
-        // Quản lý phòng khám & dịch vụ
-        {
-          key: '/dashboard/facility-menu',
-          icon: <EnvironmentOutlined />,
-          label: 'Cơ sở vật chất',
-          children: [
-            { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
-            // { key: '/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
-          ]
-        },
-
-        // Quản lý tài chính
-        {
-          key: '/dashboard/invoices',
-          icon: <DollarOutlined />,
-          label: 'Quản lý hóa đơn',
-        },
-        
-        // Thống kê & Báo cáo
-        {
-          key: '/dashboard/statistics',
-          icon: <BarChartOutlined />,
-          label: 'Thống kê & Báo cáo',
-        }
-      );
+      // 💰 IV. DỊCH VỤ & TÀI CHÍNH
+      addMenuItem({
+        key: 'finance',
+        icon: <DollarOutlined />,
+        label: 'Dịch vụ & Tài chính',
+        children: [
+          { key: '/dashboard/invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined /> },
+          { key: '/dashboard/payments', label: 'Quản lý thanh toán', icon: <DollarOutlined /> },
+                    { key: '/dashboard/statistics', label: 'Thống kê & Báo cáo', icon: <BarChartOutlined /> },
+        ]
+      });
     }
 
     // ==================== DENTIST ====================
     if (hasRole('dentist')) {
-      roleBasedItems.push(
-        {
-          key: '/dashboard/staff-schedule',
-          icon: <CalendarOutlined />,
-          label: 'Lịch khám của tôi',
-        },
-        {
-          key: '/dashboard/certificates',
-          icon: <FileTextOutlined />,
-          label: 'Quản lý chứng chỉ',
-        },
-        {
-          key: '/dashboard/records',
-          icon: <FileDoneOutlined />,
-          label: 'Hồ sơ bệnh án',
-        },
-        {
-          key: '/patients',
-          icon: <HeartOutlined />,
-          label: 'Quản lý bệnh nhân',
-        }
-      );
+      // 📅 Lịch làm việc
+      addMenuItem({
+        key: '/dashboard/schedules/calendar',
+        icon: <CalendarOutlined />,
+        label: 'Lịch làm việc',
+      });
+      
+      // 🩺 Hồ sơ bệnh án
+      addMenuItem({
+        key: '/dashboard/records',
+        icon: <FileDoneOutlined />,
+        label: 'Hồ sơ bệnh án',
+      });
+      
+      addMenuItem({
+        key: '/dashboard/certificates',
+        icon: <FileTextOutlined />,
+        label: 'Chứng chỉ hành nghề',
+      });
     }
 
     // ==================== NURSE ====================
     if (hasRole('nurse')) {
-      roleBasedItems.push(
-        {
-          key: '/dashboard/staff-schedule',
-          icon: <CalendarOutlined />,
-          label: 'Lịch làm việc của tôi',
-        },
-        {
-          key: '/patients',
-          icon: <HeartOutlined />,
-          label: 'Quản lý bệnh nhân',
-        }
-      );
+      // 📅 Lịch làm việc
+      addMenuItem({
+        key: '/dashboard/schedules/calendar',
+        icon: <CalendarOutlined />,
+        label: 'Lịch làm việc',
+      });
+      
+      // 🩺 Hồ sơ bệnh án
+      addMenuItem({
+        key: '/dashboard/records',
+        icon: <FileDoneOutlined />,
+        label: 'Hồ sơ bệnh án',
+      });
     }
 
     // ==================== RECEPTIONIST & STAFF ====================
     if (hasRole('receptionist') || hasRole('staff')) {
-      roleBasedItems.push(
-        {
-          key: '/dashboard/queue',
-          icon: <UserAddOutlined />,
-          label: 'Quản lý hàng đợi',
-        },
-        {
-          key: '/dashboard/patient-appointments',
-          icon: <CalendarOutlined />,
-          label: 'Lịch hẹn',
-        }
-      );
+      // 📋 Quản lý hàng đợi
+      addMenuItem({
+        key: '/dashboard/queue-receptionist',
+        icon: <UserAddOutlined />,
+        label: 'Quản lý hàng đợi',
+      });
+      
+      // 📅 Lịch hẹn khám
+      addMenuItem({
+        key: '/dashboard/patient-appointments-receptionist',
+        icon: <CalendarOutlined />,
+        label: 'Lịch hẹn khám',
+      });
+      
+      // 🚶 Lịch Walk-in
+      addMenuItem({
+        key: '/dashboard/walk-in-appointments',
+        icon: <UserAddOutlined />,
+        label: 'Lịch Walk-in',
+      });
+      
+      // 👥 Danh sách bệnh nhân
+      addMenuItem({
+        key: '/dashboard/patients',
+        icon: <HeartOutlined />,
+        label: 'Danh sách bệnh nhân',
+      });
+      
+      // 📄 Hóa đơn
+      addMenuItem({
+        key: '/dashboard/invoices',
+        icon: <FileTextOutlined />,
+        label: 'Quản lý hóa đơn',
+      });
+      
+      // 💰 Thanh toán
+      addMenuItem({
+        key: '/dashboard/payments',
+        icon: <DollarOutlined />,
+        label: 'Quản lý thanh toán',
+      });
     }
 
     // ==================== PATIENT ====================
     if (hasRole('patient')) {
-      roleBasedItems.push(
-        {
-          key: '/dentists',
-          icon: <TeamOutlined />,
-          label: 'Danh sách nha sĩ',
-        }
-      );
+      // 🧑‍🦷 Dành cho bệnh nhân
+      addMenuItem({
+        key: '/dentists',
+        icon: <TeamOutlined />,
+        label: 'Danh sách nha sĩ',
+      });
     }
 
     // ==================== COMMON ITEMS ====================
-    const commonItems = [
-      {
-        key: '/dashboard/profile',
-        icon: <UserOutlined />,
-        label: 'Hồ sơ cá nhân',
-      },
-      {
-        key: '/dashboard/settings',
-        icon: <SettingOutlined />,
-        label: 'Cài đặt',
-      }
-    ];
+    addMenuItem({
+      key: '/dashboard/profile',
+      icon: <UserOutlined />,
+      label: 'Hồ sơ cá nhân',
+    });
 
-    return [...baseItems, ...roleBasedItems, ...commonItems];
+    return [...baseItems, ...roleBasedItems];
   };
 
   const userMenuItems = [
@@ -278,12 +276,6 @@ const DashboardLayout = () => {
       icon: <SafetyOutlined />,
       label: 'Đổi mật khẩu',
       onClick: () => navigate('/dashboard/change-password'),
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-      onClick: () => navigate('/dashboard/settings'),
     },
     {
       type: 'divider',

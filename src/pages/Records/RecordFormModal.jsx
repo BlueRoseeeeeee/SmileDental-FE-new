@@ -37,11 +37,10 @@ import {
   ExperimentOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import {
-  createRecord,
-  updateRecord,
-  addPrescription
-} from '../../services/mockRecordService';
+import recordService from '../../services/recordService';
+import { servicesService } from '../../services/servicesService';
+import userService from '../../services/userService';
+import roomService from '../../services/roomService';
 import PrescriptionForm from './PrescriptionForm';
 
 const { Option } = Select;
@@ -53,27 +52,41 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   const [activeTab, setActiveTab] = useState('1');
   const [recordType, setRecordType] = useState('exam');
   
-  // Mock data - Replace with real API calls
+  // Real data from APIs
   const [patients, setPatients] = useState([]);
   const [services, setServices] = useState([]);
   const [dentists, setDentists] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [medicines, setMedicines] = useState([]);
+  
+  // ServiceAddOns for selected services in treatmentIndications
+  const [serviceAddOnsMap, setServiceAddOnsMap] = useState({}); // { serviceId: [addOns] }
+  const [loadingAddOns, setLoadingAddOns] = useState(false);
 
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
   useEffect(() => {
     if (visible) {
-      loadMockData();
+      loadData();
       
       if (mode === 'edit' && record) {
         // Populate form with record data
         form.setFieldsValue({
           ...record,
           date: record.date ? dayjs(record.date) : dayjs(),
-          indications: record.indications || []
+          indications: record.indications || [],
+          treatmentIndications: record.treatmentIndications || []
         });
         setRecordType(record.type || 'exam');
+        
+        // Load service addons for existing treatment indications
+        if (record.treatmentIndications && record.treatmentIndications.length > 0) {
+          record.treatmentIndications.forEach(indication => {
+            if (indication.serviceId) {
+              loadServiceAddOns(indication.serviceId);
+            }
+          });
+        }
       } else {
         // Reset form for create mode
         form.resetFields();
@@ -85,49 +98,72 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           paymentStatus: 'unpaid'
         });
         setRecordType('exam');
+        setServiceAddOnsMap({});
       }
     }
   }, [visible, mode, record]);
 
-  const loadMockData = () => {
-    // Mock patients
-    setPatients([
-      { _id: 'pat_001', name: 'Nguyễn Văn A', phone: '0901234567', birthYear: 1990, gender: 'male' },
-      { _id: 'pat_002', name: 'Trần Thị B', phone: '0909876543', birthYear: 1985, gender: 'female' },
-      { _id: 'pat_003', name: 'Lê Văn C', phone: '0912345678', birthYear: 1995, gender: 'male' }
-    ]);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load patients
+      const patientsResponse = await userService.getAllPatients(1, 1000);
+      if (patientsResponse.success && patientsResponse.data) {
+        setPatients(patientsResponse.data);
+      }
 
-    // Mock services
-    setServices([
-      { _id: 'ser_001', name: 'Khám tổng quát', price: 200000 },
-      { _id: 'ser_002', name: 'Nhổ răng', price: 500000 },
-      { _id: 'ser_003', name: 'Hàn răng', price: 300000 },
-      { _id: 'ser_004', name: 'Cạo vôi răng', price: 150000 },
-      { _id: 'ser_005', name: 'Tẩy trắng răng', price: 1000000 }
-    ]);
+      // Load services
+      const servicesResponse = await servicesService.getAllServices();
+      if (servicesResponse.success && servicesResponse.data) {
+        setServices(servicesResponse.data);
+      }
 
-    // Mock dentists
-    setDentists([
-      { _id: 'den_001', fullName: 'BS. Nguyễn Văn An', specialization: 'Tổng quát' },
-      { _id: 'den_002', fullName: 'BS. Trần Thị Bình', specialization: 'Nha chu' },
-      { _id: 'den_003', fullName: 'BS. Lê Văn Cường', specialization: 'Phẫu thuật' }
-    ]);
+      // Load dentists (all staff with dentist role will be filtered on backend)
+      const dentistsResponse = await userService.getAllStaff(1, 1000);
+      if (dentistsResponse.success && dentistsResponse.data) {
+        // Filter dentists from staff
+        const dentistsList = dentistsResponse.data.filter(staff => staff.role === 'dentist');
+        setDentists(dentistsList);
+      }
 
-    // Mock rooms
-    setRooms([
-      { _id: 'room_001', name: 'Phòng khám 1' },
-      { _id: 'room_002', name: 'Phòng phẫu thuật' },
-      { _id: 'room_003', name: 'Phòng điều trị' }
-    ]);
+      // Load rooms
+      const roomsResponse = await roomService.getRooms(1, 1000);
+      if (roomsResponse.success && roomsResponse.data) {
+        setRooms(roomsResponse.data);
+      }
 
-    // Mock medicines
-    setMedicines([
-      { _id: 'med_001', name: 'Amoxicillin 500mg', unit: 'viên' },
-      { _id: 'med_002', name: 'Ibuprofen 400mg', unit: 'viên' },
-      { _id: 'med_003', name: 'Metronidazole 250mg', unit: 'viên' },
-      { _id: 'med_004', name: 'Paracetamol 500mg', unit: 'viên' },
-      { _id: 'med_005', name: 'Nước súc miệng', unit: 'chai' }
-    ]);
+      // Note: Medicines should be loaded from medicine service when prescription tab is opened
+      
+    } catch (error) {
+      console.error('Load data error:', error);
+      message.error('Không thể tải dữ liệu. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Load service addons when service is selected in treatment indications
+  const loadServiceAddOns = async (serviceId) => {
+    if (serviceAddOnsMap[serviceId]) {
+      return; // Already loaded
+    }
+    
+    try {
+      setLoadingAddOns(true);
+      const response = await servicesService.getServiceById(serviceId);
+      if (response.success && response.data && response.data.serviceAddOns) {
+        setServiceAddOnsMap(prev => ({
+          ...prev,
+          [serviceId]: response.data.serviceAddOns.filter(addon => addon.isActive)
+        }));
+      }
+    } catch (error) {
+      console.error('Load service addons error:', error);
+      message.error('Không thể tải danh sách dịch vụ con');
+    } finally {
+      setLoadingAddOns(false);
+    }
   };
 
   // Handle record type change
@@ -147,28 +183,49 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       const dentist = dentists.find(d => d._id === values.dentistId);
       const room = rooms.find(r => r._id === values.roomId);
 
+      // Process treatment indications to include service/addon names
+      let processedTreatmentIndications = [];
+      if (values.treatmentIndications && values.treatmentIndications.length > 0) {
+        processedTreatmentIndications = values.treatmentIndications.map(indication => {
+          const indicationService = services.find(s => s._id === indication.serviceId);
+          const addOns = serviceAddOnsMap[indication.serviceId] || [];
+          const addOn = addOns.find(a => a._id === indication.serviceAddOnId);
+          
+          return {
+            serviceId: indication.serviceId,
+            serviceName: indicationService?.name || '',
+            serviceAddOnId: indication.serviceAddOnId || null,
+            serviceAddOnName: addOn?.name || null,
+            notes: indication.notes || '',
+            used: false
+          };
+        });
+      }
+
       const recordData = {
         ...values,
         date: values.date.toISOString(),
         patientInfo: patient ? {
-          name: patient.name,
+          name: patient.fullName || patient.name,
           phone: patient.phone,
           birthYear: patient.birthYear,
-          gender: patient.gender
+          gender: patient.gender,
+          address: patient.address
         } : {},
         serviceName: service?.name || '',
         dentistName: dentist?.fullName || '',
         roomName: room?.name || '',
-        totalCost: service?.price || 0,
+        treatmentIndications: processedTreatmentIndications,
+        totalCost: 0, // Will be calculated by backend
         createdBy: currentUser._id || 'unknown',
         lastModifiedBy: currentUser._id || 'unknown'
       };
 
       let response;
       if (mode === 'edit' && record) {
-        response = await updateRecord(record._id, recordData);
+        response = await recordService.updateRecord(record._id, recordData);
       } else {
-        response = await createRecord(recordData);
+        response = await recordService.createRecord(recordData);
       }
 
       if (response.success) {
@@ -177,6 +234,8 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         if (onSuccess) {
           onSuccess(response.data);
         }
+      } else {
+        throw new Error(response.message || 'Có lỗi xảy ra');
       }
     } catch (error) {
       console.error('Submit record error:', error);
@@ -224,7 +283,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
               >
                 {patients.map(patient => (
                   <Option key={patient._id} value={patient._id}>
-                    {patient.name} - {patient.phone}
+                    {patient.fullName || patient.name} - {patient.phone}
                   </Option>
                 ))}
               </Select>
@@ -465,59 +524,95 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           <Alert
             type="info"
             message="Chỉ định điều trị"
-            description="Thêm các dịch vụ điều trị được khuyến nghị cho bệnh nhân"
+            description="Thêm các dịch vụ điều trị được khuyến nghị cho bệnh nhân. Chọn Service và ServiceAddOn cụ thể có giá."
             style={{ marginBottom: 16 }}
           />
 
           <Form.List name="treatmentIndications">
             {(fields, { add, remove }) => (
               <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Card
-                    key={key}
-                    size="small"
-                    style={{ marginBottom: 8 }}
-                    extra={
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => remove(name)}
-                      >
-                        Xóa
-                      </Button>
-                    }
-                  >
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'serviceId']}
-                          label="Dịch vụ điều trị"
-                          rules={[{ required: true, message: 'Chọn dịch vụ' }]}
+                {fields.map(({ key, name, ...restField }) => {
+                  const selectedServiceId = form.getFieldValue(['treatmentIndications', name, 'serviceId']);
+                  const addOnsForService = serviceAddOnsMap[selectedServiceId] || [];
+                  
+                  return (
+                    <Card
+                      key={key}
+                      size="small"
+                      style={{ marginBottom: 8 }}
+                      extra={
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => remove(name)}
                         >
-                          <Select placeholder="Chọn dịch vụ">
-                            {services.map(service => (
-                              <Option key={service._id} value={service._id}>
-                                {service.name}
-                              </Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
-                      </Col>
+                          Xóa
+                        </Button>
+                      }
+                    >
+                      <Row gutter={16}>
+                        <Col span={8}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'serviceId']}
+                            label="Service (Nhóm dịch vụ)"
+                            rules={[{ required: true, message: 'Chọn service' }]}
+                          >
+                            <Select 
+                              placeholder="Chọn service"
+                              onChange={(value) => {
+                                // Load service addons when service changes
+                                loadServiceAddOns(value);
+                                // Reset serviceAddOnId when service changes
+                                const currentValues = form.getFieldValue('treatmentIndications');
+                                currentValues[name].serviceAddOnId = null;
+                                form.setFieldsValue({ treatmentIndications: currentValues });
+                              }}
+                            >
+                              {services.filter(s => s.type === 'treatment').map(service => (
+                                <Option key={service._id} value={service._id}>
+                                  {service.name}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
+                        </Col>
 
-                      <Col span={12}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'notes']}
-                          label="Ghi chú"
-                        >
-                          <Input placeholder="Ghi chú về chỉ định này" />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  </Card>
-                ))}
+                        <Col span={8}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'serviceAddOnId']}
+                            label="ServiceAddOn (Dịch vụ cụ thể)"
+                            rules={[{ required: true, message: 'Chọn service addon' }]}
+                          >
+                            <Select 
+                              placeholder={selectedServiceId ? "Chọn service addon" : "Chọn service trước"}
+                              disabled={!selectedServiceId || loadingAddOns}
+                              loading={loadingAddOns}
+                            >
+                              {addOnsForService.map(addOn => (
+                                <Option key={addOn._id} value={addOn._id}>
+                                  {addOn.name} - {addOn.price.toLocaleString('vi-VN')}đ/{addOn.unit}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
+                        </Col>
+
+                        <Col span={8}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'notes']}
+                            label="Ghi chú"
+                          >
+                            <Input placeholder="Ghi chú về chỉ định này" />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Card>
+                  );
+                })}
 
                 <Button
                   type="dashed"

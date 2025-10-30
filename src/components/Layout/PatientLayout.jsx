@@ -8,7 +8,6 @@ import {
   LogoutOutlined,
   MenuOutlined,
   HistoryOutlined,
-  SettingOutlined,
   FileTextOutlined,
   DollarOutlined
 } from '@ant-design/icons';
@@ -84,12 +83,6 @@ const PatientLayout = () => {
       icon: <UserOutlined />,
       label: 'Thông tin cá nhân',
       onClick: () => navigate('/patient/profile')
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-      onClick: () => navigate('/patient/settings')
     },
     {
       type: 'divider'
