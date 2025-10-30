@@ -914,7 +914,7 @@ const ScheduleCalendar = () => {
   }, []);  // Empty deps - chỉ tạo 1 lần
 
   const handleSelectAllSlotsInWeek = (shiftName) => {
-    // Select all slots of the given shift in current week
+    // 🆕 Select all slots of the given shift in current week (from tomorrow onwards only)
     if (!calendarData?.periods?.[0]?.days) return;
 
     const newSelected = { ...selectedSlotsForToggle };
@@ -922,6 +922,12 @@ const ScheduleCalendar = () => {
     
     calendarData.periods[0].days.forEach(dayData => {
       const dayDate = dayjs(dayData.date);
+      
+      // 🆕 Only select slots from tomorrow or later
+      if (!isTomorrowOrLater(dayDate)) {
+        return; // Skip past/today dates
+      }
+      
       // 🔧 FIX: shifts is an object, not array - access by key
       const shiftData = dayData.shifts?.[shiftName];
       
@@ -933,7 +939,7 @@ const ScheduleCalendar = () => {
     });
 
     if (slotsInShift.length === 0) {
-      toast.info(`Không có slot nào thuộc ${shiftName} trong tuần này`);
+      toast.info(`Không có slot nào thuộc ${shiftName} (từ ngày mai) trong tuần này`);
       return;
     }
 
@@ -944,7 +950,7 @@ const ScheduleCalendar = () => {
         delete newSelected[getSlotId(slot)];
       });
       setSelectedSlotsForToggle(newSelected);
-      toast.info(`Đã bỏ chọn toàn bộ slot ${shiftName} trong tuần`);
+      toast.info(`Đã bỏ chọn toàn bộ slot ${shiftName} (từ ngày mai)`);
     } else {
       slotsInShift.forEach(({ slot, dayDate }) => {
         newSelected[getSlotId(slot)] = {
@@ -957,7 +963,7 @@ const ScheduleCalendar = () => {
         };
       });
       setSelectedSlotsForToggle(newSelected);
-      toast.success(`Đã chọn tất cả slots của ${shiftName} trong tuần này`);
+      toast.success(`Đã chọn ${slotsInShift.length} slot ${shiftName} (từ ngày mai)`);
     }
   };
 
@@ -998,7 +1004,15 @@ const ScheduleCalendar = () => {
       const result = await slotService.toggleSlotsIsActive(slotIds, true, '');
       
       if (result.success) {
-        toast.success(`Bật thành công ${result.modifiedCount} slots`);
+        const changedCount = result.changedCount || result.modifiedCount || 0;
+        const unchangedCount = result.unchangedCount || 0;
+        const emailsSent = result.emailsSent || 0;
+        
+        if (changedCount > 0) {
+          toast.success(`Bật thành công ${changedCount} slot${unchangedCount > 0 ? ` (${unchangedCount} slot đã bật trước đó)` : ''}. Đã gửi ${emailsSent} email thông báo.`);
+        } else {
+          toast.info(`Tất cả ${selectedCount} slot đã được bật trước đó`);
+        }
         setSelectedSlotsForToggle({});
         await loadScheduleData();
       } else {
@@ -1036,7 +1050,15 @@ const ScheduleCalendar = () => {
       const result = await slotService.toggleSlotsIsActive(slotIds, false, disableReason);
       
       if (result.success) {
-        toast.success(`Tắt thành công ${result.modifiedCount} slots`);
+        const changedCount = result.changedCount || result.modifiedCount || 0;
+        const unchangedCount = result.unchangedCount || 0;
+        const emailsSent = result.emailsSent || 0;
+        
+        if (changedCount > 0) {
+          toast.success(`Tắt thành công ${changedCount} slot${unchangedCount > 0 ? ` (${unchangedCount} slot đã tắt trước đó)` : ''}. Đã gửi ${emailsSent} email thông báo.`);
+        } else {
+          toast.info(`Tất cả ${slotIds.length} slot đã được tắt trước đó`);
+        }
         setSelectedSlotsForToggle({});
         setShowDisableModal(false);
         setDisableReason('');
@@ -1211,10 +1233,21 @@ const ScheduleCalendar = () => {
     </Select>
   );
 
+  // 🆕 Helper: Check if date is tomorrow or later
+  const isTomorrowOrLater = (date) => {
+    const tomorrow = dayjs().add(1, 'day').startOf('day');
+    return date.isSameOrAfter(tomorrow, 'day');
+  };
+
   // Render calendar cell
   const CalendarCell = ({ date, shift }) => {
     const shiftData = getShiftData(date, shift);
     const isShiftActive = shift.isActive;
+    
+    // 🆕 Check if can toggle this cell (admin/manager, room view, tomorrow or later)
+    const canToggleCell = (user?.role === 'admin' || user?.role === 'manager') 
+      && viewMode === 'room' 
+      && isTomorrowOrLater(date);
 
     if (!isShiftActive) {
       return (
@@ -1257,6 +1290,12 @@ const ScheduleCalendar = () => {
     // 🆕 Handler to select/deselect all slots in this cell
     const handleToggleAllSlotsInCell = async (e) => {
       e.stopPropagation(); // Prevent opening modal
+      
+      // 🆕 Check if can toggle (tomorrow or later)
+      if (!canToggleCell) {
+        toast.warning('Chỉ có thể bật/tắt lịch từ ngày mai trở đi');
+        return;
+      }
       
       // Fetch slots if not cached yet
       let slotsToToggle = cachedSlots;
@@ -1313,8 +1352,8 @@ const ScheduleCalendar = () => {
             setShowSlotModal(true);
             setLoadingModalSlots(true);
             
-            // 🆕 Open in toggle mode if admin/manager in room view
-            if ((user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room') {
+            // 🆕 Open in toggle mode if admin/manager in room view AND tomorrow or later
+            if (canToggleCell) {
               setModalMode('toggle');
             } else {
               setModalMode('assign');
@@ -1328,12 +1367,13 @@ const ScheduleCalendar = () => {
         }}
         style={{ 
           cursor: totalSlots > 0 ? 'pointer' : 'default',
-          position: 'relative' 
+          position: 'relative',
+          opacity: canToggleCell ? 1 : 0.7 // Dim past/today dates
         }}
       >
         <div className="cell-content">
-          {/* 🆕 Quick select checkbox for admin/manager in room view */}
-          {(user?.role === 'admin' || user?.role === 'manager') && viewMode === 'room' && totalSlots > 0 && (
+          {/* 🆕 Quick select checkbox - only show if can toggle */}
+          {canToggleCell && totalSlots > 0 && (
             <div style={{ position: 'absolute', top: 4, left: 4, zIndex: 10 }}>
               <Checkbox
                 checked={allSlotsInCellSelected}
@@ -1731,6 +1771,14 @@ const ScheduleCalendar = () => {
                     )}
                   </Space>
                   
+                  {/* 🆕 Warning about past/today dates */}
+                  <Alert
+                    type="info"
+                    message="💡 Chỉ có thể bật/tắt lịch từ ngày mai trở đi"
+                    showIcon
+                    style={{ fontSize: '12px' }}
+                  />
+                  
                   <Space wrap>
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       Chọn nhanh theo ca:
@@ -1923,6 +1971,16 @@ const ScheduleCalendar = () => {
             {(() => {
               if (modalMode === 'toggle') {
                 const selectedCount = Object.keys(selectedSlotsForToggle).length;
+                const canToggle = isTomorrowOrLater(selectedCellDate);
+                
+                if (!canToggle) {
+                  return (
+                    <Text type="warning" style={{ fontSize: '12px' }}>
+                      ⚠️ Chỉ có thể bật/tắt lịch từ ngày mai trở đi
+                    </Text>
+                  );
+                }
+                
                 return (
                   <Text type={selectedCount > 0 ? 'success' : 'secondary'} style={{ fontSize: '12px' }}>
                     {selectedCount > 0 ? `Đã chọn: ${selectedCount} slot` : 'Chọn slot để bật/tắt'}
@@ -2068,27 +2126,34 @@ const ScheduleCalendar = () => {
                     const isSelected = modalMode === 'toggle' 
                       ? !!selectedSlotsForToggle[getSlotId(slot)]
                       : selectedSlots.includes(getSlotId(slot));
+                    
+                    // 🆕 Check if can toggle this slot (tomorrow or later)
+                    const canToggleThisSlot = modalMode === 'toggle' && isTomorrowOrLater(selectedCellDate);
 
                     return (
                       <Card
                         key={getSlotId(slot)}
                         size="small"
                         style={{ 
-                          cursor: 'pointer',
+                          cursor: canToggleThisSlot ? 'pointer' : 'not-allowed',
                           backgroundColor: isSelected ? '#e6f7ff' : 'white',
-                          borderColor: isSelected ? '#1890ff' : '#d9d9d9'
+                          borderColor: isSelected ? '#1890ff' : '#d9d9d9',
+                          opacity: canToggleThisSlot ? 1 : 0.6
                         }}
                       >
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                           <Space>
                             <Checkbox 
                               checked={isSelected}
+                              disabled={!canToggleThisSlot}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (modalMode === 'toggle') {
-                                  handleToggleSlotSelection(slot, selectedCellDate, selectedCellShift);
-                                } else {
-                                  handleSlotToggle(getSlotId(slot));
+                                if (canToggleThisSlot) {
+                                  if (modalMode === 'toggle') {
+                                    handleToggleSlotSelection(slot, selectedCellDate, selectedCellShift);
+                                  } else {
+                                    handleSlotToggle(getSlotId(slot));
+                                  }
                                 }
                               }}
                             />
@@ -2109,6 +2174,12 @@ const ScheduleCalendar = () => {
                                   style={{ marginLeft: 8 }}
                                 >
                                   {slot.isActive ? 'Đang bật' : 'Đã tắt'}
+                                </Tag>
+                              )}
+                              {/* 🆕 Show warning for past/today dates */}
+                              {modalMode === 'toggle' && !canToggleThisSlot && (
+                                <Tag color="warning" size="small" style={{ marginLeft: 8 }}>
+                                  Chỉ toggle từ ngày mai
                                 </Tag>
                               )}
                             </div>

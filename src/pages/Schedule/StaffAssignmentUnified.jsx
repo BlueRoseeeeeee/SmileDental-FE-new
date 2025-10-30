@@ -344,7 +344,7 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
   const conflicts = [];
   const seenKeys = new Set();
 
-  const recordConflict = (detail, overrideRoomName, overrideSubRoomName, source) => {
+  const recordConflict = (detail, overrideRoomName, overrideSubRoomName, source, conflictRole) => {
     const key = `${staff._id}-${detail.date}-${detail.shiftName}-${detail.start?.format?.('HH:mm') || detail.startTime || ''}-${overrideRoomName || detail.roomName || ''}-${source}`;
     if (seenKeys.has(key)) return;
     seenKeys.add(key);
@@ -356,6 +356,7 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
       endTime: detail.end ? detail.end.format('HH:mm') : detail.endTime || null,
       roomName: overrideRoomName || detail.roomName || null,
       subRoomName: overrideSubRoomName || detail.subRoomName || null,
+      conflictRole: conflictRole || null, // 🆕 Thêm role gây conflict
       source
     });
   };
@@ -366,19 +367,12 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
   const normalizedSchedule = Array.isArray(scheduleEntries) ? scheduleEntries : [];
 
   normalizedSchedule.forEach(entry => {
-    const entryRole = entry.assignedAs || entry.role;
-    const staffRole = staff.assignmentRole || staff.role;
+    // 🔥 FIX: Không bỏ qua entry vì role khác nhau
+    // Vì một user có thể có nhiều role (vd: vừa là dentist, vừa là nurse)
+    // Nên phải kiểm tra xung đột thời gian cho TẤT CẢ các role của user đó
+    // Nếu user đang được check với role dentist, nhưng user đã được assign với role nurse
+    // ở cùng thời gian → vẫn là conflict vì user không thể ở 2 nơi cùng lúc
     
-    // Skip if entry has a role and it doesn't match staff's role
-    if (entryRole && entryRole !== staffRole) {
-      // Also check if doctor vs dentist (they are the same)
-      const isDoctorDentistMismatch = (entryRole === 'doctor' && staffRole === 'dentist') || 
-                                       (entryRole === 'dentist' && staffRole === 'doctor');
-      if (!isDoctorDentistMismatch) {
-        return;
-      }
-    }
-
     const entryDate = entry.date || entry.startDate || entry.shiftDate;
     if (!entryDate) return;
     
@@ -420,11 +414,13 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
 
       // ⭐ Check time overlap - ACTIVE CONFLICT DETECTION
       if (detail.start.isBefore(entryEnd) && entryStart.isBefore(detail.end)) {
+        const entryRole = entry.assignedAs || entry.role;
         recordConflict(
           detail,
           entry.roomName || entry.room?.name || detail.roomName,
           entry.subRoomName || entry.subRoom?.name || detail.subRoomName,
-          'schedule'
+          'schedule',
+          entryRole // 🆕 Truyền role gây conflict
         );
       }
     });
@@ -573,10 +569,26 @@ const formatConflictDescription = (conflict) => {
     : conflict.startTime || '';
   const locationParts = [conflict.roomName, conflict.subRoomName].filter(Boolean);
   const location = locationParts.join(' • ');
+  
+  // 🆕 Hiển thị role nếu có (để biết user đang làm role gì ở chỗ trùng)
+  const rolePart = conflict.conflictRole ? `(${getRoleDisplayName(conflict.conflictRole)})` : '';
+  
   const metaParts = conflict.count && conflict.count > 1 ? [`${conflict.count} slot trùng`] : [];
 
-  const parts = [datePart, shiftPart, timePart, location, ...metaParts].filter(Boolean);
+  const parts = [datePart, shiftPart, timePart, location, rolePart, ...metaParts].filter(Boolean);
   return parts.join(' • ');
+};
+
+// 🆕 Helper function để hiển thị tên role tiếng Việt
+const getRoleDisplayName = (role) => {
+  const roleMap = {
+    'dentist': 'Nha sĩ',
+    'doctor': 'Nha sĩ',
+    'nurse': 'Y tá',
+    'admin': 'Quản trị',
+    'manager': 'Quản lý'
+  };
+  return roleMap[role] || role;
 };
 
 const normalizeSelectionValue = (value) => {
@@ -3026,19 +3038,25 @@ const StaffAssignmentUnified = () => {
       const enrichedStaff = filteredStaff.map(staff => {
         const staffId = staff._id;
         
-        // 🔥 For multi-role users, separate conflicts by role
-        // Check conflicts for each role the staff has
+        // 🔥 FIX: For multi-role users, check conflicts across ALL roles
+        // Because a person cannot work in 2 positions at the same time
+        // Even if they have both dentist and nurse roles
+        
         const staffRoles = staff.assignmentRoles || [staff.assignmentRole || staff.role];
         
         const conflictsByRole = {}; // { dentist: [...], nurse: [...] }
         
         staffRoles.forEach(role => {
-          const hasConflict = (role === 'dentist' && conflictingDentists.includes(staffId)) ||
-                             (role === 'nurse' && conflictingNurses.includes(staffId));
-          
           let roleConflicts = [];
-          if (hasConflict && conflictDetails[staffId]) {
-            // Filter: only conflicts when assigned as THIS specific role
+          
+          // 🔥 Check if staff has ANY conflict (in any role)
+          // Because they can't be in 2 places at once, regardless of role
+          const hasAnyConflict = conflictingDentists.includes(staffId) || 
+                                conflictingNurses.includes(staffId);
+          
+          if (hasAnyConflict && conflictDetails[staffId]) {
+            // 🔥 Show ALL conflicts (both dentist and nurse roles)
+            // Because a person cannot work in 2 positions simultaneously
             roleConflicts = conflictDetails[staffId].filter(entry => {
               const entryStart = parseDateTimeSafe(
                 entry.dateStr,
@@ -3047,9 +3065,11 @@ const StaffAssignmentUnified = () => {
                 null
               );
               const isFuture = entryStart && entryStart.isAfter(fiveMinutesLater);
-              const isSameRole = entry.assignedAs === role;
               
-              return isFuture && isSameRole;
+              // 🔥 REMOVED: const isSameRole = entry.assignedAs === role;
+              // Don't filter by role - show all conflicts because person can't be in 2 places
+              
+              return isFuture;
             });
           }
           
@@ -3059,7 +3079,7 @@ const StaffAssignmentUnified = () => {
         return {
           ...staff,
           conflicts: conflictDetails[staffId] || [], // Keep all conflicts for reference
-          conflictsByRole, // 🔥 NEW: Conflicts separated by role
+          conflictsByRole, // 🔥 Conflicts separated by role (but showing ALL conflicts for each)
           canAssign: Object.values(conflictsByRole).every(c => c.length === 0),
           assignmentStats: staffStats[staffId] || { total: 0, asDentist: 0, asNurse: 0 }
         };
