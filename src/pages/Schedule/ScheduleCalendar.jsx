@@ -821,16 +821,29 @@ const ScheduleCalendar = () => {
   const handleCellClick = async (date, shift, shiftData) => {
     if (!shiftData || shiftData.totalSlots === 0) return;
     
+    console.log('🔍 handleCellClick - shiftData:', shiftData);
+    console.log('🔍 handleCellClick - shiftData.slots:', shiftData.slots);
+    
     setSelectedCellDate(date);
     setSelectedCellShift(shift);
     setShowSlotModal(true);
     setLoadingModalSlots(true);
     setSelectedSlots([]); // Reset selection
     
-    // Fetch detailed slots
-    const slots = await fetchSlotDetails(date, shift.name, shiftData);
-    setModalSlots(slots);
-    setLoadingModalSlots(false);
+    // ✅ Use shiftData.slots directly if available (from calendar API - has full dentist/nurse info)
+    if (shiftData.slots && Array.isArray(shiftData.slots) && shiftData.slots.length > 0) {
+      console.log('✅ Using shiftData.slots directly (has dentist/nurse info)');
+      console.log('🔍 First slot:', shiftData.slots[0]);
+      setModalSlots(shiftData.slots);
+      setLoadingModalSlots(false);
+    } else {
+      // Fallback: Fetch detailed slots via API
+      console.log('⚠️ shiftData.slots empty, fetching via API');
+      const slots = await fetchSlotDetails(date, shift.name, shiftData);
+      console.log('🔍 handleCellClick - Fetched slots:', slots);
+      setModalSlots(slots);
+      setLoadingModalSlots(false);
+    }
   };
 
   // Handle slot selection
@@ -1359,10 +1372,18 @@ const ScheduleCalendar = () => {
               setModalMode('assign');
             }
             
-            // Fetch and set modal slots
-            const slots = await fetchSlotDetails(date, shift.name, shiftData);
-            setModalSlots(slots);
-            setLoadingModalSlots(false);
+            // ✅ Use shiftData.slots directly if available (from calendar API - has full dentist/nurse info)
+            if (shiftData?.slots && Array.isArray(shiftData.slots) && shiftData.slots.length > 0) {
+              console.log('✅ CalendarCell: Using shiftData.slots directly (has dentist/nurse info)');
+              setModalSlots(shiftData.slots);
+              setLoadingModalSlots(false);
+            } else {
+              // Fallback: Fetch detailed slots via API
+              console.log('⚠️ CalendarCell: shiftData.slots empty, fetching via API');
+              const slots = await fetchSlotDetails(date, shift.name, shiftData);
+              setModalSlots(slots);
+              setLoadingModalSlots(false);
+            }
           }
         }}
         style={{ 
@@ -2101,7 +2122,11 @@ const ScheduleCalendar = () => {
                     // Handle dentist name - check multiple possible structures
                     let dentistName = null;
                     if (slot.dentist) {
-                      if (typeof slot.dentist === 'string') {
+                      if (Array.isArray(slot.dentist) && slot.dentist.length > 0) {
+                        // Array case (from getRoomCalendar API)
+                        const firstDentist = slot.dentist[0];
+                        dentistName = firstDentist.fullName || firstDentist.name;
+                      } else if (typeof slot.dentist === 'string') {
                         dentistName = slot.dentist; // Just ID or code
                       } else if (slot.dentist.fullName) {
                         dentistName = slot.dentist.fullName;
@@ -2113,7 +2138,11 @@ const ScheduleCalendar = () => {
                     // Handle nurse name - check multiple possible structures
                     let nurseName = null;
                     if (slot.nurse) {
-                      if (typeof slot.nurse === 'string') {
+                      if (Array.isArray(slot.nurse) && slot.nurse.length > 0) {
+                        // Array case (from getRoomCalendar API)
+                        const firstNurse = slot.nurse[0];
+                        nurseName = firstNurse.fullName || firstNurse.name;
+                      } else if (typeof slot.nurse === 'string') {
                         nurseName = slot.nurse; // Just ID or code
                       } else if (slot.nurse.fullName) {
                         nurseName = slot.nurse.fullName;
@@ -2135,28 +2164,27 @@ const ScheduleCalendar = () => {
                         key={getSlotId(slot)}
                         size="small"
                         style={{ 
-                          cursor: canToggleThisSlot ? 'pointer' : 'not-allowed',
+                          cursor: modalMode === 'assign' ? 'default' : (canToggleThisSlot ? 'pointer' : 'not-allowed'),
                           backgroundColor: isSelected ? '#e6f7ff' : 'white',
                           borderColor: isSelected ? '#1890ff' : '#d9d9d9',
-                          opacity: canToggleThisSlot ? 1 : 0.6
+                          opacity: modalMode === 'assign' ? 1 : (canToggleThisSlot ? 1 : 0.6)
                         }}
                       >
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                           <Space>
-                            <Checkbox 
-                              checked={isSelected}
-                              disabled={!canToggleThisSlot}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (canToggleThisSlot) {
-                                  if (modalMode === 'toggle') {
+                            {/* ✅ Only show checkbox in toggle mode */}
+                            {modalMode === 'toggle' && (
+                              <Checkbox 
+                                checked={isSelected}
+                                disabled={!canToggleThisSlot}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (canToggleThisSlot) {
                                     handleToggleSlotSelection(slot, selectedCellDate, selectedCellShift);
-                                  } else {
-                                    handleSlotToggle(getSlotId(slot));
                                   }
-                                }
-                              }}
-                            />
+                                }}
+                              />
+                            )}
                             <div>
                               <Text strong style={{ fontSize: '14px' }}>
                                 {startTime} - {endTime}
@@ -2166,17 +2194,21 @@ const ScheduleCalendar = () => {
                                   {slot.subRoom.name}
                                 </Tag>
                               )}
-                              {/* 🆕 Show isActive status in toggle mode */}
-                              {modalMode === 'toggle' && (
-                                <Tag 
-                                  color={slot.isActive ? 'green' : 'red'} 
-                                  size="small" 
-                                  style={{ marginLeft: 8 }}
-                                >
-                                  {slot.isActive ? 'Đang bật' : 'Đã tắt'}
+                              {/* ✅ Always show isActive status for both modes */}
+                              <Tag 
+                                color={slot.isActive ? 'green' : 'red'} 
+                                size="small" 
+                                style={{ marginLeft: 8 }}
+                              >
+                                {slot.isActive ? 'Đang bật' : 'Đã tắt'}
+                              </Tag>
+                              {/* 🆕 Show info tag for assign mode (past/today dates) */}
+                              {modalMode === 'assign' && (
+                                <Tag color="default" size="small" style={{ marginLeft: 8 }}>
+                                  Chỉ xem
                                 </Tag>
                               )}
-                              {/* 🆕 Show warning for past/today dates */}
+                              {/* 🆕 Show warning for toggle mode on past/today dates */}
                               {modalMode === 'toggle' && !canToggleThisSlot && (
                                 <Tag color="warning" size="small" style={{ marginLeft: 8 }}>
                                   Chỉ toggle từ ngày mai
