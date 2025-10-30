@@ -59,6 +59,9 @@ const AppointmentManagement = () => {
   const [loading, setLoading] = useState(false);
   const [dentists, setDentists] = useState([]);
 
+  // Get current user
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
   // Filter states
   const [activeTab, setActiveTab] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -530,6 +533,33 @@ const AppointmentManagement = () => {
           Làm mới
         </Button>
       </div>
+
+      {/* Role-based info message */}
+      {(() => {
+        const userRoles = currentUser.roles || [currentUser.role];
+        const isDentist = userRoles.includes('dentist');
+        const isNurse = userRoles.includes('nurse');
+        const isAdmin = userRoles.includes('admin') || userRoles.includes('manager');
+        
+        if ((isDentist || isNurse) && !isAdmin) {
+          return (
+            <Card style={{ marginBottom: 16, backgroundColor: '#e6f7ff', borderColor: '#91d5ff' }}>
+              <Space>
+                <UserOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+                <Text>
+                  {isDentist && (
+                    <>Bạn đang xem lịch hẹn được gán cho <Text strong>nha sĩ {currentUser.fullName || 'bạn'}</Text></>
+                  )}
+                  {isNurse && !isDentist && (
+                    <>Bạn đang xem lịch hẹn được gán cho <Text strong>y tá {currentUser.fullName || 'bạn'}</Text></>
+                  )}
+                </Text>
+              </Space>
+            </Card>
+          );
+        }
+        return null;
+      })()}
 
       <Card>
         {/* Filters */}

@@ -61,9 +61,10 @@ export const userService = {
     const formData = new FormData();
     formData.append('avatar', file);
 
+    // ✅ Don't set Content-Type for FormData - browser will set it automatically
+    // This prevents overriding the Authorization header
     const response = await userApi.put(`/user/avatar/${userId}`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },
@@ -77,11 +78,8 @@ export const userService = {
     formData.append('certificate', file);
     if (notes) formData.append('notes', notes);
 
-    const response = await userApi.post(`/user/${userId}/certificates`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // ✅ Don't set Content-Type for FormData - browser will set it automatically
+    const response = await userApi.post(`/user/${userId}/certificates`, formData);
     return response.data;
   },
 

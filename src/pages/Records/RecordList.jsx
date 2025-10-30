@@ -38,7 +38,8 @@ import {
   CheckCircleOutlined,
   EyeOutlined,
   ReloadOutlined,
-  FilterOutlined
+  FilterOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import recordService from '../../services/recordService';
@@ -74,7 +75,7 @@ const RecordList = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [formMode, setFormMode] = useState('create'); // 'create' or 'edit'
 
-  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   // Load records on mount and when filters change
   useEffect(() => {
@@ -88,6 +89,18 @@ const RecordList = () => {
     filterDentist,
     dateRange
   ]);
+
+  // Auto refresh every 30 seconds (only when no filters applied)
+  useEffect(() => {
+    const hasFilters = searchKeyword || filterType || filterStatus || filterDentist || dateRange;
+    if (hasFilters) return; // Don't auto-refresh when filtering
+
+    const intervalId = setInterval(() => {
+      loadRecords();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [searchKeyword, filterType, filterStatus, filterDentist, dateRange]);
 
   // Load records
   const loadRecords = async () => {
@@ -424,6 +437,33 @@ const RecordList = () => {
 
   return (
     <div>
+      {/* Role-based info message */}
+      {(() => {
+        const userRoles = currentUser.roles || [currentUser.role];
+        const isDentist = userRoles.includes('dentist');
+        const isNurse = userRoles.includes('nurse');
+        const isAdmin = userRoles.includes('admin') || userRoles.includes('manager');
+        
+        if ((isDentist || isNurse) && !isAdmin) {
+          return (
+            <Card style={{ marginBottom: 16, backgroundColor: '#e6f7ff', borderColor: '#91d5ff' }}>
+              <Space>
+                <UserOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+                <Text>
+                  {isDentist && (
+                    <>Bạn đang xem hồ sơ được tạo bởi <Text strong>nha sĩ {currentUser.fullName || 'bạn'}</Text></>
+                  )}
+                  {isNurse && !isDentist && (
+                    <>Bạn đang xem hồ sơ từ các lịch hẹn được gán cho <Text strong>y tá {currentUser.fullName || 'bạn'}</Text></>
+                  )}
+                </Text>
+              </Space>
+            </Card>
+          );
+        }
+        return null;
+      })()}
+
       {/* Main Card */}
       <Card
         title={

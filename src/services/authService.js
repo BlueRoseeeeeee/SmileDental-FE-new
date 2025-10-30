@@ -80,25 +80,11 @@ export const authService = {
       }
       
       // Save tokens and user info to localStorage
-      // 🆕 Chỉ lưu tạm thời nếu cần đổi mật khẩu hoặc chọn specialty
-      if (remember && !response.data.requirePasswordChange && !response.data.requireSpecialtySelection) {
-        console.log('💾 [authService] Saving to localStorage (remember=true)');
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('user', JSON.stringify(user));
-      } else if (!response.data.requirePasswordChange && !response.data.requireSpecialtySelection) {
-        console.log('💾 [authService] Saving to sessionStorage (remember=false)');
-        // Không remember → dùng sessionStorage
-        sessionStorage.setItem('accessToken', accessToken);
-        sessionStorage.setItem('refreshToken', refreshToken);
-        sessionStorage.setItem('user', JSON.stringify(user));
-      } else {
-        console.log('💾 [authService] Saving to temp sessionStorage (pending action)');
-        // Cần đổi mật khẩu hoặc chọn specialty → lưu tạm vào sessionStorage
-        sessionStorage.setItem('tempAccessToken', accessToken);
-        sessionStorage.setItem('tempRefreshToken', refreshToken);
-        sessionStorage.setItem('tempUser', JSON.stringify(user));
-      }
+      // 🔥 LUÔN LƯU VÀO localStorage (checkbox "remember" chỉ ảnh hưởng token expiry ở backend)
+      console.log('💾 [authService] Saving to localStorage');
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(user));
       
       console.log('✅ [authService] Returning response.data:', response.data);
       return response.data;
@@ -265,6 +251,9 @@ export const authService = {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
+    
+    // ✅ Save selected role for future reference
+    localStorage.setItem('selectedRole', selectedRole);
     
     return response.data;
   },

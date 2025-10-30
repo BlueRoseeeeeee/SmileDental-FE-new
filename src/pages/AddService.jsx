@@ -159,8 +159,8 @@ const AddService = () => {
       await servicesService.createService(formData);
       toastService.success('Thêm dịch vụ thành công!');
       
-      // Quay về trang danh sách
-      navigate('/dashboard/services');
+      // Quay về trang danh sách với flag reload
+      navigate('/dashboard/services', { state: { reload: true } });
     } catch (error) {
       if (error.errorFields) {
         toastService.error('Vui lòng kiểm tra lại thông tin form!');

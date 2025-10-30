@@ -24,11 +24,9 @@ export const servicesService = {
 
   // Tạo service mới
   async createService(serviceData) {
-    const response = await serviceApi.post('/service', serviceData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
+    // ✅ Don't set Content-Type for FormData - browser will set it automatically with boundary
+    // This also prevents overriding the Authorization header from apiFactory interceptor
+    const response = await serviceApi.post('/service', serviceData);
     return response.data;
   },
 
@@ -60,31 +58,17 @@ export const servicesService = {
 
   // Thêm add-on cho dịch vụ
   async addServiceAddOn(serviceId, addOnData) {
-    // Kiểm tra nếu addOnData là FormData (có ảnh)
-    const isFormData = addOnData instanceof FormData;
-    
-    const config = isFormData ? {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    } : {};
-
-    const response = await serviceApi.post(`/service/${serviceId}/addons`, addOnData, config);
+    // ✅ Don't set Content-Type for FormData - browser will set it automatically
+    // This prevents overriding the Authorization header
+    const response = await serviceApi.post(`/service/${serviceId}/addons`, addOnData);
     return response.data;
   },
 
   // Cập nhật add-on
   async updateServiceAddOn(serviceId, addOnId, addOnData) {
-    // Kiểm tra nếu addOnData là FormData (có ảnh)
-    const isFormData = addOnData instanceof FormData;
-    
-    const config = isFormData ? {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    } : {};
-
-    const response = await serviceApi.put(`/service/${serviceId}/addons/${addOnId}`, addOnData, config);
+    // ✅ Don't set Content-Type for FormData - browser will set it automatically
+    // This prevents overriding the Authorization header
+    const response = await serviceApi.put(`/service/${serviceId}/addons/${addOnId}`, addOnData);
     return response.data;
   },
 

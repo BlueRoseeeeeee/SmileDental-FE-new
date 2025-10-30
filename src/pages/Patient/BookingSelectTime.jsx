@@ -48,6 +48,25 @@ const BookingSelectTime = () => {
   });
   const [loading, setLoading] = useState(false);
   const [scheduleConfig, setScheduleConfig] = useState(null); // 🆕 Store config for deposit calculation
+  const [selectedRoom, setSelectedRoom] = useState(null);
+
+  // 🆕 Helper function to get service duration
+  const getServiceDuration = () => {
+    if (selectedServiceAddOn) {
+      // Case 1: User selected a specific addon
+      return selectedServiceAddOn.durationMinutes;
+    } else if (selectedService?.serviceAddOns && selectedService.serviceAddOns.length > 0) {
+      // Case 2: No addon selected → use LONGEST addon duration
+      const longestAddon = selectedService.serviceAddOns.reduce((longest, addon) => {
+        return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+      }, selectedService.serviceAddOns[0]);
+      return longestAddon.durationMinutes;
+    } else if (selectedService?.durationMinutes) {
+      // Case 3: Fallback to service duration (if exists)
+      return selectedService.durationMinutes;
+    }
+    return 15; // Default
+  };
 
   useEffect(() => {
     // Fetch schedule config for deposit amount
@@ -133,15 +152,30 @@ const BookingSelectTime = () => {
           const serviceAddOnData = localStorage.getItem('booking_serviceAddOn');
           const selectedServiceAddOn = serviceAddOnData ? JSON.parse(serviceAddOnData) : null;
           
-          // Get duration: prioritize serviceAddOn, fallback to service, default to 15min
-          const serviceDuration = selectedServiceAddOn?.durationMinutes 
-                               || serviceData?.durationMinutes 
-                               || 15;
+          // Get duration: prioritize selectedServiceAddOn, fallback to longest addon duration, default to 15min
+          let serviceDuration = 15; // default
+          
+          if (selectedServiceAddOn) {
+            // Case 1: User selected a specific addon
+            serviceDuration = selectedServiceAddOn.durationMinutes;
+            console.log('🎯 Using selected addon duration:', serviceDuration, 'minutes from', selectedServiceAddOn.name);
+          } else if (serviceData?.serviceAddOns && serviceData.serviceAddOns.length > 0) {
+            // Case 2: No addon selected → use LONGEST addon duration
+            const longestAddon = serviceData.serviceAddOns.reduce((longest, addon) => {
+              return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+            }, serviceData.serviceAddOns[0]);
+            
+            serviceDuration = longestAddon.durationMinutes;
+            console.log('🎯 No addon selected → Using LONGEST addon duration:', serviceDuration, 'minutes from', longestAddon.name);
+          } else if (serviceData?.durationMinutes) {
+            // Case 3: Fallback to service duration (if exists)
+            serviceDuration = serviceData.durationMinutes;
+            console.log('🎯 Using service duration:', serviceDuration, 'minutes');
+          }
+          
           const slotDuration = 15; // Default slot duration (should match backend config)
           
-          console.log('🎯 Using duration:', serviceDuration, 'minutes from', 
-                     selectedServiceAddOn ? `addon: ${selectedServiceAddOn.name}` : 'service');
-          console.log('🔍 Service:', serviceData?.name, '| AddOn:', selectedServiceAddOn?.name || 'none');
+          console.log('🔍 Service:', serviceData?.name, '| Selected AddOn:', selectedServiceAddOn?.name || 'none', '| Final Duration:', serviceDuration, 'min');
           
           let allSlots = [];
           
@@ -245,7 +279,8 @@ const BookingSelectTime = () => {
   };
 
   const renderShiftSlots = (shift, shiftName, slotGroups) => {
-    const requiredSlots = Math.ceil((selectedService?.durationMinutes || 15) / 15);
+    const serviceDuration = getServiceDuration();
+    const requiredSlots = Math.ceil(serviceDuration / 15);
     
     return (
       <div key={shift} style={{ marginBottom: 24 }}>
@@ -253,7 +288,7 @@ const BookingSelectTime = () => {
           <Title level={5} style={{ margin: 0, color: '#2c5f4f' }}>
             <ClockCircleOutlined /> {shiftName}
           </Title>
-          <Tooltip title={`Mỗi khung giờ sẽ đặt ${requiredSlots} slot liên tục (${selectedService?.durationMinutes || 15} phút)`}>
+          <Tooltip title={`Mỗi khung giờ sẽ đặt ${requiredSlots} slot liên tục (${serviceDuration} phút)`}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
           </Tooltip>
         </Space>
@@ -367,7 +402,7 @@ const BookingSelectTime = () => {
                     <Tag color="blue" style={{ fontSize: 13 }}>
                       {selectedService?.name}
                     </Tag>
-                    {selectedServiceAddOn && (
+                    {selectedServiceAddOn ? (
                       <div style={{ marginTop: 4 }}>
                         <Tag color="green" style={{ fontSize: 12 }}>
                           📦 {selectedServiceAddOn.name}
@@ -376,12 +411,20 @@ const BookingSelectTime = () => {
                           ⏱️ {selectedServiceAddOn.durationMinutes} phút
                         </Tag>
                       </div>
-                    )}
-                    {!selectedServiceAddOn && selectedService?.durationMinutes && (
+                    ) : selectedService?.serviceAddOns && selectedService.serviceAddOns.length > 0 ? (
+                      <div style={{ marginTop: 4 }}>
+                        <Tag color="orange" style={{ fontSize: 12 }}>
+                          ⏱️ Thời gian dự kiến: {getServiceDuration()} phút
+                        </Tag>
+                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                          (Gói dài nhất trong dịch vụ)
+                        </Text>
+                      </div>
+                    ) : selectedService?.durationMinutes ? (
                       <Tag color="cyan" style={{ fontSize: 12, marginTop: 4 }}>
                         ⏱️ {selectedService.durationMinutes} phút
                       </Tag>
-                    )}
+                    ) : null}
                   </div>
                   
                   <div>
@@ -450,7 +493,7 @@ const BookingSelectTime = () => {
                       }
                       description={
                         (() => {
-                          const duration = selectedServiceAddOn?.durationMinutes || selectedService?.durationMinutes || 15;
+                          const duration = getServiceDuration();
                           const slotsNeeded = Math.ceil(duration / 15);
                           const serviceName = selectedServiceAddOn ? `${selectedService?.name} - ${selectedServiceAddOn.name}` : selectedService?.name;
                           return serviceName && `Dịch vụ "${serviceName}" cần ${slotsNeeded} slot liên tục (${duration} phút)`;

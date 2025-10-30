@@ -29,11 +29,23 @@ const PatientRecords = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
+  // Load records when component mounts and user is available
   useEffect(() => {
     if (user?._id) {
       loadRecords();
     }
-  }, [user]);
+  }, [user?._id]);
+
+  // Auto refresh every 30 seconds when component is visible
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const intervalId = setInterval(() => {
+      loadRecords();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [user?._id]);
 
   const loadRecords = async () => {
     try {

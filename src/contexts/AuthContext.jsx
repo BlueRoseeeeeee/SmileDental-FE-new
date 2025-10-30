@@ -14,16 +14,28 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = () => {
-      // Get token and user from localStorage
+      console.log('🔍 [AuthContext] Checking authentication on mount...');
+      
+      // Get token and user from localStorage only
       const token = localStorage.getItem('accessToken');
       const userData = localStorage.getItem('user');
+      
+      console.log('🔍 [AuthContext] Storage check:', {
+        hasToken: !!token,
+        hasUser: !!userData
+      });
       
       if (token && userData) {
         try {
           const parsedUser = JSON.parse(userData);
+          console.log('✅ [AuthContext] Found valid auth data:', {
+            userId: parsedUser._id,
+            role: parsedUser.role
+          });
           setIsAuthenticated(true);
           setUser(parsedUser);
-        } catch {
+        } catch (error) {
+          console.error('❌ [AuthContext] Failed to parse user data:', error);
           // Clear invalid data
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
@@ -32,6 +44,7 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
         }
       } else {
+        console.log('⚠️ [AuthContext] No auth data found in localStorage');
         setIsAuthenticated(false);
         setUser(null);
       }
@@ -284,7 +297,26 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Instead of throwing error immediately, log warning and return safe defaults
+    console.warn('⚠️ useAuth called outside AuthProvider - returning safe defaults');
+    return {
+      isAuthenticated: false,
+      user: null,
+      loading: false,
+      error: null,
+      login: async () => { throw new Error('AuthProvider not available'); },
+      logout: async () => {},
+      clearError: () => {},
+      sendOtpRegister: async () => { throw new Error('AuthProvider not available'); },
+      verifyOtp: async () => { throw new Error('AuthProvider not available'); },
+      register: async () => { throw new Error('AuthProvider not available'); },
+      sendOtpResetPassword: async () => { throw new Error('AuthProvider not available'); },
+      resetPassword: async () => { throw new Error('AuthProvider not available'); },
+      changePassword: async () => { throw new Error('AuthProvider not available'); },
+      updateUser: async () => { throw new Error('AuthProvider not available'); },
+      refetchUser: async () => { throw new Error('AuthProvider not available'); },
+      completeLogin: () => {}
+    };
   }
   return context;
 };

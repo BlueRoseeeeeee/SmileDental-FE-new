@@ -116,6 +116,24 @@ class RecordService {
   }
 
   /**
+   * 🆕 Get treatment indications for a patient and service
+   * @param {String} patientId - Patient ID
+   * @param {String} serviceId - Service ID
+   * @returns {Promise<Object>} { success, data: [...], total }
+   */
+  async getTreatmentIndications(patientId, serviceId) {
+    try {
+      const response = await api.get(`/patient/${patientId}/treatment-indications`, {
+        params: { serviceId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('getTreatmentIndications error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get records by dentist
    * @param {String} dentistId - Dentist ID
    * @param {String} startDate - Start date (YYYY-MM-DD)

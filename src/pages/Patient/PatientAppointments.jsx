@@ -48,7 +48,20 @@ const PatientAppointments = () => {
       const response = await appointmentService.getMyAppointments();
       
       if (response.success && response.data) {
-        setAppointments(response.data);
+        // Map API response to component format
+        const mappedData = response.data.map(apt => ({
+          ...apt,
+          date: apt.appointmentDate,
+          time: `${apt.startTime} - ${apt.endTime}`,
+          dentist: {
+            fullName: apt.dentistName
+          },
+          service: {
+            name: apt.serviceName
+          },
+          room: apt.roomName || 'Chưa xác định'
+        }));
+        setAppointments(mappedData);
       } else {
         setAppointments([]);
       }
@@ -65,6 +78,7 @@ const PatientAppointments = () => {
     const statusConfig = {
       pending: { color: 'gold', text: 'Chờ xác nhận' },
       confirmed: { color: 'blue', text: 'Đã xác nhận' },
+      'checked-in': { color: 'cyan', text: 'Đã check-in' },
       completed: { color: 'green', text: 'Hoàn thành' },
       cancelled: { color: 'red', text: 'Đã hủy' }
     };
@@ -156,6 +170,7 @@ const PatientAppointments = () => {
       filters: [
         { text: 'Chờ xác nhận', value: 'pending' },
         { text: 'Đã xác nhận', value: 'confirmed' },
+        { text: 'Đã check-in', value: 'checked-in' },
         { text: 'Hoàn thành', value: 'completed' },
         { text: 'Đã hủy', value: 'cancelled' }
       ],

@@ -51,8 +51,9 @@ const createAxiosInstance = (serviceName, config) => {
   // Request interceptor - thêm token
   instance.interceptors.request.use(
     (config) => {
-      // Trực tiếp get token từ localStorage để tránh circular dependency
+      // Get token from localStorage only
       const token = localStorage.getItem('accessToken');
+      
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -69,17 +70,71 @@ const createAxiosInstance = (serviceName, config) => {
     async (error) => {
       const originalRequest = error.config;
 
-      // Handle 401 Unauthorized & 403 Forbidden (token expired/invalid)
-      if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+      // Handle 401 Unauthorized - try to refresh token first
+      if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
 
-        // Clear invalid tokens
+        // 🔍 DEBUG: Log 401 error details
+        const token = localStorage.getItem('accessToken');
+        const refreshToken = localStorage.getItem('refreshToken');
+        
+        console.error('🔴 401 Unauthorized Error:', {
+          url: originalRequest.url,
+          method: originalRequest.method,
+          hasAuthHeader: !!originalRequest.headers?.Authorization,
+          hasToken: !!token,
+          hasRefreshToken: !!refreshToken,
+          token: token?.substring(0, 20) + '...',
+          refreshToken: refreshToken?.substring(0, 20) + '...'
+        });
+
+        try {
+          // Try to refresh token
+          if (refreshToken) {
+            console.log('🔄 Attempting to refresh token...');
+            
+            // Call refresh token endpoint
+            const refreshResponse = await axios.post(
+              `${MICROSERVICES_CONFIG.auth.baseURL}/auth/refresh`,
+              { refreshToken }
+            );
+
+            if (refreshResponse.data?.accessToken) {
+              console.log('✅ Token refresh successful');
+              
+              // Save new access token to localStorage
+              localStorage.setItem('accessToken', refreshResponse.data.accessToken);
+              if (refreshResponse.data.refreshToken) {
+                localStorage.setItem('refreshToken', refreshResponse.data.refreshToken);
+              }
+              
+              // Update authorization header for the original request
+              originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
+              
+              // Retry original request with new token
+              return instance(originalRequest);
+            }
+          } else {
+            console.error('❌ No refresh token found in localStorage');
+          }
+        } catch (refreshError) {
+          console.error('❌ Token refresh failed:', refreshError.response?.data || refreshError.message);
+        }
+
+        // If refresh failed, clear tokens and redirect to login
+        console.error('🔴 Logging out - clearing tokens and redirecting to /login');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         
         // Redirect to login
         window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      // Handle 403 Forbidden (không có quyền)
+      if (error.response?.status === 403) {
+        // Don't logout for 403 - user is authenticated but not authorized
         return Promise.reject(error);
       }
 

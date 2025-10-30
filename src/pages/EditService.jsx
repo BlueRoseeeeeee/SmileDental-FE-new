@@ -241,7 +241,7 @@ const EditService = () => {
       const confirmed = window.confirm('Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời khỏi trang?');
       if (!confirmed) return;
     }
-    navigate('/dashboard/services');
+    navigate('/dashboard/services', { state: { reload: true } });
   };
 
   // Handle delete add-on

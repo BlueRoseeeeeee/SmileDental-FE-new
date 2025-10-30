@@ -28,7 +28,7 @@ import {
   EditOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
 import { searchAndFilter, debounce } from '../utils/searchUtils';
 
@@ -36,6 +36,7 @@ const { Title, Text } = Typography;
 
 const ServiceList = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -133,6 +134,16 @@ const ServiceList = () => {
   useEffect(() => {
     loadServices(pagination.current, pagination.pageSize);
   }, [searchTerm]); // 🔥 Re-fetch when search term changes
+
+  // 🆕 Reload data when navigating back from add/edit page
+  useEffect(() => {
+    if (location.state?.reload) {
+      console.log('🔄 Reloading services after add/update');
+      loadServices(pagination.current, pagination.pageSize);
+      // Clear the state to prevent reload on subsequent renders
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   // Handle search 
   const handleSearch = (value) => {

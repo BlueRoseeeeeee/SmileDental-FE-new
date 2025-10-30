@@ -46,7 +46,13 @@ const ProtectedRoute = ({ children, roles = [] }) => {
   }
 
   // Check if user account is active
-  if (!user.isActive) {
+  if (user.isActive === false) { // ✅ Strict check - only logout if explicitly false
+    console.error('🔴 ProtectedRoute: User account is INACTIVE', {
+      userId: user._id,
+      email: user.email,
+      isActive: user.isActive
+    });
+    
     // Clear auth data and show toast notification
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -58,6 +64,15 @@ const ProtectedRoute = ({ children, roles = [] }) => {
     });
     
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  
+  // 🔍 DEBUG: Log user active status
+  if (user.isActive === undefined) {
+    console.warn('⚠️ ProtectedRoute: user.isActive is UNDEFINED - allowing access', {
+      userId: user._id,
+      email: user.email,
+      userKeys: Object.keys(user)
+    });
   }
 
   // Check if user has required role

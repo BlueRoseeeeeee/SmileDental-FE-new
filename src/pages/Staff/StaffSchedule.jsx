@@ -50,7 +50,8 @@ const StaffSchedule = () => {
     setCurrentUser(user);
     
     // If user is dentist or nurse, auto-select themselves
-    if (user.role === 'dentist' || user.role === 'nurse') {
+    const userRoles = user.roles || [user.role]; // Support both roles array and legacy role
+    if (userRoles.includes('dentist') || userRoles.includes('nurse')) {
       setSelectedStaff(user._id);
     }
     
@@ -99,9 +100,10 @@ const StaffSchedule = () => {
     try {
       const response = await userService.getAllStaff(1, 1000);
       if (response.success && response.data) {
-        const staff = (response.data.users || response.data)?.filter(u => 
-          u.role === 'dentist' || u.role === 'nurse'
-        ) || [];
+        const staff = (response.data.users || response.data)?.filter(u => {
+          const roles = u.roles || [u.role]; // Support both roles array and legacy role
+          return roles.includes('dentist') || roles.includes('nurse');
+        }) || [];
         setStaffList(staff);
       }
     } catch (error) {

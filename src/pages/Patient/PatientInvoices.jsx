@@ -13,13 +13,11 @@ import {
   Select,
   DatePicker,
   Row,
-  Col,
-  Statistic
+  Col
 } from 'antd';
 import { 
   FileTextOutlined,
   EyeOutlined,
-  DollarOutlined,
   FilterOutlined,
   ReloadOutlined,
   DownloadOutlined
@@ -46,11 +44,6 @@ const PatientInvoices = () => {
   const [dateRange, setDateRange] = useState(null);
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
 
-  // Statistics
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [paidAmount, setPaidAmount] = useState(0);
-  const [unpaidAmount, setUnpaidAmount] = useState(0);
-
   useEffect(() => {
     if (user?._id) {
       loadInvoices();
@@ -75,7 +68,6 @@ const PatientInvoices = () => {
       if (response.success && response.data) {
         const invoiceList = response.data.invoices || response.data || [];
         setInvoices(invoiceList);
-        calculateStatistics(invoiceList);
       } else {
         setInvoices([]);
       }
@@ -86,18 +78,6 @@ const PatientInvoices = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateStatistics = (invoiceList) => {
-    const total = invoiceList.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-    const paid = invoiceList
-      .filter(inv => inv.status === 'paid' || inv.status === 'partial_paid')
-      .reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
-    const unpaid = total - paid;
-
-    setTotalAmount(total);
-    setPaidAmount(paid);
-    setUnpaidAmount(unpaid);
   };
 
   const filterInvoices = () => {
@@ -125,7 +105,6 @@ const PatientInvoices = () => {
     }
 
     setFilteredInvoices(filtered);
-    calculateStatistics(filtered);
   };
 
   const getInvoiceStatusTag = (status) => {
@@ -308,46 +287,6 @@ const PatientInvoices = () => {
 
   return (
     <div className="patient-invoices-page">
-      {/* Statistics Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="Tổng hóa đơn"
-              value={totalAmount}
-              suffix="đ"
-              valueStyle={{ color: '#1890ff' }}
-              prefix={<DollarOutlined />}
-              formatter={(value) => value.toLocaleString('vi-VN')}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="Đã thanh toán"
-              value={paidAmount}
-              suffix="đ"
-              valueStyle={{ color: '#52c41a' }}
-              prefix={<DollarOutlined />}
-              formatter={(value) => value.toLocaleString('vi-VN')}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="Còn phải trả"
-              value={unpaidAmount}
-              suffix="đ"
-              valueStyle={{ color: unpaidAmount > 0 ? '#ff4d4f' : '#52c41a' }}
-              prefix={<DollarOutlined />}
-              formatter={(value) => value.toLocaleString('vi-VN')}
-            />
-          </Card>
-        </Col>
-      </Row>
-
       <Card
         title={
           <Space>
