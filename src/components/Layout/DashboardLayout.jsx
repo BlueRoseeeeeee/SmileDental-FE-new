@@ -59,6 +59,16 @@ const DashboardLayout = () => {
     return roleNames[role] || role;
   };
 
+  // ✅ Get primary role to display (priority: admin > manager > dentist > nurse > receptionist > patient)
+  const getPrimaryRole = () => {
+    const userRoles = user?.roles || (user?.role ? [user.role] : []);
+    const rolePriority = ['admin', 'manager', 'dentist', 'nurse', 'receptionist', 'patient'];
+    for (const role of rolePriority) {
+      if (userRoles.includes(role)) return role;
+    }
+    return userRoles[0] || 'patient';
+  };
+
   // Menu items based on user role
   const getMenuItems = () => {
     const baseItems = [
@@ -71,8 +81,12 @@ const DashboardLayout = () => {
 
     const roleBasedItems = [];
 
+    // ✅ Support both roles array and legacy single role
+    const userRoles = user?.roles || (user?.role ? [user.role] : []);
+    const hasRole = (roleToCheck) => userRoles.includes(roleToCheck);
+
     // ==================== ADMIN & MANAGER ====================
-    if (user?.role === 'admin' || user?.role === 'manager') {
+    if (hasRole('admin') || hasRole('manager')) {
       roleBasedItems.push(
         // Quản lý nhân sự
         {
@@ -167,7 +181,7 @@ const DashboardLayout = () => {
     }
 
     // ==================== DENTIST ====================
-    if (user?.role === 'dentist') {
+    if (hasRole('dentist')) {
       roleBasedItems.push(
         {
           key: '/dashboard/staff-schedule',
@@ -193,7 +207,7 @@ const DashboardLayout = () => {
     }
 
     // ==================== NURSE ====================
-    if (user?.role === 'nurse') {
+    if (hasRole('nurse')) {
       roleBasedItems.push(
         {
           key: '/dashboard/staff-schedule',
@@ -209,7 +223,7 @@ const DashboardLayout = () => {
     }
 
     // ==================== RECEPTIONIST & STAFF ====================
-    if (user?.role === 'receptionist' || user?.role === 'staff') {
+    if (hasRole('receptionist') || hasRole('staff')) {
       roleBasedItems.push(
         {
           key: '/dashboard/queue',
@@ -225,7 +239,7 @@ const DashboardLayout = () => {
     }
 
     // ==================== PATIENT ====================
-    if (user?.role === 'patient') {
+    if (hasRole('patient')) {
       roleBasedItems.push(
         {
           key: '/dentists',
@@ -539,7 +553,7 @@ const DashboardLayout = () => {
                     color: '#8c8c8c',
                     lineHeight: '1.2'
                   }}>
-                    {getRoleDisplayName(user?.role)}
+                    {getRoleDisplayName(getPrimaryRole())}
                   </div>
                 </div>
               </div>

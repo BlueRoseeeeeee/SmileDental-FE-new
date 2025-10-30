@@ -76,18 +76,24 @@ const ProtectedRoute = ({ children, roles = [] }) => {
   }
 
   // Check if user has required role
-  if (roles.length > 0 && !roles.includes(user.role)) {
-    console.log('❌ ProtectedRoute: Access denied', {
-      requiredRoles: roles,
-      userRole: user.role,
-      path: location.pathname
-    });
-    return <Navigate to="/unauthorized" replace />;
+  if (roles.length > 0) {
+    // ✅ Support both roles array and legacy single role
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+    const hasAccess = userRoles.some(userRole => roles.includes(userRole));
+    
+    if (!hasAccess) {
+      console.log('❌ ProtectedRoute: Access denied', {
+        requiredRoles: roles,
+        userRoles: userRoles,
+        path: location.pathname
+      });
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   console.log('✅ ProtectedRoute: Access granted', {
     requiredRoles: roles,
-    userRole: user.role,
+    userRoles: user.roles || [user.role],
     path: location.pathname
   });
 

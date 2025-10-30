@@ -30,7 +30,8 @@ export const AuthProvider = ({ children }) => {
           const parsedUser = JSON.parse(userData);
           console.log('✅ [AuthContext] Found valid auth data:', {
             userId: parsedUser._id,
-            role: parsedUser.role
+            roles: parsedUser.roles,
+            legacyRole: parsedUser.role
           });
           setIsAuthenticated(true);
           setUser(parsedUser);

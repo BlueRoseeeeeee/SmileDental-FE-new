@@ -191,163 +191,201 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   };
 
   // Tab 1: Basic Information
-  const renderBasicInfoTab = () => (
-    <div>
-      <Row gutter={16}>
-        <Col span={12}>
-          <Form.Item
-            name="patientId"
-            label="Bệnh nhân"
-            rules={[{ required: true, message: 'Vui lòng chọn bệnh nhân' }]}
-          >
-            <Select
-              showSearch
-              placeholder="Chọn bệnh nhân"
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                option.children.toLowerCase().includes(input.toLowerCase())
-              }
+  const renderBasicInfoTab = () => {
+    const isEditMode = mode === 'edit';
+    
+    return (
+      <div>
+        {isEditMode && (
+          <Alert
+            type="warning"
+            message="Thông tin cơ bản đã được tạo khi check-in"
+            description="Các trường thông tin bệnh nhân, dịch vụ, nha sĩ, phòng khám đã được khóa và không thể sửa đổi"
+            style={{ marginBottom: 16 }}
+            showIcon
+          />
+        )}
+        
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="patientId"
+              label="Bệnh nhân"
+              rules={[{ required: true, message: 'Vui lòng chọn bệnh nhân' }]}
             >
-              {patients.map(patient => (
-                <Option key={patient._id} value={patient._id}>
-                  {patient.name} - {patient.phone}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Col>
+              <Select
+                showSearch
+                placeholder="Chọn bệnh nhân"
+                optionFilterProp="children"
+                disabled={isEditMode}
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {patients.map(patient => (
+                  <Option key={patient._id} value={patient._id}>
+                    {patient.name} - {patient.phone}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
 
-        <Col span={12}>
-          <Form.Item
-            name="date"
-            label="Ngày khám"
-            rules={[{ required: true, message: 'Vui lòng chọn ngày khám' }]}
-          >
-            <DatePicker
-              style={{ width: '100%' }}
-              format="DD/MM/YYYY"
-              placeholder="Chọn ngày khám"
-            />
-          </Form.Item>
-        </Col>
-      </Row>
+          <Col span={12}>
+            <Form.Item
+              name="date"
+              label="Ngày khám"
+              rules={[{ required: true, message: 'Vui lòng chọn ngày khám' }]}
+            >
+              <DatePicker
+                style={{ width: '100%' }}
+                format="DD/MM/YYYY"
+                placeholder="Chọn ngày khám"
+                disabled={isEditMode}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
 
-      <Row gutter={16}>
-        <Col span={12}>
-          <Form.Item
-            name="serviceId"
-            label="Dịch vụ"
-            rules={[{ required: true, message: 'Vui lòng chọn dịch vụ' }]}
-          >
-            <Select placeholder="Chọn dịch vụ">
-              {services.map(service => (
-                <Option key={service._id} value={service._id}>
-                  {service.name} - {service.price.toLocaleString('vi-VN')}đ
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Col>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="serviceId"
+              label="Dịch vụ"
+              rules={[{ required: true, message: 'Vui lòng chọn dịch vụ' }]}
+            >
+              <Select 
+                placeholder="Chọn dịch vụ"
+                disabled={isEditMode}
+              >
+                {services.map(service => (
+                  <Option key={service._id} value={service._id}>
+                    {service.name} - {service.price.toLocaleString('vi-VN')}đ
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
 
-        <Col span={12}>
-          <Form.Item
-            name="type"
-            label="Loại hồ sơ"
-            rules={[{ required: true, message: 'Vui lòng chọn loại hồ sơ' }]}
-          >
-            <Radio.Group onChange={handleTypeChange}>
-              <Radio value="exam">Khám bệnh</Radio>
-              <Radio value="treatment">Điều trị</Radio>
-            </Radio.Group>
-          </Form.Item>
-        </Col>
-      </Row>
+          <Col span={12}>
+            <Form.Item
+              name="type"
+              label="Loại hồ sơ"
+              rules={[{ required: true, message: 'Vui lòng chọn loại hồ sơ' }]}
+            >
+              <Radio.Group 
+                onChange={handleTypeChange}
+                disabled={isEditMode}
+              >
+                <Radio value="exam">Khám bệnh</Radio>
+                <Radio value="treatment">Điều trị</Radio>
+              </Radio.Group>
+            </Form.Item>
+          </Col>
+        </Row>
 
-      <Row gutter={16}>
-        <Col span={12}>
-          <Form.Item
-            name="dentistId"
-            label="Nha sĩ"
-            rules={[{ required: true, message: 'Vui lòng chọn nha sĩ' }]}
-          >
-            <Select placeholder="Chọn nha sĩ">
-              {dentists.map(dentist => (
-                <Option key={dentist._id} value={dentist._id}>
-                  {dentist.fullName} - {dentist.specialization}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Col>
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item
+              name="dentistId"
+              label="Nha sĩ"
+              rules={[{ required: true, message: 'Vui lòng chọn nha sĩ' }]}
+            >
+              <Select 
+                placeholder="Chọn nha sĩ"
+                disabled={isEditMode}
+              >
+                {dentists.map(dentist => (
+                  <Option key={dentist._id} value={dentist._id}>
+                    {dentist.fullName} - {dentist.specialization}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
 
-        <Col span={12}>
-          <Form.Item
-            name="roomId"
-            label="Phòng khám"
-            rules={[{ required: true, message: 'Vui lòng chọn phòng' }]}
-          >
-            <Select placeholder="Chọn phòng">
-              {rooms.map(room => (
-                <Option key={room._id} value={room._id}>
-                  {room.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-        </Col>
-      </Row>
+          <Col span={12}>
+            <Form.Item
+              name="roomId"
+              label="Phòng khám"
+              rules={[{ required: true, message: 'Vui lòng chọn phòng' }]}
+            >
+              <Select 
+                placeholder="Chọn phòng"
+                disabled={isEditMode}
+              >
+                {rooms.map(room => (
+                  <Option key={room._id} value={room._id}>
+                    {room.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
 
-      <Row gutter={16}>
-        <Col span={8}>
-          <Form.Item
-            name="status"
-            label="Trạng thái"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="pending">Chờ khám</Option>
-              <Option value="in_progress">Đang khám</Option>
-              <Option value="completed">Hoàn thành</Option>
-              <Option value="cancelled">Đã hủy</Option>
-            </Select>
-          </Form.Item>
-        </Col>
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item
+              name="status"
+              label="Trạng thái"
+              rules={[{ required: true }]}
+            >
+              <Select>
+                <Option value="pending">Chờ khám</Option>
+                <Option value="in_progress">Đang khám</Option>
+                <Option value="completed">Hoàn thành</Option>
+                <Option value="cancelled">Đã hủy</Option>
+              </Select>
+            </Form.Item>
+          </Col>
 
-        <Col span={8}>
-          <Form.Item
-            name="priority"
-            label="Độ ưu tiên"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="low">Thấp</Option>
-              <Option value="normal">Bình thường</Option>
-              <Option value="high">Cao</Option>
-              <Option value="urgent">Khẩn cấp</Option>
-            </Select>
-          </Form.Item>
-        </Col>
+          <Col span={8}>
+            <Form.Item
+              name="priority"
+              label="Độ ưu tiên"
+              rules={[{ required: true }]}
+            >
+              <Select>
+                <Option value="low">Thấp</Option>
+                <Option value="normal">Bình thường</Option>
+                <Option value="high">Cao</Option>
+                <Option value="urgent">Khẩn cấp</Option>
+              </Select>
+            </Form.Item>
+          </Col>
 
-        <Col span={8}>
-          <Form.Item
-            name="paymentStatus"
-            label="Thanh toán"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="unpaid">Chưa thanh toán</Option>
-              <Option value="partial">Thanh toán 1 phần</Option>
-              <Option value="paid">Đã thanh toán</Option>
-            </Select>
-          </Form.Item>
-        </Col>
-      </Row>
-    </div>
-  );
+          <Col span={8}>
+            <Form.Item
+              name="paymentStatus"
+              label="Thanh toán"
+              rules={[{ required: true }]}
+            >
+              <Select disabled>
+                <Option value="unpaid">Chưa thanh toán</Option>
+                <Option value="partial">Thanh toán 1 phần</Option>
+                <Option value="paid">Đã thanh toán</Option>
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+      </div>
+    );
+  };
 
   // Tab 2: Diagnosis
   const renderDiagnosisTab = () => (
     <div>
+      {mode === 'edit' && (
+        <Alert
+          type="info"
+          message="Thông tin chẩn đoán và điều trị"
+          description="Các trường này có thể cập nhật trong quá trình khám bệnh"
+          style={{ marginBottom: 16 }}
+          showIcon
+        />
+      )}
+      
       <Form.Item
         name="diagnosis"
         label="Chẩn đoán"
