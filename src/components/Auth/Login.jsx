@@ -167,9 +167,20 @@ const Login = () => {
         localStorage.removeItem('rememberLogin');
       }
       
-      // Redirect to previous page or dashboard
-      const from = location.state?.from || '/dashboard';
-      navigate(from);
+      // 🎯 Redirect based on user role
+      const userRoles = response.user?.roles || (response.user?.role ? [response.user.role] : []);
+      const isPatient = userRoles.includes('patient') && userRoles.length === 1;
+      
+      let redirectPath = location.state?.from || '/dashboard';
+      
+      // 🔄 If patient, redirect to /patient instead of /dashboard
+      if (isPatient) {
+        redirectPath = '/patient';
+        console.log('🎯 [Login] Patient detected - redirecting to /patient');
+      }
+      
+      console.log('🎯 [Login] Redirecting to:', redirectPath);
+      navigate(redirectPath);
     } catch (error) {
       console.error('❌ [Login] Login failed:', {
         message: error.message,
@@ -205,10 +216,17 @@ const Login = () => {
       setShowPasswordChangeModal(false);
       passwordChangeForm.resetFields();
       
-      // Navigate to dashboard (password change is the final step)
+      // 🎯 Redirect based on user role
       setTempLoginData(null);
-      const from = location.state?.from || '/dashboard';
-      navigate(from);
+      const userRoles = result.user?.roles || (result.user?.role ? [result.user.role] : []);
+      const isPatient = userRoles.includes('patient') && userRoles.length === 1;
+      
+      let redirectPath = location.state?.from || '/dashboard';
+      if (isPatient) {
+        redirectPath = '/patient';
+      }
+      
+      navigate(redirectPath);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Đổi mật khẩu thất bại');
     }
@@ -233,9 +251,16 @@ const Login = () => {
       specialtyForm.resetFields();
       setTempLoginData(null);
       
-      // Navigate to dashboard
-      const from = location.state?.from || '/dashboard';
-      navigate(from);
+      // 🎯 Redirect based on user role
+      const userRoles = result.user?.roles || (result.user?.role ? [result.user.role] : []);
+      const isPatient = userRoles.includes('patient') && userRoles.length === 1;
+      
+      let redirectPath = location.state?.from || '/dashboard';
+      if (isPatient) {
+        redirectPath = '/patient';
+      }
+      
+      navigate(redirectPath);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra');
     }
@@ -265,9 +290,16 @@ const Login = () => {
       roleSelectionForm.resetFields();
       setTempLoginData(null);
       
-      // Navigate to dashboard
-      const from = location.state?.from || '/dashboard';
-      navigate(from);
+      // 🎯 Redirect based on selected role
+      const userRoles = result.user?.roles || (result.user?.role ? [result.user.role] : []);
+      const isPatient = userRoles.includes('patient') && userRoles.length === 1;
+      
+      let redirectPath = location.state?.from || '/dashboard';
+      if (isPatient) {
+        redirectPath = '/patient';
+      }
+      
+      navigate(redirectPath);
     } catch (error) {
       console.error('❌ [Login] Role selection failed:', error);
       toast.error(error.response?.data?.message || 'Có lỗi xảy ra');

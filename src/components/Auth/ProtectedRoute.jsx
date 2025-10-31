@@ -75,10 +75,22 @@ const ProtectedRoute = ({ children, roles = [] }) => {
     });
   }
 
+  // ✅ Get user roles
+  const userRoles = user.roles || (user.role ? [user.role] : []);
+  const isPatient = userRoles.includes('patient') && userRoles.length === 1;
+  
+  // 🚫 Block patient from accessing /dashboard and staff routes
+  if (isPatient && location.pathname.startsWith('/dashboard')) {
+    console.log('🚫 ProtectedRoute: Patient blocked from dashboard', {
+      userRoles,
+      path: location.pathname
+    });
+    return <Navigate to="/patient" replace />;
+  }
+  
   // Check if user has required role
   if (roles.length > 0) {
     // ✅ Support both roles array and legacy single role
-    const userRoles = user.roles || (user.role ? [user.role] : []);
     const hasAccess = userRoles.some(userRole => roles.includes(userRole));
     
     if (!hasAccess) {

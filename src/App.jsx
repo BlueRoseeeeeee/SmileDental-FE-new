@@ -145,7 +145,7 @@ const Unauthorized = () => (
 
 // Root redirect component
 const RootRedirect = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   
   // Show loading for a maximum of 2 seconds, then show homepage
   const [showHomepage, setShowHomepage] = useState(false);
@@ -169,6 +169,18 @@ const RootRedirect = () => {
         Loading...
       </div>
     );
+  }
+  
+  // 🎯 Redirect authenticated users based on role
+  if (isAuthenticated && user) {
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+    const isPatient = userRoles.includes('patient') && userRoles.length === 1;
+    
+    if (isPatient) {
+      return <Navigate to="/patient" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
   
   return <HomepageLayout><Homepage /></HomepageLayout>;
