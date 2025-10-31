@@ -174,13 +174,28 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   // Handle form submit
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
+      let values;
+      
+      if (mode === 'edit') {
+        // In edit mode, manually get form values (no validation for disabled fields)
+        values = form.getFieldsValue();
+        
+        // Only validate required editable fields
+        if (!values.diagnosis || values.diagnosis.trim() === '') {
+          message.error('Vui lòng nhập chẩn đoán');
+          return;
+        }
+      } else {
+        // In create mode, validate all required fields
+        values = await form.validateFields();
+      }
+      
       setLoading(true);
 
       let recordData;
       
       if (mode === 'edit' && record) {
-        // Edit mode: Only update editable fields (diagnosis, notes, status, priority, treatmentIndications)
+        // Edit mode: Only update editable fields (diagnosis, notes, treatmentIndications)
         // Process treatment indications to include service/addon names
         let processedTreatmentIndications = [];
         if (values.treatmentIndications && values.treatmentIndications.length > 0) {
@@ -203,8 +218,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         recordData = {
           diagnosis: values.diagnosis,
           notes: values.notes,
-          status: values.status,
-          priority: values.priority,
           treatmentIndications: processedTreatmentIndications,
           lastModifiedBy: currentUser._id || 'unknown'
         };
@@ -446,54 +459,55 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                 </Form.Item>
               </Col>
             </Row>
+
+            {/* Status, Priority, Payment - Only in create mode */}
+            <Row gutter={16}>
+              <Col span={8}>
+                <Form.Item
+                  name="status"
+                  label="Trạng thái"
+                  rules={[{ required: true }]}
+                >
+                  <Select>
+                    <Option value="pending">Chờ khám</Option>
+                    <Option value="in_progress">Đang khám</Option>
+                    <Option value="completed">Hoàn thành</Option>
+                    <Option value="cancelled">Đã hủy</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col span={8}>
+                <Form.Item
+                  name="priority"
+                  label="Độ ưu tiên"
+                  rules={[{ required: true }]}
+                >
+                  <Select>
+                    <Option value="low">Thấp</Option>
+                    <Option value="normal">Bình thường</Option>
+                    <Option value="high">Cao</Option>
+                    <Option value="urgent">Khẩn cấp</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col span={8}>
+                <Form.Item
+                  name="paymentStatus"
+                  label="Thanh toán"
+                  rules={[{ required: true }]}
+                >
+                  <Select>
+                    <Option value="unpaid">Chưa thanh toán</Option>
+                    <Option value="partial">Thanh toán 1 phần</Option>
+                    <Option value="paid">Đã thanh toán</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
           </>
         )}
-
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item
-              name="status"
-              label="Trạng thái"
-              rules={[{ required: true }]}
-            >
-              <Select>
-                <Option value="pending">Chờ khám</Option>
-                <Option value="in_progress">Đang khám</Option>
-                <Option value="completed">Hoàn thành</Option>
-                <Option value="cancelled">Đã hủy</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col span={8}>
-            <Form.Item
-              name="priority"
-              label="Độ ưu tiên"
-              rules={[{ required: true }]}
-            >
-              <Select>
-                <Option value="low">Thấp</Option>
-                <Option value="normal">Bình thường</Option>
-                <Option value="high">Cao</Option>
-                <Option value="urgent">Khẩn cấp</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col span={8}>
-            <Form.Item
-              name="paymentStatus"
-              label="Thanh toán"
-              rules={[{ required: true }]}
-            >
-              <Select disabled>
-                <Option value="unpaid">Chưa thanh toán</Option>
-                <Option value="partial">Thanh toán 1 phần</Option>
-                <Option value="paid">Đã thanh toán</Option>
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
       </div>
     );
   };
@@ -591,16 +605,23 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       <div>
         <Alert
           type="info"
-          message="Dịch vụ bổ sung"
-          description="Thêm các dịch vụ/dịch vụ con khác mà bệnh nhân đã sử dụng trong quá trình điều trị. Tổng chi phí sẽ được tự động cập nhật."
+          message="Quản lý dịch vụ bổ sung"
+          description="Để thêm/sửa/xóa dịch vụ bổ sung, vui lòng sử dụng trang chi tiết hồ sơ bệnh án. Các thay đổi sẽ tự động cập nhật tổng chi phí."
           style={{ marginBottom: 16 }}
           showIcon
         />
-
-        {/* This will be managed via API calls, not form state */}
-        <p style={{ color: '#666', marginBottom: 16 }}>
-          Sử dụng trang chi tiết hồ sơ để quản lý dịch vụ bổ sung
-        </p>
+        
+        <div style={{ 
+          padding: '24px', 
+          textAlign: 'center', 
+          background: '#fafafa',
+          borderRadius: '8px',
+          border: '1px dashed #d9d9d9'
+        }}>
+          <p style={{ color: '#666', margin: 0 }}>
+            Nhấn "Cập nhật" để lưu các thay đổi, sau đó mở chi tiết hồ sơ để quản lý dịch vụ bổ sung
+          </p>
+        </div>
       </div>
     );
   };
@@ -664,7 +685,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                                 }
                               }}
                             >
-                              {services.filter(s => s.type === 'treatment').map(service => (
+                              {services.filter(s => s.type === 'treatment' && s.requiresExamination).map(service => (
                                 <Option key={service._id} value={service._id}>
                                   {service.name}
                                 </Option>
