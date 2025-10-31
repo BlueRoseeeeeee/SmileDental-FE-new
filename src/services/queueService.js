@@ -164,7 +164,7 @@ export const getVNPayPaymentUrl = async (paymentId) => {
 export const getQueue = async (roomId = null) => {
   try {
     const params = roomId ? { roomId } : {};
-    const response = await queueApi.get('/api/appointment/queue', { params });
+    const response = await queueApi.get('/api/appointments/queue', { params });
     return response.data;
   } catch (error) {
     console.error('Error getting queue:', error);
@@ -178,7 +178,7 @@ export const getQueue = async (roomId = null) => {
  */
 export const getQueueStats = async () => {
   try {
-    const response = await queueApi.get('/api/appointment/queue/stats');
+    const response = await queueApi.get('/api/appointments/queue/stats');
     return response.data;
   } catch (error) {
     console.error('Error getting queue stats:', error);
@@ -192,7 +192,7 @@ export const getQueueStats = async () => {
  */
 export const triggerAutoStart = async () => {
   try {
-    const response = await queueApi.post('/api/appointment/queue/auto-start');
+    const response = await queueApi.post('/api/appointments/queue/auto-start');
     return response.data;
   } catch (error) {
     console.error('Error triggering auto-start:', error);

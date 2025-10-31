@@ -12,7 +12,7 @@
  * - Actions: Edit, Print, Complete
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Drawer,
   Descriptions,
@@ -40,17 +40,29 @@ import {
   ClockCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import AdditionalServicesManager from './AdditionalServicesManager';
 
 const { Title, Text } = Typography;
 
 const RecordDetailDrawer = ({ 
   visible, 
-  record, 
+  record: initialRecord, 
   onClose, 
   onEdit, 
   onComplete,
   onPrint 
 }) => {
+  const [record, setRecord] = useState(initialRecord);
+
+  // Update record when initialRecord changes
+  React.useEffect(() => {
+    setRecord(initialRecord);
+  }, [initialRecord]);
+
+  const handleServiceUpdate = (updatedRecord) => {
+    setRecord(updatedRecord);
+  };
+
   if (!record) return null;
 
   // Status config
@@ -92,7 +104,7 @@ const RecordDetailDrawer = ({
       open={visible}
       extra={
         <Space>
-          {record.status !== 'completed' && (
+          {record.status === 'in_progress' && (
             <>
               <Button
                 icon={<EditOutlined />}
@@ -104,6 +116,11 @@ const RecordDetailDrawer = ({
                 type="primary"
                 icon={<CheckCircleOutlined />}
                 onClick={() => onComplete(record)}
+                style={{ 
+                  backgroundColor: '#52c41a',
+                  borderColor: '#52c41a'
+                }}
+                disabled={!(record.diagnosis && record.diagnosis.trim() && record.totalCost > 0)}
               >
                 Hoàn thành
               </Button>
@@ -192,6 +209,20 @@ const RecordDetailDrawer = ({
           <Descriptions.Item label="Phòng khám" span={2}>
             {record.roomName}
           </Descriptions.Item>
+          {record.startedAt && (
+            <Descriptions.Item label="Thời gian bắt đầu" span={2}>
+              <Tag color="blue" icon={<ClockCircleOutlined />}>
+                {dayjs(record.startedAt).format('HH:mm:ss - DD/MM/YYYY')}
+              </Tag>
+            </Descriptions.Item>
+          )}
+          {record.completedAt && (
+            <Descriptions.Item label="Thời gian hoàn thành" span={2}>
+              <Tag color="green" icon={<CheckCircleOutlined />}>
+                {dayjs(record.completedAt).format('HH:mm:ss - DD/MM/YYYY')}
+              </Tag>
+            </Descriptions.Item>
+          )}
           <Descriptions.Item label="Chi phí" span={2}>
             <Text strong style={{ color: '#faad14', fontSize: 16 }}>
               {record.totalCost.toLocaleString('vi-VN')}đ
@@ -313,6 +344,15 @@ const RecordDetailDrawer = ({
         )}
       </Card>
 
+      {/* Additional Services Manager */}
+      <div style={{ marginBottom: 16 }}>
+        <AdditionalServicesManager
+          recordId={record._id}
+          record={record}
+          onUpdate={handleServiceUpdate}
+        />
+      </div>
+
       {/* Treatment Indications (only for exam records) */}
       {record.type === 'exam' && record.treatmentIndications && record.treatmentIndications.length > 0 && (
         <Card 
@@ -382,31 +422,43 @@ const RecordDetailDrawer = ({
                   <Text strong>Tạo hồ sơ</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {dayjs(record.createdAt).format('DD/MM/YYYY HH:mm')}
+                    {dayjs(record.createdAt).format('DD/MM/YYYY HH:mm:ss')}
                   </Text>
                 </>
               )
             },
-            record.updatedAt && record.updatedAt !== record.createdAt && {
+            record.startedAt && {
+              color: 'blue',
+              children: (
+                <>
+                  <Text strong>Bắt đầu khám</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {dayjs(record.startedAt).format('DD/MM/YYYY HH:mm:ss')}
+                  </Text>
+                </>
+              )
+            },
+            record.updatedAt && record.updatedAt !== record.createdAt && !record.completedAt && {
               color: 'blue',
               children: (
                 <>
                   <Text strong>Cập nhật</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {dayjs(record.updatedAt).format('DD/MM/YYYY HH:mm')}
+                    {dayjs(record.updatedAt).format('DD/MM/YYYY HH:mm:ss')}
                   </Text>
                 </>
               )
             },
-            record.status === 'completed' && {
+            record.completedAt && {
               color: 'green',
               children: (
                 <>
                   <Text strong>Hoàn thành</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {dayjs(record.updatedAt).format('DD/MM/YYYY HH:mm')}
+                    {dayjs(record.completedAt).format('DD/MM/YYYY HH:mm:ss')}
                   </Text>
                 </>
               )

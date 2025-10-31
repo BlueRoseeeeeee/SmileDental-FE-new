@@ -177,54 +177,89 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       const values = await form.validateFields();
       setLoading(true);
 
-      // Get selected patient info
-      const patient = patients.find(p => p._id === values.patientId);
-      const service = services.find(s => s._id === values.serviceId);
-      const dentist = dentists.find(d => d._id === values.dentistId);
-      const room = rooms.find(r => r._id === values.roomId);
+      let recordData;
+      
+      if (mode === 'edit' && record) {
+        // Edit mode: Only update editable fields (diagnosis, notes, status, priority, treatmentIndications)
+        // Process treatment indications to include service/addon names
+        let processedTreatmentIndications = [];
+        if (values.treatmentIndications && values.treatmentIndications.length > 0) {
+          processedTreatmentIndications = values.treatmentIndications.map(indication => {
+            const indicationService = services.find(s => s._id === indication.serviceId);
+            const addOns = serviceAddOnsMap[indication.serviceId] || [];
+            const addOn = addOns.find(a => a._id === indication.serviceAddOnId);
+            
+            return {
+              serviceId: indication.serviceId,
+              serviceName: indicationService?.name || '',
+              serviceAddOnId: indication.serviceAddOnId || null,
+              serviceAddOnName: addOn?.name || null,
+              notes: indication.notes || '',
+              used: indication.used || false
+            };
+          });
+        }
 
-      // Process treatment indications to include service/addon names
-      let processedTreatmentIndications = [];
-      if (values.treatmentIndications && values.treatmentIndications.length > 0) {
-        processedTreatmentIndications = values.treatmentIndications.map(indication => {
-          const indicationService = services.find(s => s._id === indication.serviceId);
-          const addOns = serviceAddOnsMap[indication.serviceId] || [];
-          const addOn = addOns.find(a => a._id === indication.serviceAddOnId);
-          
-          return {
-            serviceId: indication.serviceId,
-            serviceName: indicationService?.name || '',
-            serviceAddOnId: indication.serviceAddOnId || null,
-            serviceAddOnName: addOn?.name || null,
-            notes: indication.notes || '',
-            used: false
-          };
-        });
+        recordData = {
+          diagnosis: values.diagnosis,
+          notes: values.notes,
+          status: values.status,
+          priority: values.priority,
+          treatmentIndications: processedTreatmentIndications,
+          lastModifiedBy: currentUser._id || 'unknown'
+        };
+      } else {
+        // Create mode: Include all fields
+        const patient = patients.find(p => p._id === values.patientId);
+        const service = services.find(s => s._id === values.serviceId);
+        const dentist = dentists.find(d => d._id === values.dentistId);
+        const room = rooms.find(r => r._id === values.roomId);
+
+        // Process treatment indications to include service/addon names
+        let processedTreatmentIndications = [];
+        if (values.treatmentIndications && values.treatmentIndications.length > 0) {
+          processedTreatmentIndications = values.treatmentIndications.map(indication => {
+            const indicationService = services.find(s => s._id === indication.serviceId);
+            const addOns = serviceAddOnsMap[indication.serviceId] || [];
+            const addOn = addOns.find(a => a._id === indication.serviceAddOnId);
+            
+            return {
+              serviceId: indication.serviceId,
+              serviceName: indicationService?.name || '',
+              serviceAddOnId: indication.serviceAddOnId || null,
+              serviceAddOnName: addOn?.name || null,
+              notes: indication.notes || '',
+              used: false
+            };
+          });
+        }
+
+        recordData = {
+          ...values,
+          date: values.date.toISOString(),
+          patientInfo: patient ? {
+            name: patient.fullName || patient.name,
+            phone: patient.phone,
+            birthYear: patient.birthYear,
+            gender: patient.gender,
+            address: patient.address
+          } : {},
+          serviceName: service?.name || '',
+          dentistName: dentist?.fullName || '',
+          roomName: room?.name || '',
+          treatmentIndications: processedTreatmentIndications,
+          totalCost: 0, // Will be calculated by backend
+          createdBy: currentUser._id || 'unknown',
+          lastModifiedBy: currentUser._id || 'unknown'
+        };
       }
-
-      const recordData = {
-        ...values,
-        date: values.date.toISOString(),
-        patientInfo: patient ? {
-          name: patient.fullName || patient.name,
-          phone: patient.phone,
-          birthYear: patient.birthYear,
-          gender: patient.gender,
-          address: patient.address
-        } : {},
-        serviceName: service?.name || '',
-        dentistName: dentist?.fullName || '',
-        roomName: room?.name || '',
-        treatmentIndications: processedTreatmentIndications,
-        totalCost: 0, // Will be calculated by backend
-        createdBy: currentUser._id || 'unknown',
-        lastModifiedBy: currentUser._id || 'unknown'
-      };
 
       let response;
       if (mode === 'edit' && record) {
+        console.log('📝 [RecordFormModal] Updating record:', record._id, recordData);
         response = await recordService.updateRecord(record._id, recordData);
       } else {
+        console.log('📝 [RecordFormModal] Creating record:', recordData);
         response = await recordService.createRecord(recordData);
       }
 
@@ -265,123 +300,154 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           />
         )}
         
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="patientId"
-              label="Bệnh nhân"
-              rules={[{ required: true, message: 'Vui lòng chọn bệnh nhân' }]}
-            >
-              <Select
-                showSearch
-                placeholder="Chọn bệnh nhân"
-                optionFilterProp="children"
-                disabled={isEditMode}
-                filterOption={(input, option) =>
-                  option.children.toLowerCase().includes(input.toLowerCase())
-                }
-              >
-                {patients.map(patient => (
-                  <Option key={patient._id} value={patient._id}>
-                    {patient.fullName || patient.name} - {patient.phone}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
+        {/* Show detailed info in edit mode */}
+        {isEditMode && record && (
+          <Card size="small" style={{ marginBottom: 16, background: '#f5f5f5' }}>
+            <Row gutter={[16, 8]}>
+              <Col span={12}>
+                <div><strong>Bệnh nhân:</strong> {record.patientInfo?.name || 'N/A'}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>SĐT: {record.patientInfo?.phone || 'N/A'}</div>
+              </Col>
+              <Col span={12}>
+                <div><strong>Ngày khám:</strong> {dayjs(record.date).format('DD/MM/YYYY')}</div>
+              </Col>
+              <Col span={12}>
+                <div><strong>Dịch vụ:</strong> {record.serviceName || 'N/A'}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>
+                  Loại: <Tag color={record.type === 'exam' ? 'blue' : 'green'}>
+                    {record.type === 'exam' ? 'Khám bệnh' : 'Điều trị'}
+                  </Tag>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div><strong>Nha sĩ:</strong> {record.dentistName || 'N/A'}</div>
+              </Col>
+              <Col span={12}>
+                <div><strong>Phòng khám:</strong> {record.roomName || 'N/A'}</div>
+              </Col>
+            </Row>
+          </Card>
+        )}
+        
+        {!isEditMode && (
+          <>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="patientId"
+                  label="Bệnh nhân"
+                  rules={[{ required: true, message: 'Vui lòng chọn bệnh nhân' }]}
+                >
+                  <Select
+                    showSearch
+                    placeholder="Chọn bệnh nhân"
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      option.children.toLowerCase().includes(input.toLowerCase())
+                    }
+                  >
+                    {patients.map(patient => (
+                      <Option key={patient._id} value={patient._id}>
+                        {patient.fullName || patient.name} - {patient.phone}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
 
-          <Col span={12}>
-            <Form.Item
-              name="date"
-              label="Ngày khám"
-              rules={[{ required: true, message: 'Vui lòng chọn ngày khám' }]}
-            >
-              <DatePicker
-                style={{ width: '100%' }}
-                format="DD/MM/YYYY"
-                placeholder="Chọn ngày khám"
-                disabled={isEditMode}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
+              <Col span={12}>
+                <Form.Item
+                  name="date"
+                  label="Ngày khám"
+                  rules={[{ required: true, message: 'Vui lòng chọn ngày khám' }]}
+                >
+                  <DatePicker
+                    style={{ width: '100%' }}
+                    format="DD/MM/YYYY"
+                    placeholder="Chọn ngày khám"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
 
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="serviceId"
-              label="Dịch vụ"
-              rules={[{ required: true, message: 'Vui lòng chọn dịch vụ' }]}
-            >
-              <Select 
-                placeholder="Chọn dịch vụ"
-                disabled={isEditMode}
-              >
-                {services.map(service => (
-                  <Option key={service._id} value={service._id}>
-                    {service.name} - {service.price.toLocaleString('vi-VN')}đ
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="serviceId"
+                  label="Dịch vụ"
+                  rules={[{ required: true, message: 'Vui lòng chọn dịch vụ' }]}
+                >
+                  <Select 
+                    placeholder="Chọn dịch vụ"
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {services.map(service => (
+                      <Option key={service._id} value={service._id}>
+                        {service.name} - {service.price.toLocaleString('vi-VN')}đ
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
 
-          <Col span={12}>
-            <Form.Item
-              name="type"
-              label="Loại hồ sơ"
-              rules={[{ required: true, message: 'Vui lòng chọn loại hồ sơ' }]}
-            >
-              <Radio.Group 
-                onChange={handleTypeChange}
-                disabled={isEditMode}
-              >
-                <Radio value="exam">Khám bệnh</Radio>
-                <Radio value="treatment">Điều trị</Radio>
-              </Radio.Group>
-            </Form.Item>
-          </Col>
-        </Row>
+              <Col span={12}>
+                <Form.Item
+                  name="type"
+                  label="Loại hồ sơ"
+                  rules={[{ required: true, message: 'Vui lòng chọn loại hồ sơ' }]}
+                >
+                  <Radio.Group onChange={handleTypeChange}>
+                    <Radio value="exam">Khám bệnh</Radio>
+                    <Radio value="treatment">Điều trị</Radio>
+                  </Radio.Group>
+                </Form.Item>
+              </Col>
+            </Row>
 
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              name="dentistId"
-              label="Nha sĩ"
-              rules={[{ required: true, message: 'Vui lòng chọn nha sĩ' }]}
-            >
-              <Select 
-                placeholder="Chọn nha sĩ"
-                disabled={isEditMode}
-              >
-                {dentists.map(dentist => (
-                  <Option key={dentist._id} value={dentist._id}>
-                    {dentist.fullName} - {dentist.specialization}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="dentistId"
+                  label="Nha sĩ"
+                  rules={[{ required: true, message: 'Vui lòng chọn nha sĩ' }]}
+                >
+                  <Select 
+                    placeholder="Chọn nha sĩ"
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {dentists.map(dentist => (
+                      <Option key={dentist._id} value={dentist._id}>
+                        {dentist.fullName} {dentist.specialization ? `- ${dentist.specialization}` : ''}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
 
-          <Col span={12}>
-            <Form.Item
-              name="roomId"
-              label="Phòng khám"
-              rules={[{ required: true, message: 'Vui lòng chọn phòng' }]}
-            >
-              <Select 
-                placeholder="Chọn phòng"
-                disabled={isEditMode}
-              >
-                {rooms.map(room => (
-                  <Option key={room._id} value={room._id}>
-                    {room.name}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
+              <Col span={12}>
+                <Form.Item
+                  name="roomId"
+                  label="Phòng khám"
+                  rules={[{ required: true, message: 'Vui lòng chọn phòng' }]}
+                >
+                  <Select 
+                    placeholder="Chọn phòng"
+                    showSearch
+                    optionFilterProp="children"
+                  >
+                    {rooms.map(room => (
+                      <Option key={room._id} value={room._id}>
+                        {room.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </>
+        )}
 
         <Row gutter={16}>
           <Col span={8}>
@@ -432,7 +498,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     );
   };
 
-  // Tab 2: Diagnosis
+  // Tab 2: Diagnosis (removed indications field)
   const renderDiagnosisTab = () => (
     <div>
       {mode === 'edit' && (
@@ -451,21 +517,10 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         rules={[{ required: true, message: 'Vui lòng nhập chẩn đoán' }]}
       >
         <TextArea
-          rows={4}
+          rows={6}
           placeholder="Nhập chẩn đoán chi tiết..."
           maxLength={1000}
           showCount
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="indications"
-        label="Chỉ định"
-      >
-        <Select
-          mode="tags"
-          placeholder="Nhập các chỉ định (nhấn Enter để thêm)"
-          style={{ width: '100%' }}
         />
       </Form.Item>
 
@@ -516,7 +571,41 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     </div>
   );
 
-  // Tab 4: Treatment Indications (only for exam records)
+  // Tab 4: Additional Services - Services used during treatment
+  const renderAdditionalServicesTab = () => {
+    if (mode !== 'edit' || !record) {
+      return (
+        <div style={{ 
+          padding: '24px', 
+          textAlign: 'center', 
+          background: '#f5f5f5',
+          borderRadius: '8px'
+        }}>
+          <MedicineBoxOutlined style={{ fontSize: 48, color: '#999', marginBottom: 8 }} />
+          <p style={{ color: '#999' }}>Vui lòng tạo hồ sơ trước khi thêm dịch vụ bổ sung</p>
+        </div>
+      );
+    }
+
+    return (
+      <div>
+        <Alert
+          type="info"
+          message="Dịch vụ bổ sung"
+          description="Thêm các dịch vụ/dịch vụ con khác mà bệnh nhân đã sử dụng trong quá trình điều trị. Tổng chi phí sẽ được tự động cập nhật."
+          style={{ marginBottom: 16 }}
+          showIcon
+        />
+
+        {/* This will be managed via API calls, not form state */}
+        <p style={{ color: '#666', marginBottom: 16 }}>
+          Sử dụng trang chi tiết hồ sơ để quản lý dịch vụ bổ sung
+        </p>
+      </div>
+    );
+  };
+
+  // Tab 5: Treatment Indications (only for exam records)
   const renderTreatmentIndicationsTab = () => (
     <div>
       {recordType === 'exam' ? (
@@ -524,7 +613,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           <Alert
             type="info"
             message="Chỉ định điều trị"
-            description="Thêm các dịch vụ điều trị được khuyến nghị cho bệnh nhân. Chọn Service và ServiceAddOn cụ thể có giá."
+            description="Thêm các dịch vụ điều trị được khuyến nghị cho bệnh nhân. Dịch vụ và dịch vụ con sẽ được sử dụng để đặt lịch điều trị sau."
             style={{ marginBottom: 16 }}
           />
 
@@ -534,6 +623,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                 {fields.map(({ key, name, ...restField }) => {
                   const selectedServiceId = form.getFieldValue(['treatmentIndications', name, 'serviceId']);
                   const addOnsForService = serviceAddOnsMap[selectedServiceId] || [];
+                  const selectedService = services.find(s => s._id === selectedServiceId);
                   
                   return (
                     <Card
@@ -552,22 +642,26 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                       }
                     >
                       <Row gutter={16}>
-                        <Col span={8}>
+                        <Col span={10}>
                           <Form.Item
                             {...restField}
                             name={[name, 'serviceId']}
-                            label="Service (Nhóm dịch vụ)"
-                            rules={[{ required: true, message: 'Chọn service' }]}
+                            label="Dịch vụ"
+                            rules={[{ required: true, message: 'Chọn dịch vụ' }]}
                           >
                             <Select 
-                              placeholder="Chọn service"
+                              placeholder="Chọn dịch vụ"
+                              showSearch
+                              optionFilterProp="children"
                               onChange={(value) => {
                                 // Load service addons when service changes
                                 loadServiceAddOns(value);
                                 // Reset serviceAddOnId when service changes
                                 const currentValues = form.getFieldValue('treatmentIndications');
-                                currentValues[name].serviceAddOnId = null;
-                                form.setFieldsValue({ treatmentIndications: currentValues });
+                                if (currentValues && currentValues[name]) {
+                                  currentValues[name].serviceAddOnId = null;
+                                  form.setFieldsValue({ treatmentIndications: currentValues });
+                                }
                               }}
                             >
                               {services.filter(s => s.type === 'treatment').map(service => (
@@ -577,36 +671,41 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                               ))}
                             </Select>
                           </Form.Item>
+                          {selectedService && (
+                            <div style={{ marginTop: -12, marginBottom: 8, fontSize: 12, color: '#666' }}>
+                              Giá cơ bản: <strong>{selectedService.price.toLocaleString('vi-VN')}đ</strong>
+                            </div>
+                          )}
                         </Col>
 
-                        <Col span={8}>
+                        <Col span={10}>
                           <Form.Item
                             {...restField}
                             name={[name, 'serviceAddOnId']}
-                            label="ServiceAddOn (Dịch vụ cụ thể)"
-                            rules={[{ required: true, message: 'Chọn service addon' }]}
+                            label="Dịch vụ con (tùy chọn)"
                           >
                             <Select 
-                              placeholder={selectedServiceId ? "Chọn service addon" : "Chọn service trước"}
+                              placeholder={selectedServiceId ? "Chọn dịch vụ con (nếu có)" : "Chọn dịch vụ trước"}
                               disabled={!selectedServiceId || loadingAddOns}
                               loading={loadingAddOns}
+                              allowClear
                             >
                               {addOnsForService.map(addOn => (
                                 <Option key={addOn._id} value={addOn._id}>
-                                  {addOn.name} - {addOn.price.toLocaleString('vi-VN')}đ/{addOn.unit}
+                                  {addOn.name} - {addOn.price.toLocaleString('vi-VN')}đ
                                 </Option>
                               ))}
                             </Select>
                           </Form.Item>
                         </Col>
 
-                        <Col span={8}>
+                        <Col span={4}>
                           <Form.Item
                             {...restField}
                             name={[name, 'notes']}
                             label="Ghi chú"
                           >
-                            <Input placeholder="Ghi chú về chỉ định này" />
+                            <Input placeholder="Ghi chú" />
                           </Form.Item>
                         </Col>
                       </Row>
@@ -673,6 +772,16 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     },
     {
       key: '4',
+      label: (
+        <span>
+          <PlusOutlined />
+          Dịch vụ bổ sung
+        </span>
+      ),
+      children: renderAdditionalServicesTab()
+    },
+    {
+      key: '5',
       label: (
         <span>
           <ExperimentOutlined />

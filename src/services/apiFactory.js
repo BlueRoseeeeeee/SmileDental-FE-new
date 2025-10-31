@@ -29,6 +29,10 @@ const MICROSERVICES_CONFIG = {
   payment: {
     baseURL: import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api', // ✅ Fix: Payment service runs on port 3007
     timeout: 15000, // 15s - Payment processing
+  },
+  medicine: {
+    baseURL: import.meta.env.VITE_MEDICINE_API_URL || 'http://localhost:3009/api',
+    timeout: 10000, // 10s - Medicine catalog management
   }
 };
 
@@ -178,6 +182,7 @@ export const serviceApi = getApiInstance('service');
 export const userApi = getApiInstance('user');
 export const scheduleApi = getApiInstance('schedule');
 export const paymentApi = getApiInstance('payment');
+export const medicineApi = getApiInstance('medicine');
 
 export default {
   getApiInstance,
@@ -186,4 +191,5 @@ export default {
   serviceApi,
   userApi,
   scheduleApi,
+  medicineApi,
 };

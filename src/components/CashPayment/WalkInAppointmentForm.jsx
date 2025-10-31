@@ -47,6 +47,7 @@ import userService from '../../services/userService';
 import { servicesService } from '../../services/servicesService';
 import slotService from '../../services/slotService';
 import appointmentService from '../../services/appointmentService';
+import scheduleConfigService from '../../services/scheduleConfigService'; // 🆕 Import for deposit calculation
 import { groupConsecutiveSlots } from '../../utils/slotGrouping'; // ⭐ Import slot grouping utility
 
 const { Title, Text } = Typography;
@@ -86,13 +87,34 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     evening: []
   });
   const [selectedSlotGroup, setSelectedSlotGroup] = useState(null);
+  
+  // Schedule Config - 🆕 For deposit calculation
+  const [scheduleConfig, setScheduleConfig] = useState(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   useEffect(() => {
     loadServices();
+    loadScheduleConfig(); // 🆕 Load deposit config
     // ⭐ Don't load dentists here - they will be loaded after selecting a service
   }, []);
+
+  // 🆕 Load schedule config for deposit calculation
+  const loadScheduleConfig = async () => {
+    try {
+      const response = await scheduleConfigService.getConfig();
+      if (response?.data) {
+        setScheduleConfig(response.data);
+        console.log('✅ Schedule config loaded:', response.data);
+      } else {
+        // Fallback default
+        setScheduleConfig({ depositAmount: 50000 });
+      }
+    } catch (error) {
+      console.error('❌ Error loading schedule config:', error);
+      setScheduleConfig({ depositAmount: 50000 }); // Fallback
+    }
+  };
 
   // Search patient
   const handleSearchPatient = async () => {
@@ -273,17 +295,30 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       setLoading(true);
       const dateStr = selectedDate.format('YYYY-MM-DD');
       
-      // ⭐ Get service duration (prioritize addOn duration)
-      const serviceDuration = selectedServiceAddOn?.durationMinutes 
-                           || selectedService.durationMinutes 
-                           || selectedService.duration 
-                           || 15;
+      // 🆕 Get service duration - SAME LOGIC AS ONLINE BOOKING
+      // Use LONGEST addon duration if service has addons, otherwise use service duration
+      let serviceDuration = 15; // default
+      
+      if (selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0) {
+        // Case: Service has addons → use LONGEST addon duration
+        const longestAddon = selectedService.serviceAddOns.reduce((longest, addon) => {
+          return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+        }, selectedService.serviceAddOns[0]);
+        
+        serviceDuration = longestAddon.durationMinutes;
+        console.log('🎯 Using LONGEST addon duration:', serviceDuration, 'minutes from', longestAddon.name);
+      } else if (selectedService.durationMinutes) {
+        // Case: No addons → use service duration
+        serviceDuration = selectedService.durationMinutes;
+        console.log('🎯 Using service duration:', serviceDuration, 'minutes');
+      }
+      
       const slotDuration = 15; // Default slot duration
       
       console.log('⏰ Loading slots for:', {
         dentist: selectedDentist.fullName,
         service: selectedService.name,
-        addOn: selectedServiceAddOn?.name || 'none',
+        hasAddOns: selectedService.serviceAddOns?.length || 0,
         serviceId: selectedService._id,
         date: dateStr,
         serviceDuration: serviceDuration + ' minutes',
@@ -295,7 +330,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       const response = await slotService.getDentistSlotsFuture(selectedDentist._id, {
         date: dateStr,
         shiftName: '', // Get all shifts
-        serviceId: selectedService._id // Pass serviceId for roomType filtering
+        serviceId: selectedService._id, // Pass serviceId for roomType filtering
+        minLeadMinutes: 2 // Walk-in: allow slots starting within 2 minutes
       });
 
       console.log('📋 Slots API Response:', response);
@@ -372,59 +408,28 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     }
   };
 
-  // Handle service change
+  // Handle service change - ⭐ Luôn load dentists ngay sau khi chọn service
   const handleServiceChange = (serviceId) => {
     const service = services.find(s => s._id === serviceId);
     setSelectedService(service);
-    setSelectedServiceAddOn(null); // ⭐ Reset addOn when service changes
+    setSelectedServiceAddOn(null);
     setSelectedDentist(null);
     setSelectedDate(null);
-    setAvailableSlotGroups({ morning: [], afternoon: [], evening: [] }); // ⭐ Reset slot groups
-    setSelectedSlotGroup(null); // ⭐ Reset selected slot group
-    form.setFieldsValue({ 
-      serviceAddOnId: undefined, // ⭐ Reset addOn field
-      dentistId: undefined, 
-      date: undefined, 
-      slotGroup: undefined // ⭐ Reset slot group field
-    });
-    
-    // ⭐ Don't load dentists yet - wait for addOn selection if service has addOns
-    console.log('🔄 Service selected:', service?.name, '| Has addOns:', service?.serviceAddOns?.length || 0);
-  };
-
-  // ⭐ Handle serviceAddOn change
-  const handleServiceAddOnChange = (addOnIndex) => {
-    if (!selectedService || !selectedService.serviceAddOns) return;
-    
-    const addOn = selectedService.serviceAddOns[addOnIndex];
-    setSelectedServiceAddOn(addOn);
-    setSelectedDentist(null);
-    setSelectedDate(null);
-    setAvailableSlotGroups({ morning: [], afternoon: [], evening: [] }); // ⭐ Reset slot groups
-    setSelectedSlotGroup(null); // ⭐ Reset selected slot group
+    setAvailableSlotGroups({ morning: [], afternoon: [], evening: [] });
+    setSelectedSlotGroup(null);
     form.setFieldsValue({ 
       dentistId: undefined, 
       date: undefined, 
-      slotGroup: undefined // ⭐ Reset slot group field
+      slotGroup: undefined
     });
     
-    // Load dentists with duration from addOn
-    const serviceDuration = addOn.durationMinutes || 15;
-    console.log('🔄 AddOn selected:', addOn.name, '| Loading dentists with duration:', serviceDuration);
-    loadDentists(serviceDuration, selectedService._id);
-  };
-
-  // ⭐ Load dentists when service is selected (if no addOns) or when addOn is selected
-  useEffect(() => {
-    if (selectedService) {
-      // If service has no addOns, load dentists immediately
-      if (!selectedService.serviceAddOns || selectedService.serviceAddOns.length === 0) {
-        const serviceDuration = selectedService.durationMinutes || selectedService.duration || 15;
-        console.log('🔄 Service has no addOns, loading dentists with duration:', serviceDuration);
-        loadDentists(serviceDuration, selectedService._id);
-      }
+    // ⭐ Luôn load dentists ngay (không cần chọn serviceAddOn)
+    if (service) {
+      const serviceDuration = service.durationMinutes || service.duration || 15;
+      console.log('🔄 Service selected:', service.name, '| Loading dentists immediately with duration:', serviceDuration);
+      loadDentists(serviceDuration, service._id);
     }
-  }, [selectedService]);
+  };
 
   // Handle dentist change
   const handleDentistChange = (dentistId) => {
@@ -613,11 +618,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         message.warning('Vui lòng chọn dịch vụ');
         return;
       }
-      // ⭐ Check if service has addOns and one is selected
-      if (selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && !selectedServiceAddOn) {
-        message.warning('Vui lòng chọn gói dịch vụ');
-        return;
-      }
+      // ⭐ Không cần kiểm tra serviceAddOn nữa
       if (!selectedDentist) {
         message.warning('Vui lòng chọn nha sĩ');
         return;
@@ -837,9 +838,6 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                         <Text><strong>Loại:</strong> {selectedService.type === 'examination' ? 'Khám' : 'Điều trị'}</Text>
                         <Text><strong>Giá:</strong> {selectedService.price ? selectedService.price.toLocaleString('vi-VN') : '0'}đ</Text>
                         <Text><strong>Thời gian:</strong> {selectedService.duration || 0} phút</Text>
-                        {selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
-                          <Text><strong>Gói dịch vụ:</strong> {selectedService.serviceAddOns.length} gói khả dụng</Text>
-                        )}
                       </Space>
                     }
                     type="info"
@@ -847,69 +845,55 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   />
                 )}
 
-                {/* ⭐ ServiceAddOn Selection - Show if service has addOns */}
+                {/* ⭐ ServiceAddOn Display - Show list instead of Select */}
                 {selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
-                  <Form.Item
-                    label="Gói dịch vụ"
-                    name="serviceAddOnId"
-                    rules={[{ required: true, message: 'Vui lòng chọn gói dịch vụ' }]}
-                    style={{ marginTop: 16 }}
-                  >
-                    <Select
-                      placeholder="Chọn gói dịch vụ"
-                      onChange={handleServiceAddOnChange}
-                      value={selectedServiceAddOn ? selectedService.serviceAddOns.indexOf(selectedServiceAddOn) : undefined}
-                    >
-                      {selectedService.serviceAddOns.map((addOn, index) => (
-                        <Option key={index} value={index}>
-                          <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                            <Text strong>{addOn.name}</Text>
-                            <Space size="large">
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                <DollarOutlined /> {addOn.price?.toLocaleString('vi-VN') || '0'}đ/{addOn.unit}
-                              </Text>
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                <ClockCircleOutlined /> ~{addOn.durationMinutes || 0} phút
-                              </Text>
-                            </Space>
-                          </Space>
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                )}
-
-                {/* ⭐ Show selected addOn info */}
-                {selectedServiceAddOn && (
-                  <Alert
-                    message="Gói dịch vụ đã chọn"
-                    description={
-                      <Space direction="vertical" size={4}>
-                        <Text><strong>Tên:</strong> {selectedServiceAddOn.name}</Text>
-                        <Text><strong>Giá:</strong> {selectedServiceAddOn.price?.toLocaleString('vi-VN') || '0'}đ/{selectedServiceAddOn.unit}</Text>
-                        <Text><strong>Thời gian:</strong> ~{selectedServiceAddOn.durationMinutes || 0} phút</Text>
-                      </Space>
-                    }
-                    type="success"
-                    showIcon
-                    style={{ marginTop: 16 }}
-                  />
+                  <div style={{ marginTop: 16 }}>
+                    <Divider orientation="left" style={{ fontSize: 14, fontWeight: 500 }}>
+                      📋 Các gói dịch vụ có sẵn
+                    </Divider>
+                    <Alert
+                      message="Thông tin gói dịch vụ"
+                      description={
+                        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                          {selectedService.serviceAddOns.map((addOn, index) => (
+                            <Card 
+                              key={index}
+                              size="small" 
+                              style={{ 
+                                backgroundColor: '#f9f9f9',
+                                border: '1px solid #e8e8e8'
+                              }}
+                            >
+                              <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                <Text strong style={{ fontSize: 14, color: '#1890ff' }}>
+                                  {index + 1}. {addOn.name}
+                                </Text>
+                                <Space size="large" wrap>
+                                  <Text type="secondary">
+                                    <DollarOutlined style={{ color: '#52c41a' }} /> 
+                                    <strong> {addOn.price?.toLocaleString('vi-VN') || '0'}đ</strong>/{addOn.unit}
+                                  </Text>
+                                  <Text type="secondary">
+                                    <ClockCircleOutlined style={{ color: '#faad14' }} /> ~{addOn.durationMinutes || 0} phút
+                                  </Text>
+                                </Space>
+                              </Space>
+                            </Card>
+                          ))}
+                        </Space>
+                      }
+                      type="info"
+                      showIcon
+                      style={{ backgroundColor: '#e6f7ff', border: '1px solid #91d5ff' }}
+                    />
+                  </div>
                 )}
               </Card>
 
               <Card title={<Space><UserOutlined />Chọn nha sĩ</Space>}>
-                {/* ⭐ Show appropriate alert based on service/addOn selection */}
                 {!selectedService && (
                   <Alert
                     message="Vui lòng chọn dịch vụ trước"
-                    type="info"
-                    showIcon
-                    style={{ marginBottom: 16 }}
-                  />
-                )}
-                {selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && !selectedServiceAddOn && (
-                  <Alert
-                    message="Vui lòng chọn gói dịch vụ trước"
                     type="info"
                     showIcon
                     style={{ marginBottom: 16 }}
@@ -920,17 +904,10 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   rules={[{ required: true, message: 'Vui lòng chọn nha sĩ' }]}
                 >
                   <Select
-                    placeholder={
-                      !selectedService ? "Vui lòng chọn dịch vụ trước" :
-                      (selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && !selectedServiceAddOn) ? "Vui lòng chọn gói dịch vụ trước" :
-                      "Chọn nha sĩ"
-                    }
+                    placeholder={!selectedService ? "Vui lòng chọn dịch vụ trước" : "Chọn nha sĩ"}
                     onChange={handleDentistChange}
                     value={selectedDentist?._id}
-                    disabled={
-                      !selectedService || 
-                      (selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && !selectedServiceAddOn)
-                    }
+                    disabled={!selectedService}
                     showSearch
                     optionFilterProp="children"
                     loading={loading}
@@ -981,59 +958,86 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       </Spin>
                     ) : (
                       <>
-                        {/* ⭐ Display slot groups by shift */}
+                        {/* ⭐ Display slot groups by shift - Same style as BookingSelectTime */}
                         {['morning', 'afternoon', 'evening'].map(shift => {
                           const shiftName = shift === 'morning' ? 'Ca Sáng' : shift === 'afternoon' ? 'Ca Chiều' : 'Ca Tối';
                           const slotGroups = availableSlotGroups[shift] || [];
-                          const availableGroups = slotGroups.filter(g => g.isAvailable);
-                          
-                          if (slotGroups.length === 0) return null;
                           
                           return (
-                            <div key={shift} style={{ marginBottom: 16 }}>
-                              <Title level={5} style={{ marginBottom: 12 }}>
+                            <div key={shift} style={{ marginBottom: 24 }}>
+                              <Title level={5} style={{ margin: 0, marginBottom: 12, color: '#2c5f4f' }}>
                                 <ClockCircleOutlined /> {shiftName}
                               </Title>
-                              <Row gutter={[12, 12]}>
-                                {slotGroups.map(slotGroup => {
-                                  const isSelected = selectedSlotGroup?.groupId === slotGroup.groupId;
-                                  const isAvailable = slotGroup.isAvailable;
-                                  
-                                  return (
-                                    <Col key={slotGroup.groupId} xs={12} sm={8} md={6}>
-                                      <Button
-                                        block
-                                        type={isSelected ? 'primary' : 'default'}
-                                        disabled={!isAvailable}
-                                        onClick={() => isAvailable && handleSlotGroupSelect(slotGroup)}
-                                        style={{
-                                          height: 'auto',
-                                          padding: '12px 8px',
-                                          borderColor: isSelected ? '#1890ff' : isAvailable ? '#d9d9d9' : '#f5f5f5'
-                                        }}
-                                      >
-                                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                          <Text strong style={{ fontSize: 14 }}>
+                              {slotGroups.length === 0 ? (
+                                <div style={{ 
+                                  padding: '16px', 
+                                  textAlign: 'center', 
+                                  background: '#f5f5f5', 
+                                  borderRadius: 8,
+                                  color: '#999'
+                                }}>
+                                  Không có khung giờ nào trong ca này
+                                </div>
+                              ) : (
+                                <Row gutter={[12, 12]}>
+                                  {slotGroups.map(slotGroup => {
+                                    const isSelected = selectedSlotGroup?.groupId === slotGroup.groupId;
+                                    const isAvailable = slotGroup.isAvailable !== false; // Default true if not set
+                                    const slotCount = slotGroup.slots.length;
+                                    
+                                    return (
+                                      <Col key={slotGroup.groupId} xs={12} sm={8} md={6}>
+                                        <div 
+                                          onClick={() => isAvailable && handleSlotGroupSelect(slotGroup)}
+                                          onMouseEnter={(e) => {
+                                            if (isAvailable && !isSelected) {
+                                              e.currentTarget.style.borderColor = '#40a9ff';
+                                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(24, 144, 255, 0.2)';
+                                            }
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            if (isAvailable && !isSelected) {
+                                              e.currentTarget.style.borderColor = '#d9d9d9';
+                                              e.currentTarget.style.boxShadow = 'none';
+                                            }
+                                          }}
+                                          style={{
+                                            padding: '12px 8px',
+                                            border: '2px solid',
+                                            borderColor: isSelected ? '#2c5f4f' : '#d9d9d9',
+                                            borderRadius: '8px',
+                                            background: isSelected ? '#2c5f4f' : (!isAvailable ? '#fafafa' : 'white'),
+                                            color: isSelected ? 'white' : (!isAvailable ? '#999' : '#333'),
+                                            cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                            opacity: isAvailable ? 1 : 0.6,
+                                            textAlign: 'center',
+                                            transition: 'all 0.3s ease',
+                                            minHeight: '80px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            boxShadow: isSelected ? '0 4px 12px rgba(44, 95, 79, 0.3)' : 'none'
+                                          }}
+                                        >
+                                          <ClockCircleOutlined style={{ fontSize: 18, marginBottom: 6 }} />
+                                          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
                                             {slotGroup.displayTime}
-                                          </Text>
-                                          {!isAvailable && (
-                                            <Text type="secondary" style={{ fontSize: 11 }}>
-                                              {slotGroup.unavailableReason}
-                                            </Text>
+                                          </div>
+                                          
+                                          {!isAvailable && slotGroup.unavailableReason && (
+                                            <Tag 
+                                              color={slotGroup.unavailableReason.includes('đã được đặt') ? 'red' : 'orange'} 
+                                              style={{ marginTop: 4, fontSize: 11 }}
+                                            >
+                                              {slotGroup.unavailableReason.includes('đã được đặt') ? 'Đã đặt' : 'Đang giữ'}
+                                            </Tag>
                                           )}
-                                        </Space>
-                                      </Button>
-                                    </Col>
-                                  );
-                                })}
-                              </Row>
-                              {availableGroups.length === 0 && (
-                                <Alert
-                                  message={`Không có khung giờ nào trong ${shiftName.toLowerCase()}`}
-                                  type="info"
-                                  showIcon
-                                  style={{ marginTop: 8 }}
-                                />
+                                        </div>
+                                      </Col>
+                                    );
+                                  })}
+                                </Row>
                               )}
                             </div>
                           );
@@ -1078,6 +1082,39 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                     placeholder="Ghi chú thêm về lịch hẹn..."
                   />
                 </Form.Item>
+
+                {/* ⭐ Price Summary for Walk-in - 🆕 Show deposit like online booking */}
+                {selectedService && selectedSlotGroup && scheduleConfig && (
+                  <Alert
+                    type="info"
+                    showIcon
+                    icon={<DollarOutlined />}
+                    message={
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text strong>💰 Giá dịch vụ (thanh toán sau khám):</Text>
+                        <Text strong style={{ fontSize: 18, color: '#2c5f4f' }}>
+                          {(selectedSlotGroup.slots.length * scheduleConfig.depositAmount).toLocaleString('vi-VN')} VNĐ
+                        </Text>
+                      </div>
+                    }
+                    description={
+                      <div style={{ marginTop: 8 }}>
+                        <Text type="secondary">
+                          Thời gian dự kiến: {selectedSlotGroup.slots.length} slot × 15 phút = {selectedSlotGroup.slots.length * 15} phút
+                        </Text>
+                        <br />
+                        <Text type="secondary">
+                          Tính theo: {scheduleConfig.depositAmount.toLocaleString('vi-VN')} VNĐ × {selectedSlotGroup.slots.length} slot
+                        </Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          (Walk-in: Thanh toán bằng tiền mặt sau khi hoàn tất khám)
+                        </Text>
+                      </div>
+                    }
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
 
                 {selectedPatient && selectedService && selectedDentist && selectedDate && selectedSlotGroup && (
                   <Alert

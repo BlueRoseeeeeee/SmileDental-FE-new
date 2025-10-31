@@ -128,7 +128,8 @@ const slotService = {
     const queryParams = new URLSearchParams();
     if (params.date) queryParams.append('date', params.date);
     if (params.shiftName) queryParams.append('shiftName', params.shiftName);
-    if (params.serviceId) queryParams.append('serviceId', params.serviceId); // 🏥 Add serviceId for roomType filtering
+  if (params.serviceId) queryParams.append('serviceId', params.serviceId); // 🏥 Add serviceId for roomType filtering
+  if (params.minLeadMinutes !== undefined) queryParams.append('minLeadMinutes', params.minLeadMinutes);
 
     const url = `/slot/dentist/${dentistId}/details/future${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await scheduleApi.get(url);

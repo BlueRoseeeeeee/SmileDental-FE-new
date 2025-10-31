@@ -31,6 +31,7 @@ import ChangePassword from './components/Auth/ChangePassword.jsx';
 import RoomList from './pages/RoomList.jsx';
 import ServiceList from './pages/ServiceList.jsx';
 import ServiceDetails from './pages/ServiceDetails.jsx';
+import MedicineList from './pages/MedicineList.jsx';
 import AddService from './pages/AddService.jsx';
 import EditService from './pages/EditService.jsx';
 import AddServiceAddOn from './pages/AddServiceAddOn.jsx';
@@ -404,6 +405,13 @@ function App() {
             <Route path="records" element={
               <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
                 <RecordList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Medicine Catalog */}
+            <Route path="medicine" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <MedicineList />
               </ProtectedRoute>
             } />
             

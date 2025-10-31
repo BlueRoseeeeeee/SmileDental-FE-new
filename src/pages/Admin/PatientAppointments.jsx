@@ -369,7 +369,7 @@ const PatientAppointments = () => {
               Check-in
             </Button>
           )}
-          {record.status === 'checked-in' && (
+          {record.status === 'in-progress' && (
             <Button 
               type="primary" 
               icon={<CheckCircleOutlined />} 

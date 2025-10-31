@@ -314,6 +314,55 @@ class RecordService {
       throw error;
     }
   }
+
+  /**
+   * Add additional service to record
+   * @param {String} recordId - Record ID
+   * @param {Object} serviceData - Service data
+   * @returns {Promise<Object>} { success, message, data: {...} }
+   */
+  async addAdditionalService(recordId, serviceData) {
+    try {
+      const response = await api.post(`/${recordId}/additional-services`, serviceData);
+      return response.data;
+    } catch (error) {
+      console.error('addAdditionalService error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove additional service from record
+   * @param {String} recordId - Record ID
+   * @param {String} serviceItemId - Service item ID
+   * @returns {Promise<Object>} { success, message, data: {...} }
+   */
+  async removeAdditionalService(recordId, serviceItemId) {
+    try {
+      const response = await api.delete(`/${recordId}/additional-services/${serviceItemId}`);
+      return response.data;
+    } catch (error) {
+      console.error('removeAdditionalService error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update additional service (quantity/notes)
+   * @param {String} recordId - Record ID
+   * @param {String} serviceItemId - Service item ID
+   * @param {Object} updateData - Update data { quantity, notes }
+   * @returns {Promise<Object>} { success, message, data: {...} }
+   */
+  async updateAdditionalService(recordId, serviceItemId, updateData) {
+    try {
+      const response = await api.patch(`/${recordId}/additional-services/${serviceItemId}`, updateData);
+      return response.data;
+    } catch (error) {
+      console.error('updateAdditionalService error:', error);
+      throw error;
+    }
+  }
 }
 
 export default new RecordService();

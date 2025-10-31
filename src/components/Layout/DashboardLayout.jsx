@@ -130,8 +130,6 @@ const DashboardLayout = () => {
           { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc tổng', icon: <CalendarOutlined /> },
           { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng', icon: <CalendarOutlined /> },
           { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ', icon: <CalendarOutlined /> },
-          { key: '/dashboard/walk-in-appointments', label: 'Lịch Walk-in', icon: <UserAddOutlined /> },
-          { key: '/dashboard/queue', label: 'Hàng đợi khám', icon: <UserAddOutlined /> },
         ]
       });
 
@@ -141,8 +139,12 @@ const DashboardLayout = () => {
         icon: <MedicineBoxOutlined />,
         label: 'Khám & Điều trị',
         children: [
+          { key: '/dashboard/walk-in-appointments', label: 'Lịch Walk-in', icon: <UserAddOutlined /> },
+          { key: '/dashboard/queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
           { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
           { key: '/dashboard/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
+          { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
+          { key: '/dashboard/medicine', label: 'Danh mục thuốc', icon: <MedicineBoxOutlined /> },
         ]
       });
 
@@ -201,46 +203,28 @@ const DashboardLayout = () => {
 
     // ==================== RECEPTIONIST & STAFF ====================
     if (hasRole('receptionist') || hasRole('staff')) {
-      // 📋 Quản lý hàng đợi
+      // 🩺 Khám & Điều trị
       addMenuItem({
-        key: '/dashboard/queue-receptionist',
-        icon: <UserAddOutlined />,
-        label: 'Quản lý hàng đợi',
+        key: 'medical-treatment-receptionist',
+        icon: <MedicineBoxOutlined />,
+        label: 'Khám & Điều trị',
+        children: [
+          { key: '/dashboard/walk-in-appointments', label: 'Lịch Walk-in', icon: <UserAddOutlined /> },
+          { key: '/dashboard/queue-receptionist', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
+          { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
+          { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
+        ]
       });
       
-      // 📅 Lịch hẹn khám
+      // � Dịch vụ & Tài chính
       addMenuItem({
-        key: '/dashboard/patient-appointments-receptionist',
-        icon: <CalendarOutlined />,
-        label: 'Lịch hẹn khám',
-      });
-      
-      // 🚶 Lịch Walk-in
-      addMenuItem({
-        key: '/dashboard/walk-in-appointments',
-        icon: <UserAddOutlined />,
-        label: 'Lịch Walk-in',
-      });
-      
-      // 👥 Danh sách bệnh nhân
-      addMenuItem({
-        key: '/dashboard/patients',
-        icon: <HeartOutlined />,
-        label: 'Danh sách bệnh nhân',
-      });
-      
-      // 📄 Hóa đơn
-      addMenuItem({
-        key: '/dashboard/invoices',
-        icon: <FileTextOutlined />,
-        label: 'Quản lý hóa đơn',
-      });
-      
-      // 💰 Thanh toán
-      addMenuItem({
-        key: '/dashboard/payments',
+        key: 'finance-receptionist',
         icon: <DollarOutlined />,
-        label: 'Quản lý thanh toán',
+        label: 'Dịch vụ & Tài chính',
+        children: [
+          { key: '/dashboard/invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined /> },
+          { key: '/dashboard/payments', label: 'Quản lý thanh toán', icon: <DollarOutlined /> },
+        ]
       });
     }
 

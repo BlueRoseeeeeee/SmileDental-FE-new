@@ -1,5 +1,5 @@
 .queue-management-container {
-  padding: 24px;
+  padding: 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: calc(100vh - 64px);
 }
@@ -8,94 +8,176 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding: 20px 24px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .queue-header h2 {
   color: #1890ff;
+  font-size: 22px;
 }
 
 .current-time-display {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 8px 14px;
   background: #f0f9ff;
   border-radius: 8px;
   border: 2px solid #1890ff;
 }
 
-/* Room Card Styles */
-.room-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+/* Compact Room Card Styles */
+.room-card-compact {
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
   height: 100%;
   overflow: hidden;
+  font-size: 9px;
+  padding: 4px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-.room-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+.room-card-compact:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .room-busy {
-  border-left: 5px solid #1890ff;
+  border-left: 2px solid #1890ff;
   background: linear-gradient(to bottom, #ffffff 0%, #f0f9ff 100%);
 }
 
 .room-empty {
-  border-left: 5px solid #d9d9d9;
+  border-left: 2px solid #d9d9d9;
   background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
 }
 
-.room-header {
-  padding-bottom: 8px;
+.room-header-compact {
+  padding-bottom: 0px;
+  margin-bottom: 2px;
 }
 
-.section-title {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-  padding: 6px 0;
+.room-name-compact {
+  font-size: 10px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+  line-height: 1.1;
 }
 
-.current-patient-box {
-  padding: 12px;
-  background: #e6f7ff;
-  border-radius: 8px;
-  border-left: 3px solid #1890ff;
-  margin-top: 8px;
+.current-patient-compact {
+  padding: 3px;
+  background: #e6f4ff;
+  border-radius: 4px;
+  border: 1px solid #91caff;
+  margin-bottom: 2px;
 }
 
-.next-patient-box {
-  padding: 12px;
-  background: #fffbe6;
-  border-radius: 8px;
-  border-left: 3px solid #faad14;
-  margin-top: 8px;
+.current-patient-compact h4 {
+  font-size: 9px;
+  font-weight: 600;
+  color: #0958d9;
+  margin: 0 0 2px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.next-patient-compact {
+  padding: 3px;
+  background: #fff7e6;
+  border-radius: 4px;
+  border: 1px solid #ffd591;
+  margin-bottom: 2px;
+}
+
+.next-patient-compact h4 {
+  font-size: 9px;
+  font-weight: 600;
+  color: #d46b08;
+  margin: 0 0 2px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.waiting-count-compact {
+  padding: 3px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.waiting-count-compact:hover {
+  background: #e8e8e8;
+}
+
+.waiting-count-compact p {
+  margin: 0;
+  font-size: 9px;
+  color: #8c8c8c;
+}
+
+.waiting-count-compact .count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  margin-top: 1px;
 }
 
 .patient-info-compact {
-  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  padding: 1px;
+  border-radius: 3px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.patient-info-compact:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.patient-info-compact p {
+  margin: 0;
+  font-size: 9px;
+  color: #595959;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.patient-info-compact strong {
+  color: #262626;
+  font-weight: 500;
+  word-break: break-word;
 }
 
 .patient-info-compact .ant-space-item {
   width: 100%;
 }
 
-.upcoming-info {
-  margin-top: 12px;
-  padding: 8px;
-  background: #f5f5f5;
-  border-radius: 6px;
-  text-align: center;
+.section-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 2px 0;
+  font-size: 10px;
 }
 
 /* Responsive */
+@media (max-width: 992px) {
+  .queue-management-container {
+    padding: 16px;
+  }
+}
+
 @media (max-width: 768px) {
   .queue-management-container {
     padding: 12px;
@@ -103,8 +185,13 @@
 
   .queue-header {
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     text-align: center;
+    padding: 14px 16px;
+  }
+
+  .queue-header h2 {
+    font-size: 18px;
   }
 
   .current-time-display {
@@ -112,22 +199,38 @@
     justify-content: center;
   }
 
-  .room-card {
-    margin-bottom: 16px;
+  .room-card-compact {
+    margin-bottom: 12px;
   }
 }
 
 @media (max-width: 576px) {
   .queue-header h2 {
-    font-size: 20px;
+    font-size: 16px;
   }
 
   .current-time-display {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .current-time-display > div > div {
-    font-size: 24px !important;
+    font-size: 22px !important;
+  }
+
+  .room-card-compact {
+    font-size: 10px;
+  }
+  
+  .room-name-compact {
+    font-size: 11px;
+  }
+  
+  .patient-info-compact p {
+    font-size: 10px;
+  }
+  
+  .waiting-count-compact .count {
+    font-size: 14px;
   }
 }
 
@@ -149,9 +252,11 @@
 
 /* Status Tags */
 .ant-tag {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 4px;
+  font-size: 8px;
+  padding: 0px 4px;
+  border-radius: 2px;
+  line-height: 1.3;
+  margin: 0;
 }
 
 /* Badge */

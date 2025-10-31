@@ -47,20 +47,20 @@ appointmentApi.interceptors.response.use(
 const appointmentService = {
   // Reserve appointment (tạo reservation tạm thời)
   reserveAppointment: async (reservationData) => {
-    const response = await appointmentApi.post('/appointment/reserve', reservationData);
+    const response = await appointmentApi.post('/appointments/reserve', reservationData);
     return response.data;
   },
 
   // Create offline appointment (walk-in) - tạo trực tiếp, không qua payment
   createOfflineAppointment: async (appointmentData) => {
     console.log('🚀 [appointmentService] Sending createOfflineAppointment request:', JSON.stringify(appointmentData, null, 2));
-    const response = await appointmentApi.post('/appointment/create-offline', appointmentData);
+    const response = await appointmentApi.post('/appointments/create-offline', appointmentData);
     return response.data;
   },
 
   // Tạo appointment mới (reserve/book) - Legacy method
   createAppointment: async (appointmentData) => {
-    const response = await appointmentApi.post('/appointment/reserve', appointmentData);
+    const response = await appointmentApi.post('/appointments/reserve', appointmentData);
     return response.data;
   },
 
@@ -71,7 +71,7 @@ const appointmentService = {
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
 
-    const url = `/appointment/my-appointments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/appointments/my-appointments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await appointmentApi.get(url);
     return response.data;
   },
@@ -83,26 +83,26 @@ const appointmentService = {
     if (params.page) queryParams.append('page', params.page);
     if (params.limit) queryParams.append('limit', params.limit);
 
-    const url = `/appointment/patient/${patientId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/appointments/patient/${patientId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await appointmentApi.get(url);
     return response.data;
   },
 
   // Lấy chi tiết appointment theo ID
   getAppointmentById: async (appointmentId) => {
-    const response = await appointmentApi.get(`/appointment/${appointmentId}`);
+    const response = await appointmentApi.get(`/appointments/${appointmentId}`);
     return response.data;
   },
 
   // Lấy chi tiết appointment theo code
   getAppointmentByCode: async (appointmentCode) => {
-    const response = await appointmentApi.get(`/appointment/code/${appointmentCode}`);
+    const response = await appointmentApi.get(`/appointments/code/${appointmentCode}`);
     return response.data;
   },
 
   // Hủy appointment
   cancelAppointment: async (appointmentId, reason) => {
-    const response = await appointmentApi.post(`/appointment/${appointmentId}/cancel`, {
+    const response = await appointmentApi.post(`/appointments/${appointmentId}/cancel`, {
       reason: reason
     });
     return response.data;
@@ -110,7 +110,7 @@ const appointmentService = {
 
   // Check-in appointment
   checkInAppointment: async (appointmentId, notes = '') => {
-    const response = await appointmentApi.post(`/appointment/${appointmentId}/check-in`, {
+    const response = await appointmentApi.post(`/appointments/${appointmentId}/check-in`, {
       notes
     });
     return response.data;
@@ -118,7 +118,7 @@ const appointmentService = {
 
   // Complete appointment
   completeAppointment: async (appointmentId, notes = '') => {
-    const response = await appointmentApi.post(`/appointment/${appointmentId}/complete`, {
+    const response = await appointmentApi.post(`/appointments/${appointmentId}/complete`, {
       notes
     });
     return response.data;
@@ -126,7 +126,7 @@ const appointmentService = {
 
   // Cập nhật trạng thái appointment (deprecated - use specific methods above)
   updateAppointmentStatus: async (appointmentId, status, notes) => {
-    const response = await appointmentApi.patch(`/appointment/${appointmentId}/status`, {
+    const response = await appointmentApi.patch(`/appointments/${appointmentId}/status`, {
       status,
       notes
     });
@@ -144,7 +144,7 @@ const appointmentService = {
       if (params.page) queryParams.append('page', params.page);
       if (params.limit) queryParams.append('limit', params.limit);
 
-      const url = `/appointment${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `/appointments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       console.log('🔵 [AppointmentService] Calling getAllAppointments:', url);
       
       const response = await appointmentApi.get(url);
@@ -160,7 +160,7 @@ const appointmentService = {
 
   // Check-in appointment
   checkInAppointment: async (appointmentId, notes) => {
-    const response = await appointmentApi.post(`/appointment/${appointmentId}/check-in`, {
+    const response = await appointmentApi.post(`/appointments/${appointmentId}/check-in`, {
       notes
     });
     return response.data;
@@ -168,7 +168,7 @@ const appointmentService = {
 
   // Complete appointment
   completeAppointment: async (appointmentId, notes) => {
-    const response = await appointmentApi.post(`/appointment/${appointmentId}/complete`, {
+    const response = await appointmentApi.post(`/appointments/${appointmentId}/complete`, {
       notes
     });
     return response.data;
@@ -176,7 +176,7 @@ const appointmentService = {
 
   // Lấy appointments theo ngày
   getAppointmentsByDate: async (date) => {
-    const response = await appointmentApi.get(`/appointment/by-date/${date}`);
+    const response = await appointmentApi.get(`/appointments/by-date/${date}`);
     return response.data;
   },
 
@@ -187,7 +187,7 @@ const appointmentService = {
     if (params.endDate) queryParams.append('endDate', params.endDate);
     if (params.status) queryParams.append('status', params.status);
 
-    const url = `/appointment/dentist/${dentistId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const url = `/appointments/dentist/${dentistId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await appointmentApi.get(url);
     return response.data;
   },

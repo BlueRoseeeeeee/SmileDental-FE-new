@@ -149,26 +149,32 @@ const PaymentSelection = () => {
           <Card type="inner" title="Thông tin đặt khám">
             <Descriptions column={1} bordered>
               <Descriptions.Item label="Dịch vụ">
-                <Text strong>{reservationData.serviceName}</Text>
+                <Text strong>{reservationData.serviceName || 'Đang cập nhật'}</Text>
                 {reservationData.serviceAddOnName && (
                   <Text type="secondary"> + {reservationData.serviceAddOnName}</Text>
                 )}
               </Descriptions.Item>
               <Descriptions.Item label="Bác sĩ">
-                {reservationData.dentistName}
+                {reservationData.dentistName || 'Đang cập nhật'}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày khám">
-                {dayjs(reservationData.appointmentDate).format('DD/MM/YYYY')}
+                {reservationData.appointmentDate 
+                  ? dayjs(reservationData.appointmentDate).format('DD/MM/YYYY')
+                  : 'Đang cập nhật'}
               </Descriptions.Item>
               <Descriptions.Item label="Giờ khám">
-                {reservationData.startTime} - {reservationData.endTime}
+                {reservationData.startTime && reservationData.endTime
+                  ? `${reservationData.startTime} - ${reservationData.endTime}`
+                  : 'Sẽ được thông báo'}
               </Descriptions.Item>
               <Descriptions.Item label="Phòng">
                 {reservationData.roomName || 'Sẽ được thông báo'}
               </Descriptions.Item>
               <Descriptions.Item label="Tổng tiền">
                 <Text strong style={{ fontSize: 18, color: '#2c5f4f' }}>
-                  {formatCurrency(reservationData.servicePrice)}
+                  {reservationData.servicePrice || reservationData.amount 
+                    ? formatCurrency(reservationData.servicePrice || reservationData.amount)
+                    : '0 ₫'}
                 </Text>
               </Descriptions.Item>
             </Descriptions>
@@ -182,7 +188,7 @@ const PaymentSelection = () => {
               style={{ width: '100%' }}
             >
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                {/* VNPay Option */}
+                {/* VNPay Option - Only payment method available */}
                 <Radio value="vnpay" style={{ width: '100%' }}>
                   <Card 
                     hoverable
@@ -199,31 +205,7 @@ const PaymentSelection = () => {
                         </Text>
                         <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          ATM / Internet Banking / Ví điện tử
-                        </Text>
-                      </div>
-                    </Space>
-                  </Card>
-                </Radio>
-
-                {/* Visa Option */}
-                <Radio value="visa" style={{ width: '100%' }}>
-                  <Card 
-                    hoverable
-                    style={{ 
-                      marginLeft: 24,
-                      border: paymentMethod === 'visa' ? '2px solid #2c5f4f' : '1px solid #d9d9d9'
-                    }}
-                  >
-                    <Space>
-                      <CreditCardOutlined style={{ fontSize: 32, color: '#1A1F71' }} />
-                      <div>
-                        <Text strong style={{ fontSize: 16 }}>
-                          Thẻ Visa/MasterCard
-                        </Text>
-                        <br />
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          Thanh toán trực tuyến an toàn qua cổng thanh toán quốc tế
+                          ATM / Internet Banking / Ví điện tử / Thẻ quốc tế
                         </Text>
                       </div>
                     </Space>

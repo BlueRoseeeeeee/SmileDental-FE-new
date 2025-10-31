@@ -11,7 +11,9 @@ import {
   Space,
   Divider,
   message,
-  Avatar
+  Avatar,
+  Modal,
+  Descriptions
 } from 'antd';
 import {
   UserOutlined,
@@ -19,7 +21,10 @@ import {
   MedicineBoxOutlined,
   TeamOutlined,
   CheckCircleOutlined,
-  FieldTimeOutlined
+  FieldTimeOutlined,
+  PhoneOutlined,
+  CalendarOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
 import { io } from 'socket.io-client';
 import queueService from '../../services/queueService';
@@ -36,6 +41,8 @@ const QueueManagement = () => {
   const [loading, setLoading] = useState(false);
   const [socket, setSocket] = useState(null);
   const [currentTime, setCurrentTime] = useState(dayjs());
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   // Update clock every second
   useEffect(() => {
@@ -59,6 +66,15 @@ const QueueManagement = () => {
         
         // 🔍 Debug log
         console.log('📊 Queue data received:', data);
+        if (data.length > 0) {
+          console.log('🏠 First room structure:', {
+            roomId: data[0].roomId,
+            roomName: data[0].roomName,
+            subroomId: data[0].subroomId,
+            subroomName: data[0].subroomName,
+            displayName: data[0].displayName
+          });
+        }
         
         setQueueData(data);
         
@@ -118,10 +134,10 @@ const QueueManagement = () => {
 
   const getStatusTag = (status) => {
     const statusConfig = {
-      'in-progress': { color: 'gold', text: 'Đang khám', icon: <CheckCircleOutlined /> },
-      'checked-in': { color: 'default', text: 'Chờ khám', icon: <FieldTimeOutlined /> },
+      'in-progress': { color: 'blue', text: 'Đang khám', icon: <CheckCircleOutlined /> },
+      'checked-in': { color: 'gold', text: 'Chờ khám', icon: <FieldTimeOutlined /> },
       'completed': { color: 'success', text: 'Hoàn thành', icon: <CheckCircleOutlined /> },
-      'confirmed': { color: 'blue', text: 'Đã xác nhận', icon: <ClockCircleOutlined /> }
+      'confirmed': { color: 'default', text: 'Đã đặt lịch', icon: <ClockCircleOutlined /> }
     };
     
     const config = statusConfig[status] || { color: 'default', text: status, icon: null };
@@ -132,75 +148,169 @@ const QueueManagement = () => {
     );
   };
 
-  // Render compact patient info
-  const renderPatientInfo = (appointment) => {
+  // Handle click to view details
+  const handleViewDetails = (appointment) => {
+    setSelectedAppointment(appointment);
+    setDetailModalVisible(true);
+  };
+
+  // Render detail modal
+  const renderDetailModal = () => {
+    if (!selectedAppointment) return null;
+
+    return (
+      <Modal
+        title={
+          <Space>
+            <UserOutlined />
+            <span>Chi tiết bệnh nhân</span>
+          </Space>
+        }
+        open={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={null}
+        width={700}
+      >
+        <Descriptions bordered column={2} size="small">
+          <Descriptions.Item label="Mã lịch hẹn" span={2}>
+            <Text strong>{selectedAppointment.appointmentCode}</Text>
+          </Descriptions.Item>
+          
+          <Descriptions.Item label="Trạng thái" span={2}>
+            {getStatusTag(selectedAppointment.status)}
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><UserOutlined /> Bệnh nhân</>} span={2}>
+            <Text strong style={{ fontSize: '15px' }}>
+              {selectedAppointment.patientInfo.name}
+            </Text>
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><PhoneOutlined /> Số điện thoại</>}>
+            {selectedAppointment.patientInfo.phone}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Năm sinh">
+            {selectedAppointment.patientInfo.birthYear}
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><CalendarOutlined /> Ngày khám</>}>
+            {dayjs(selectedAppointment.appointmentDate).format('DD/MM/YYYY')}
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><ClockCircleOutlined /> Giờ khám</>}>
+            {selectedAppointment.startTime} - {selectedAppointment.endTime}
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><MedicineBoxOutlined /> Dịch vụ</>} span={2}>
+            <Space direction="vertical" size={0}>
+              <Text strong>{selectedAppointment.serviceName}</Text>
+              {selectedAppointment.serviceAddOnName && (
+                <Text type="secondary" style={{ fontSize: '12px' }}>
+                  {selectedAppointment.serviceAddOnName}
+                </Text>
+              )}
+            </Space>
+          </Descriptions.Item>
+
+          <Descriptions.Item label={<><TeamOutlined /> Bác sĩ</>} span={2}>
+            <Text strong>BS. {selectedAppointment.dentistName}</Text>
+          </Descriptions.Item>
+
+          {selectedAppointment.notes && (
+            <Descriptions.Item label="Ghi chú" span={2}>
+              <Text>{selectedAppointment.notes}</Text>
+            </Descriptions.Item>
+          )}
+
+          {selectedAppointment.checkedInAt && (
+            <Descriptions.Item label="Thời gian check-in" span={2}>
+              <Text type="secondary">
+                {dayjs(selectedAppointment.checkedInAt).format('HH:mm:ss - DD/MM/YYYY')}
+              </Text>
+            </Descriptions.Item>
+          )}
+
+          {selectedAppointment.startedAt && (
+            <Descriptions.Item label="Thời gian bắt đầu" span={2}>
+              <Text type="secondary">
+                {dayjs(selectedAppointment.startedAt).format('HH:mm:ss - DD/MM/YYYY')}
+              </Text>
+            </Descriptions.Item>
+          )}
+        </Descriptions>
+      </Modal>
+    );
+  };
+
+  // Render compact patient info - MINIMIZED
+  const renderPatientInfo = (appointment, isWaiting = false) => {
     if (!appointment) return null;
 
     return (
-      <div className="patient-info-compact">
-        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Text strong ellipsis style={{ maxWidth: '60%' }}>
+      <div 
+        className="patient-info-compact" 
+        onClick={() => handleViewDetails(appointment)}
+        style={{ cursor: 'pointer' }}
+      >
+        <Space direction="vertical" size={0} style={{ width: '100%' }}>
+          <Space style={{ width: '100%', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Text strong ellipsis style={{ maxWidth: isWaiting ? '100%' : '60%', fontSize: '11px', lineHeight: 1.2 }}>
               {appointment.patientInfo.name}
             </Text>
-            {getStatusTag(appointment.status)}
+            {!isWaiting && getStatusTag(appointment.status)}
           </Space>
           
-          <Space size="small">
-            <ClockCircleOutlined style={{ color: '#1890ff' }} />
-            <Text type="secondary" style={{ fontSize: '13px' }}>
-              {appointment.startTime} - {appointment.endTime}
+          {!isWaiting && (
+            <Text type="secondary" style={{ fontSize: '9px', lineHeight: 1.3 }}>
+              🕐 {appointment.startTime} - {appointment.endTime}
             </Text>
-          </Space>
-          
-          <Space size="small">
-            <MedicineBoxOutlined style={{ color: '#52c41a' }} />
-            <Text type="secondary" ellipsis style={{ fontSize: '12px', maxWidth: '200px' }}>
-              {appointment.serviceName}
-            </Text>
-          </Space>
-          
-          <Space size="small">
-            <UserOutlined style={{ color: '#722ed1' }} />
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              BS. {appointment.dentistName}
-            </Text>
-          </Space>
+          )}
         </Space>
       </div>
     );
   };
 
-  // Render room card - NEW DESIGN
+  // Render room card - COMPACT DESIGN
   const renderRoomCard = (room) => {
-    const hasActivePatient = room.currentPatient !== null;
-    const nextPatient = room.waitingList[0];
-    const upcomingCount = room.waitingList.length;
+    const hasActivePatient = !!room.currentPatient;
+    const nextPatient = room.nextPatient || null;
+    const waitingList = room.waitingList || [];
+    const upcomingCount = (nextPatient ? 1 : 0) + waitingList.length;
 
     return (
-      <Col xs={24} sm={12} lg={8} xl={6} key={room.roomId}>
+      <Col xs={24} sm={12} md={8} lg={6} xl={4} key={room.roomId}>
         <Card 
-          className={`room-card ${hasActivePatient ? 'room-busy' : 'room-empty'}`}
-          hoverable
+          className={`room-card-compact ${hasActivePatient ? 'room-busy' : 'room-empty'}`}
+          bodyStyle={{ padding: '12px' }}
         >
-          {/* Room Header */}
-          <div className="room-header">
-            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-              <Space>
+          {/* Room Header - Compact */}
+          <div className="room-header-compact">
+            <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 2 }}>
+              <Space size={3}>
                 <Avatar 
-                  size={40} 
-                  icon={<TeamOutlined />} 
+                  size={22} 
+                  icon={<HomeOutlined />} 
                   style={{ 
-                    backgroundColor: hasActivePatient ? '#1890ff' : '#d9d9d9' 
+                    backgroundColor: hasActivePatient ? '#1890ff' : '#d9d9d9',
+                    fontSize: '11px'
                   }}
                 />
-                <div>
-                  <Title level={5} style={{ margin: 0, fontSize: '16px' }}>
-                    {room.roomName}
+                <div style={{ lineHeight: 1 }}>
+                  <Title level={5} style={{ margin: 0, fontSize: '13px', lineHeight: 1.2, marginBottom: 2, fontWeight: 600 }}>
+                    {room.roomName || 'Phòng khám'}
                   </Title>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    {hasActivePatient ? 'Đang khám' : 'Phòng trống'}
-                  </Text>
+                  {room.subroomName && (
+                    <Text type="secondary" style={{ fontSize: '10px', display: 'block', lineHeight: 1.2, marginBottom: 2 }}>
+                      {room.subroomName}
+                    </Text>
+                  )}
+                  <Tag 
+                    color={hasActivePatient ? 'blue' : 'default'} 
+                    style={{ fontSize: '9px', padding: '0 4px', lineHeight: '16px', margin: 0 }}
+                  >
+                    {hasActivePatient ? '🟢 Đang khám' : '⚪ Trống'}
+                  </Tag>
                 </div>
               </Space>
               
@@ -208,56 +318,91 @@ const QueueManagement = () => {
                 <Badge 
                   count={upcomingCount} 
                   style={{ backgroundColor: '#faad14' }}
-                  title={`${upcomingCount} người đang chờ`}
+                  overflowCount={9}
                 />
               )}
             </Space>
           </div>
 
-          <Divider style={{ margin: '12px 0' }} />
+          <Divider style={{ margin: '2px 0' }} />
 
-          {/* Current Patient Section */}
-          <div className="current-section">
-            <div className="section-title">
-              <CheckCircleOutlined style={{ color: '#1890ff', marginRight: 6 }} />
-              <Text strong style={{ fontSize: '13px' }}>Đang khám</Text>
+          {/* Current Patient - Minimal */}
+          {hasActivePatient ? (
+            <div className="current-patient-compact">
+              <Text type="secondary" style={{ fontSize: '9px', display: 'block', marginBottom: 1 }}>
+                🔵 ĐANG KHÁM
+              </Text>
+              {renderPatientInfo(room.currentPatient)}
             </div>
-            {hasActivePatient ? (
-              <div className="current-patient-box">
-                {renderPatientInfo(room.currentPatient)}
-              </div>
-            ) : (
-              <Empty 
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="Chưa có bệnh nhân"
-                style={{ padding: '16px 0', margin: 0 }}
-              />
-            )}
-          </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '6px 0' }}>
+              <Text type="secondary" style={{ fontSize: '10px' }}>
+                Không có bệnh nhân
+              </Text>
+            </div>
+          )}
 
-          {/* Next Patient Section */}
+          {/* Next Patient - Minimal */}
           {nextPatient && (
             <>
-              <Divider style={{ margin: '12px 0' }} dashed />
-              <div className="next-section">
-                <div className="section-title">
-                  <FieldTimeOutlined style={{ color: '#faad14', marginRight: 6 }} />
-                  <Text strong style={{ fontSize: '13px' }}>Tiếp theo</Text>
-                </div>
-                <div className="next-patient-box">
-                  {renderPatientInfo(nextPatient)}
-                </div>
+              <Divider style={{ margin: '2px 0' }} dashed />
+              <div className="next-patient-compact">
+                <Text type="secondary" style={{ fontSize: '9px', display: 'block', marginBottom: 1 }}>
+                  🟡 TIẾP THEO
+                </Text>
+                {renderPatientInfo(nextPatient)}
               </div>
             </>
           )}
 
-          {/* Upcoming Count */}
-          {upcomingCount > 1 && (
-            <div className="upcoming-info">
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                + {upcomingCount - 1} bệnh nhân đang chờ
-              </Text>
-            </div>
+          {/* Waiting Count - Minimized */}
+          {waitingList.length > 0 && (
+            <>
+              <Divider style={{ margin: '2px 0' }} />
+              <div 
+                className="waiting-count-compact"
+                onClick={() => {
+                  Modal.info({
+                    title: `Danh sách chờ - ${room.roomName}`,
+                    width: 600,
+                    content: (
+                      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+                        {waitingList.map((item, idx) => (
+                          <Card 
+                            key={item._id} 
+                            size="small" 
+                            hoverable
+                            onClick={() => handleViewDetails(item)}
+                          >
+                            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                              <Space>
+                                <Avatar size="small">{idx + 1}</Avatar>
+                                <div>
+                                  <Text strong>{item.patientInfo.name}</Text>
+                                  <br />
+                                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                                    {item.startTime} | {item.serviceAddOnName || item.serviceName}
+                                  </Text>
+                                </div>
+                              </Space>
+                              {getStatusTag(item.status)}
+                            </Space>
+                          </Card>
+                        ))}
+                      </Space>
+                    )
+                  });
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <Text 
+                  type="secondary" 
+                  style={{ fontSize: '10px', textAlign: 'center', display: 'block' }}
+                >
+                  ⏳ {waitingList.length} BN đang chờ
+                </Text>
+              </div>
+            </>
           )}
         </Card>
       </Col>
@@ -290,7 +435,7 @@ const QueueManagement = () => {
       {/* Room Grid */}
       <Spin spinning={loading}>
         {queueData.length > 0 ? (
-          <Row gutter={[16, 16]}>
+          <Row gutter={[12, 12]}>
             {queueData.map(room => renderRoomCard(room))}
           </Row>
         ) : (
@@ -312,6 +457,9 @@ const QueueManagement = () => {
           </Card>
         )}
       </Spin>
+
+      {/* Detail Modal */}
+      {renderDetailModal()}
     </div>
   );
 };

@@ -167,9 +167,11 @@ const RecordList = () => {
   // Handle start treatment button
   const handleStart = async (record) => {
     try {
-      await recordService.updateRecordStatus(record._id, 'in_progress');
-      message.success('Đã bắt đầu khám');
-      loadRecords();
+      const response = await recordService.updateRecordStatus(record._id, 'in_progress');
+      if (response.success) {
+        message.success('Đã bắt đầu khám');
+        loadRecords(); // Reload to update button display
+      }
     } catch (error) {
       console.error('Start record error:', error);
       message.error('Không thể bắt đầu khám');
@@ -300,7 +302,7 @@ const RecordList = () => {
       dataIndex: 'date',
       key: 'date',
       width: 120,
-      render: (date) => new Date(date).toLocaleDateString('vi-VN')
+      render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       title: 'Dịch vụ',
@@ -335,7 +337,7 @@ const RecordList = () => {
       dataIndex: 'status',
       key: 'status',
       width: 120,
-      render: (status) => {
+      render: (status, record) => {
         const statusConfig = {
           pending: { color: 'orange', text: 'Chờ khám' },
           in_progress: { color: 'blue', text: 'Đang khám' },
@@ -345,7 +347,21 @@ const RecordList = () => {
         
         const config = statusConfig[status] || { color: 'default', text: status };
         
-        return <Tag color={config.color}>{config.text}</Tag>;
+        return (
+          <Space direction="vertical" size={0}>
+            <Tag color={config.color}>{config.text}</Tag>
+            {record.startedAt && status === 'in_progress' && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                {dayjs(record.startedAt).format('HH:mm')}
+              </Text>
+            )}
+            {record.completedAt && status === 'completed' && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                {dayjs(record.completedAt).format('HH:mm')}
+              </Text>
+            )}
+          </Space>
+        );
       }
     },
     {
@@ -381,13 +397,13 @@ const RecordList = () => {
             />
           </Tooltip>
           
-          <Tooltip title="Sửa">
+          <Tooltip title={record.status === 'in_progress' ? 'Sửa' : 'Chỉ có thể sửa khi đang khám'}>
             <Button
               type="text"
               size="small"
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
-              disabled={record.status === 'completed'}
+              disabled={record.status !== 'in_progress'}
             />
           </Tooltip>
           
@@ -405,14 +421,22 @@ const RecordList = () => {
           )}
           
           {record.status === 'in_progress' && (
-            <Tooltip title="Hoàn thành">
+            <Tooltip
+              title={record.diagnosis && record.totalCost > 0 ? 'Hoàn thành hồ sơ' : 'Cần cập nhật chẩn đoán & giá trước khi hoàn thành'}
+            >
               <Button
-                type="text"
+                type="primary"
                 size="small"
                 icon={<CheckCircleOutlined />}
                 onClick={() => handleComplete(record)}
-                style={{ color: '#52c41a' }}
-              />
+                style={{ 
+                  backgroundColor: '#52c41a',
+                  borderColor: '#52c41a'
+                }}
+                disabled={!(record.diagnosis && record.diagnosis.trim() && record.totalCost > 0)}
+              >
+                Hoàn thành
+              </Button>
             </Tooltip>
           )}
           
