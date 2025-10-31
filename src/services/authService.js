@@ -80,13 +80,22 @@ export const authService = {
       }
       
       // Save tokens and user info to localStorage
-      // 🔥 LUÔN LƯU VÀO localStorage (checkbox "remember" chỉ ảnh hưởng token expiry ở backend)
-      console.log('💾 [authService] Saving to localStorage');
+      //  LUÔN LƯU VÀO localStorage (checkbox "remember" chỉ ảnh hưởng token expiry ở backend)
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
       
-      console.log('✅ [authService] Returning response.data:', response.data);
+       // Nếu người dùng chỉ có 1 role -> tự động lưu role đó vào localStorage.
+       // Nếu người dùng có nhiều role -> chờ người dùng chọn (xử lý tại Login.jsx).
+      /// Lấy danh sách role của người dùng, đảm bảo luôn là mảng (array)
+      const userRoles = user.roles || (user.role ? [user.role] : []);
+      // Trường hợp người dùng chỉ có 1 role: tự động chọn và lưu lại
+      if (userRoles.length === 1) {
+        localStorage.setItem('selectedRole', userRoles[0]);
+      } else if (userRoles.length > 1) {
+        //  Trường hợp có nhiều role: chưa lưu gì, chờ người dùng chọn ở màn hình Login
+         console.log('[authService] Phát hiện nhiều role - cần người dùng chọn sau');
+      }
       return response.data;
     } catch (error) {
       console.error('❌ [authService] Login API error - Full error:', error);
@@ -115,6 +124,7 @@ export const authService = {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     localStorage.removeItem('rememberLogin');
+    localStorage.removeItem('selectedRole'); // ✅ Clear selected role on logout
   },
 
   // Refresh access token
@@ -199,6 +209,7 @@ export const authService = {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('selectedRole'); // ✅ Clear selected role
   },
 
   // 🆕 Nhiệm vụ 3.2: Complete login sau khi đổi mật khẩu hoặc chọn specialty
@@ -274,6 +285,13 @@ export const authService = {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
+    
+    // ✅ Save selectedRole for single-role users
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+    if (userRoles.length === 1) {
+      localStorage.setItem('selectedRole', userRoles[0]);
+      console.log('💾 [authService] Auto-selected role after password change:', userRoles[0]);
+    }
     
     return response.data;
   }
