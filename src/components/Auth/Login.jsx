@@ -482,7 +482,7 @@ const Login = () => {
             >
               <Form.Item
                 name="login"
-                label="Email hoặc Mã nhân viên"
+                label="Email/ Mã nhân viên"
                 rules={[
                   { required: true, message: 'Vui lòng nhập email hoặc mã nhân viên!' }
                 ]}
