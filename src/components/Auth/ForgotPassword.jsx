@@ -11,15 +11,12 @@ import {
   CheckCircleOutlined, 
   ArrowLeftOutlined,
   EyeInvisibleOutlined,
-  EyeTwoTone,
-  HeartOutlined,
-  StarOutlined,
-  TeamOutlined,
-  SafetyOutlined
+  EyeTwoTone
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 import './ForgotPassword.css';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 const { Title, Text } = Typography;
 
@@ -70,18 +67,30 @@ const ForgotPassword = () => {
 
   if (step === 2) {
     return (
-      <div 
-        className="register-container"
-        style={{ 
-          width: '100%', 
-          maxWidth: '100%',
-          display: 'flex',
-          background: 'white',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          overflow: 'hidden',
-          minHeight: 'calc(100vh - 200px)',
-          margin: '-24px -24px -24px -24px'
-        }}>
+      <div style={{ 
+        minHeight: 'calc(100vh - 120px)',
+        background: '#e8f5e8',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        margin: '-24px -24px 0 -24px',
+        overflowX: 'hidden',
+        width: '100%',
+        maxWidth: '100vw',
+        boxSizing: 'border-box'
+      }}>
+        <div 
+          className="register-container"
+          style={{ 
+            width: '100%', 
+            maxWidth: '100%',
+            display: 'flex',
+            background: 'white',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+            overflow: 'hidden',
+            minHeight: 'calc(100vh - 200px)',
+            boxSizing: 'border-box'
+          }}>
             
             {/* Hình ảnh bên trái - 50% */}
             <div 
@@ -185,7 +194,8 @@ const ForgotPassword = () => {
                 Đăng nhập ngay
               </Button>
             </div>
-          </div>
+        </div>
+      </div>
     );
   }
 
@@ -196,7 +206,11 @@ const ForgotPassword = () => {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      margin: '-24px -24px 0 -24px' // Loại bỏ padding mặc định của Ant Design Content
+      margin: '-24px -24px 0 -24px', // Loại bỏ padding mặc định của Ant Design Content
+      overflowX: 'hidden',
+      width: '100%',
+      maxWidth: '100vw',
+      boxSizing: 'border-box'
     }}>
       <div 
         className="register-container"
@@ -208,7 +222,7 @@ const ForgotPassword = () => {
           boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           overflow: 'hidden',
           minHeight: 'calc(100vh - 200px)',
-          margin: '-24px -24px -24px -10px'
+          boxSizing: 'border-box'
         }}>
           
           {/* Hình ảnh bên trái - 50% */}
@@ -226,54 +240,14 @@ const ForgotPassword = () => {
             }}>
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
               <h1 style={{ 
-                color: '#2596be', 
+                color: COLOR_BRAND_NAME, 
                 fontSize: '2.5rem', 
                 fontWeight: 'bold',
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                marginTop: '20px'
               }}>
                 SmileCare Dental
               </h1>
-            </div>
-              {/* Thông tin bổ sung */}
-              <div style={{ 
-              background: 'rgba(255,255,255,0.8)',
-              borderRadius: '12px',
-              backdropFilter: 'blur(10px)',
-              padding: '20px',
-              textAlign: 'center',
-              color: '#666',
-              fontSize: '0.9rem'
-            }}>
-              <div style={{ 
-                display: 'flex', 
-                flexWrap: 'wrap', 
-                gap: '12px', 
-                justifyContent: 'center',
-                marginBottom: '12px'
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <SafetyOutlined style={{ fontSize: '16px' }} />
-                  Bảo mật
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <StarOutlined style={{ fontSize: '16px' }} />
-                  Uy tín
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <HeartOutlined style={{ fontSize: '16px' }} />
-                  Tận tâm
-                </span>
-              </div>
-              <p style={{ 
-                margin: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}>
-                <TeamOutlined style={{ fontSize: '14px' }} />
-                Đội ngũ nha sĩ giàu kinh nghiệm
-              </p>
             </div>
             
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -281,9 +255,9 @@ const ForgotPassword = () => {
                 src={registerImage} 
                 alt="Forgot Password" 
                 style={{ 
-                  maxWidth: '80%', 
-                  maxHeight: '80%', 
-                  objectFit: 'contain',
+                  maxWidth: '85%', 
+                  maxHeight: '85%', 
+                  objectFit: 'cover',
                   filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
                 }} 
               />
@@ -500,8 +474,8 @@ const ForgotPassword = () => {
               </Text>
             </div>
           </div>
+        </div>
       </div>
-    </div>
   );
 };
 

@@ -21,6 +21,7 @@ import {
 } from '../../utils/validationUtils';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 import './Register.css';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 const { Title, Text } = Typography;
 
@@ -248,41 +249,43 @@ const RegisterRHF = () => {
               position: 'relative'
             }}>
             {/* Nội dung bổ sung */}
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{ 
+            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+              <h4 style={{ 
                 color: '#2596be', 
-                fontSize: '2rem', 
                 fontWeight: 'bold',
                 marginBottom: '16px',
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                textAlign:'left'
               }}>
                 Chào mừng đến với
-              </h2>
-              <h1 style={{ 
-                color: '#2596be', 
+              </h4>
+              <h2 style={{ 
+                color: COLOR_BRAND_NAME, 
                 fontSize: '2.5rem', 
                 fontWeight: 'bold',
                 marginBottom: '20px',
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                textAlign:'left',
+                marginLeft:'30px'
               }}>
-                SmileDental
-              </h1>
+                SmileCare Dental
+              </h2>
               <p style={{ 
                 color: '#666', 
                 fontSize: '1.1rem', 
                 lineHeight: '1.6',
-                margin: '0 auto'
+               marginLeft:'40px'
               }}>
-                Nụ cười khỏe mạnh là nụ cười đẹp nhất. 
+                Nụ cười rạng rỡ khởi nguồn từ sức khỏe răng miệng toàn diện
               </p>
               <p
               style={{ 
                 color: '#666', 
                 fontSize: '1.1rem', 
                 lineHeight: '1.6',
-                margin: '0 auto'
+                marginLeft:'60px'
               }}
-              >Hãy để chúng tôi chăm sóc răng miệng của bạn.</p>
+              >Hãy để chúng tôi đồng hành cùng bạn trong hành trình ấy.</p>
             </div>
             
             {/* Hình ảnh */}
@@ -293,7 +296,7 @@ const RegisterRHF = () => {
           style={{ 
                   maxWidth: '85%', 
                   maxHeight: '85%', 
-                  objectFit: 'contain',
+                  objectFit: 'cover',
                   filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
                 }} 
               />

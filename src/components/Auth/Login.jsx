@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 import './Login.css';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 const { Title, Text } = Typography;
 
@@ -367,7 +368,7 @@ const Login = () => {
               <h2
               style={{ 
                 marginTop: '0px',
-                color: 'rgb(49, 59, 121)', 
+                color: COLOR_BRAND_NAME, 
                 fontSize: '2.5rem', 
                 fontWeight: 'bold',
                 textShadow: '0 2px 4px rgba(0,0,0,0.1)'
