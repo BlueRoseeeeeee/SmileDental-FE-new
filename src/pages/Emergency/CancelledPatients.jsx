@@ -38,6 +38,8 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import dayClosureService from '../../services/dayClosureService';
+import paymentService from '../../services/paymentService';
+import invoiceService from '../../services/invoiceService';
 import { toast } from 'react-toastify';
 
 const { Title, Text } = Typography;
@@ -64,6 +66,18 @@ const CancelledPatients = () => {
     loading: false,
     data: null,
     patients: []
+  });
+
+  const [paymentModal, setPaymentModal] = useState({
+    visible: false,
+    loading: false,
+    data: null
+  });
+
+  const [invoiceModal, setInvoiceModal] = useState({
+    visible: false,
+    loading: false,
+    data: null
   });
 
   // Load closures
@@ -124,6 +138,42 @@ const CancelledPatients = () => {
       console.error('Error loading details:', error);
       toast.error(error.response?.data?.message || 'Lỗi khi tải chi tiết');
       setDetailModal({ visible: false, loading: false, data: null, patients: [] });
+    }
+  };
+
+  // Load payment details
+  const loadPaymentDetails = async (paymentId) => {
+    try {
+      setPaymentModal({ visible: true, loading: true, data: null });
+      const result = await paymentService.getPaymentById(paymentId);
+      if (result.success) {
+        setPaymentModal({ visible: true, loading: false, data: result.data });
+      } else {
+        toast.error('Không thể tải thông tin thanh toán');
+        setPaymentModal({ visible: false, loading: false, data: null });
+      }
+    } catch (error) {
+      console.error('Error loading payment:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tải thanh toán');
+      setPaymentModal({ visible: false, loading: false, data: null });
+    }
+  };
+
+  // Load invoice details
+  const loadInvoiceDetails = async (invoiceId) => {
+    try {
+      setInvoiceModal({ visible: true, loading: true, data: null });
+      const result = await invoiceService.getInvoiceById(invoiceId);
+      if (result.success) {
+        setInvoiceModal({ visible: true, loading: false, data: result.data });
+      } else {
+        toast.error('Không thể tải thông tin hóa đơn');
+        setInvoiceModal({ visible: false, loading: false, data: null });
+      }
+    } catch (error) {
+      console.error('Error loading invoice:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tải hóa đơn');
+      setInvoiceModal({ visible: false, loading: false, data: null });
     }
   };
 
@@ -289,10 +339,22 @@ const CancelledPatients = () => {
     {
       title: 'Thanh Toán',
       key: 'payment',
-      width: 100,
+      width: 120,
+      align: 'center',
       render: (_, record) => {
-        if (record.paymentId) {
-          return <Text type="secondary">Có</Text>;
+        const paymentId = record.paymentInfo?.paymentId;
+        
+        if (paymentId) {
+          return (
+            <Button
+              type="link"
+              size="small"
+              icon={<DollarOutlined />}
+              onClick={() => loadPaymentDetails(paymentId)}
+            >
+              Xem
+            </Button>
+          );
         } else {
           return <Text type="secondary">Chưa có</Text>;
         }
@@ -301,10 +363,22 @@ const CancelledPatients = () => {
     {
       title: 'Hóa Đơn',
       key: 'invoice',
-      width: 100,
+      width: 120,
+      align: 'center',
       render: (_, record) => {
-        if (record.invoiceId) {
-          return <Text type="secondary">Có</Text>;
+        const invoiceId = record.invoiceInfo?.invoiceId;
+        
+        if (invoiceId) {
+          return (
+            <Button
+              type="link"
+              size="small"
+              icon={<FileTextOutlined />}
+              onClick={() => loadInvoiceDetails(invoiceId)}
+            >
+              Xem
+            </Button>
+          );
         } else {
           return <Text type="secondary">Chưa có</Text>;
         }
@@ -493,6 +567,238 @@ const CancelledPatients = () => {
               )}
             </Card>
           </Space>
+        ) : (
+          <Empty description="Không có dữ liệu" />
+        )}
+      </Modal>
+
+      {/* Payment Detail Modal */}
+      <Modal
+        title={
+          <Space>
+            <DollarOutlined />
+            <span>Chi Tiết Thanh Toán</span>
+          </Space>
+        }
+        open={paymentModal.visible}
+        onCancel={() => setPaymentModal({ visible: false, loading: false, data: null })}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => setPaymentModal({ visible: false, loading: false, data: null })}
+          >
+            Đóng
+          </Button>
+        ]}
+        width={800}
+      >
+        {paymentModal.loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <Spin size="large" />
+          </div>
+        ) : paymentModal.data ? (
+          <Descriptions column={2} bordered size="small">
+            <Descriptions.Item label="Mã thanh toán" span={2}>
+              <Text strong copyable>{paymentModal.data.paymentCode}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">
+              <Tag color={
+                paymentModal.data.status === 'completed' ? 'green' :
+                paymentModal.data.status === 'pending' ? 'orange' :
+                paymentModal.data.status === 'failed' ? 'red' : 'default'
+              }>
+                {paymentModal.data.status === 'completed' ? 'Hoàn thành' :
+                 paymentModal.data.status === 'pending' ? 'Đang xử lý' :
+                 paymentModal.data.status === 'failed' ? 'Thất bại' :
+                 paymentModal.data.status === 'cancelled' ? 'Đã hủy' :
+                 paymentModal.data.status === 'refunded' ? 'Đã hoàn tiền' :
+                 paymentModal.data.status}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Phương thức">
+              <Tag color="blue">
+                {paymentModal.data.method === 'cash' ? 'Tiền mặt' :
+                 paymentModal.data.method === 'vnpay' ? 'VNPay' :
+                 paymentModal.data.method === 'visa' ? 'VISA' :
+                 paymentModal.data.method}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Bệnh nhân">
+              {paymentModal.data.patientInfo?.name || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Số điện thoại">
+              {paymentModal.data.patientInfo?.phone || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Email" span={2}>
+              {paymentModal.data.patientInfo?.email || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Số tiền gốc">
+              <Text strong style={{ color: '#1890ff' }}>
+                {paymentModal.data.originalAmount?.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Giảm giá">
+              <Text type="danger">
+                -{paymentModal.data.discountAmount?.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Thuế">
+              {paymentModal.data.taxAmount?.toLocaleString('vi-VN')} VNĐ
+            </Descriptions.Item>
+            <Descriptions.Item label="Tổng tiền">
+              <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
+                {paymentModal.data.finalAmount?.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Đã thanh toán">
+              <Text style={{ color: '#52c41a' }}>
+                {paymentModal.data.paidAmount?.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Tiền thối">
+              {paymentModal.data.changeAmount?.toLocaleString('vi-VN')} VNĐ
+            </Descriptions.Item>
+            <Descriptions.Item label="Người xử lý">
+              {paymentModal.data.processedByName || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Thời gian xử lý">
+              {dayjs(paymentModal.data.processedAt).format('DD/MM/YYYY HH:mm:ss')}
+            </Descriptions.Item>
+            {paymentModal.data.description && (
+              <Descriptions.Item label="Mô tả" span={2}>
+                {paymentModal.data.description}
+              </Descriptions.Item>
+            )}
+            {paymentModal.data.notes && (
+              <Descriptions.Item label="Ghi chú" span={2}>
+                {paymentModal.data.notes}
+              </Descriptions.Item>
+            )}
+          </Descriptions>
+        ) : (
+          <Empty description="Không có dữ liệu" />
+        )}
+      </Modal>
+
+      {/* Invoice Detail Modal */}
+      <Modal
+        title={
+          <Space>
+            <FileTextOutlined />
+            <span>Chi Tiết Hóa Đơn</span>
+          </Space>
+        }
+        open={invoiceModal.visible}
+        onCancel={() => setInvoiceModal({ visible: false, loading: false, data: null })}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => setInvoiceModal({ visible: false, loading: false, data: null })}
+          >
+            Đóng
+          </Button>
+        ]}
+        width={800}
+      >
+        {invoiceModal.loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <Spin size="large" />
+          </div>
+        ) : invoiceModal.data ? (
+          <Descriptions column={2} bordered size="small">
+            <Descriptions.Item label="Số hóa đơn" span={2}>
+              <Text strong copyable>{invoiceModal.data.invoiceNumber}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">
+              <Tag color={
+                invoiceModal.data.status === 'paid' ? 'green' :
+                invoiceModal.data.status === 'pending' ? 'orange' :
+                invoiceModal.data.status === 'partial_paid' ? 'blue' :
+                invoiceModal.data.status === 'cancelled' ? 'red' : 'default'
+              }>
+                {invoiceModal.data.status === 'paid' ? 'Đã thanh toán' :
+                 invoiceModal.data.status === 'pending' ? 'Chờ thanh toán' :
+                 invoiceModal.data.status === 'partial_paid' ? 'Thanh toán một phần' :
+                 invoiceModal.data.status === 'draft' ? 'Nháp' :
+                 invoiceModal.data.status === 'cancelled' ? 'Đã hủy' :
+                 invoiceModal.data.status}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Loại hóa đơn">
+              <Tag color="purple">
+                {invoiceModal.data.type === 'appointment' ? 'Lịch hẹn' :
+                 invoiceModal.data.type === 'treatment' ? 'Điều trị' :
+                 invoiceModal.data.type === 'consultation' ? 'Tư vấn' :
+                 invoiceModal.data.type}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Bệnh nhân">
+              {invoiceModal.data.patientInfo?.name || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Số điện thoại">
+              {invoiceModal.data.patientInfo?.phone || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Email" span={2}>
+              {invoiceModal.data.patientInfo?.email || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Nha sĩ">
+              {invoiceModal.data.dentistInfo?.name || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Chuyên khoa">
+              {invoiceModal.data.dentistInfo?.specialization || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Tổng phụ">
+              <Text style={{ color: '#1890ff' }}>
+                {invoiceModal.data.subtotal?.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Giảm giá">
+              {invoiceModal.data.discountInfo?.type !== 'none' ? (
+                <Text type="danger">
+                  {invoiceModal.data.discountInfo?.type === 'percentage' 
+                    ? `-${invoiceModal.data.discountInfo?.value}%`
+                    : `-${invoiceModal.data.discountInfo?.value?.toLocaleString('vi-VN')} VNĐ`
+                  }
+                </Text>
+              ) : (
+                <Text type="secondary">Không có</Text>
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Thuế ({invoiceModal.data.taxInfo?.taxRate || 0}%)">
+              {invoiceModal.data.taxInfo?.taxAmount?.toLocaleString('vi-VN')} VNĐ
+            </Descriptions.Item>
+            <Descriptions.Item label="Tổng tiền">
+              <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
+                {invoiceModal.data.totalAmount?.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Đã thanh toán">
+              <Text style={{ color: '#52c41a' }}>
+                {invoiceModal.data.paymentSummary?.totalPaid?.toLocaleString('vi-VN') || '0'} VNĐ
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Còn lại">
+              <Text type={invoiceModal.data.paymentSummary?.remainingAmount > 0 ? 'danger' : 'secondary'}>
+                {invoiceModal.data.paymentSummary?.remainingAmount?.toLocaleString('vi-VN') || '0'} VNĐ
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Ngày phát hành">
+              {dayjs(invoiceModal.data.issueDate).format('DD/MM/YYYY')}
+            </Descriptions.Item>
+            <Descriptions.Item label="Ngày đến hạn">
+              {dayjs(invoiceModal.data.dueDate).format('DD/MM/YYYY')}
+            </Descriptions.Item>
+            {invoiceModal.data.description && (
+              <Descriptions.Item label="Mô tả" span={2}>
+                {invoiceModal.data.description}
+              </Descriptions.Item>
+            )}
+            {invoiceModal.data.notes && (
+              <Descriptions.Item label="Ghi chú" span={2}>
+                {invoiceModal.data.notes}
+              </Descriptions.Item>
+            )}
+          </Descriptions>
         ) : (
           <Empty description="Không có dữ liệu" />
         )}

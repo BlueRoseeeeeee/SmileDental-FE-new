@@ -52,7 +52,7 @@ const paymentService = {
 
   // Get payment by ID
   getPaymentById: async (paymentId) => {
-    const response = await paymentApi.get(`/payment/${paymentId}`);
+    const response = await paymentApi.get(`/payments/id/${paymentId}`);
     return response.data;
   },
 
