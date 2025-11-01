@@ -355,15 +355,24 @@ const Login = () => {
             }}>
             {/* Nội dung bổ sung */}
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{ 
+              <h5 style={{ 
                 color: '#2596be', 
-                fontSize: '2rem', 
                 fontWeight: 'bold',
-                marginBottom: '16px',
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                marginBottom: '8px', 
+                textAlign: 'left'
               }}>
-                 Chào mừng trở lại- SmileDental 
-              </h2>
+                 Chào mừng trở lại,
+              </h5>
+              <h2
+              style={{ 
+                marginTop: '0px',
+                color: 'rgb(49, 59, 121)', 
+                fontSize: '2.5rem', 
+                fontWeight: 'bold',
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+              >SmileCare Dental</h2>
               
             </div>
             <div style={{ 
@@ -371,7 +380,8 @@ const Login = () => {
               padding: '20px',
               background: 'rgba(255,255,255,0.8)',
               borderRadius: '12px',
-              backdropFilter: 'blur(10px)'
+              backdropFilter: 'blur(10px)',
+              marginTop:'-20px'
             }}>
               <div style={{ 
                 color: '#2596be', 
@@ -412,13 +422,13 @@ const Login = () => {
             </div>
             
             {/* Hình ảnh */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop:'-50px' }}>
               <img 
                 src={registerImage} 
                 alt="Login" 
                 style={{ 
-                  maxWidth: '80%', 
-                  maxHeight: '80%', 
+                  maxWidth: '85%', 
+                  maxHeight: '85%', 
                   objectFit: 'contain',
                   filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
                 }} 
