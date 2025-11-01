@@ -66,22 +66,24 @@ export const hasPermission = (user, allowedRoles = []) => {
 
 /**
  * canManageUsers - Check if user can manage other users
- * Admin: Can manage all
+ * Admin: Can manage ALL users (including other admins and themselves)
  * Manager: Can manage staff (dentist, nurse, receptionist) but NOT admin/manager
  */
 export const canManageUsers = (currentUser, targetUser) => {
   if (!currentUser || !targetUser) return false;
 
-  // ✅ Check selectedRole from localStorage instead of currentUser.role
+  // ✅ Get user data from localStorage
+  const userData = JSON.parse(localStorage.getItem('user') || '{}');
   const selectedRole = localStorage.getItem('selectedRole');
+  const currentUserRoles = userData.roles || [];
 
-  if (selectedRole === 'admin') {
-    return true; // Admin can manage all
+  // ✅ Admin can manage ALL users (including other admins and themselves)
+  if (selectedRole === 'admin' || currentUserRoles.includes('admin')) {
+    return true;
   }
 
-  if (selectedRole === 'manager') {
-    // Manager cannot manage admin or other managers
-    // ✅ Check target user's roles array (support multi-role users)
+  // ✅ Manager cannot manage users with admin or manager in their roles
+  if (selectedRole === 'manager' || currentUserRoles.includes('manager')) {
     const restrictedRoles = ['admin', 'manager'];
     const targetRoles = targetUser.roles || [targetUser.role];
     return !targetRoles.some(role => restrictedRoles.includes(role));
