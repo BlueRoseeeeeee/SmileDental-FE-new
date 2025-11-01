@@ -136,6 +136,7 @@ const CreateAppointment = () => {
         patientInfo: {
           fullName: user.fullName,
           phone: user.phone,
+          email: user.email || null,
           dateOfBirth: user.dateOfBirth
         },
         serviceId: selectedService._id,
