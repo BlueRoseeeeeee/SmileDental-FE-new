@@ -113,7 +113,7 @@ const ForgotPassword = () => {
                   marginBottom: '20px',
                   textShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}>
-                  SmileDental
+                  SmileCare Dental
                 </h1>
               </div>
               
@@ -231,7 +231,7 @@ const ForgotPassword = () => {
                 fontWeight: 'bold',
                 textShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}>
-                SmileDental
+                SmileCare Dental
               </h1>
             </div>
               {/* Thông tin bổ sung */}
