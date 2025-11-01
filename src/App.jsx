@@ -62,6 +62,10 @@ import RecordFormModal from './pages/Records/RecordFormModal.jsx';
 import PrescriptionForm from './pages/Records/PrescriptionForm.jsx';
 import RecordDetailDrawer from './pages/Records/RecordDetailDrawer.jsx';
 
+// Emergency Management
+import CancelledPatients from './pages/Emergency/CancelledPatients.jsx'; // 🚨 Day Closures History
+import CancelledPatientsList from './pages/Emergency/CancelledPatientsList.jsx'; // 📋 Cancelled Patients List
+
 // Invoice Management
 import InvoiceList from './pages/Invoices/InvoiceList.jsx';
 import InvoiceFormModal from './pages/Invoices/InvoiceFormModal.jsx';
@@ -405,6 +409,20 @@ function App() {
             <Route path="records" element={
               <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
                 <RecordList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Day Closures History (moved to Schedule menu) */}
+            <Route path="day-closures" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <CancelledPatients />
+              </ProtectedRoute>
+            } />
+            
+            {/* Cancelled Patients List */}
+            <Route path="cancelled-patients" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse', 'receptionist']}>
+                <CancelledPatientsList />
               </ProtectedRoute>
             } />
             

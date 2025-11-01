@@ -26,6 +26,7 @@ import {
   DollarOutlined,
   FileDoneOutlined,
   BarChartOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import logo from '../../assets/image/smile-dental-logo.png';
@@ -130,6 +131,7 @@ const DashboardLayout = () => {
           { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc tổng', icon: <CalendarOutlined /> },
           { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng', icon: <CalendarOutlined /> },
           { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ', icon: <CalendarOutlined /> },
+          { key: '/dashboard/day-closures', label: 'Lịch đóng cửa khẩn cấp', icon: <CloseCircleOutlined /> },
         ]
       });
 
@@ -144,6 +146,7 @@ const DashboardLayout = () => {
           { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
           { key: '/dashboard/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
           { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
+          { key: '/dashboard/cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined /> },
           { key: '/dashboard/medicine', label: 'Danh mục thuốc', icon: <MedicineBoxOutlined /> },
         ]
       });
