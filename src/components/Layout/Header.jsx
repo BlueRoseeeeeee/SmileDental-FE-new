@@ -130,6 +130,95 @@ const Header = () => {
   return (
     <>
       <style>{`
+        /*alignment for all menu items */
+        .ant-menu-horizontal {
+          border-bottom: none !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item,
+        .ant-menu-horizontal > .ant-menu-submenu {
+          height: 100px !important;
+          line-height: 100px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          top: 0 !important;
+        }
+        
+        .ant-menu-horizontal > .ant-menu-item > span,
+        .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title {
+          height: 100px !important;
+          line-height: 100px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          vertical-align: middle !important;
+          padding: 0 20px !important;
+          margin: 0 !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title > span {
+          display: inline-flex !important;
+          align-items: center !important;
+          vertical-align: middle !important;
+        }
+
+        /* Fix icon alignment in submenu */
+        .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title .ant-menu-submenu-arrow {
+          margin-top: 0 !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item::after,
+        .ant-menu-horizontal > .ant-menu-submenu::after {
+          display: none !important;
+        }
+
+        /* Replace selected background with underline */
+        .ant-menu-horizontal > .ant-menu-item-selected,
+        .ant-menu-horizontal > .ant-menu-submenu-selected {
+          background: transparent !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item-selected > span,
+        .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title,
+        .ant-menu-horizontal > .ant-menu-item-selected,
+        .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title {
+          background: transparent !important;
+          position: relative !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item-selected > span::after,
+        .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title::after {
+          content: '' !important;
+          position: absolute !important;
+          bottom: 0 !important;
+          left: 20px !important;
+          right: 20px !important;
+          height: 2px !important;
+          background: rgb(49, 59, 121) !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item:hover,
+        .ant-menu-horizontal > .ant-menu-submenu:hover {
+          background: transparent !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item:hover > span,
+        .ant-menu-horizontal > .ant-menu-submenu:hover > .ant-menu-submenu-title {
+          background: transparent !important;
+        }
+
+        /* Ensure menu items have visible text */
+        .ant-menu-horizontal > .ant-menu-item,
+        .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title {
+          color: #333 !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item-selected,
+        .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title {
+          color: rgb(49, 59, 121) !important;
+        }
+
         .services-dropdown .ant-menu-submenu-popup .ant-menu {
           background: #ffffff !important;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
