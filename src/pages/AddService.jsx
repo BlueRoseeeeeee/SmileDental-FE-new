@@ -76,6 +76,7 @@ const AddService = () => {
       imageFile: null 
     }
   ]);
+  const [requireExamFirst, setRequireExamFirst] = useState(false);
 
   // Fetch room types on mount
   React.useEffect(() => {
@@ -133,7 +134,7 @@ const AddService = () => {
       formData.append('name', values.name);
       formData.append('type', values.type);
       formData.append('description', serviceDescription || '');
-      formData.append('requireExamFirst', values.requireExamFirst || false);
+      formData.append('requireExamFirst', requireExamFirst === true ? 'true' : 'false');
       
       // Add allowedRoomTypes as JSON string
       formData.append('allowedRoomTypes', JSON.stringify(values.allowedRoomTypes || []));
@@ -380,9 +381,7 @@ const AddService = () => {
               <Row gutter={16}>
                 <Col span={24}>
                   <Form.Item
-                    name="requireExamFirst"
                     label="Yêu cầu khám trước"
-                    valuePropName="checked"
                   >
                     <div style={{ 
                       display: 'flex', 
@@ -393,7 +392,13 @@ const AddService = () => {
                       borderRadius: '8px',
                       border: '1px solid #e9ecef'
                     }}>
-                      <Switch defaultChecked={false} />
+                      <Switch 
+                        checked={requireExamFirst}
+                        onChange={(checked) => {
+                          setRequireExamFirst(checked);
+                          form.setFieldsValue({ requireExamFirst: checked });
+                        }}
+                      />
                       <Text style={{ fontSize: '14px', color: '#8c8c8c' }}>
                         Dịch vụ này có yêu cầu bệnh nhân phải khám trước khi thực hiện
                       </Text>
