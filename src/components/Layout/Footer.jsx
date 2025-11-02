@@ -58,9 +58,9 @@ const footerStyles = {
 
 // Data
 const companyInfo = {
-  name: 'NHA KHOA SMILE DENTAL',
+  name: 'SmileCare Dental',
   address: 'Địa chỉ: Nguyễn Văn Bảo, Gò Vấp, thành phố Hồ Chí Minh',
-  email: 'Email: smiledental@gmail.com',
+  email: 'Email: smilecare.dental@gmail.com',
   workingHours: 'Từ 8:30 tới 18:30 tất cả các ngày trong tuần'
 };
 
