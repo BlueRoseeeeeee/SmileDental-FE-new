@@ -559,6 +559,11 @@ html, body {
   }
 }
 
+/* Thêm rule global để đặt màu đen mặc định cho tất cả modal title */
+.ant-modal-title {
+  color: #1f2937 !important;
+}
+
 /* Custom TextArea height */
 .custom-textarea {
   min-height: 120px !important;

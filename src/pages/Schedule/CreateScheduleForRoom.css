@@ -38,16 +38,7 @@
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
 }
 
-/* Modal enhancements */
-.ant-modal-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 8px 8px 0 0;
-}
 
-.ant-modal-title {
-  color: #fff !important;
-  font-weight: 600;
-}
 
 .ant-modal-content {
   border-radius: 12px;
