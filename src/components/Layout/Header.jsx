@@ -192,10 +192,11 @@ const Header = () => {
           content: '' !important;
           position: absolute !important;
           bottom: 0 !important;
-          left: 20px !important;
-          right: 20px !important;
-          height: 2px !important;
+          left: 15px !important;
+          right: 15px !important;
+          height: 3px !important;
           background: rgb(49, 59, 121) !important;
+          
         }
 
         .ant-menu-horizontal > .ant-menu-item:hover,
