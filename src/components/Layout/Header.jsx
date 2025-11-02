@@ -13,6 +13,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { servicesService } from '../../services/servicesService';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -179,11 +180,13 @@ const Header = () => {
               marginRight: '12px'
             }}
           />
-          <div>
-            <Text strong style={{ fontSize: '20px', color: '#2596be' }}>
-              SMILE DENTAL
-            </Text>
+          <div style={{display:'flex', flexDirection:'column', marginRight: '50px', marginTop:'15px',maxWidth:'150px'}}>
+            <h3 style={{color: COLOR_BRAND_NAME , fontSize: '22px', fontWeight: 'bold', marginBottom: '0'}}>
+              SmileCare
+            </h3>
+            <h3 style={{color: COLOR_BRAND_NAME, fontSize: '20px', fontWeight: 'bold', textAlign:'right'}}> Dental</h3>
           </div>
+          
         </div>
 
         {/* Desktop Menu */}
