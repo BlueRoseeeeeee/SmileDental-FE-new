@@ -34,6 +34,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
 import { TinyMCE } from '../components/TinyMCE';
+import { preventNonNumericInput } from '../utils/validationUtils';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -637,6 +638,7 @@ const AddService = () => {
                            min={1}
                            size="large"
                            addonAfter="phút"
+                           onKeyPress={preventNonNumericInput}
                          />
                       </Col>
 
@@ -649,7 +651,6 @@ const AddService = () => {
                              width: '100%',
                              borderRadius: '8px'
                            }}
-                           placeholder="500,000"
                            value={addon.price}
                            onChange={(value) => updateServiceAddOn(index, 'price', value)}
                            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
@@ -657,21 +658,7 @@ const AddService = () => {
                            min={0}
                            size="large"
                            addonAfter="VNĐ"
-                           onKeyPress={(e) => {
-                             // Chỉ cho phép số (0-9)
-                             if (e.key && !/[0-9]/.test(e.key) && 
-                                 e.key !== 'Backspace' && e.key !== 'Delete' && 
-                                 !e.key.startsWith('Arrow') && e.key !== 'Tab' && 
-                                 e.key !== 'Enter' && e.key !== 'Home' && e.key !== 'End') {
-                               e.preventDefault();
-                             } else if (!e.key) {
-                               // Fallback cho trình duyệt cũ
-                               const char = String.fromCharCode(e.which || e.keyCode);
-                               if (!/[0-9]/.test(char)) {
-                                 e.preventDefault();
-                               }
-                             }
-                           }}
+                           onKeyPress={preventNonNumericInput}
                          />
                       </Col>
                     </Row>

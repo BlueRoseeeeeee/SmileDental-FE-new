@@ -448,3 +448,27 @@ export const isPatientAge = (dateOfBirth) => {
   const validation = validatePatientAge(dateOfBirth);
   return validation.valid;
 };
+
+/**
+ * @description:
+ * Ngăn chặn không cho nhập ký tự không phải là số (0-9)
+ * Sử dụng cho InputNumber components để ngăn chặn nhập ký tự không phải là số (0-9)
+ * @param {Event} e - Keyboard event
+ * @example
+ * <InputNumber onKeyPress={preventNonNumericInput} />
+ */
+export const preventNonNumericInput = (e) => {
+  // Chỉ cho phép số (0-9)
+  if (e.key && !/[0-9]/.test(e.key) && 
+      e.key !== 'Backspace' && e.key !== 'Delete' && 
+      !e.key.startsWith('Arrow') && e.key !== 'Tab' && 
+      e.key !== 'Enter' && e.key !== 'Home' && e.key !== 'End') {
+    e.preventDefault();
+  } else if (!e.key) {
+    // Fallback cho trình duyệt cũ
+    const char = String.fromCharCode(e.which || e.keyCode);
+    if (!/[0-9]/.test(char)) {
+      e.preventDefault();
+    }
+  }
+};
