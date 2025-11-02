@@ -624,7 +624,7 @@ const AddService = () => {
 
                       <Col xs={24} sm={12} md={5}>
                         <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Thời gian (phút) *</Text>
+                          <Text strong style={{ color: '#262626' }}>Thời gian ước tính (phút) *</Text>
                         </div>
                          <InputNumber
                            style={{ 
@@ -642,7 +642,7 @@ const AddService = () => {
 
                       <Col xs={24} sm={12} md={5}>
                         <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Giá (VNĐ) *</Text>
+                          <Text strong style={{ color: '#262626' }}>Giá *</Text>
                         </div>
                          <InputNumber
                            style={{ 
@@ -657,6 +657,21 @@ const AddService = () => {
                            min={0}
                            size="large"
                            addonAfter="VNĐ"
+                           onKeyPress={(e) => {
+                             // Chỉ cho phép số (0-9)
+                             if (e.key && !/[0-9]/.test(e.key) && 
+                                 e.key !== 'Backspace' && e.key !== 'Delete' && 
+                                 !e.key.startsWith('Arrow') && e.key !== 'Tab' && 
+                                 e.key !== 'Enter' && e.key !== 'Home' && e.key !== 'End') {
+                               e.preventDefault();
+                             } else if (!e.key) {
+                               // Fallback cho trình duyệt cũ
+                               const char = String.fromCharCode(e.which || e.keyCode);
+                               if (!/[0-9]/.test(char)) {
+                                 e.preventDefault();
+                               }
+                             }
+                           }}
                          />
                       </Col>
                     </Row>
