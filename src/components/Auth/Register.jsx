@@ -487,7 +487,6 @@ const RegisterRHF = () => {
                   <input
                     {...register('phone', getReactHookFormRules.phone())}
                     className="form-input"
-                    placeholder="Nhập số điện thoại (VD: 0123456789)"
                     tabIndex={2}
                     autoComplete="tel"
                   />
