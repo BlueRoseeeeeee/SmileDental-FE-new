@@ -21,7 +21,8 @@ import {
   Row,
   Col,
   Select,
-  Switch
+  Switch,
+  Tabs
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -29,10 +30,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   ClockCircleOutlined,
-  SearchOutlined,
-  InfoCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined
+  SearchOutlined
 } from '@ant-design/icons';
 import smileCareTheme from '../../theme/smileCareTheme';
 import dayjs from 'dayjs';
@@ -48,10 +46,9 @@ dayjs.extend(isSameOrAfter);
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
 
 const HolidayManagement = () => {
-  console.log('HolidayManagement rendered');
-  
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -66,12 +63,10 @@ const HolidayManagement = () => {
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterYear, setFilterYear] = useState('all');
-  const [filterMonth, setFilterMonth] = useState('all');
-  const [filterType, setFilterType] = useState('recurring'); // Mặc định là "Ngày cố định"
+  const [activeTab, setActiveTab] = useState('recurring'); // Mặc định là "Ngày cố định"
   const [filterActive, setFilterActive] = useState('all');
   const [filterUsed, setFilterUsed] = useState('all');
-  const [filterDate, setFilterDate] = useState(null);
+  const [filterDateRange, setFilterDateRange] = useState(null); // [startDate, endDate] hoặc null
 
   // Helper function to get non-recurring holidays (for alert display)
   const getNonRecurringHolidays = () => {
@@ -100,19 +95,15 @@ const HolidayManagement = () => {
   const loadBlockedRanges = async () => {
     try {
       const response = await scheduleConfigService.getBlockedDateRanges();
-      console.log('Blocked ranges response:', response);
       
       if (response && response.success && response.data) {
         setBlockedMonths(response.data.blockedMonths || []);
         setExistingHolidays(response.data.existingHolidays || []);
       } else {
-        // Fallback to empty arrays
         setBlockedMonths([]);
         setExistingHolidays([]);
       }
     } catch (error) {
-      console.error('Error loading blocked ranges:', error);
-      // Set empty arrays on error to prevent crashes
       setBlockedMonths([]);
       setExistingHolidays([]);
     }
@@ -165,8 +156,7 @@ const HolidayManagement = () => {
       
       return false;
     } catch (error) {
-      console.error('Error in disabledStartDate:', error);
-      return false; // Fallback: allow selection if error
+      return false;
     }
   };
 
@@ -230,8 +220,7 @@ const HolidayManagement = () => {
       
       return false;
     } catch (error) {
-      console.error('Error in disabledEndDate:', error);
-      return false; // Fallback: allow selection if error
+      return false;
     }
   };
 
@@ -239,33 +228,10 @@ const HolidayManagement = () => {
   const loadHolidays = async () => {
     try {
       setLoading(true);
-      console.log('Loading holidays...');
-      
       const response = await scheduleConfigService.getHolidays();
-      console.log('Holidays response:', response);
-      
-      // API trả về data.holidays array
       setHolidays(response.data?.holidays || []);
     } catch (error) {
-      console.error('Error loading holidays:', error);
-      
-      // Ưu tiên hiển thị lỗi từ backend trước
-      let errorMessage = 'Không thể tải danh sách ngày nghỉ';
-      
-      if (error.response && error.response.data) {
-        const { message, type } = error.response.data;
-        
-        // Nếu có message từ backend, ưu tiên hiển thị
-        if (message) {
-          errorMessage = message;
-        }
-        
-        console.log('Backend error:', { message, type });
-      } else if (error.message) {
-        // Nếu không có response từ backend, sử dụng error.message
-        errorMessage = error.message;
-      }
-      
+      const errorMessage = error.response?.data?.message || error.message || 'Không thể tải danh sách ngày nghỉ';
       toast.error(errorMessage);
       setHolidays([]);
     } finally {
@@ -277,13 +243,11 @@ const HolidayManagement = () => {
   const getFilteredHolidays = () => {
     let filtered = holidays;
     
-    // ⭐ Filter theo loại (cố định / không cố định)
-    if (filterType && filterType !== 'all') {
-      if (filterType === 'recurring') {
-        filtered = filtered.filter(h => h.isRecurring === true);
-      } else if (filterType === 'range') {
-        filtered = filtered.filter(h => !h.isRecurring);
-      }
+    // ⭐ Filter theo tab (cố định / không cố định)
+    if (activeTab === 'recurring') {
+      filtered = filtered.filter(h => h.isRecurring === true);
+    } else if (activeTab === 'range') {
+      filtered = filtered.filter(h => !h.isRecurring);
     }
     
     // Search trong tên và ghi chú
@@ -296,38 +260,24 @@ const HolidayManagement = () => {
       });
     }
     
-    // 🆕 Filter theo ngày (DatePicker) - CHỈ áp dụng cho ngày nghỉ lễ
-    if (filterDate && filterType === 'range') {
+    // 🆕 Filter theo khoảng ngày (RangePicker) - CHỈ áp dụng cho ngày nghỉ lễ
+    if (filterDateRange && activeTab === 'range' && filterDateRange.length === 2) {
       filtered = filtered.filter(holiday => {
         if (holiday.isRecurring) return true; // Keep all recurring holidays
-        const selectedDate = filterDate.startOf('day');
-        const start = dayjs(holiday.startDate).startOf('day');
-        const end = dayjs(holiday.endDate).startOf('day');
-        // Check if selected date falls within holiday range
-        return selectedDate.isSameOrAfter(start) && selectedDate.isSameOrBefore(end);
-      });
-    }
-    
-    // Filter theo năm - CHỈ áp dụng cho ngày nghỉ không cố định (DEPRECATED - sẽ bỏ)
-    if (filterYear && filterYear !== 'all' && filterType !== 'recurring' && filterType !== 'range') {
-      filtered = filtered.filter(holiday => {
-        if (holiday.isRecurring) return true;
-        const year = dayjs(holiday.startDate).year();
-        return year === parseInt(filterYear);
-      });
-    }
-    
-    // Filter theo tháng - CHỈ áp dụng cho ngày nghỉ không cố định (DEPRECATED - sẽ bỏ)
-    if (filterMonth && filterMonth !== 'all' && filterType !== 'recurring' && filterType !== 'range') {
-      filtered = filtered.filter(holiday => {
-        if (holiday.isRecurring) return true;
-        const month = dayjs(holiday.startDate).month() + 1;
-        return month === parseInt(filterMonth);
+        
+        const holidayStart = dayjs(holiday.startDate).startOf('day');
+        const holidayEnd = dayjs(holiday.endDate).startOf('day');
+        const filterStart = filterDateRange[0].startOf('day');
+        const filterEnd = filterDateRange[1].startOf('day');
+        
+        // Kiểm tra overlap: holiday phải overlap với khoảng filter
+        // Holiday overlap nếu: holidayStart <= filterEnd && holidayEnd >= filterStart
+        return holidayStart.isSameOrBefore(filterEnd) && holidayEnd.isSameOrAfter(filterStart);
       });
     }
     
     // ⭐ Filter theo isActive - CHỈ áp dụng cho ngày cố định
-    if (filterActive && filterActive !== 'all' && filterType === 'recurring') {
+    if (filterActive && filterActive !== 'all' && activeTab === 'recurring') {
       filtered = filtered.filter(holiday => {
         if (!holiday.isRecurring) return true;
         if (filterActive === 'active') {
@@ -340,7 +290,7 @@ const HolidayManagement = () => {
     }
     
     // 🆕 Filter theo hasBeenUsed - CHỈ áp dụng cho ngày nghỉ lễ (không cố định)
-    if (filterUsed && filterUsed !== 'all' && filterType === 'range') {
+    if (filterUsed && filterUsed !== 'all' && activeTab === 'range') {
       filtered = filtered.filter(holiday => {
         if (holiday.isRecurring) return true;
         if (filterUsed === 'used') {
@@ -360,24 +310,6 @@ const HolidayManagement = () => {
   const debouncedSearch = debounce((value) => {
     setSearchTerm(value);
   }, 300);
-
-
-  // Get years from holidays data
-  const getAvailableYears = () => {
-    // Hiển thị năm từ năm hiện tại +1 đến năm hiện tại -5
-    const currentYear = dayjs().year();
-    const years = [];
-    for (let i = currentYear + 1; i >= currentYear - 5; i--) {
-      years.push(i);
-    }
-    return years;
-  };
-
-  // Get months from holidays data
-  const getAvailableMonths = () => {
-    // Hiển thị tất cả tháng từ 1-12
-    return Array.from({ length: 12 }, (_, i) => i + 1);
-  };
 
   // Thêm ngày nghỉ lễ
   const handleAddHoliday = async () => {
@@ -429,21 +361,14 @@ const HolidayManagement = () => {
   // Xóa ngày nghỉ lễ
   const handleDeleteHoliday = async (holidayId) => {
     try {
-      console.log('Deleting holiday:', holidayId);
       await scheduleConfigService.removeHoliday(holidayId);
-      
-      // Cập nhật local state
       setHolidays(holidays.filter(h => h._id !== holidayId));
       toast.success('Xóa ngày nghỉ thành công!');
     } catch (error) {
-      console.error('Error deleting holiday:', error);
-      
-      // ⭐ Hiển thị lỗi chi tiết từ BE
       const errorMessage = error.response?.data?.message 
         || error.response?.data?.error 
         || error.message 
         || 'Không thể xóa ngày nghỉ';
-      
       toast.error(errorMessage);
     }
   };
@@ -451,19 +376,12 @@ const HolidayManagement = () => {
   // ⭐ Toggle isActive cho ngày nghỉ cố định
   const handleToggleActive = async (holidayId, checked) => {
     try {
-      console.log('Toggling holiday active status:', holidayId, checked);
-      
-      // Gọi API update với chỉ isActive
       await scheduleConfigService.updateHoliday(holidayId, { isActive: checked });
-      
-      // Cập nhật local state
       setHolidays(holidays.map(h => 
         h._id === holidayId ? { ...h, isActive: checked } : h
       ));
-      
       toast.success(`${checked ? 'Bật' : 'Tắt'} ngày nghỉ thành công!`);
     } catch (error) {
-      console.error('Error toggling holiday:', error);
       toast.error('Không thể thay đổi trạng thái ngày nghỉ');
     }
   };
@@ -487,22 +405,12 @@ const HolidayManagement = () => {
         holidayData.endDate = values.endDate.format('YYYY-MM-DD');
       }
 
-      console.log('Saving holiday:', holidayData);
-
       if (editingHoliday) {
-        // Update existing holiday
-        const response = await scheduleConfigService.updateHoliday(editingHoliday._id, holidayData);
-        console.log('Update holiday response:', response);
-        
-        // Reload holidays để lấy data mới nhất
+        await scheduleConfigService.updateHoliday(editingHoliday._id, holidayData);
         await loadHolidays();
         toast.success('Cập nhật ngày nghỉ thành công!');
       } else {
-        // Add new holiday
-        const response = await scheduleConfigService.addHoliday(holidayData);
-        console.log('Add holiday response:', response);
-        
-        // Reload holidays để lấy data mới nhất
+        await scheduleConfigService.addHoliday(holidayData);
         await loadHolidays();
         toast.success('Thêm ngày nghỉ thành công!');
       }
@@ -512,14 +420,10 @@ const HolidayManagement = () => {
       setIsRecurring(false);
       setEditingHoliday(null);
     } catch (error) {
-      console.error('Error saving holiday:', error);
-      
-      // ⭐ Hiển thị lỗi chi tiết từ BE validation
       const errorMessage = error.response?.data?.message 
         || error.response?.data?.error 
         || error.message 
         || 'Không thể lưu ngày nghỉ';
-      
       toast.error(errorMessage);
     }
   };
@@ -721,16 +625,10 @@ const HolidayManagement = () => {
   // Load holidays khi component mount
   React.useEffect(() => {
     const initializeData = async () => {
-      try {
-        console.log('🔄 Initializing HolidayManagement data...');
-        await Promise.all([
-          loadHolidays(),
-          loadBlockedRanges()
-        ]);
-        console.log('✅ HolidayManagement data loaded successfully');
-      } catch (error) {
-        console.error('❌ Error initializing HolidayManagement:', error);
-      }
+      await Promise.all([
+        loadHolidays(),
+        loadBlockedRanges()
+      ]);
     };
     
     initializeData();
@@ -739,44 +637,7 @@ const HolidayManagement = () => {
   return (
     <div style={{ 
       minHeight: 'calc(100vh - 64px)',
-      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-      padding: '32px 24px'
     }}>
-      {/* Header Card */}
-      <Card
-        style={{
-          marginBottom: 24,
-          borderRadius: 16,
-          border: '2px solid #dbeafe',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          boxShadow: smileCareTheme.shadows.lg
-        }}
-        bodyStyle={{ padding: '24px 32px' }}
-      >
-        <Space size={16} align="center">
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: 'rgba(255, 255, 255, 0.2)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px solid rgba(255, 255, 255, 0.3)'
-          }}>
-            <CalendarOutlined style={{ fontSize: 24, color: '#fff' }} />
-          </div>
-          <div>
-            <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 700 }}>
-              Quản lý Ngày nghỉ lễ
-            </Title>
-            <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
-              Quản lý các ngày nghỉ cố định và ngày nghỉ lễ của phòng khám
-            </Text>
-          </div>
-        </Space>
-      </Card>
 
       <Card
         style={{
@@ -786,163 +647,204 @@ const HolidayManagement = () => {
         }}
         bodyStyle={{ padding: '28px 32px' }}
       >
-        {/* Search và Filter */}
-        <div style={{ marginBottom: '16px' }}>
-          {/* Row 1: Bộ lọc */}
-          <Row gutter={[16, 16]} align="middle" style={{ marginBottom: '16px' }}>
-            <Col xs={24} sm={12} md={6} lg={5}>
-              <div>
-                <Text strong style={{ display: 'block', marginBottom: '4px' }}>Tìm kiếm:</Text>
-                <Input
-                  placeholder="Tìm kiếm ngày nghỉ..."
-                  prefix={<SearchOutlined />}
-                  value={searchTerm}
-                  onChange={(e) => debouncedSearch(e.target.value)}
-                  allowClear
-                />
-              </div>
-            </Col>
-            <Col xs={24} sm={12} md={6} lg={4}>
-              <div>
-                <Text strong style={{ display: 'block', marginBottom: '4px' }}>Lọc theo loại:</Text>
-                <Select
-                  style={{ width: '100%' }}
-                  value={filterType}
-                  onChange={(value) => {
-                    setFilterType(value);
-                    // Reset conditional filters khi đổi loại
-                    if (value === 'range') {
-                      setFilterActive('all');
-                      setFilterYear('all');
-                      setFilterMonth('all');
-                    } else if (value === 'recurring') {
-                      setFilterUsed('all');
-                      setFilterDate(null);
-                      setFilterYear('all');
-                      setFilterMonth('all');
-                    }
-                  }}
-                  placeholder="Chọn loại"
-                >
-                  <Select.Option value="recurring">Ngày cố định</Select.Option>
-                  <Select.Option value="range">Ngày nghỉ lễ</Select.Option>
-                </Select>
-              </div>
-            </Col>
-            {/* ⭐ Chỉ hiển thị filter trạng thái cho ngày cố định */}
-            {filterType === 'recurring' && (
-              <Col xs={24} sm={12} md={6} lg={4}>
-                <div>
-                  <Text strong style={{ display: 'block', marginBottom: '4px' }}>Trạng thái bật/tắt:</Text>
-                  <Select
-                    style={{ width: '100%' }}
-                    value={filterActive}
-                    onChange={setFilterActive}
-                    placeholder="Chọn trạng thái"
-                  >
-                    <Select.Option value="all">Tất cả</Select.Option>
-                    <Select.Option value="active">Đang bật</Select.Option>
-                    <Select.Option value="inactive">Đã tắt</Select.Option>
-                  </Select>
-                </div>
-              </Col>
-            )}
-            {/* 🆕 Chỉ hiển thị filter hasBeenUsed cho ngày nghỉ lễ */}
-            {filterType === 'range' && (
-              <Col xs={24} sm={12} md={6} lg={4}>
-                <div>
-                  <Text strong style={{ display: 'block', marginBottom: '4px' }}>Trạng thái sử dụng:</Text>
-                  <Select
-                    style={{ width: '100%' }}
-                    value={filterUsed}
-                    onChange={setFilterUsed}
-                    placeholder="Chọn trạng thái"
-                  >
-                    <Select.Option value="all">Tất cả</Select.Option>
-                    <Select.Option value="used">Đã sử dụng</Select.Option>
-                    <Select.Option value="unused">Chưa sử dụng</Select.Option>
-                  </Select>
-                </div>
-              </Col>
-            )}
-            {/* 🆕 Chỉ hiển thị filter ngày cho ngày nghỉ lễ */}
-            {filterType === 'range' && (
-              <Col xs={24} sm={12} md={6} lg={5}>
-                <div>
-                  <Text strong style={{ display: 'block', marginBottom: '4px' }}>Lọc theo ngày:</Text>
-                  <DatePicker
-                    style={{ width: '100%' }}
-                    value={filterDate}
-                    onChange={setFilterDate}
-                    placeholder="Chọn ngày"
-                    format="DD/MM/YYYY"
-                    allowClear
-                  />
-                </div>
-              </Col>
-            )}
-            {/* Nút Thêm cố định bên phải */}
-            <Col flex="auto" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-              <Button 
-                type="primary" 
-                icon={<PlusOutlined />}
-                onClick={handleAddHoliday}
-                size="large"
-                style={{
-                  height: 48,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  borderRadius: 12,
-                  padding: '0 32px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 16px rgba(59, 130, 246, 0.4)',
-                  transition: 'all 0.3s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.5)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.4)';
-                }}
-              >
-                Thêm ngày nghỉ lễ
-              </Button>
-            </Col>
-          </Row>
-        </div>
-
-        {getFilteredHolidays().length === 0 ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <div>
-                <Title level={4} type="secondary">Chưa có ngày nghỉ </Title>
-                <Text type="secondary">
-                  Hãy thêm ngày nghỉ  để hệ thống không tạo lịch vào những ngày này
-                </Text>
-              </div>
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => {
+            setActiveTab(key);
+            // Reset conditional filters khi đổi tab
+            if (key === 'range') {
+              setFilterActive('all');
+            } else if (key === 'recurring') {
+              setFilterUsed('all');
+              setFilterDateRange(null);
             }
-          />
-        ) : (
-          <Table
-            columns={columns}
-            dataSource={getFilteredHolidays()}
-            rowKey="_id"
-            loading={loading}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) => 
-                `${range[0]}-${range[1]} của ${total} ngày nghỉ`,
-            }}
-            scroll={{ x: 800 }}
-            size="middle"
-          />
-        )}
+          }}
+          items={[
+            {
+              key: 'recurring',
+              label: 'Ngày nghỉ cố định',
+              children: (
+                <div>
+                  {/* Search và Filter cho tab Ngày cố định */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <Row gutter={[16, 16]} align="middle" style={{ marginBottom: '16px' }}>
+                      <Col xs={24} sm={12} md={8} lg={6}>
+                        <div>
+                          <Text strong style={{ display: 'block', marginBottom: '4px' }}>Tìm kiếm:</Text>
+                          <Input
+                            placeholder="Tìm kiếm ngày nghỉ..."
+                            prefix={<SearchOutlined />}
+                            value={searchTerm}
+                            onChange={(e) => debouncedSearch(e.target.value)}
+                            allowClear
+                          />
+                        </div>
+                      </Col>
+                      <Col xs={24} sm={12} md={8} lg={6}>
+                        <div>
+                          <Text strong style={{ display: 'block', marginBottom: '4px' }}>Trạng thái bật/tắt:</Text>
+                          <Select
+                            style={{ width: '100%' }}
+                            value={filterActive}
+                            onChange={setFilterActive}
+                            placeholder="Chọn trạng thái"
+                          >
+                            <Select.Option value="all">Tất cả</Select.Option>
+                            <Select.Option value="active">Đang bật</Select.Option>
+                            <Select.Option value="inactive">Đã tắt</Select.Option>
+                          </Select>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {getFilteredHolidays().length === 0 ? (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <div>
+                          <Title level={4} type="secondary">Chưa có ngày nghỉ cố định</Title>
+                          <Text type="secondary">
+                            Chưa có ngày nghỉ cố định trong hệ thống
+                          </Text>
+                        </div>
+                      }
+                    />
+                  ) : (
+                    <Table
+                      columns={columns}
+                      dataSource={getFilteredHolidays()}
+                      rowKey="_id"
+                      loading={loading}
+                      pagination={{
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total, range) => 
+                          `${range[0]}-${range[1]} của ${total} ngày nghỉ`,
+                      }}
+                      scroll={{ x: 800 }}
+                      size="middle"
+                    />
+                  )}
+                </div>
+              )
+            },
+            {
+              key: 'range',
+              label: 'Ngày nghỉ lễ',
+              children: (
+                <div>
+                  {/* Search và Filter cho tab Ngày nghỉ lễ */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <Row gutter={[16, 16]} align="middle" style={{ marginBottom: '16px' }}>
+                      <Col xs={24} sm={12} md={6} lg={5}>
+                        <div>
+                          <Text strong style={{ display: 'block', marginBottom: '4px' }}>Tìm kiếm:</Text>
+                          <Input
+                            placeholder="Tìm kiếm ngày nghỉ..."
+                            prefix={<SearchOutlined />}
+                            value={searchTerm}
+                            onChange={(e) => debouncedSearch(e.target.value)}
+                            allowClear
+                          />
+                        </div>
+                      </Col>
+                      <Col xs={24} sm={12} md={6} lg={4}>
+                        <div>
+                          <Text strong style={{ display: 'block', marginBottom: '4px' }}>Trạng thái sử dụng:</Text>
+                          <Select
+                            style={{ width: '100%' }}
+                            value={filterUsed}
+                            onChange={setFilterUsed}
+                            placeholder="Chọn trạng thái"
+                          >
+                            <Select.Option value="all">Tất cả</Select.Option>
+                            <Select.Option value="used">Đã sử dụng</Select.Option>
+                            <Select.Option value="unused">Chưa sử dụng</Select.Option>
+                          </Select>
+                        </div>
+                      </Col>
+                      <Col xs={24} sm={12} md={8} lg={8}>
+                        <div>
+                          <Text strong style={{ display: 'block', marginBottom: '4px' }}>Lọc theo ngày:</Text>
+                          <RangePicker
+                            style={{ width: '100%' }}
+                            value={filterDateRange}
+                            onChange={setFilterDateRange}
+                            placeholder={['Từ ngày', 'Đến ngày']}
+                            format="DD/MM/YYYY"
+                            allowClear
+                          />
+                        </div>
+                      </Col>
+                      {/* Nút Thêm ngày nghỉ lễ - CHỈ hiển thị ở tab Ngày nghỉ lễ */}
+                      <Col flex="auto" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
+                        <Button 
+                          type="primary" 
+                          icon={<PlusOutlined />}
+                          onClick={handleAddHoliday}
+                          size="large"
+                          style={{
+                            height: 48,
+                            fontSize: 16,
+                            fontWeight: 600,
+                            borderRadius: 12,
+                            padding: '0 32px',
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                            border: 'none',
+                            boxShadow: '0 4px 16px rgba(59, 130, 246, 0.4)',
+                            transition: 'all 0.3s'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(59, 130, 246, 0.5)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.4)';
+                          }}
+                        >
+                          Thêm ngày nghỉ lễ
+                        </Button>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {getFilteredHolidays().length === 0 ? (
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <div>
+                          <Title level={4} type="secondary">Chưa có ngày nghỉ lễ</Title>
+                          <Text type="secondary">
+                            Hãy thêm ngày nghỉ lễ để hệ thống không tạo lịch vào những ngày này
+                          </Text>
+                        </div>
+                      }
+                    />
+                  ) : (
+                    <Table
+                      columns={columns}
+                      dataSource={getFilteredHolidays()}
+                      rowKey="_id"
+                      loading={loading}
+                      pagination={{
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total, range) => 
+                          `${range[0]}-${range[1]} của ${total} ngày nghỉ`,
+                      }}
+                      scroll={{ x: 800 }}
+                      size="middle"
+                    />
+                  )}
+                </div>
+              )
+            }
+          ]}
+        />
       </Card>
 
       {/* Modal thêm/sửa ngày nghỉ lễ */}
@@ -1014,7 +916,7 @@ const HolidayManagement = () => {
                   format="DD/MM/YYYY"
                   placeholder="Chọn ngày bắt đầu"
                   disabledDate={disabledStartDate}
-                  defaultPickerValue={getFirstValidDate()} // 🆕 Auto jump to first valid date
+                  defaultPickerValue={getFirstValidDate()} 
                   onChange={(date) => {
                     setSelectedStartDate(date); // 🆕 Track start date
                     // Reset end date khi start date thay đổi
