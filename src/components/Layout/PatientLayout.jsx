@@ -131,14 +131,14 @@ const PatientLayout = () => {
               <Space>
                 <img 
                   src="/smile-icon.png" 
-                  alt="Smile Care" 
+                  alt="SmileCare" 
                   style={{ height: 32 }}
                   onError={(e) => {
                     e.target.style.display = 'none';
                   }}
                 />
                 <Text strong style={{ color: '#2c5f4f', fontSize: 18 }}>
-                  Smile Care Dental
+                  SmileCare Dental
                 </Text>
               </Space>
             </div>

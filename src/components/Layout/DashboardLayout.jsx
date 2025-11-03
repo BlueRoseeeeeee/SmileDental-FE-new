@@ -290,7 +290,7 @@ const DashboardLayout = () => {
       >
         <div style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
           <img src={logo} alt="Smile Dental" style={{ width: '100%', height: '100%' }} />
-          <Text strong>Smile Dental</Text>
+          <Text strong>SmileCare Dental</Text>
         </div>
         <Menu
           mode="inline"
@@ -341,7 +341,7 @@ const DashboardLayout = () => {
             }}>
               <img 
                 src={logo} 
-                alt="Smile Dental" 
+                alt="SmileCare Dental" 
                 style={{
                   width: '32px',
                   height: '32px',
@@ -363,14 +363,14 @@ const DashboardLayout = () => {
                   backgroundClip: 'text'
                 }}
               >
-                Smile Dental
+                SmileCare Dental
               </Text>
             </div>
           )}
           {collapsed && (
             <img 
               src={logo} 
-              alt="Smile Dental" 
+              alt="SmileCare Dental" 
               style={{
                 width: '28px',
                 height: '28px',

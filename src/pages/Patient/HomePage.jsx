@@ -49,10 +49,10 @@ const HomePage = () => {
         <div className="hero-overlay">
           <div className="hero-content">
             <Title level={1} style={{ color: 'white', marginBottom: 16 }}>
-              Smile Care
+              SmileCare
             </Title>
             <Title level={2} style={{ color: 'white', marginBottom: 24 }}>
-              Dental Clinic
+              Dental
             </Title>
             <Paragraph style={{ color: 'white', fontSize: 18, marginBottom: 32 }}>
               Chăm sóc nụ cười của bạn với đội ngũ nha khoa chuyên nghiệp
