@@ -31,6 +31,7 @@ const RegisterRHF = () => {
   const [email, setEmail] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpMessage, setOtpMessage] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
 
   const { sendOtpRegister, register: registerUser, verifyOtp, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
@@ -86,6 +87,8 @@ const RegisterRHF = () => {
       setValue('email', data.email);
       // Xóa OTP cũ khi gửi OTP mới
       setValue('otp', '');
+      // Reset trạng thái verify nếu đổi email
+      setOtpVerified(false);
       const response = await sendOtpRegister(data.email);
       setOtpMessage(response.message || 'OTP đăng ký đã được gửi đến email');
       setOtpSent(true);
@@ -103,10 +106,20 @@ const RegisterRHF = () => {
       // Verify OTP
       await verifyOtp(data.otp, email);
       
+      // Đánh dấu đã verify thành công
+      setOtpVerified(true);
+      
       // Chuyển sang bước tiếp theo
       setStep(2);
     } catch (err) {
       // Error is handled by AuthContext
+    }
+  };
+
+  // Handle skip OTP verification nếu đã verify rồi
+  const handleSkipOTP = () => {
+    if (otpVerified) {
+      setStep(2);
     }
   };
 
@@ -330,8 +343,8 @@ const RegisterRHF = () => {
               style={{ marginBottom: '40px' }}
             />
 
-            {/* Success Messages - Sử dụng toast thay vì Alert */}
-          {otpSent && step === 1 && (
+            {/* Success Messages - Chỉ hiển thị khi vừa gửi OTP, không hiển thị khi đã verify */}
+          {otpSent && step === 1 && !otpVerified && (
             <div style={{ 
               marginBottom: '24px',
               padding: '12px 16px',
@@ -403,41 +416,74 @@ const RegisterRHF = () => {
             {/* Step 2: OTP Verification Form */}
             {step === 1 && (
               <form onSubmit={handleSubmit(handleVerifyOTP)}>
-                <div className="form-group">
-                  <label className="form-label">
-                    Mã OTP <span style={{ color: 'red' }}>*</span>
-                  </label>
-                  <input
-                    {...register('otp', getReactHookFormRules.otp())}
-                    maxLength={6}
-                    className="form-input"
-                    placeholder="Nhập 6 chữ số OTP (VD: 123456)"
-                    style={{ 
-                      textAlign: 'center', 
-                      fontSize: '18px', 
-                      letterSpacing: '4px'
-                    }}
-                  />
-                  {errors.otp && (
-                    <div className="form-error">{errors.otp.message}</div>
-                  )}
-                </div>
+                {otpVerified ? (
+                  <div style={{ 
+                    marginBottom: '24px',
+                    padding: '12px 16px',
+                    background: '#f6ffed',
+                    border: '1px solid #b7eb8f',
+                    borderRadius: '6px',
+                    color: '#52c41a',
+                    fontSize: '14px'
+                  }}>
+                    <CheckCircleOutlined style={{ marginRight: '8px' }} />
+                    OTP đã được xác thực thành công!
+                  </div>
+                ) : (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">
+                        Mã OTP <span style={{ color: 'red' }}>*</span>
+                      </label>
+                      <input
+                        {...register('otp', getReactHookFormRules.otp())}
+                        maxLength={6}
+                        className="form-input"
+                        placeholder="Nhập 6 chữ số OTP (VD: 123456)"
+                        style={{ 
+                          textAlign: 'center', 
+                          fontSize: '18px', 
+                          letterSpacing: '4px'
+                        }}
+                      />
+                      {errors.otp && (
+                        <div className="form-error">{errors.otp.message}</div>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  block
-                  style={{
-                      background: '#2596be',
-                    border: 'none',
-                    borderRadius: '8px',
-                    height: '48px'
-                  }}
-                >
-                    {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
-                  </Button>
+                  {otpVerified ? (
+                    <Button
+                      type="primary"
+                      onClick={handleSkipOTP}
+                      block
+                      style={{
+                        background: '#2596be',
+                        border: 'none',
+                        borderRadius: '8px',
+                        height: '48px'
+                      }}
+                    >
+                      Tiếp theo
+                    </Button>
+                  ) : (
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={loading}
+                      block
+                      style={{
+                        background: '#2596be',
+                        border: 'none',
+                        borderRadius: '8px',
+                        height: '48px'
+                      }}
+                    >
+                      {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
+                    </Button>
+                  )}
 
                   <Button
                     type="default"
@@ -445,8 +491,10 @@ const RegisterRHF = () => {
                     onClick={() => {
                       setStep(0);
                       clearError();
-                      // Xóa OTP khi quay lại
-                      setValue('otp', '');
+                      // Chỉ xóa OTP nếu chưa verify, để giữ lại trạng thái nếu đã verify
+                      if (!otpVerified) {
+                        setValue('otp', '');
+                      }
                     }}
                     block
                     style={{
@@ -455,7 +503,7 @@ const RegisterRHF = () => {
                     }}
                   >
                     Quay lại
-                </Button>
+                  </Button>
                 </Space>
               </form>
             )}
