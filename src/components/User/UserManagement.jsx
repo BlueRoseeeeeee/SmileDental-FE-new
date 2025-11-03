@@ -500,44 +500,26 @@ const UserManagement = () => {
           return;
         }
       } else {
-        // 🆕 Nhiệm vụ 3.1: Create staff without OTP using userService.createStaff
+        // Create new staff
         const staffData = {
           email: allValues.email,
           phone: allValues.phone,
           fullName: allValues.fullName,
           dateOfBirth: allValues.dateOfBirth ? allValues.dateOfBirth.format('YYYY-MM-DD') : null,
           gender: allValues.gender,
-          roles: allValues.roles || [], // ✅ Multiple roles
+          roles: allValues.roles || [],
           isActive: allValues.isActive !== undefined ? allValues.isActive : true,
           description: allValues.description || ''
         };
 
-        console.log('🔵 [UserManagement] Creating staff with data:', staffData);
         const result = await userService.createStaff(staffData);
-        console.log('✅ [UserManagement] Create staff result:', result);
-        
-        if (result.success) {
-          // Show success with employeeCode
-          Modal.success({
-            title: 'Tạo nhân viên thành công!',
-            content: (
-              <div>
-                <p><strong>Mã nhân viên:</strong> {result.employeeCode}</p>
-                <p><strong>Mật khẩu mặc định:</strong> {result.defaultPassword}</p>
-                <p style={{ color: '#ff4d4f', marginTop: '12px' }}>
-                  ⚠️ Nhân viên sẽ phải đổi mật khẩu khi đăng nhập lần đầu.
-                </p>
-              </div>
-            ),
-            okText: 'Đóng'
-          });
-          
-          // Reload users
-          loadUsers();
-        } else {
+        if (!result.success) {
           toast.error(result.message || 'Thêm nhân viên thất bại');
           return;
         }
+
+        toast.success('Tạo nhân viên thành công!');
+        loadUsers();
       }
       
       setModalVisible(false);
@@ -1088,7 +1070,7 @@ const UserManagement = () => {
                       </Col>
                     </Row>
 
-                    <Row gutter={[16, 16]}>
+                    {/* <Row gutter={[16, 16]}>
                       <Col xs={24}>
                         <Form.Item
                           name="description"
@@ -1098,7 +1080,7 @@ const UserManagement = () => {
                           <Input.TextArea rows={3} placeholder="Nhập mô tả..." />
                         </Form.Item>
                       </Col>
-                    </Row>
+                    </Row> */}
 
                     <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: '24px' }}>
                       <Button
