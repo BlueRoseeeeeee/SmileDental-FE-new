@@ -3,6 +3,7 @@
  * API Factory - Tạo axios instances cho các microservices khác nhau
  */
 import axios from 'axios';
+import { toast } from './toastService.js';
 
 // Configuration cho các microservices
 const MICROSERVICES_CONFIG = {
@@ -128,15 +129,21 @@ const createAxiosInstance = (serviceName, config) => {
         } catch (refreshError) {
           console.error('❌ Token refresh failed:', refreshError.response?.data || refreshError.message);
         }
-
-        // If refresh failed, clear tokens and redirect to login
-        console.error('🔴 Logging out - clearing tokens and redirecting to /login');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
         
-        // Redirect to login
-        window.location.href = '/login';
+        // Hiển thị thông báo token hết hạn
+        toast.warning('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 4000);
+        
+        // Đợi một chút để user thấy thông báo trước khi redirect
+        setTimeout(() => {
+          // Clear tokens
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          
+          // Redirect to login
+          window.location.href = '/login';
+        }, 2000); // Đợi 2 giây để user thấy thông báo
+        
         return Promise.reject(error);
       }
 
