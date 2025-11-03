@@ -302,6 +302,14 @@ const HolidayManagement = () => {
       });
     }
     
+    // Sort sau khi đã filter xong
+    if (activeTab === 'range') {
+      // Sort ngày nghỉ lễ theo ngày bắt đầu (mới nhất trước - descending)
+      filtered = filtered.sort((a, b) => {
+        if (!a.startDate || !b.startDate) return 0;
+        return dayjs(b.startDate) - dayjs(a.startDate);
+      });
+    }
     
     return filtered;
   };
