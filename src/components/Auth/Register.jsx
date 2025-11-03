@@ -17,7 +17,8 @@ import {
   validatePatientAge,
   isValidEmail,
   handleFullNameFormat,
-  getReactHookFormRules
+  getReactHookFormRules,
+  preventNonNumericInput
 } from '../../utils/validationUtils';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 import './Register.css';
@@ -440,6 +441,7 @@ const RegisterRHF = () => {
                         maxLength={6}
                         className="form-input"
                         placeholder="Nhập 6 chữ số OTP (VD: 123456)"
+                        onKeyPress={preventNonNumericInput}
                         style={{ 
                           textAlign: 'center', 
                           fontSize: '18px', 
