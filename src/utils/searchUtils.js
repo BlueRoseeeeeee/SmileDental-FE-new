@@ -148,7 +148,7 @@ export const createFilterConfig = (key, label, options, placeholder = 'Chọn...
 export const createRoleFilter = () => {
   return {
     ...createFilterConfig(
-      'roles', // 🆕 Đổi từ 'role' thành 'roles' để match với data structure
+      'roles',
       'Lọc theo vai trò',
       [
         { value: 'admin', label: 'Quản trị viên' },
@@ -157,9 +157,9 @@ export const createRoleFilter = () => {
         { value: 'nurse', label: 'Y tá' },
         { value: 'receptionist', label: 'Lễ tân' },
       ],
-      'Chọn vai trò'
+      ''
     ),
-    multiple: true // Enable multiple selection
+    multiple: true
   };
 };
 

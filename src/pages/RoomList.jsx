@@ -438,7 +438,7 @@ const RoomList = () => {
           </Col>
           <Col xs={24} md={8}>
             <div>
-              <Text style={{ display: 'block', marginBottom: 8, fontSize:12 }}>Lọc theo cấu trúc</Text>
+              <Text style={{ display: 'block', marginBottom: 8, fontSize:12 }}>Lọc theo cấu trúc phòng</Text>
               <Select
                 placeholder="Chọn cấu trúc"
                 allowClear

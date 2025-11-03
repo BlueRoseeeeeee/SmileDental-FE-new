@@ -3,7 +3,7 @@
 */
 import React, { useState, useEffect } from 'react';
 import { Input, Select, Row, Col, Card } from 'antd';
-import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -116,15 +116,10 @@ const SearchBar = ({
               <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                 <Select
                   mode={filter.multiple ? "multiple" : undefined}
-                  style={{ 
-                    width: '100%',
-                    borderRadius: '8px'
-                  }}
+                  style={{ width: '100%' }}
                   value={localFilterValues[filter.key]}
                   onChange={(value) => handleFilterChange(filter.key, value)}
                   allowClear
-                  size={size}
-                  suffixIcon={<FilterOutlined style={{ color: '#2596be' }} />}
                   placeholder={filter.placeholder}
                   maxTagCount={filter.multiple ? 'responsive' : undefined}
                   onClear={() => {

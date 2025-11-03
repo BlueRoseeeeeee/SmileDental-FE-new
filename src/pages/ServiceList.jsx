@@ -414,7 +414,7 @@ const ServiceList = () => {
           </Col>
           <Col xs={24} md={8}>
             <div>
-              <Text style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Lọc theo loại</Text>
+              <Text style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Lọc theo loại dịch vụ</Text>
               <Select
                 placeholder="Chọn loại dịch vụ"
                 allowClear
