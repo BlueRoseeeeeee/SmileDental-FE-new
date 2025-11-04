@@ -279,6 +279,13 @@ export const authService = {
     });
     console.log('✅ [authService] Password change response:', response.data);
     
+    // ✅ Check if role selection is required (multi-role user)
+    if (response.data.pendingData?.requiresRoleSelection) {
+      console.log('🔄 [authService] Role selection required');
+      return response.data; // Return pendingData with requiresRoleSelection
+    }
+    
+    // ✅ Single role user - save tokens
     const { accessToken, refreshToken, user } = response.data;
     
     // Save tokens and user to localStorage
