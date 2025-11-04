@@ -176,6 +176,11 @@ const EditServiceAddOn = () => {
       setSaving(true);
       const values = await form.validateFields();
       
+      console.log('🔵 [EditServiceAddOn] Preparing to save addon');
+      console.log('🔵 [EditServiceAddOn] imageFile:', imageFile);
+      console.log('🔵 [EditServiceAddOn] imageFile type:', imageFile?.type);
+      console.log('🔵 [EditServiceAddOn] imageFile size:', imageFile?.size);
+      
       const formData = new FormData();
       formData.append('name', values.name);
       formData.append('price', values.price);
@@ -184,15 +189,34 @@ const EditServiceAddOn = () => {
       formData.append('description', addOnDescription);
       
       if (imageFile) {
-        formData.append('image', imageFile);
+        console.log('✅ [EditServiceAddOn] Appending image to FormData');
+        console.log('🔍 [EditServiceAddOn] imageFile is File instance?', imageFile instanceof File);
+        console.log('🔍 [EditServiceAddOn] imageFile is Blob instance?', imageFile instanceof Blob);
+        console.log('🔍 [EditServiceAddOn] imageFile constructor:', imageFile.constructor.name);
+        console.log('🔍 [EditServiceAddOn] imageFile keys:', Object.keys(imageFile));
+        
+        // ✅ Ensure we're appending the actual File object, not a wrapped object
+        const actualFile = imageFile.originFileObj || imageFile;
+        console.log('🔍 [EditServiceAddOn] actualFile:', actualFile.name, actualFile.type, actualFile.size);
+        
+        formData.append('image', actualFile);
+      } else {
+        console.log('⚠️ [EditServiceAddOn] No image file to upload');
       }
 
-      await servicesService.updateServiceAddOn(serviceId, addonId, formData);
+      console.log('🔵 [EditServiceAddOn] Calling API updateServiceAddOn');
+      console.log('🔵 [EditServiceAddOn] serviceId:', serviceId, 'addonId:', addonId);
+      
+      const result = await servicesService.updateServiceAddOn(serviceId, addonId, formData);
+      
+      console.log('✅ [EditServiceAddOn] API response:', result);
+      
       setHasUnsavedChanges(false);
       clearDraft();
       toastService.success('Cập nhật tùy chọn dịch vụ thành công!');
       navigate(`/dashboard/services/${serviceId}/edit`);
     } catch (error) {
+      console.error('❌ [EditServiceAddOn] Error:', error);
       toastService.error('Lỗi khi cập nhật tùy chọn dịch vụ');
     } finally {
       setSaving(false);
@@ -372,6 +396,7 @@ const EditServiceAddOn = () => {
               >
                 <Upload
                   customRequest={({ file, onSuccess }) => {
+                    console.log('🔵 [EditServiceAddOn] Image selected:', file.name, file.type, file.size);
                     setImageFile(file);
                     setHasUnsavedChanges(true);
                     
@@ -379,6 +404,7 @@ const EditServiceAddOn = () => {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                       setImagePreview(e.target.result);
+                      console.log('✅ [EditServiceAddOn] Image preview created');
                     };
                     reader.readAsDataURL(file);
                     

@@ -68,7 +68,24 @@ export const servicesService = {
   async updateServiceAddOn(serviceId, addOnId, addOnData) {
     // ✅ Don't set Content-Type for FormData - browser will set it automatically
     // This prevents overriding the Authorization header
+    console.log('🔵 [servicesService] updateServiceAddOn called');
+    console.log('🔵 [servicesService] serviceId:', serviceId, 'addOnId:', addOnId);
+    console.log('🔵 [servicesService] addOnData type:', addOnData.constructor.name);
+    
+    // Log FormData contents (for debugging)
+    if (addOnData instanceof FormData) {
+      console.log('🔵 [servicesService] FormData entries:');
+      for (let [key, value] of addOnData.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}:`, value.name, `(${value.type}, ${value.size} bytes)`);
+        } else {
+          console.log(`  ${key}:`, value);
+        }
+      }
+    }
+    
     const response = await serviceApi.put(`/service/${serviceId}/addons/${addOnId}`, addOnData);
+    console.log('✅ [servicesService] Response:', response.data);
     return response.data;
   },
 

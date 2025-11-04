@@ -66,6 +66,14 @@ const createAxiosInstance = (serviceName, config) => {
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      
+      // ✅ CRITICAL FIX: If sending FormData, remove Content-Type header
+      // Browser will automatically set it with correct boundary
+      if (config.data instanceof FormData) {
+        delete config.headers['Content-Type'];
+        console.log('🔧 [apiFactory] Removed Content-Type header for FormData upload');
+      }
+      
       return config;
     },
     (error) => {
