@@ -60,6 +60,13 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { Search } = Input;
 
+// Lấy từ cuối cùng (tên) từ trong fullName để sort
+const getLastName = (fullName) => {
+  if (!fullName) return '';
+  const parts = fullName.trim().split(/\s+/);
+  return parts[parts.length - 1] || '';
+};
+
 const UserManagement = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
@@ -98,6 +105,10 @@ const UserManagement = () => {
   const [selectedUserForReset, setSelectedUserForReset] = useState(null);
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [defaultPassword, setDefaultPassword] = useState('');
+  const [prevSearchTerm, setPrevSearchTerm] = useState('');
+  const [prevFilters, setPrevFilters] = useState({});
+  const [prevSortConfig, setPrevSortConfig] = useState({ field: null, order: null });
+  const [prevActiveTab, setPrevActiveTab] = useState('active');
 
   useEffect(() => {
     loadUsers();
@@ -157,8 +168,9 @@ const UserManagement = () => {
         
         // Xử lý các trường hợp đặc biệt
         if (sortConfig.field === 'fullName') {
-          aValue = a.fullName?.toLowerCase() || '';
-          bValue = b.fullName?.toLowerCase() || '';
+          // Sort theo từ cuối cùng (tên) thay vì toàn bộ fullName
+          aValue = getLastName(a.fullName || '').toLowerCase();
+          bValue = getLastName(b.fullName || '').toLowerCase();
         } else if (sortConfig.field === 'email') {
           aValue = a.email?.toLowerCase() || '';
           bValue = b.email?.toLowerCase() || '';
@@ -187,12 +199,22 @@ const UserManagement = () => {
     
     setFilteredUsers(filtered);
     
-    // Reset về page 1 khi có search/filter/sort mới để user thấy kết quả
-    if (searchTerm || Object.keys(filters).length > 0 || sortConfig.field) {
+    // Reset về page 1 chỉ khi có thay đổi trong search/filter/sort/tab, không reset khi chỉ thay đổi pagination
+    const searchChanged = searchTerm !== prevSearchTerm;
+    const filtersChanged = JSON.stringify(filters) !== JSON.stringify(prevFilters);
+    const sortChanged = sortConfig.field !== prevSortConfig.field || sortConfig.order !== prevSortConfig.order;
+    const tabChanged = activeTab !== prevActiveTab;
+    
+    if (searchChanged || filtersChanged || sortChanged || tabChanged) {
       setPagination(prev => ({
         ...prev,
         current: 1
       }));
+      // Update previous values
+      setPrevSearchTerm(searchTerm);
+      setPrevFilters(filters);
+      setPrevSortConfig(sortConfig);
+      setPrevActiveTab(activeTab);
     }
   };
 
@@ -204,7 +226,16 @@ const UserManagement = () => {
     setFilters(newFilters);
   };
 
-  const handleTableChange = (pagination, filters, sorter) => {
+  const handleTableChange = (newPagination, filters, sorter) => {
+    // Handle pagination change - cập nhật pagination mà không reset về page 1
+    if (newPagination.current !== pagination.current || newPagination.pageSize !== pagination.pageSize) {
+      setPagination(prev => ({
+        ...prev,
+        current: newPagination.current || prev.current,
+        pageSize: newPagination.pageSize || prev.pageSize
+      }));
+    }
+    
     // Handle sorting
     if (sorter && sorter.field) {
       setSortConfig({
