@@ -2001,10 +2001,6 @@ const CreateScheduleForRoom = () => {
                       type="primary"
                       icon={<PlusOutlined />}
                       onClick={() => {
-                        console.log('🚀 Opening Bulk Create Modal');
-                        console.log('📊 selectedRoomIds:', selectedRoomIds);
-                        console.log('📋 selectedRoomsMap keys:', Object.keys(selectedRoomsMap));
-                        console.log('🔍 selectedRooms to pass:', selectedRoomIds.map(id => selectedRoomsMap[id]).filter(Boolean));
                         setShowBulkCreateModal(true);
                       }}
                       size="large"
@@ -2017,7 +2013,7 @@ const CreateScheduleForRoom = () => {
                         boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
                       }}
                     >
-                      🚀 Tạo lịch cho tất cả
+                      Tạo lịch cho tất cả
                     </Button>
                   </Space>
                 </Card>

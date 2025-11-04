@@ -486,7 +486,8 @@ const BulkCreateScheduleModal = ({
       }
       open={visible}
       onCancel={handleClose}
-      width={800}
+      width={'55%'}
+      centered
       footer={
         progress ? [
           // 🔧 Khi đã tạo xong, hiển thị button "Đóng" ở footer
@@ -509,19 +510,19 @@ const BulkCreateScheduleModal = ({
         ]
       }
       destroyOnClose
-      bodyStyle={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}
+      bodyStyle={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto', overflowX: 'hidden' }}
     >
       {/* List selected rooms */}
       <Alert
         message={
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space direction="vertical" style={{ width: '100%', padding: '0px 20px' }}>
             <Text strong>Danh sách phòng đã chọn:</Text>
             <Space wrap>
               {selectedRooms.map(room => (
-                <Tag key={room._id} color="blue">
+                <Tag key={room._id} color="blue" style={{ fontSize: '12px', padding: '4px 12px' }}>
                   {room.name} {room.roomNumber ? `(${room.roomNumber})` : ''}
                   {room.hasSubRooms && (
-                    <Text type="secondary" style={{ fontSize: '11px', marginLeft: 4 }}>
+                    <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
                       ({room.subRooms?.length || 0} buồng)
                     </Text>
                   )}
@@ -537,7 +538,7 @@ const BulkCreateScheduleModal = ({
 
       {progress ? (
         // Show progress
-        <div>
+        <div style={{ width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
           <Progress
             percent={Math.round((progress.current / progress.total) * 100)}
             status={progress.current === progress.total ? 'success' : 'active'}
@@ -545,6 +546,7 @@ const BulkCreateScheduleModal = ({
               '0%': '#108ee9',
               '100%': '#87d068'
             }}
+            style={{ width: '100%' }}
           />
 
           <Divider />
@@ -561,7 +563,7 @@ const BulkCreateScheduleModal = ({
                   ) : (
                     <CloseCircleOutlined style={{ color: '#ff4d4f', fontSize: 18 }} />
                   )}
-                  <div>
+                  <div style={{ width: '100%', maxWidth: '100%', wordBreak: 'break-word' }}>
                     <Text strong>{result.roomName}</Text>
                     {result.success ? (
                       <div>
@@ -569,7 +571,7 @@ const BulkCreateScheduleModal = ({
                         {result.details && (
                           <div style={{ marginTop: 8 }}>
                             {/* Tổng kết chung */}
-                            <div style={{ fontSize: '12px', color: '#666', marginBottom: 8 }}>
+                            <div style={{ fontSize: '12px', color: '#666', marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                               {result.details.schedulesCreated > 0 && (
                                 <Tag color="green">Tạo mới: {result.details.schedulesCreated} lịch</Tag>
                               )}
@@ -583,11 +585,11 @@ const BulkCreateScheduleModal = ({
                             {result.details.subRoomBreakdown && result.details.subRoomBreakdown.length > 0 && (
                               <div style={{ marginTop: 8, paddingLeft: 16, borderLeft: '2px solid #f0f0f0' }}>
                                 {result.details.subRoomBreakdown.map((subRoom, idx) => (
-                                  <div key={idx} style={{ fontSize: '12px', marginBottom: 4 }}>
+                                  <div key={idx} style={{ fontSize: '12px', marginBottom: 4, width: '100%', maxWidth: '100%' }}>
                                     <Text strong style={{ fontSize: '12px' }}>
                                       {subRoom.subRoomName}:
                                     </Text>
-                                    <Space size={4} style={{ marginLeft: 8 }}>
+                                    <Space size={4} style={{ marginLeft: 8 }} wrap>
                                       {subRoom.shifts.morning > 0 && (
                                         <Tag color="gold" style={{ fontSize: '11px', margin: 0 }}>
                                           Ca Sáng: {subRoom.shifts.morning} slots
@@ -624,7 +626,7 @@ const BulkCreateScheduleModal = ({
         </div>
       ) : (
         // Show form
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" style={{padding: '0 10px'}}>
           {/* 🆕 From Month Picker */}
           <Form.Item
             label={
@@ -690,7 +692,7 @@ const BulkCreateScheduleModal = ({
                   </Text>
                   <Space wrap>
                     {availableMonths.map(m => (
-                      <Tag key={`${m.year}-${m.month}`} color="green">
+                      <Tag key={`${m.year}-${m.month}`} color="green" style={{ fontSize: '12px', padding: '4px 12px', fontWeight:600}}>
                         {m.label}
                       </Tag>
                     ))}
@@ -758,11 +760,11 @@ const BulkCreateScheduleModal = ({
                     value="morning"
                     disabled={!availableShifts.morning}
                   >
-                    <Tag color={SHIFT_COLORS.morning}>
+                    <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
                       {SHIFT_NAMES.morning}
-                    </Tag>
+                    </Text>
                     {!availableShifts.morning && (
-                      <Text type="secondary" style={{ fontSize: '11px', marginLeft: 4 }}>
+                      <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
                         {!isShiftActive('morning') ? '(Đã tắt)' : '(Đã đầy)'}
                       </Text>
                     )}
@@ -773,11 +775,11 @@ const BulkCreateScheduleModal = ({
                     value="afternoon"
                     disabled={!availableShifts.afternoon}
                   >
-                    <Tag color={SHIFT_COLORS.afternoon}>
+                    <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
                       {SHIFT_NAMES.afternoon}
-                    </Tag>
+                    </Text>
                     {!availableShifts.afternoon && (
-                      <Text type="secondary" style={{ fontSize: '11px', marginLeft: 4 }}>
+                      <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
                         {!isShiftActive('afternoon') ? '(Đã tắt)' : '(Đã đầy)'}
                       </Text>
                     )}
@@ -788,11 +790,11 @@ const BulkCreateScheduleModal = ({
                     value="evening"
                     disabled={!availableShifts.evening}
                   >
-                    <Tag color={SHIFT_COLORS.evening}>
+                    <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
                       {SHIFT_NAMES.evening}
-                    </Tag>
+                    </Text>
                     {!availableShifts.evening && (
-                      <Text type="secondary" style={{ fontSize: '11px', marginLeft: 4 }}>
+                      <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
                         {!isShiftActive('evening') ? '(Đã tắt)' : '(Đã đầy)'}
                       </Text>
                     )}
@@ -805,7 +807,7 @@ const BulkCreateScheduleModal = ({
           {/* Help text */}
           <Alert
             message={
-              <ul style={{ margin: 0, paddingLeft: 20 }}>
+              <ul style={{ margin: 0, paddingLeft: 20, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                 <li>Tháng bị vô hiệu hóa nếu <strong>TẤT CẢ</strong> các phòng đã có lịch tháng đó</li>
                 <li>Ca bị vô hiệu hóa nếu <strong>TẤT CẢ</strong> các phòng đã có ca đó trong khoảng thời gian</li>
                 <li>Chỉ cần <strong>1 phòng</strong> chưa có là vẫn có thể chọn tạo lịch</li>
