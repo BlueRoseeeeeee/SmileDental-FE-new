@@ -1793,7 +1793,7 @@ const CreateScheduleForRoom = () => {
                   border: bulkSelectionMode ? 'none' : undefined
                 }}
               >
-                {bulkSelectionMode ? '✓ Đang chọn nhiều phòng' : 'Bật chọn nhiều phòng'}
+                {bulkSelectionMode ? 'Đang chọn nhiều phòng' : 'Bật chọn nhiều phòng'}
               </Button>
             </Space>
           </div>
