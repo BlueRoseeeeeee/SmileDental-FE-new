@@ -31,7 +31,8 @@ import {
   PlusOutlined,
   SearchOutlined,
   EyeOutlined,
-  WarningOutlined
+  WarningOutlined,
+  EnvironmentOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../../services/toastService';
@@ -2126,17 +2127,7 @@ const CreateScheduleForRoom = () => {
           borderBottom: '2px solid #dee2e6'
         }}>
           <Space align="center">
-            <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <CalendarOutlined style={{ fontSize: 18, color: '#fff' }} />
-            </div>
+          <EnvironmentOutlined style={{fontSize:16, color:'#1890ff'}} />
             <Text strong style={{ fontSize: 16 }}>
               Danh sách phòng khám
             </Text>
