@@ -884,16 +884,14 @@ const CreateScheduleForRoom = () => {
               duration: 5
             });
             
-            // 🔧 FIX: Refresh room list để cập nhật hasBeenUsed
-            fetchRooms();
-            
-            // Refresh schedule list
-            if (selectedRoom && selectedSubRoom) {
-              await fetchScheduleList(selectedRoom, selectedSubRoom);
-            }
-            
             // Close modal and reset
             handleCancelModal();
+            
+            // 🔧 FIX: Refresh room list sau khi đóng modal để cập nhật hasBeenUsed
+            // Thêm delay nhỏ để đảm bảo modal đã đóng và state đã reset
+            setTimeout(() => {
+              fetchRooms();
+            }, 300);
           } else {
             message.error(response.message || 'Không thể thêm ca thiếu');
           }
@@ -964,7 +962,12 @@ const CreateScheduleForRoom = () => {
             
             // Close modal and refresh room list
             setShowCreateModal(false);
-            fetchRooms(); // ✅ Reload danh sách phòng để cập nhật trạng thái
+            
+            // FIX: Refresh room list sau khi đóng modal
+            // Thêm delay nhỏ để đảm bảo modal đã đóng và state đã reset
+            setTimeout(() => {
+              fetchRooms(); // Reload danh sách phòng để cập nhật trạng thái
+            }, 300);
           } else {
             message.error(response.message || 'Không thể tạo lịch');
           }
@@ -1146,8 +1149,13 @@ const CreateScheduleForRoom = () => {
         }
       }
       
+      // FIX: Đóng modal trước, sau đó refresh room list
       setShowCreateModal(false);
-      fetchRooms(); // Refresh list
+      
+      // Thêm delay nhỏ để đảm bảo modal đã đóng và state đã reset
+      setTimeout(() => {
+        fetchRooms(); // Refresh list
+      }, 300);
     } catch (error) {
       toast.error('Lỗi khi tạo lịch: ' + error.message);
     } finally {

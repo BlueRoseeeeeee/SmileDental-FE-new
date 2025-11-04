@@ -208,7 +208,7 @@ const BulkRoomScheduleModal = ({
       title: 'Phòng',
       dataIndex: 'roomName',
       key: 'roomName',
-      width: 200,
+      width: 180,
       render: (text, record) => (
         <Space direction="vertical" size={0}>
           <Text strong>{text}</Text>
@@ -248,21 +248,21 @@ const BulkRoomScheduleModal = ({
       title: 'Ngày bắt đầu',
       dataIndex: 'startDate',
       key: 'startDate',
-      width: 130,
+      width: 120,
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       title: 'Ngày kết thúc',
       dataIndex: 'endDate',
       key: 'endDate',
-      width: 130,
+      width: 120,
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       title: 'Ca đã tạo',
       dataIndex: 'generatedShifts',
       key: 'generatedShifts',
-      width: 200,
+      width: 180,
       render: (shifts) => {
         if (!shifts || shifts.length === 0) {
           return <Text type="secondary">Chưa có ca nào</Text>;
@@ -286,7 +286,7 @@ const BulkRoomScheduleModal = ({
       title: 'Ca thiếu',
       dataIndex: 'missingShifts',
       key: 'missingShifts',
-      width: 200,
+      width: 180,
       render: (shifts, record) => {
         if (!shifts || shifts.length === 0) {
           return (
@@ -324,7 +324,7 @@ const BulkRoomScheduleModal = ({
       title: 'Ca tắt',
       dataIndex: 'disabledShifts',
       key: 'disabledShifts',
-      width: 180,
+      width: 160,
       render: (shifts, record) => {
         if (!shifts || shifts.length === 0) {
           return <Text type="secondary">Không có</Text>;
@@ -363,7 +363,7 @@ const BulkRoomScheduleModal = ({
       title: 'Hoạt động',
       dataIndex: 'isActive',
       key: 'isActive',
-      width: 100,
+      width: 90,
       render: (isActive) => {
         if (isActive === false) {
           return <Tag color="error" icon={<CloseCircleOutlined />}>Đã tắt</Tag>;
@@ -398,13 +398,19 @@ const BulkRoomScheduleModal = ({
       }
       open={visible}
       onCancel={onCancel}
-      width={'97%'}
+      width={1500}
       footer={null}
+      centered
       destroyOnClose
-      bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
+      bodyStyle={{ 
+        maxHeight: 'calc(100vh - 100px)', 
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        padding: '20px'
+      }}
     >
       {/* Statistics */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={12} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <div style={{ 
             padding: '12px', 
@@ -462,11 +468,11 @@ const BulkRoomScheduleModal = ({
       <Divider />
 
       {/* Filters */}
-      <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }} size="middle">
+      <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }} size="large">
         {/* Row 1: Room filter + Status filter */}
-        <Row gutter={16}>
+        <Row gutter={[24, 20]}>
           <Col span={12}>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>Lọc theo phòng:</Text>
+            <Text strong style={{ display: 'block', marginBottom: 6, fontSize: '13px' }}>Lọc theo phòng:</Text>
             <Select
               style={{ width: '100%' }}
               placeholder="Chọn phòng..."
@@ -474,6 +480,7 @@ const BulkRoomScheduleModal = ({
               value={filterRoom}
               onChange={setFilterRoom}
               showSearch
+              size="middle"
               filterOption={(input, option) => {
                 const searchText = input.toLowerCase();
                 const room = selectedRooms.find(r => r._id === option.value);
@@ -491,43 +498,47 @@ const BulkRoomScheduleModal = ({
             </Select>
           </Col>
           <Col span={12}>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>Lọc theo trạng thái:</Text>
-            <Radio.Group 
-              value={filterStatus} 
-              onChange={(e) => setFilterStatus(e.target.value)}
-              buttonStyle="solid"
-              style={{ width: '100%' }}
-            >
-              <Radio.Button value="all" style={{ width: '33.33%', textAlign: 'center' }}>
-                Tất cả ({preFilteredSchedules.length})
-              </Radio.Button>
-              <Radio.Button value="complete" style={{ width: '33.33%', textAlign: 'center' }}>
-                Hoàn thành ({preFilteredSchedules.filter(s => s.isComplete && !s.isExpired).length})
-              </Radio.Button>
-              <Radio.Button value="incomplete" style={{ width: '33.33%', textAlign: 'center' }}>
-                Chưa đầy đủ ({preFilteredSchedules.filter(s => !s.isComplete && !s.isExpired).length})
-              </Radio.Button>
-            </Radio.Group>
+            <Text strong style={{ display: 'block', marginBottom: 6, fontSize: '13px' }}>Lọc theo trạng thái:</Text>
+            <div style={{ height: '38px', display: 'flex', alignItems: 'center' }}>
+              <Radio.Group 
+                value={filterStatus} 
+                onChange={(e) => setFilterStatus(e.target.value)}
+                buttonStyle="solid"
+                size="middle"
+                style={{ width: '100%', display: 'flex', height: '100%' }}
+              >
+                <Radio.Button value="all" style={{ flex: 1, textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  Tất cả ({preFilteredSchedules.length})
+                </Radio.Button>
+                <Radio.Button value="complete" style={{ flex: 1, textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  Hoàn thành ({preFilteredSchedules.filter(s => s.isComplete && !s.isExpired).length})
+                </Radio.Button>
+                <Radio.Button value="incomplete" style={{ flex: 1, textAlign: 'center', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  Chưa đầy đủ ({preFilteredSchedules.filter(s => !s.isComplete && !s.isExpired).length})
+                </Radio.Button>
+              </Radio.Group>
+            </div>
           </Col>
         </Row>
 
         {/* Row 2: Month range filter */}
-        <Row gutter={16}>
+        <Row gutter={[24, 20]}>
           <Col span={12}>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6, fontSize: '13px' }}>
               Từ tháng/năm:
-              {availableMonths.length > 0 && minAvailableMonth && (
-                <Text type="secondary" style={{ fontSize: '12px', marginLeft: 8 }}>
-                  (Có lịch từ {minAvailableMonth.format('MM/YYYY')})
-                </Text>
-              )}
             </Text>
+            {availableMonths.length > 0 && minAvailableMonth && (
+              <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginBottom: 4 }}>
+                (Có lịch từ {minAvailableMonth.format('MM/YYYY')})
+              </Text>
+            )}
             <DatePicker
               picker="month"
               format="MM/YYYY"
               style={{ width: '100%' }}
               placeholder="Chọn tháng bắt đầu"
               allowClear
+              size="middle"
               value={filterMonthRange ? filterMonthRange[0] : null}
               disabledDate={disabledStartMonth}
               onChange={(date) => {
@@ -548,20 +559,21 @@ const BulkRoomScheduleModal = ({
             />
           </Col>
           <Col span={12}>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            <Text strong style={{ display: 'block', marginBottom: 6, fontSize: '13px' }}>
               Đến tháng/năm:
-              {availableMonths.length > 0 && maxAvailableMonth && (
-                <Text type="secondary" style={{ fontSize: '12px', marginLeft: 8 }}>
-                  (Có lịch đến {maxAvailableMonth.format('MM/YYYY')})
-                </Text>
-              )}
             </Text>
+            {availableMonths.length > 0 && maxAvailableMonth && (
+              <Text type="secondary" style={{ fontSize: '11px', display: 'block', marginBottom: 4 }}>
+                (Có lịch đến {maxAvailableMonth.format('MM/YYYY')})
+              </Text>
+            )}
             <DatePicker
               picker="month"
               format="MM/YYYY"
               style={{ width: '100%' }}
               placeholder="Chọn tháng kết thúc"
               allowClear
+              size="middle"
               value={filterMonthRange && filterMonthRange[1] ? filterMonthRange[1] : null}
               disabledDate={disabledEndMonth}
               disabled={!filterMonthRange || !filterMonthRange[0]} // Phải chọn start trước
@@ -596,7 +608,6 @@ const BulkRoomScheduleModal = ({
           )
         }}
         scroll={{ 
-          x: 1200,
           y: 'calc(100vh - 550px)'
         }}
       />
