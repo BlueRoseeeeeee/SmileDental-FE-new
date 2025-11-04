@@ -3,6 +3,7 @@
  * @author: HoTram
  */
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Typography, Button, Tag, Avatar, Spin, Carousel } from 'antd';
 import { UserOutlined, StarOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { userService } from '../../services';
@@ -13,6 +14,7 @@ const { Title, Text, Paragraph } = Typography;
 const getDentistId = (dentist) => dentist?.id || dentist?._id;
 
 const DentistsSection = () => {
+  const navigate = useNavigate();
   const [dentists, setDentists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDentist, setSelectedDentist] = useState(null);
@@ -47,9 +49,9 @@ const DentistsSection = () => {
   };
 
   const handleViewDetail = (dentist) => {
-    // Mở tab mới hiển thị thông tin chi tiết nha sĩ
+    // Điều hướng đến trang chi tiết nha sĩ trong trang hiện tại
     const url = `/dentist-detail/${encodeURIComponent(getDentistId(dentist))}`;
-    window.open(url, '_blank');
+    navigate(url);
   };
 
   if (loading && initialLoad) {
