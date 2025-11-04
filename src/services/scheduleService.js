@@ -405,6 +405,36 @@ const scheduleService = {
   },
 
   /**
+   * 🆕 Create override holiday for all rooms - Tạo lịch ngày nghỉ cho toàn bộ phòng (room + subrooms)
+   * @param {string} roomId - Room ID
+   * @param {number} month - Month (1-12)
+   * @param {number} year - Year
+   * @param {string} date - Date (YYYY-MM-DD)
+   * @param {Array<string>} shifts - Shifts ['morning', 'afternoon', 'evening']
+   * @param {string} note - Optional note
+   * @returns {Promise<object>} - Result
+   */
+  createOverrideHolidayForAllRooms: async (roomId, month, year, date, shifts, note) => {
+    try {
+      const response = await scheduleApi.post('/schedule/override-holiday-all-rooms', {
+        roomId,
+        month,
+        year,
+        date,
+        shifts,
+        note
+      });
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error createOverrideHolidayForAllRooms:', error);
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  /**
    * 🆕 Enable shifts and subrooms - Bật các ca/buồng bị tắt
    * @param {object} payload - {scheduleId, shifts: ['morning', 'afternoon'], subRoomIds: [id1, id2]}
    * @returns {Promise<object>} - Result

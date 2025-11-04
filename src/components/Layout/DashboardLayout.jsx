@@ -27,6 +27,7 @@ import {
   FileDoneOutlined,
   BarChartOutlined,
   CloseCircleOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
@@ -116,6 +117,7 @@ const DashboardLayout = () => {
         icon: <TeamOutlined />,
         label: 'Hệ thống & Nhân sự',
         children: [
+          { key: '/dashboard/schedules', label: 'Cấu hình hệ thống', icon: <SettingOutlined /> },
           { key: '/dashboard/users', label: 'Quản lý nhân sự', icon: <UserSwitchOutlined /> },
           { key: '/dashboard/schedules/staff-assignment', label: 'Phân công ca', icon: <CalendarOutlined /> },
           { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },

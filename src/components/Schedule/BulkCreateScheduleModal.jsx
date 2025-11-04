@@ -34,7 +34,6 @@ import {
 import dayjs from 'dayjs';
 import { toast } from '../../services/toastService';
 import scheduleService from '../../services/scheduleService';
-import scheduleConfigService from '../../services/scheduleConfigService'; // 🆕 Import config service
 
 const { Title, Text } = Typography;
 
@@ -61,7 +60,6 @@ const BulkCreateScheduleModal = ({
   const [creating, setCreating] = useState(false);
   const [bulkInfo, setBulkInfo] = useState(null); // Data from getBulkRoomSchedulesInfo
   const [loadingBulkInfo, setLoadingBulkInfo] = useState(false);
-  const [configShifts, setConfigShifts] = useState(null); // 🆕 Config shifts with isActive status
 
   // Form values
   const [dateRange, setDateRange] = useState(null); // [startMonth, endMonth]
@@ -72,24 +70,6 @@ const BulkCreateScheduleModal = ({
 
   // Progress tracking
   const [progress, setProgress] = useState(null); // { current, total, results: [] }
-
-  // 🆕 Fetch schedule config to check shift isActive status
-  useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const response = await scheduleConfigService.getConfig();
-        if (response.success && response.data) {
-          setConfigShifts(response.data.workShifts);
-        }
-      } catch (error) {
-        console.error('Error fetching config:', error);
-      }
-    };
-    
-    if (visible) {
-      fetchConfig();
-    }
-  }, [visible]);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -341,37 +321,20 @@ const BulkCreateScheduleModal = ({
   }, [bulkInfo, fromMonth, disabledDate, availableMonths]);
 
   // 🆕 Check if shift is active in config
-  const isShiftActive = useCallback((shiftKey) => {
-    if (!configShifts) return true; // If config not loaded yet, assume active
-    
-    const shift = configShifts.find(s => {
-      // Map shift names to keys
-      if (shiftKey === 'morning') return s.name === 'Ca Sáng' || s.shiftKey === 'morning';
-      if (shiftKey === 'afternoon') return s.name === 'Ca Chiều' || s.shiftKey === 'afternoon';
-      if (shiftKey === 'evening') return s.name === 'Ca Tối' || s.shiftKey === 'evening';
-      return false;
-    });
-    
-    return shift ? shift.isActive !== false : true;
-  }, [configShifts]);
-
-  // Available shifts (not disabled) - combines both bulk info and config isActive
+  // 🔧 FIX: Backend đã check schedule.shiftConfig[shift].isActive rồi
+  // Không cần check config global nữa
   const availableShifts = useMemo(() => {
     if (!bulkInfo || !bulkInfo.availableShifts) {
       return { 
-        morning: isShiftActive('morning'), 
-        afternoon: isShiftActive('afternoon'), 
-        evening: isShiftActive('evening') 
+        morning: false, 
+        afternoon: false, 
+        evening: false 
       };
     }
     
-    // Combine: shift available in bulk info AND active in config
-    return {
-      morning: bulkInfo.availableShifts.morning && isShiftActive('morning'),
-      afternoon: bulkInfo.availableShifts.afternoon && isShiftActive('afternoon'),
-      evening: bulkInfo.availableShifts.evening && isShiftActive('evening')
-    };
-  }, [bulkInfo, isShiftActive]);
+    // Backend đã check tất cả schedules và filter theo isActive
+    return bulkInfo.availableShifts;
+  }, [bulkInfo]);
 
   // Handle form submit
   const handleSubmit = async () => {
@@ -764,8 +727,11 @@ const BulkCreateScheduleModal = ({
                       {SHIFT_NAMES.morning}
                     </Text>
                     {!availableShifts.morning && (
-                      <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
-                        {!isShiftActive('morning') ? '(Đã tắt)' : '(Đã đầy)'}
+                      <Text 
+                        type={bulkInfo?.shiftUnavailableReasons?.morning === 'disabled' ? 'warning' : 'secondary'} 
+                        style={{ fontSize: '12px', marginLeft: 4 }}
+                      >
+                        {bulkInfo?.shiftUnavailableReasons?.morning === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
                       </Text>
                     )}
                   </Checkbox>
@@ -779,8 +745,11 @@ const BulkCreateScheduleModal = ({
                       {SHIFT_NAMES.afternoon}
                     </Text>
                     {!availableShifts.afternoon && (
-                      <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
-                        {!isShiftActive('afternoon') ? '(Đã tắt)' : '(Đã đầy)'}
+                      <Text 
+                        type={bulkInfo?.shiftUnavailableReasons?.afternoon === 'disabled' ? 'warning' : 'secondary'} 
+                        style={{ fontSize: '12px', marginLeft: 4 }}
+                      >
+                        {bulkInfo?.shiftUnavailableReasons?.afternoon === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
                       </Text>
                     )}
                   </Checkbox>
@@ -794,8 +763,11 @@ const BulkCreateScheduleModal = ({
                       {SHIFT_NAMES.evening}
                     </Text>
                     {!availableShifts.evening && (
-                      <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
-                        {!isShiftActive('evening') ? '(Đã tắt)' : '(Đã đầy)'}
+                      <Text 
+                        type={bulkInfo?.shiftUnavailableReasons?.evening === 'disabled' ? 'warning' : 'secondary'} 
+                        style={{ fontSize: '12px', marginLeft: 4 }}
+                      >
+                        {bulkInfo?.shiftUnavailableReasons?.evening === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
                       </Text>
                     )}
                   </Checkbox>
@@ -808,9 +780,14 @@ const BulkCreateScheduleModal = ({
           <Alert
             message={
               <ul style={{ margin: 0, paddingLeft: 20, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                <li>Tháng bị vô hiệu hóa nếu <strong>TẤT CẢ</strong> các phòng đã có lịch tháng đó</li>
-                <li>Ca bị vô hiệu hóa nếu <strong>TẤT CẢ</strong> các phòng đã có ca đó trong khoảng thời gian</li>
-                <li>Chỉ cần <strong>1 phòng</strong> chưa có là vẫn có thể chọn tạo lịch</li>
+                <li><strong>Tháng:</strong> Vô hiệu hóa nếu tất cả các phòng đã có lịch tháng đó</li>
+                <li><strong>Ca:</strong> Vô hiệu hóa nếu:
+                  <ul style={{ marginTop: 4 }}>
+                    <li>Tất cả các phòng đã có ca đó, HOẶC</li>
+                    <li>Cấu hình hệ thống/lịch đã tắt ca đó</li>
+                  </ul>
+                </li>
+                <li>Chỉ cần <strong>1 phòng</strong> chưa có ca và ca đang bật là vẫn có thể chọn</li>
               </ul>
             }
             type="info"

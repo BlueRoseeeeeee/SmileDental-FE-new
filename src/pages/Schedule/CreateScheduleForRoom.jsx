@@ -43,8 +43,8 @@ import dayjs from 'dayjs';
 import { debounce } from '../../utils/searchUtils';
 import EditScheduleModal from '../../components/Schedule/EditScheduleModal';
 import BulkRoomScheduleModal from '../../components/Schedule/BulkRoomScheduleModal';
+import BulkOverrideHolidayModal from '../../components/Schedule/BulkOverrideHolidayModal';
 import BulkCreateScheduleModal from '../../components/Schedule/BulkCreateScheduleModal';
-import OverrideHolidayModal from '../../components/Schedule/OverrideHolidayModal';
 import EnableShiftsSubRoomsModal from '../../components/Schedule/EnableShiftsSubRoomsModal';
 import './CreateScheduleForRoom.css'; // Import CSS file
 
@@ -177,7 +177,6 @@ const CreateScheduleForRoom = () => {
   const [creatingSchedule, setCreatingSchedule] = useState(false);
   const [holidayPreview, setHolidayPreview] = useState(null); // 🆕 Holiday preview data
   const [loadingHolidayPreview, setLoadingHolidayPreview] = useState(false); // 🆕
-  const [showOverrideModal, setShowOverrideModal] = useState(false); // 🆕 Override holiday modal
 
   // 🆕 Enable Shifts/SubRooms Modal
   const [showEnableModal, setShowEnableModal] = useState(false);
@@ -198,6 +197,7 @@ const CreateScheduleForRoom = () => {
   const [selectedRoomsMap, setSelectedRoomsMap] = useState({}); // 🆕 Map { roomId: roomObject } để giữ thông tin phòng khi chuyển trang
   const [showBulkScheduleModal, setShowBulkScheduleModal] = useState(false);
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
+  const [showBulkOverrideHolidayModal, setShowBulkOverrideHolidayModal] = useState(false); // 🆕 Modal tạo lịch ngày nghỉ hàng loạt
   const [bulkSchedulesData, setBulkSchedulesData] = useState({}); // { roomId: scheduleData }
   const [bulkSelectionMode, setBulkSelectionMode] = useState(false); // 🆕 Bật/tắt chế độ chọn nhiều
   const [isViewingAllRooms, setIsViewingAllRooms] = useState(false); // 🆕 Flag để phân biệt xem tất cả vs xem các phòng đã chọn
@@ -1709,26 +1709,6 @@ const CreateScheduleForRoom = () => {
               </div>
             </Space>
           </Col>
-          <Col>
-            <Button
-              className="create-schedule-for-holiday-btn"
-              icon={<WarningOutlined  style={{fontSize: '20px'}}/>}
-              onClick={() => setShowOverrideModal(true)}
-              size="large"
-              style={{
-                background: 'linear-gradient(135deg, #f59e0b 0%, rgb(209, 128, 36) 100%)',
-                color: '#fff',
-                border: 'none',
-                fontWeight: 600,
-                height: 100,
-                borderRadius: 12,
-                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.4)',
-                textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)', 
-              }}
-            >
-              Thiết lập lịch làm việc vào ngày nghỉ
-            </Button>
-          </Col>
         </Row>
 
 
@@ -2004,25 +1984,45 @@ const CreateScheduleForRoom = () => {
                       </Button>
                     </Space>
                     
-                    {/* Right side - Create button */}
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={() => {
-                        setShowBulkCreateModal(true);
-                      }}
-                      size="large"
-                      style={{ 
-                        borderRadius: 8,
-                        fontWeight: 600,
-                        height: 42,
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        border: 'none',
-                        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
-                      }}
-                    >
-                      Tạo lịch cho tất cả
-                    </Button>
+                    {/* Right side - Create buttons */}
+                    <Space wrap>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => {
+                          setShowBulkCreateModal(true);
+                        }}
+                        size="large"
+                        style={{ 
+                          borderRadius: 8,
+                          fontWeight: 600,
+                          height: 42,
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          border: 'none',
+                          boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+                        }}
+                      >
+                        Tạo lịch tất cả
+                      </Button>
+                      
+                      <Button
+                        type="default"
+                        icon={<CalendarOutlined />}
+                        onClick={() => {
+                          setShowBulkOverrideHolidayModal(true);
+                        }}
+                        size="large"
+                        style={{ 
+                          borderRadius: 8,
+                          fontWeight: 600,
+                          height: 42,
+                          borderColor: '#ff7875',
+                          color: '#ff7875'
+                        }}
+                      >
+                        Tạo lịch ngày nghỉ
+                      </Button>
+                    </Space>
                   </Space>
                 </Card>
               )}
@@ -4136,23 +4136,25 @@ const CreateScheduleForRoom = () => {
         onSuccess={handleBulkCreateSuccess}
       />
 
-      {/* 🆕 Override Holiday Modal - Create schedule in holiday */}
-      <OverrideHolidayModal
-        visible={showOverrideModal}
-        onClose={() => setShowOverrideModal(false)}
-        onSuccess={() => {
-          loadRooms(); // Refresh danh sách phòng
-          toast.success('Đã tạo lịch override thành công!');
-        }}
-        rooms={rooms}
-      />
-
       {/* 🆕 Enable Shifts SubRooms Modal - Enable disabled shifts/subrooms */}
       <EnableShiftsSubRoomsModal
         visible={showEnableModal}
         onClose={() => setShowEnableModal(false)}
         onSuccess={handleEnableSuccess}
         groupData={enableModalData}
+      />
+
+      {/* 🆕 Bulk Override Holiday Modal - Create override holiday schedules for multiple rooms */}
+      <BulkOverrideHolidayModal
+        visible={showBulkOverrideHolidayModal}
+        onCancel={() => setShowBulkOverrideHolidayModal(false)}
+        onSuccess={(results) => {
+          // Refresh rooms sau khi tạo thành công
+          fetchRooms();
+          setShowBulkOverrideHolidayModal(false);
+        }}
+        selectedRooms={selectedRoomIds.map(id => selectedRoomsMap[id]).filter(Boolean)}
+        selectedRoomIds={selectedRoomIds}
       />
     </div>
   );
