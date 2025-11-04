@@ -2133,6 +2133,7 @@ const CreateScheduleForRoom = () => {
             <span>Danh sách lịch đã tạo - {selectedRoom?.name}</span>
           </Space>
         }
+        centered
         open={showScheduleListModal}
         onCancel={handleCancelModal}
         footer={[
@@ -2149,7 +2150,7 @@ const CreateScheduleForRoom = () => {
           </Button>
         ]}
         width={800}
-        bodyStyle={{ maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}
+        bodyStyle={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}
             >
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -2165,7 +2166,7 @@ const CreateScheduleForRoom = () => {
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
                 <div>
                   <Text strong>Tổng số lịch: </Text>
-                  <Tag color="blue">{scheduleListData.summary.totalSchedules}</Tag>
+                  <Text color="blue" style={{ fontSize: '14px' }}>{scheduleListData.summary.totalSchedules}</Text>
                 </div>
                 {scheduleListData.summary.lastCreatedDate && (
                   <div>
@@ -2218,13 +2219,13 @@ const CreateScheduleForRoom = () => {
                     <Radio.Button value="inactive">Đã tắt</Radio.Button>
                   </Radio.Group>
                 </div>
-                <div>
+                <div style={{display: 'flex', alignItems: 'center'}}>
                   <Text strong style={{ marginRight: 12 }}>Tìm theo tháng/năm:</Text>
                   <Select
                     value={scheduleListSearchMonth}
                     onChange={(value) => setScheduleListSearchMonth(value)}
                     placeholder="Chọn tháng/năm để tìm lịch"
-                    style={{ width: 200 }}
+                    style={{ width: 250 }}
                     allowClear
                     showSearch
                     filterOption={(input, option) =>
