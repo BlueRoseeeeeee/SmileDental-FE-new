@@ -2126,8 +2126,8 @@ const CreateScheduleForRoom = () => {
           background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
           borderBottom: '2px solid #dee2e6'
         }}>
-          <Space align="center">
-          <EnvironmentOutlined style={{fontSize:16, color:'#1890ff'}} />
+          <Space align="center" style={{marginLeft: '-10px'}}>
+           <EnvironmentOutlined style={{fontSize:16, color:'#1890ff'}} />
             <Text strong style={{ fontSize: 16 }}>
               Danh sách phòng khám
             </Text>

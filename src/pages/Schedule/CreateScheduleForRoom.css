@@ -14,7 +14,7 @@
 .ant-input:focus,
 .ant-input-focused,
 .ant-select-focused .ant-select-selector {
-  border-color: #667eea !important;
+  border-color: #1890ff !important;
 }
 
 
@@ -26,16 +26,18 @@
 
 
 .ant-radio-button-wrapper:hover {
-  color: #667eea;
+  color: rgb(52, 169, 214);
 }
 
 .ant-radio-button-wrapper-checked {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  border-color: #667eea !important;
+  background: rgb(52, 169, 214) !important;
+  border-color: rgb(52, 169, 214) !important;
+  color: white !important;
 }
 
 .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled):hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+  background: rgb(52, 169, 214) !important;
+  border-color: rgb(52, 169, 214) !important;
 }
 
 
@@ -74,7 +76,7 @@
 
 /* Gradient text effect */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

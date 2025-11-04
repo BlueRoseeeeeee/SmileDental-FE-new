@@ -29,6 +29,7 @@ import {
   CloseCircleOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 import logo from '../../assets/image/smile-dental-logo.png';
 import './DashboardLayout.css';
 
@@ -290,7 +291,7 @@ const DashboardLayout = () => {
       >
         <div style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
           <img src={logo} alt="Smile Dental" style={{ width: '100%', height: '100%' }} />
-          <Text strong>SmileCare Dental</Text>
+          <h2 style={{ color: COLOR_BRAND_NAME, fontSize: '18px', fontWeight: '600', marginTop: '8px' }}>SmileCare Dental</h2>
         </div>
         <Menu
           mode="inline"
@@ -337,7 +338,8 @@ const DashboardLayout = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '100%'
+              width: '100%',
+              gap: '8px'
             }}>
               <img 
                 src={logo} 
@@ -345,26 +347,21 @@ const DashboardLayout = () => {
                 style={{
                   width: '32px',
                   height: '32px',
-                  marginRight: '8px',
                   filter: 'drop-shadow(0 2px 4px rgba(37, 150, 190, 0.2))'
                 }}
               />
-              <Text 
-                strong 
+              <h2 
                 style={{
                   fontSize: '18px',
-                  color: '#2596be',
+                  color: COLOR_BRAND_NAME,
                   letterSpacing: '0.5px',
                   fontWeight: '600',
-                  textAlign: 'center',
-                  background: 'linear-gradient(45deg, #2596be, #40a9ff)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  margin: 0,
+                  lineHeight: '1'
                 }}
               >
                 SmileCare Dental
-              </Text>
+              </h2>
             </div>
           )}
           {collapsed && (
