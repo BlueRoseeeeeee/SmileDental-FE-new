@@ -211,6 +211,29 @@ const Login = () => {
       
       toast.success('Đổi mật khẩu thành công!');
       
+      // ✅ Check if role selection is required (multi-role user)
+      if (result.pendingData?.requiresRoleSelection) {
+        console.log('🔄 [Login] Role selection required:', result.pendingData);
+        
+        // Close password change modal
+        setShowPasswordChangeModal(false);
+        passwordChangeForm.resetFields();
+        
+        // Update tempLoginData with new tempToken and roles
+        setTempLoginData({
+          ...tempLoginData,
+          tempToken: result.pendingData.tempToken,
+          roles: result.pendingData.roles,
+          userId: result.pendingData.userId,
+          user: result.pendingData.user
+        });
+        
+        // Show role selection modal
+        setShowRoleSelectionModal(true);
+        return;
+      }
+      
+      // ✅ Single role user - complete login
       // Update AuthContext with logged-in user
       completeLogin(result.user);
       

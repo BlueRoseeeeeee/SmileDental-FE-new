@@ -989,11 +989,33 @@ const EditService = () => {
                   title: 'Trạng thái',
                   dataIndex: 'isActive',
                   key: 'isActive',
-                  render: (isActive) => (
-                    <Tag color={isActive ? 'green' : 'red'}>
-                      {isActive ? 'Đang áp dụng' : 'Tạm ngưng'}
-                    </Tag>
-                  )
+                  render: (isActive, record) => {
+                    const now = dayjs();
+                    const startDate = dayjs(record.startDate);
+                    const endDate = dayjs(record.endDate);
+                    
+                    // Case 4: Toggle OFF → Đã tắt
+                    if (!isActive) {
+                      return <Tag color="default">Đã tắt</Tag>;
+                    }
+                    
+                    // Case 1: Ngày hiện tại < Ngày áp dụng && Toggle ON → Chờ áp dụng
+                    if (now.isBefore(startDate, 'day')) {
+                      return <Tag color="blue">Chờ áp dụng</Tag>;
+                    }
+                    
+                    // Case 2: Ngày hiện tại thuộc [startDate, endDate] && Toggle ON → Đang áp dụng
+                    if (now.isSameOrAfter(startDate, 'day') && now.isSameOrBefore(endDate, 'day')) {
+                      return <Tag color="green">Đang áp dụng</Tag>;
+                    }
+                    
+                    // Case 3: Ngày hiện tại > Ngày kết thúc && Toggle ON → Đã áp dụng
+                    if (now.isAfter(endDate, 'day')) {
+                      return <Tag color="orange">Đã áp dụng</Tag>;
+                    }
+                    
+                    return <Tag color="default">-</Tag>;
+                  }
                 },
                 {
                   title: 'Ghi chú',
@@ -1005,36 +1027,51 @@ const EditService = () => {
                   title: 'Thao tác',
                   key: 'actions',
                   width: 150,
-                  render: (_, record) => (
-                    <Space>
-                      <Button
-                        type="text"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEditPriceSchedule(record)}
-                        size="small"
-                      />
-                      <Switch
-                        size="small"
-                        checked={record.isActive}
-                        onChange={() => handleTogglePriceSchedule(record)}
-                      />
-                      <Popconfirm
-                        title="Xác nhận xóa lịch giá?"
-                        description="Hành động này không thể hoàn tác!"
-                        onConfirm={() => handleDeletePriceSchedule(record)}
-                        okText="Xóa"
-                        cancelText="Hủy"
-                        okType="danger"
-                      >
+                  render: (_, record) => {
+                    const now = dayjs();
+                    const endDate = dayjs(record.endDate);
+                    
+                    // ✅ Disable toggle nếu lịch giá đã kết thúc (quá khứ)
+                    const isPastSchedule = now.isAfter(endDate, 'day');
+                    
+                    return (
+                      <Space>
                         <Button
                           type="text"
-                          danger
-                          icon={<DeleteOutlined />}
+                          icon={<EditOutlined />}
+                          onClick={() => handleEditPriceSchedule(record)}
                           size="small"
+                          disabled={isPastSchedule}
+                          title={isPastSchedule ? 'Không thể chỉnh sửa lịch giá đã kết thúc' : 'Chỉnh sửa'}
                         />
-                      </Popconfirm>
-                    </Space>
-                  )
+                        <Switch
+                          size="small"
+                          checked={record.isActive}
+                          onChange={() => handleTogglePriceSchedule(record)}
+                          disabled={isPastSchedule}
+                          title={isPastSchedule ? 'Không thể thay đổi trạng thái lịch giá đã kết thúc' : ''}
+                        />
+                        <Popconfirm
+                          title="Xác nhận xóa lịch giá?"
+                          description="Hành động này không thể hoàn tác!"
+                          onConfirm={() => handleDeletePriceSchedule(record)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okType="danger"
+                          disabled={isPastSchedule}
+                        >
+                          <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            size="small"
+                            disabled={isPastSchedule}
+                            title={isPastSchedule ? 'Không thể xóa lịch giá đã kết thúc' : 'Xóa'}
+                          />
+                        </Popconfirm>
+                      </Space>
+                    );
+                  }
                 }
               ]}
             />
