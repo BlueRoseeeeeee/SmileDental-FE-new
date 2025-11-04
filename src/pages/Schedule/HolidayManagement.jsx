@@ -55,8 +55,6 @@ const HolidayManagement = () => {
   const [isRecurring, setIsRecurring] = useState(false);
   const [form] = Form.useForm();
   
-  const [blockedMonths, setBlockedMonths] = useState([]);
-  const [existingHolidays, setExistingHolidays] = useState([]);
   const [selectedStartDate, setSelectedStartDate] = useState(null);
   
   const [searchInput, setSearchInput] = useState('');
@@ -66,144 +64,26 @@ const HolidayManagement = () => {
   const [filterUsed, setFilterUsed] = useState('all');
   const [filterDateRange, setFilterDateRange] = useState(null);
 
-  const getNonRecurringHolidays = () => {
-    return holidays.filter(h => !h.isRecurring && h._id !== editingHoliday?._id);
-  };
-
-  const getFirstValidDate = () => {
-    const tomorrow = dayjs().add(1, 'day').startOf('day');
-    let checkDate = tomorrow;
-    const maxCheck = 365;
-    
-    for (let i = 0; i < maxCheck; i++) {
-      if (!disabledStartDate(checkDate)) {
-        return checkDate;
-      }
-      checkDate = checkDate.add(1, 'day');
-    }
-    
-    return tomorrow;
-  };
-
-  const loadBlockedRanges = async () => {
-    try {
-      const response = await scheduleConfigService.getBlockedDateRanges();
-      
-      if (response && response.success && response.data) {
-        setBlockedMonths(response.data.blockedMonths || []);
-        setExistingHolidays(response.data.existingHolidays || []);
-      } else {
-        setBlockedMonths([]);
-        setExistingHolidays([]);
-      }
-    } catch (error) {
-      setBlockedMonths([]);
-      setExistingHolidays([]);
-    }
-  };
-
+  // ✅ Đơn giản: chỉ cho chọn ngày > ngày hiện tại
   const disabledStartDate = (current) => {
     if (!current) return false;
-    
-    try {
-      const currentDate = current.startOf('day');
-      const today = dayjs().startOf('day');
-      
-      if (currentDate.isSameOrBefore(today)) {
-        return true;
-      }
-      
-      if (blockedMonths && blockedMonths.length > 0) {
-        const isInBlockedMonth = blockedMonths.some(blocked => {
-          if (!blocked || !blocked.startDate || !blocked.endDate) return false;
-          const blockStart = dayjs(blocked.startDate).startOf('day');
-          const blockEnd = dayjs(blocked.endDate).startOf('day');
-          return currentDate.isSameOrAfter(blockStart) && currentDate.isSameOrBefore(blockEnd);
-        });
-        
-        if (isInBlockedMonth) {
-          return true;
-        }
-      }
-      
-      if (existingHolidays && existingHolidays.length > 0) {
-        const filteredHolidays = existingHolidays.filter(h => 
-          !editingHoliday || h.id !== editingHoliday._id
-        );
-        
-        const isInExistingHoliday = filteredHolidays.some(holiday => {
-          if (!holiday || !holiday.startDate || !holiday.endDate) return false;
-          const start = dayjs(holiday.startDate).startOf('day');
-          const end = dayjs(holiday.endDate).startOf('day');
-          return currentDate.isSameOrAfter(start) && currentDate.isSameOrBefore(end);
-        });
-        
-        if (isInExistingHoliday) {
-          return true;
-        }
-      }
-      
-      return false;
-    } catch (error) {
-      return false;
-    }
+    const today = dayjs().startOf('day');
+    return current.isSameOrBefore(today, 'day');
   };
 
+  // ✅ Đơn giản: ngày kết thúc phải >= ngày bắt đầu và > ngày hiện tại
   const disabledEndDate = (current) => {
     if (!current) return false;
+    const today = dayjs().startOf('day');
     
-    try {
-      const currentDate = current.startOf('day');
-      const today = dayjs().startOf('day');
-      
-      if (!selectedStartDate) {
-        return true;
-      }
-      
-      const startDate = dayjs(selectedStartDate).startOf('day');
-      
-      if (currentDate.isBefore(startDate)) {
-        return true;
-      }
-      
-      if (currentDate.isSameOrBefore(today)) {
-        return true;
-      }
-      
-      if (existingHolidays && existingHolidays.length > 0) {
-        const filteredHolidays = existingHolidays.filter(h => 
-          h && h.startDate && (!editingHoliday || h.id !== editingHoliday._id)
-        );
-        
-        const nextHoliday = filteredHolidays
-          .filter(h => dayjs(h.startDate).isAfter(startDate))
-          .sort((a, b) => dayjs(a.startDate) - dayjs(b.startDate))[0];
-        
-        if (nextHoliday && nextHoliday.startDate) {
-          const nextStart = dayjs(nextHoliday.startDate).startOf('day');
-          if (currentDate.isSameOrAfter(nextStart)) {
-            return true;
-          }
-        }
-      }
-      
-      if (blockedMonths && blockedMonths.length > 0) {
-        const isInBlockedMonth = blockedMonths.some(blocked => {
-          if (!blocked || !blocked.startDate || !blocked.endDate) return false;
-          const blockStart = dayjs(blocked.startDate).startOf('day');
-          const blockEnd = dayjs(blocked.endDate).startOf('day');
-          return currentDate.isSameOrAfter(blockStart) && currentDate.isSameOrBefore(blockEnd);
-        });
-        
-        if (isInBlockedMonth) {
-          return true;
-        }
-      }
-      
-      return false;
-    } catch (error) {
-      return false;
-    }
+    // Phải chọn ngày bắt đầu trước
+    if (!selectedStartDate) return true;
+    
+    // Ngày kết thúc phải >= ngày bắt đầu
+    if (current.isBefore(selectedStartDate, 'day')) return true;
+    
+    // Ngày kết thúc phải > ngày hiện tại
+    return current.isSameOrBefore(today, 'day');
   };
 
   const loadHolidays = async () => {
@@ -275,7 +155,17 @@ const HolidayManagement = () => {
       });
     }
     
-    if (activeTab === 'range') {
+    // ✅ Sort theo tab
+    if (activeTab === 'recurring') {
+      // Ngày nghỉ cố định: Sort theo dayOfWeek, Chủ nhật (1) xuống cuối
+      filtered = filtered.sort((a, b) => {
+        // Map: Chủ nhật (1) -> 7, Thứ 2 (2) -> 1, ..., Thứ 7 (7) -> 6
+        const orderA = a.dayOfWeek === 1 ? 7 : a.dayOfWeek - 1;
+        const orderB = b.dayOfWeek === 1 ? 7 : b.dayOfWeek - 1;
+        return orderA - orderB;
+      });
+    } else if (activeTab === 'range') {
+      // Ngày nghỉ lễ: Sort theo startDate (mới nhất lên đầu)
       filtered = filtered.sort((a, b) => {
         if (!a.startDate || !b.startDate) return 0;
         return dayjs(b.startDate) - dayjs(a.startDate);
@@ -296,7 +186,6 @@ const HolidayManagement = () => {
     setSelectedStartDate(null);
     form.resetFields();
     form.setFieldsValue({ isRecurring: false });
-    await loadBlockedRanges();
     setModalVisible(true);
   };
 
@@ -322,7 +211,6 @@ const HolidayManagement = () => {
     }
     
     form.setFieldsValue(formData);
-    await loadBlockedRanges();
     setModalVisible(true);
   };
 
@@ -391,7 +279,8 @@ const HolidayManagement = () => {
     }
   };
 
-  const columns = [
+  // ✅ Columns base - luôn hiển thị
+  const baseColumns = [
     {
       title: 'STT',
       dataIndex: 'index',
@@ -418,51 +307,36 @@ const HolidayManagement = () => {
         </div>
       ),
     },
+  ];
+
+  // ✅ Columns cho ngày nghỉ lễ (không cố định) - có ngày bắt đầu/kết thúc
+  const dateRangeColumns = [
     {
       title: 'Ngày bắt đầu',
       dataIndex: 'startDate',
       key: 'startDate',
-      render: (date, record) => {
-        if (record.isRecurring) {
-          return <Text type="secondary">-</Text>;
-        }
-        return (
-          <Space>
-            <CalendarOutlined />
-            <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
-          </Space>
-        );
-      },
+      render: (date, record) => (
+        <Space>
+          <CalendarOutlined />
+          <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
+        </Space>
+      ),
     },
     {
       title: 'Ngày kết thúc',
       dataIndex: 'endDate',
       key: 'endDate',
-      render: (date, record) => {
-        if (record.isRecurring) {
-          return <Text type="secondary">-</Text>;
-        }
-        return (
-          <Space>
-            <CalendarOutlined />
-            <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
-          </Space>
-        );
-      },
+      render: (date, record) => (
+        <Space>
+          <CalendarOutlined />
+          <Text>{dayjs(date).format('DD/MM/YYYY')}</Text>
+        </Space>
+      ),
     },
     {
       title: 'Số ngày nghỉ',
       key: 'duration',
       render: (_, record) => {
-        if (record.isRecurring) {
-          const dayNames = ['', 'Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-          return (
-            <Space>
-              <ClockCircleOutlined />
-              <Text>{dayNames[record.dayOfWeek] || 'N/A'}</Text>
-            </Space>
-          );
-        }
         const start = dayjs(record.startDate);
         const end = dayjs(record.endDate);
         const duration = end.diff(start, 'day') + 1;
@@ -474,51 +348,116 @@ const HolidayManagement = () => {
         );
       },
     },
+  ];
+
+  // ✅ Columns cho ngày nghỉ cố định - chỉ hiển thị thứ trong tuần
+  const recurringColumns = [
     {
-      title: 'Trạng thái',
-      key: 'status',
+      title: 'Thứ trong tuần',
+      key: 'dayOfWeek',
       render: (_, record) => {
-        if (!record.isRecurring) {
-          return record.hasBeenUsed ? (
-            <Tag color="success">Đã sử dụng</Tag>
-          ) : (
-            <Tag color="default">Chưa sử dụng</Tag>
-          );
-        }
-        return record.isActive ? (
-          <Tag color="green">Đang bật</Tag>
-        ) : (
-          <Tag color="red">Đã tắt</Tag>
+        const dayNames = ['', 'Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+        return (
+          <Space>
+            <ClockCircleOutlined />
+            <Text>{dayNames[record.dayOfWeek] || 'N/A'}</Text>
+          </Space>
         );
       },
     },
-    {
-      title: 'Thao tác',
-      key: 'actions',
+  ];
+
+  // ✅ Status column - luôn hiển thị
+  const statusColumn = {
+    title: 'Trạng thái',
+    key: 'status',
       render: (_, record) => {
-        const canDelete = !record.isRecurring && record.hasBeenUsed !== true;
-        const canEdit = !record.isRecurring && record.hasBeenUsed !== true;
+        // ✅ For recurring holidays (fixed weekly holidays)
+        if (record.isRecurring) {
+          return record.isActive ? (
+            <Tag color="green">Đang bật</Tag>
+          ) : (
+            <Tag color="red">Đã tắt</Tag>
+          );
+        }
+        
+        // ✅ For non-recurring holidays (date range holidays)
+        const now = dayjs();
+        const startDate = dayjs(record.startDate);
+        const endDate = dayjs(record.endDate);
+        
+        // Case 4: Toggle OFF → Đã tắt
+        if (record.isActive === false) {
+          return <Tag color="default">Đã tắt</Tag>;
+        }
+        
+        // Case 1: Ngày hiện tại < Ngày bắt đầu && Toggle ON → Chưa diễn ra
+        if (now.isBefore(startDate, 'day')) {
+          return <Tag color="blue">Chưa diễn ra</Tag>;
+        }
+        
+        // Case 2: Ngày hiện tại thuộc [startDate, endDate] && Toggle ON → Đang diễn ra
+        if (now.isSameOrAfter(startDate, 'day') && now.isSameOrBefore(endDate, 'day')) {
+          return <Tag color="green">Đang diễn ra</Tag>;
+        }
+        
+        // Case 3: Ngày hiện tại > Ngày kết thúc && Toggle ON → Đã kết thúc
+        if (now.isAfter(endDate, 'day')) {
+          return <Tag color="orange">Đã kết thúc</Tag>;
+        }
+        
+        return <Tag color="default">-</Tag>;
+      },
+  };
+
+  // ✅ Actions column - luôn hiển thị
+  const actionsColumn = {
+    title: 'Thao tác',
+    key: 'actions',
+      render: (_, record) => {
+        // ✅ For non-recurring holidays, check if it's past end date
+        const isPastHoliday = !record.isRecurring && dayjs().isAfter(dayjs(record.endDate), 'day');
+        
+        // ✅ Can delete only if: not recurring, not used, and not past
+        const canDelete = !record.isRecurring && record.hasBeenUsed !== true && !isPastHoliday;
+        // ✅ Can edit only if: not recurring, not used, and not past
+        const canEdit = !record.isRecurring && record.hasBeenUsed !== true && !isPastHoliday;
+        
         const deleteTooltip = record.isRecurring 
           ? 'Không thể xóa ngày nghỉ cố định'
+          : isPastHoliday
+            ? 'Không thể xóa ngày nghỉ đã kết thúc'
+            : record.hasBeenUsed === true
+              ? 'Không thể xóa ngày nghỉ đã được sử dụng'
+              : 'Xóa ngày nghỉ';
+        
+        const editTooltip = isPastHoliday
+          ? 'Không thể sửa ngày nghỉ đã kết thúc'
           : record.hasBeenUsed === true
-            ? 'Không thể xóa ngày nghỉ đã được sử dụng'
-            : 'Xóa ngày nghỉ';
-        const editTooltip = record.hasBeenUsed === true
-          ? 'Không thể sửa ngày nghỉ đã được sử dụng'
-          : 'Sửa ngày nghỉ';
+            ? 'Không thể sửa ngày nghỉ đã được sử dụng'
+            : 'Sửa ngày nghỉ';
+        
+        const toggleTooltip = isPastHoliday
+          ? 'Không thể thay đổi trạng thái ngày nghỉ đã kết thúc'
+          : record.isActive 
+            ? 'Tắt ngày nghỉ này' 
+            : 'Bật ngày nghỉ này';
         
         return (
           <Space>
-            {record.isRecurring ? (
-              <Tooltip title={record.isActive ? 'Tắt ngày nghỉ này' : 'Bật ngày nghỉ này'}>
-                <Switch
-                  checked={record.isActive}
-                  onChange={(checked) => handleToggleActive(record._id, checked)}
-                  checkedChildren="Bật"
-                  unCheckedChildren="Tắt"
-                />
-              </Tooltip>
-            ) : (
+            {/* Toggle switch for both recurring and non-recurring holidays */}
+            <Tooltip title={toggleTooltip}>
+              <Switch
+                checked={record.isActive}
+                onChange={(checked) => handleToggleActive(record._id, checked)}
+                checkedChildren="Bật"
+                unCheckedChildren="Tắt"
+                disabled={isPastHoliday}
+              />
+            </Tooltip>
+            
+            {/* Edit button only for non-recurring holidays */}
+            {!record.isRecurring && (
               canEdit ? (
                 <Tooltip title={editTooltip}>
                   <Button 
@@ -570,18 +509,21 @@ const HolidayManagement = () => {
           </Space>
         );
       },
-    },
-  ];
+  };
+
+  // ✅ Build columns dynamically based on activeTab
+  const columns = React.useMemo(() => {
+    if (activeTab === 'recurring') {
+      // Ngày nghỉ cố định: STT + Tên + Thứ + Trạng thái + Thao tác
+      return [...baseColumns, ...recurringColumns, statusColumn, actionsColumn];
+    } else {
+      // Ngày nghỉ lễ: STT + Tên + Ngày bắt đầu + Ngày kết thúc + Số ngày + Trạng thái + Thao tác
+      return [...baseColumns, ...dateRangeColumns, statusColumn, actionsColumn];
+    }
+  }, [activeTab]);
 
   React.useEffect(() => {
-    const initializeData = async () => {
-      await Promise.all([
-        loadHolidays(),
-        loadBlockedRanges()
-      ]);
-    };
-    
-    initializeData();
+    loadHolidays();
   }, []);
 
   return (
@@ -849,28 +791,7 @@ const HolidayManagement = () => {
           </Form.Item>
 
           <>
-            {getNonRecurringHolidays().length > 0 && (
-              <Alert
-                message="Các ngày đã được đánh dấu không thể chọn"
-                description={
-                  <div>
-                    <Text>Các khoảng thời gian đã có ngày nghỉ:</Text>
-                    <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
-                      {getNonRecurringHolidays().map(h => (
-                        <li key={h._id}>
-                          <Text strong>{h.name}:</Text> {dayjs(h.startDate).format('DD/MM/YYYY')} - {dayjs(h.endDate).format('DD/MM/YYYY')}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                }
-                type="warning"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-            )}
-              
-              <Form.Item
+            <Form.Item
                 name="startDate"
                 label="Ngày bắt đầu"
                 rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}
@@ -880,7 +801,7 @@ const HolidayManagement = () => {
                   format="DD/MM/YYYY"
                   placeholder="Chọn ngày bắt đầu"
                   disabledDate={disabledStartDate}
-                  defaultPickerValue={getFirstValidDate()} 
+                  defaultPickerValue={dayjs().add(1, 'day')} 
                   onChange={(date) => {
                     setSelectedStartDate(date);
                     form.setFieldValue('endDate', null);
@@ -899,7 +820,7 @@ const HolidayManagement = () => {
                   placeholder={selectedStartDate ? "Chọn ngày kết thúc" : "Chọn ngày bắt đầu trước"}
                   disabledDate={disabledEndDate}
                   disabled={!selectedStartDate}
-                  defaultPickerValue={selectedStartDate || getFirstValidDate()}
+                  defaultPickerValue={selectedStartDate || dayjs().add(1, 'day')}
                 />
               </Form.Item>
           </>

@@ -53,12 +53,6 @@ const scheduleConfigService = {
     return response.data;
   },
 
-  // 🆕 Lấy khoảng thời gian bị chặn (tháng có lịch + ngày nghỉ lễ hiện có)
-  getBlockedDateRanges: async () => {
-    const response = await scheduleApi.get('/schedule/config/holidays/blocked-ranges');
-    return response.data;
-  },
-
   // 🆕 Nhiệm vụ 3.3: Tắt slot linh hoạt (theo ngày, ca, phòng, nha sĩ)
   disableSlotsFlexible: async (criteria) => {
     const response = await scheduleApi.post('/slot/disable', criteria);
