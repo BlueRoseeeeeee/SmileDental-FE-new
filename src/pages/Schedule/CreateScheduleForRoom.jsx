@@ -1719,7 +1719,7 @@ const CreateScheduleForRoom = () => {
                 textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)', 
               }}
             >
-              Tạo lịch làm việc ngày nghỉ
+              Thiết lập lịch làm việc vào ngày nghỉ
             </Button>
           </Col>
         </Row>

@@ -134,7 +134,7 @@ const OverrideHolidayModal = ({
       title={
         <Space>
           <CalendarOutlined style={{ color: '#faad14' }} />
-          <span>Tạo lịch trong ngày nghỉ (Override)</span>
+          <span>Thiết lập lịch làm việc vào ngày nghỉ</span>
         </Space>
       }
       open={visible}
@@ -142,14 +142,14 @@ const OverrideHolidayModal = ({
       footer={null}
       width={700}
     >
-      <Alert
+      {/* <Alert
         message="Quyền đặc biệt: Admin/Manager"
         description="Bạn có thể tạo lịch cho ngày nghỉ đã được đánh dấu. Lịch này sẽ được gắn flag 'isHolidayOverride' để phân biệt với lịch bình thường."
         type="warning"
         icon={<WarningOutlined />}
         showIcon
         style={{ marginBottom: 24 }}
-      />
+      /> */}
 
       <Form
         form={form}
@@ -273,13 +273,13 @@ const OverrideHolidayModal = ({
           />
         </Form.Item>
 
-        <Alert
+        {/* <Alert
           message="Lưu ý"
           description="Lịch override sẽ tạo slots với flag 'isHolidayOverride = true' để phân biệt với lịch bình thường. Không ảnh hưởng đến ngày nghỉ gốc."
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-        />
+        /> */}
 
         <Form.Item>
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
