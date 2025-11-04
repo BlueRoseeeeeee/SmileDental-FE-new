@@ -1688,31 +1688,9 @@ const CreateScheduleForRoom = () => {
       minHeight: '100vh',
     }}>
       {/* Header with enhanced styling */}
-      <Card 
-        style={{ 
-          marginBottom: 24,
-          borderRadius: 16,
-          boxShadow: '0 4px 20px rgba(59, 130, 246, 0.15)',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          border: '2px solid rgba(59, 130, 246, 0.2)'
-        }}
-        bodyStyle={{ padding: '24px 32px' }}
-      >
-        <Row align="middle" justify="space-between">
+        <Row align="middle" justify="space-between" style={{marginBottom: '20px'}}>
           <Col>
             <Space align="center" size="large">
-              <Button
-                type="text"
-                icon={<ArrowLeftOutlined style={{ fontSize: 20, color: '#fff' }} />}
-                onClick={() => navigate('/dashboard/schedule')}
-                style={{ 
-                  padding: '4px 8px',
-                  color: '#fff',
-                  transition: 'all 0.3s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              />
               <div>
                 <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 600 }}>
                   <CalendarOutlined style={{ marginRight: 12 }} />
@@ -1726,32 +1704,25 @@ const CreateScheduleForRoom = () => {
           </Col>
           <Col>
             <Button
-              icon={<WarningOutlined />}
+              className="create-schedule-for-holiday-btn"
+              icon={<WarningOutlined  style={{fontSize: '20px'}}/>}
               onClick={() => setShowOverrideModal(true)}
               size="large"
               style={{
-                background: 'rgba(245, 158, 11, 0.15)',
+                background: 'linear-gradient(135deg, #f59e0b 0%, rgb(209, 128, 36) 100%)',
                 color: '#fff',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                fontWeight: 500,
-                height: 44,
-                borderRadius: 10,
-                transition: 'all 0.3s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.3)';
-                e.currentTarget.style.borderColor = '#fff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                border: 'none',
+                fontWeight: 600,
+                height: 100,
+                borderRadius: 12,
+                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.4)',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)', 
               }}
             >
               Tạo lịch làm việc ngày nghỉ
             </Button>
           </Col>
         </Row>
-      </Card>
 
 
       {/* 🆕 Bulk Operations - Multi-select rooms - Enhanced */}
