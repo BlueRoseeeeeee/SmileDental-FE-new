@@ -10,6 +10,8 @@ import bannerDentist from '../../assets/image/banner-dentist.png';
 
 const { Title, Text, Paragraph } = Typography;
 
+const getDentistId = (dentist) => dentist?.id || dentist?._id;
+
 const DentistsSection = () => {
   const [dentists, setDentists] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ const DentistsSection = () => {
 
   const handleViewDetail = (dentist) => {
     // Mở tab mới hiển thị thông tin chi tiết nha sĩ
-    const url = `/dentist-detail/${encodeURIComponent(dentist._id)}`;
+    const url = `/dentist-detail/${encodeURIComponent(getDentistId(dentist))}`;
     window.open(url, '_blank');
   };
 
@@ -140,7 +142,7 @@ const DentistsSection = () => {
                       margin: '0 0 30px 0',
                       textAlign: 'left'
                     }}>
-                      {selectedDentist.fullName }
+                      {selectedDentist.fullName || selectedDentist.name}
                     </h1>
 
                     {/* Dentist Details */}
@@ -199,7 +201,7 @@ const DentistsSection = () => {
                   {selectedDentist.avatar && (
                     <img 
                       src={selectedDentist.avatar} 
-                      alt={selectedDentist.fullName}
+                      alt={selectedDentist.fullName||selectedDentist.name}
                       style={{
                         width: '500px',
                         height: '300px',
@@ -271,9 +273,11 @@ const DentistsSection = () => {
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none'
                   }}>
-                    {dentists.map((dentist) => (
+                    {dentists.map((dentist) => {
+                      const isSelected = getDentistId(selectedDentist) === getDentistId(dentist);
+                      return (
                       <div
-                        key={dentist._id}
+                        key={getDentistId(dentist)}
                         onClick={() => handleSelectDentist(dentist)}
                         style={{
                           cursor: 'pointer',
@@ -281,9 +285,9 @@ const DentistsSection = () => {
                           padding: '20px',
                           borderRadius: '12px',
                           transition: 'all 0.3s ease',
-                          backgroundColor: selectedDentist._id === dentist._id ? '#e6f7ff' : 'white',
-                          border: selectedDentist._id === dentist._id ? '2px solid #1890ff' : '2px solid transparent',
-                          boxShadow: selectedDentist._id === dentist._id ? '0 4px 12px rgba(24, 144, 255, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
+                          backgroundColor: isSelected ? '#e6f7ff' : 'white',
+                          border: isSelected ? '2px solid #1890ff' : '2px solid transparent',
+                          boxShadow: isSelected ? '0 4px 12px rgba(24, 144, 255, 0.2)' : '0 2px 8px rgba(0,0,0,0.1)',
                           minWidth: '180px',
                           flexShrink: 0
                         }}
@@ -306,11 +310,12 @@ const DentistsSection = () => {
                             display: 'block',
                             marginBottom: '4px'
                           }}>
-                            {dentist.fullName}
+                            {dentist.fullName|| dentist.name}
                           </h3>
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               </div>
