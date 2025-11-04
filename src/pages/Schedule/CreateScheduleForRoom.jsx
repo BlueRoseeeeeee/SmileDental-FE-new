@@ -1685,8 +1685,6 @@ const CreateScheduleForRoom = () => {
   return (
     <div style={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
-      padding: '24px'
     }}>
       {/* Header with enhanced styling */}
       <Card 
@@ -1754,71 +1752,6 @@ const CreateScheduleForRoom = () => {
         </Row>
       </Card>
 
-      {/* Filters Section - Enhanced */}
-      <Card 
-        style={{ 
-          marginBottom: 16,
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          border: '1px solid #e8e8e8'
-        }}
-        bodyStyle={{ padding: '16px 24px' }}
-      >
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} sm={24} md={8} lg={6}>
-            <Input
-              allowClear
-              placeholder="🔍 Tìm kiếm phòng..."
-              prefix={<SearchOutlined style={{ color: '#1890ff' }} />}
-              value={roomSearchValue}
-              onChange={(e) => {
-                const { value } = e.target;
-                setRoomSearchValue(value);
-                debouncedRoomSearch(value);
-              }}
-              size="large"
-              style={{ 
-                borderRadius: 8,
-                border: '2px solid #e8e8e8'
-              }}
-            />
-          </Col>
-          <Col xs={24} sm={24} md={16} lg={18}>
-            <Space wrap style={{ float: 'right' }}>
-              {/* Schedule Status Filter - Radio */}
-              <Radio.Group 
-                value={scheduleStatusFilter} 
-                onChange={(e) => setScheduleStatusFilter(e.target.value)}
-                buttonStyle="solid"
-                size="large"
-              >
-                <Radio.Button value="all">
-                  <span style={{ fontWeight: 500 }}>Tất cả</span>
-                </Radio.Button>
-                <Radio.Button value="no-schedule">
-                  <span style={{ fontWeight: 500 }}>Chưa có lịch</span>
-                </Radio.Button>
-                <Radio.Button value="has-schedule">
-                  <span style={{ fontWeight: 500 }}>Đã có lịch</span>
-                </Radio.Button>
-              </Radio.Group>
-              
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={fetchRooms}
-                loading={loading}
-                size="large"
-                style={{ 
-                  borderRadius: 8,
-                  fontWeight: 500
-                }}
-              >
-                Làm mới
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Card>
 
       {/* 🆕 Bulk Operations - Multi-select rooms - Enhanced */}
       <Card 
@@ -2132,6 +2065,61 @@ const CreateScheduleForRoom = () => {
         }}
         bodyStyle={{ padding: 0 }}
       >
+      {/* Filters Section - Enhanced */}
+        <Row gutter={[16, 16]} align="middle" style={{ padding: '0px 0px 20px 0px' }}>
+          <Col xs={24} sm={24} md={8} lg={6}>
+            <Input
+              allowClear
+              placeholder="Tìm kiếm phòng..."
+              prefix={<SearchOutlined />}
+              value={roomSearchValue}
+              onChange={(e) => {
+                const { value } = e.target;
+                setRoomSearchValue(value);
+                debouncedRoomSearch(value);
+              }}
+              size="large"
+              style={{ 
+                borderRadius: 8,
+                border: '2px solid #e8e8e8'
+              }}
+            />
+          </Col>
+          <Col xs={24} sm={24} md={16} lg={18}>
+            <Space wrap style={{ float: 'right' }}>
+              {/* Schedule Status Filter - Radio */}
+              <Radio.Group 
+                value={scheduleStatusFilter} 
+                onChange={(e) => setScheduleStatusFilter(e.target.value)}
+                buttonStyle="solid"
+                size="large"
+              >
+                <Radio.Button value="all">
+                  <span style={{ fontWeight: 500 }}>Tất cả</span>
+                </Radio.Button>
+                <Radio.Button value="no-schedule">
+                  <span style={{ fontWeight: 500 }}>Chưa có lịch</span>
+                </Radio.Button>
+                <Radio.Button value="has-schedule">
+                  <span style={{ fontWeight: 500 }}>Đã có lịch</span>
+                </Radio.Button>
+              </Radio.Group>
+              
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={fetchRooms}
+                loading={loading}
+                size="large"
+                style={{ 
+                  borderRadius: 8,
+                  fontWeight: 500
+                }}
+              >
+                Làm mới
+              </Button>
+            </Space>
+          </Col>
+        </Row>
         <div style={{ 
           padding: '16px 24px',
           background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
