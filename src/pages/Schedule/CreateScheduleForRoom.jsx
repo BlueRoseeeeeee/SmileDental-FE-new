@@ -1482,7 +1482,7 @@ const CreateScheduleForRoom = () => {
 
   // Table columns
   const columns = [
-    // 🆕 Checkbox column - chỉ hiển thị khi bật bulk selection mode
+    // cột checkbox hển thị khi nhấn button Bật chọn nhiều phòng
     ...(bulkSelectionMode ? [{
       title: (
         <Checkbox
@@ -1523,7 +1523,7 @@ const CreateScheduleForRoom = () => {
         />
       ),
       key: 'checkbox',
-      width: 50,
+      width: 30,
       render: (_, record) => (
         <Checkbox
           checked={selectedRoomIds.includes(record._id)}
@@ -1544,6 +1544,17 @@ const CreateScheduleForRoom = () => {
       )
     }] : []),
     {
+      title: 'STT',
+      key: 'stt',
+      width: 80,
+      align: 'center',
+      render: (_, record, index) => {
+        const currentPage = pagination.current || 1;
+        const pageSize = pagination.pageSize || 10;
+        return (currentPage - 1) * pageSize + index + 1;
+      }
+    },
+    {
       title: 'Tên phòng',
       dataIndex: 'name',
       key: 'name',
@@ -1559,30 +1570,17 @@ const CreateScheduleForRoom = () => {
       )
     },
     {
-      title: 'Loại phòng',
+      title: 'Cấu trúc phòng',
       dataIndex: 'hasSubRooms',
       key: 'hasSubRooms',
-      width: 120,
+      width: 150,
       render: (hasSubRooms) => (
         <Tag color={hasSubRooms ? 'blue' : 'green'}>
           {hasSubRooms ? 'Có buồng' : 'Không buồng'}
         </Tag>
       )
     },
-    {
-      title: 'Trạng thái hoạt động',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 150,
-      render: (isActive) => (
-        <Tag 
-          color={isActive ? 'success' : 'error'}
-          icon={isActive ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
-        >
-          {isActive ? 'Đang hoạt động' : 'Không hoạt động'}
-        </Tag>
-      )
-    },
+    
     {
       title: 'Trạng thái lịch',
       dataIndex: 'hasBeenUsed',
@@ -1616,7 +1614,8 @@ const CreateScheduleForRoom = () => {
         );
       }
     },
-    {
+    // Cột Hành động - chỉ hiển thị khi không ở chế độ chọn nhiều phòng
+    ...(bulkSelectionMode ? [] : [{
       title: 'Hành động',
       key: 'action',
       width: 250,
@@ -1680,7 +1679,7 @@ const CreateScheduleForRoom = () => {
           );
         }
       }
-    }
+    }]),
   ];
 
   return (
@@ -2102,9 +2101,6 @@ const CreateScheduleForRoom = () => {
             <Text strong style={{ fontSize: 16 }}>
               Danh sách phòng khám
             </Text>
-            <Tag color="blue" style={{ marginLeft: 8 }}>
-              {pagination.total} phòng
-            </Tag>
           </Space>
         </div>
         <Table
@@ -2113,7 +2109,7 @@ const CreateScheduleForRoom = () => {
           loading={loading}
           rowKey="_id"
           scroll={{ 
-            x: bulkSelectionMode ? 1400 : 1200
+            x: bulkSelectionMode ? 1100 : 1000
             // Remove y scroll to show all 10 rows without scrolling
           }}
           pagination={roomSearchTerm ? false : {
