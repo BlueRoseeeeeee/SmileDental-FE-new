@@ -469,10 +469,19 @@ const BulkRoomScheduleModal = ({
             <Text strong style={{ display: 'block', marginBottom: 8 }}>Lọc theo phòng:</Text>
             <Select
               style={{ width: '100%' }}
-              placeholder="Tất cả phòng"
+              placeholder="Chọn phòng..."
               allowClear
               value={filterRoom}
               onChange={setFilterRoom}
+              showSearch
+              filterOption={(input, option) => {
+                const searchText = input.toLowerCase();
+                const room = selectedRooms.find(r => r._id === option.value);
+                if (!room) return false;
+                const roomName = (room.name || '').toLowerCase();
+                const roomNumber = (room.roomNumber || '').toLowerCase();
+                return roomName.includes(searchText) || roomNumber.includes(searchText);
+              }}
             >
               {selectedRooms.map(room => (
                 <Option key={room._id} value={room._id}>
