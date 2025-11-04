@@ -140,7 +140,7 @@ const CreateScheduleForRoom = () => {
   // States
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [roomActiveFilter, setRoomActiveFilter] = useState('all'); // 'all' | true | false
+  // Chỉ hiển thị phòng hoạt động (isActive = true), không cần filter nữa
   const [scheduleStatusFilter, setScheduleStatusFilter] = useState('all'); // 'all' | 'has-schedule' | 'no-schedule'
   const [roomSearchValue, setRoomSearchValue] = useState('');
   const [roomSearchTerm, setRoomSearchTerm] = useState('');
@@ -276,7 +276,7 @@ const CreateScheduleForRoom = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [pagination.current, pagination.pageSize, roomActiveFilter, scheduleStatusFilter, roomSearchTerm]); // 🔥 Add roomSearchTerm to trigger search
+  }, [pagination.current, pagination.pageSize, scheduleStatusFilter, roomSearchTerm]); // 🔥 Add roomSearchTerm to trigger search
 
   const debouncedRoomSearch = useMemo(() => debounce((value) => {
     setRoomSearchTerm(value.trim().toLowerCase());
@@ -314,16 +314,12 @@ const CreateScheduleForRoom = () => {
       // �🔥 When searching, fetch ALL rooms to enable search across all pages
       const shouldFetchAll = roomSearchTerm.trim() !== '';
       
-      // Build params - only include isActive if it's a boolean value
+      // Build params - chỉ lấy phòng hoạt động (isActive = true)
       const params = {
         page: shouldFetchAll ? 1 : pagination.current,
-        limit: shouldFetchAll ? 9999 : pagination.pageSize
+        limit: shouldFetchAll ? 9999 : pagination.pageSize,
+        isActive: true // Chỉ lấy phòng hoạt động
       };
-      
-      // Only add isActive if roomActiveFilter is actually a boolean (not 'all')
-      if (typeof roomActiveFilter === 'boolean') {
-        params.isActive = roomActiveFilter;
-      }
       
       console.log('📡 Calling API with params:', params);
       const response = await roomService.getRoomsForSchedule(params);
@@ -1625,12 +1621,13 @@ const CreateScheduleForRoom = () => {
       width: 250,
       fixed: 'right', // 🔥 Fix để button luôn hiển thị ở bên phải
       render: (_, record) => {
-        const isDisabled = !record.isActive || bulkSelectionMode; // 🔥 Disable khi đang ở bulk mode
+        // Chỉ disable khi đang ở bulk mode (vì chỉ hiển thị phòng hoạt động nên không cần check isActive)
+        const isDisabled = bulkSelectionMode;
         
         // 🔥 Thông báo rõ ràng khi đang ở bulk mode
         const tooltipTitle = bulkSelectionMode 
           ? "Đang ở chế độ chọn nhiều phòng. Vui lòng tắt chế độ này để tạo lịch cho từng phòng riêng lẻ."
-          : (isDisabled ? "Phòng không hoạt động, không thể tạo lịch" : "");
+          : "";
         
         if (!record.hasSubRooms) {
           // Phòng không có buồng
@@ -1788,18 +1785,6 @@ const CreateScheduleForRoom = () => {
           </Col>
           <Col xs={24} sm={24} md={16} lg={18}>
             <Space wrap style={{ float: 'right' }}>
-              {/* Active Filter */}
-              <Select
-                value={roomActiveFilter}
-                onChange={setRoomActiveFilter}
-                style={{ width: 180 }}
-                size="large"
-              >
-                <Option value={true}>✅ Phòng hoạt động</Option>
-                <Option value={false}>⛔ Phòng không hoạt động</Option>
-                <Option value="all">📋 Tất cả phòng</Option>
-              </Select>
-              
               {/* Schedule Status Filter - Radio */}
               <Radio.Group 
                 value={scheduleStatusFilter} 
@@ -2002,10 +1987,8 @@ const CreateScheduleForRoom = () => {
                         limit: 9999
                       };
                       
-                      // Only add isActive if roomActiveFilter is not 'all'
-                      if (roomActiveFilter !== 'all') {
-                        params.isActive = roomActiveFilter;
-                      }
+                      // Chỉ lấy phòng hoạt động (isActive = true)
+                      params.isActive = true;
                       
                       const response = await roomService.getRoomsForSchedule(params);
 
