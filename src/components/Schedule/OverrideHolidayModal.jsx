@@ -225,7 +225,7 @@ const OverrideHolidayModal = ({
           >
             {rooms.filter(r => r.isActive).map(room => (
               <Option key={room._id} value={room._id}>
-                {room.roomName}
+                {room.name || room.roomName || room._id}
               </Option>
             ))}
           </Select>
@@ -240,7 +240,7 @@ const OverrideHolidayModal = ({
             <Select placeholder="Chọn buồng">
               {subRooms.map(subRoom => (
                 <Option key={subRoom._id} value={subRoom._id}>
-                  {subRoom.subRoomName}
+                  {subRoom.name || subRoom.subRoomName || subRoom._id}
                 </Option>
               ))}
             </Select>
