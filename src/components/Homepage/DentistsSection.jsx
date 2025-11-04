@@ -2,7 +2,7 @@
  * Section hiển thị đội ngũ nha sĩ
  * @author: HoTram
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Typography, Button, Tag, Avatar, Spin, Carousel } from 'antd';
 import { UserOutlined, StarOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
@@ -15,6 +15,7 @@ const getDentistId = (dentist) => dentist?.id || dentist?._id;
 
 const DentistsSection = () => {
   const navigate = useNavigate();
+  const scrollContainerRef = useRef(null);
   const [dentists, setDentists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDentist, setSelectedDentist] = useState(null);
@@ -52,6 +53,32 @@ const DentistsSection = () => {
     // Điều hướng đến trang chi tiết nha sĩ trong trang hiện tại
     const url = `/dentist-detail/${encodeURIComponent(getDentistId(dentist))}`;
     navigate(url);
+  };
+
+  const handleScrollLeft = () => {
+    if (scrollContainerRef.current) {
+      // Tính toán scroll qua 5 items (giữ lại 1 item cuối)
+      // Mỗi item có minWidth: 180px + gap: 20px = 200px
+      // Scroll 5 items = 5 * 200px = 1000px
+      const scrollAmount = 5 * (180 + 20); // 1000px
+      scrollContainerRef.current.scrollBy({
+        left: -scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleScrollRight = () => {
+    if (scrollContainerRef.current) {
+      // Tính toán scroll qua 5 items (giữ lại 1 item cuối)
+      // Mỗi item có minWidth: 180px + gap: 20px = 200px
+      // Scroll 5 items = 5 * 200px = 1000px
+      const scrollAmount = 5 * (180 + 20); // 1000px
+      scrollContainerRef.current.scrollBy({
+        left: scrollAmount,
+        behavior: 'smooth'
+      });
+    }
   };
 
   if (loading && initialLoad) {
@@ -228,53 +255,77 @@ const DentistsSection = () => {
 
                 <div style={{ position: 'relative' }}>
                   {/* Navigation Arrows */}
-                  <div style={{
-                    position: 'absolute',
-                    left: '-20px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 10,
-                    cursor: 'pointer',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: '#f0f0f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                  }}>
+                  <div 
+                    onClick={handleScrollLeft}
+                    style={{
+                      position: 'absolute',
+                      left: '-20px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 10,
+                      cursor: 'pointer',
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#f0f0f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#e0e0e0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f0f0f0';
+                    }}
+                  >
                     <LeftOutlined style={{ fontSize: '16px', color: '#666' }} />
                   </div>
                   
-                  <div style={{
-                    position: 'absolute',
-                    right: '-20px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    zIndex: 10,
-                    cursor: 'pointer',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: '#f0f0f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                  }}>
+                  <div 
+                    onClick={handleScrollRight}
+                    style={{
+                      position: 'absolute',
+                      right: '-20px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 10,
+                      cursor: 'pointer',
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#f0f0f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#e0e0e0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f0f0f0';
+                    }}
+                  >
                     <RightOutlined style={{ fontSize: '16px', color: '#666' }} />
                   </div>
 
                   {/* Dentists Row */}
-                  <div style={{
-                    display: 'flex',
-                    gap: '20px',
-                    overflowX: 'auto',
-                    padding: '0 20px',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
-                  }}>
+                  <div 
+                    ref={scrollContainerRef}
+                    className="dentists-scroll-container"
+                    style={{
+                      display: 'flex',
+                      gap: '20px',
+                      overflowX: 'auto',
+                      padding: '0 20px',
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none'
+                    }}
+                  >
                     {dentists.map((dentist) => {
                       const isSelected = getDentistId(selectedDentist) === getDentistId(dentist);
                       return (
