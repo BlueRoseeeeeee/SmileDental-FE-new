@@ -115,7 +115,7 @@ const DashboardLayout = () => {
         icon: <TeamOutlined />,
         label: 'Hệ thống & Nhân sự',
         children: [
-          { key: '/dashboard/users', label: 'Danh sách nhân viên', icon: <UserSwitchOutlined /> },
+          { key: '/dashboard/users', label: 'Quản lý nhân sự', icon: <UserSwitchOutlined /> },
           { key: '/dashboard/schedules/staff-assignment', label: 'Phân công ca', icon: <CalendarOutlined /> },
           { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
           { key: '/dashboard/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
