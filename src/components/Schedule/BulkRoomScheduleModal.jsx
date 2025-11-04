@@ -398,7 +398,7 @@ const BulkRoomScheduleModal = ({
       }
       open={visible}
       onCancel={onCancel}
-      width={1400}
+      width={'97%'}
       footer={null}
       destroyOnClose
       bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
