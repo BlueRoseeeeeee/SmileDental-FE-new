@@ -192,9 +192,16 @@ const BookingSelectTime = () => {
           
           console.log('📊 Total slots before filtering:', allSlots.length);
           
-          // ✅ Filter only active slots
+          // ✅ Filter only active slots (keep all statuses for display)
           const activeSlots = allSlots.filter(slot => slot.isActive === true);
           console.log('✅ Active slots:', activeSlots.length, '/', allSlots.length);
+          
+          // 🔍 Debug: Show slot status distribution
+          const statusCount = activeSlots.reduce((acc, s) => {
+            acc[s.status] = (acc[s.status] || 0) + 1;
+            return acc;
+          }, {});
+          console.log('� Slot status distribution:', statusCount);
           
           // Debug: Log first few slots to check structure
           if (activeSlots.length > 0) {
@@ -346,10 +353,10 @@ const BookingSelectTime = () => {
                       
                       {!isAvailable && slotGroup.unavailableReason && (
                         <Tag 
-                          color={slotGroup.unavailableReason.includes('đã được đặt') ? 'red' : 'orange'} 
+                          color={slotGroup.unavailableReason.includes('đặt') && !slotGroup.unavailableReason.includes('giữ') ? 'red' : 'orange'} 
                           style={{ marginTop: 4, fontSize: 11 }}
                         >
-                          {slotGroup.unavailableReason.includes('đã được đặt') ? 'Đã đặt' : 'Đang giữ'}
+                          {slotGroup.unavailableReason.includes('đặt') && !slotGroup.unavailableReason.includes('giữ') ? 'Đã đặt' : 'Đang giữ'}
                         </Tag>
                       )}
                       
