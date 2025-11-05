@@ -18,12 +18,15 @@ import {
   Row,
   Col,
   message,
-  Spin
+  Spin,
+  Button,
+  List
 } from 'antd';
 import {
   CalendarOutlined,
   CheckCircleOutlined,
-  WarningOutlined
+  WarningOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import scheduleService from '../../services/scheduleService';
@@ -52,6 +55,10 @@ const BulkOverrideHolidayModal = ({
   const [availableHolidays, setAvailableHolidays] = useState([]); // Tất cả holidays từ các phòng
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedShifts, setSelectedShifts] = useState([]);
+
+  // 🆕 Modal chi tiết ca
+  const [shiftDetailModalVisible, setShiftDetailModalVisible] = useState(false);
+  const [selectedShiftForDetail, setSelectedShiftForDetail] = useState(null); // 'morning' | 'afternoon' | 'evening'
 
   // Reset form khi đóng/mở modal
   useEffect(() => {
@@ -415,6 +422,7 @@ const BulkOverrideHolidayModal = ({
   }, [selectedDate, availableHolidays]);
 
   return (
+    <>
     <Modal
       title={
         <Space>
@@ -580,7 +588,7 @@ const BulkOverrideHolidayModal = ({
                                   form.setFieldsValue({ shifts: newShifts });
                                 }}
                               >
-                                <Space direction="vertical" size={0}>
+                                <Space direction="vertical" size={4} style={{ width: '100%' }}>
                                   <Checkbox value={shift} disabled={shouldDisable}>
                                     <Text strong style={{ color: shouldDisable ? '#999' : 'inherit' }}>
                                       {SHIFT_NAMES[shift]}
@@ -603,6 +611,18 @@ const BulkOverrideHolidayModal = ({
                                       {roomsNeedShift} phòng cần tạo
                                     </Text>
                                   )}
+                                  <Button 
+                                    type="link" 
+                                    size="small" 
+                                    style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                                    onClick={(e) => {
+                                      e.stopPropagation(); // Prevent card click
+                                      setSelectedShiftForDetail(shift);
+                                      setShiftDetailModalVisible(true);
+                                    }}
+                                  >
+                                    Chi tiết
+                                  </Button>
                                 </Space>
                               </Card>
                             </Col>
@@ -660,6 +680,79 @@ const BulkOverrideHolidayModal = ({
         </Form>
       </Space>
     </Modal>
+
+    {/* Modal chi tiết ca */}
+    <Modal
+      title={`Chi tiết ca ${selectedShiftForDetail === 'morningShift' ? 'Sáng' : selectedShiftForDetail === 'afternoonShift' ? 'Chiều' : 'Tối'} - ${selectedHolidayInfo?.date ? dayjs(selectedHolidayInfo.date).format('DD/MM/YYYY') : ''}`}
+      open={shiftDetailModalVisible}
+      onCancel={() => setShiftDetailModalVisible(false)}
+      footer={null}
+      width={800}
+    >
+      {selectedHolidayInfo && selectedShiftForDetail && (() => {
+        // Convert shift key từ 'morningShift' -> 'morning'
+        const shiftKey = selectedShiftForDetail.replace('Shift', '');
+        
+        // Lấy danh sách roomId đã tạo override và có config active
+        const roomsWithOverride = selectedHolidayInfo.shiftStatus[shiftKey] || [];
+        const roomsWithActiveConfig = selectedHolidayInfo.shiftConfig[shiftKey] || [];
+        
+        // Map selectedRooms với trạng thái
+        const roomDetailData = selectedRooms.map(room => {
+          const roomId = room._id;
+          const hasOverride = roomsWithOverride.includes(roomId);
+          const hasActiveConfig = roomsWithActiveConfig.includes(roomId);
+          
+          // Xác định trạng thái
+          let status = '';
+          let statusColor = '';
+          
+          if (hasOverride) {
+            status = 'Đã tạo';
+            statusColor = 'success';
+          } else if (hasActiveConfig) {
+            status = 'Chưa tạo';
+            statusColor = 'warning';
+          } else {
+            status = 'Đang tắt';
+            statusColor = 'error';
+          }
+          
+          return {
+            roomId,
+            roomName: room.roomName || room.name,
+            subRoomName: room.subRoomName || room.subRoom?.name,
+            status,
+            statusColor
+          };
+        });
+        
+        console.log('🔍 Room Detail Data:', roomDetailData);
+        
+        return (
+          <List
+            bordered
+            dataSource={roomDetailData}
+            renderItem={(item) => (
+              <List.Item style={{ padding: '12px 16px' }}>
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong style={{ fontSize: '14px' }}>{item.roomName || 'Không có tên'}</strong>
+                    {item.subRoomName && (
+                      <span style={{ color: '#999', marginLeft: '8px' }}>
+                        ({item.subRoomName})
+                      </span>
+                    )}
+                  </div>
+                  <Tag color={item.statusColor}>{item.status}</Tag>
+                </div>
+              </List.Item>
+            )}
+          />
+        );
+      })()}
+    </Modal>
+    </>
   );
 };
 

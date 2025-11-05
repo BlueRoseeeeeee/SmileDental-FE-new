@@ -71,6 +71,11 @@ const BulkCreateScheduleModal = ({
   // Progress tracking
   const [progress, setProgress] = useState(null); // { current, total, results: [] }
 
+  // 🆕 Modal chi tiết ca
+  const [shiftDetailModalVisible, setShiftDetailModalVisible] = useState(false);
+  const [selectedShiftForDetail, setSelectedShiftForDetail] = useState(null); // 'morning' | 'afternoon' | 'evening'
+  const [selectedMonthForDetail, setSelectedMonthForDetail] = useState(null); // { month, year } cho modal chi tiết
+
   // Reset form when modal opens
   useEffect(() => {
     if (visible) {
@@ -719,58 +724,103 @@ const BulkCreateScheduleModal = ({
             >
               <Row gutter={[16, 16]}>
                 <Col span={8}>
-                  <Checkbox
-                    value="morning"
-                    disabled={!availableShifts.morning}
-                  >
-                    <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
-                      {SHIFT_NAMES.morning}
-                    </Text>
-                    {!availableShifts.morning && (
-                      <Text 
-                        type={bulkInfo?.shiftUnavailableReasons?.morning === 'disabled' ? 'warning' : 'secondary'} 
-                        style={{ fontSize: '12px', marginLeft: 4 }}
-                      >
-                        {bulkInfo?.shiftUnavailableReasons?.morning === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                  <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                    <Checkbox
+                      value="morning"
+                      disabled={!availableShifts.morning}
+                    >
+                      <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
+                        {SHIFT_NAMES.morning}
                       </Text>
+                      {!availableShifts.morning && (
+                        <Text 
+                          type={bulkInfo?.shiftUnavailableReasons?.morning === 'disabled' ? 'warning' : 'secondary'} 
+                          style={{ fontSize: '12px', marginLeft: 4 }}
+                        >
+                          {bulkInfo?.shiftUnavailableReasons?.morning === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                        </Text>
+                      )}
+                    </Checkbox>
+                    {bulkInfo && (
+                      <Button 
+                        type="link" 
+                        size="small" 
+                        style={{ padding: 0, height: 'auto' }}
+                        onClick={() => {
+                          setSelectedShiftForDetail('morning');
+                          setShiftDetailModalVisible(true);
+                        }}
+                      >
+                        Chi tiết
+                      </Button>
                     )}
-                  </Checkbox>
+                  </Space>
                 </Col>
                 <Col span={8}>
-                  <Checkbox
-                    value="afternoon"
-                    disabled={!availableShifts.afternoon}
-                  >
-                    <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
-                      {SHIFT_NAMES.afternoon}
-                    </Text>
-                    {!availableShifts.afternoon && (
-                      <Text 
-                        type={bulkInfo?.shiftUnavailableReasons?.afternoon === 'disabled' ? 'warning' : 'secondary'} 
-                        style={{ fontSize: '12px', marginLeft: 4 }}
-                      >
-                        {bulkInfo?.shiftUnavailableReasons?.afternoon === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                  <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                    <Checkbox
+                      value="afternoon"
+                      disabled={!availableShifts.afternoon}
+                    >
+                      <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
+                        {SHIFT_NAMES.afternoon}
                       </Text>
+                      {!availableShifts.afternoon && (
+                        <Text 
+                          type={bulkInfo?.shiftUnavailableReasons?.afternoon === 'disabled' ? 'warning' : 'secondary'} 
+                          style={{ fontSize: '12px', marginLeft: 4 }}
+                        >
+                          {bulkInfo?.shiftUnavailableReasons?.afternoon === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                        </Text>
+                      )}
+                    </Checkbox>
+                    {bulkInfo && (
+                      <Button 
+                        type="link" 
+                        size="small" 
+                        style={{ padding: 0, height: 'auto' }}
+                        onClick={() => {
+                          setSelectedShiftForDetail('afternoon');
+                          setShiftDetailModalVisible(true);
+                        }}
+                      >
+                        Chi tiết
+                      </Button>
                     )}
-                  </Checkbox>
+                  </Space>
                 </Col>
                 <Col span={8}>
-                  <Checkbox
-                    value="evening"
-                    disabled={!availableShifts.evening}
-                  >
-                    <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
-                      {SHIFT_NAMES.evening}
-                    </Text>
-                    {!availableShifts.evening && (
-                      <Text 
-                        type={bulkInfo?.shiftUnavailableReasons?.evening === 'disabled' ? 'warning' : 'secondary'} 
-                        style={{ fontSize: '12px', marginLeft: 4 }}
-                      >
-                        {bulkInfo?.shiftUnavailableReasons?.evening === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                  <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                    <Checkbox
+                      value="evening"
+                      disabled={!availableShifts.evening}
+                    >
+                      <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
+                        {SHIFT_NAMES.evening}
                       </Text>
+                      {!availableShifts.evening && (
+                        <Text 
+                          type={bulkInfo?.shiftUnavailableReasons?.evening === 'disabled' ? 'warning' : 'secondary'} 
+                          style={{ fontSize: '12px', marginLeft: 4 }}
+                        >
+                          {bulkInfo?.shiftUnavailableReasons?.evening === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                        </Text>
+                      )}
+                    </Checkbox>
+                    {bulkInfo && (
+                      <Button 
+                        type="link" 
+                        size="small" 
+                        style={{ padding: 0, height: 'auto' }}
+                        onClick={() => {
+                          setSelectedShiftForDetail('evening');
+                          setShiftDetailModalVisible(true);
+                        }}
+                      >
+                        Chi tiết
+                      </Button>
                     )}
-                  </Checkbox>
+                  </Space>
                 </Col>
               </Row>
             </Checkbox.Group>
@@ -795,6 +845,185 @@ const BulkCreateScheduleModal = ({
           />
         </Form>
       )}
+
+      {/* 🆕 Modal Chi tiết Ca */}
+      <Modal
+        title={
+          <Space>
+            <CalendarOutlined />
+            <span>Chi tiết {SHIFT_NAMES[selectedShiftForDetail]} - {fromMonth && toMonth ? `${fromMonth.format('MM/YYYY')} → ${toMonth.format('MM/YYYY')}` : ''}</span>
+          </Space>
+        }
+        open={shiftDetailModalVisible}
+        onCancel={() => setShiftDetailModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setShiftDetailModalVisible(false)}>
+            Đóng
+          </Button>
+        ]}
+        width={900}
+        bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+      >
+        {selectedShiftForDetail && bulkInfo && (
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            {/* Summary */}
+            <Alert
+              message={
+                <Space direction="vertical" size={4}>
+                  <div>
+                    <Text strong>Trạng thái: </Text>
+                    {bulkInfo.availableShifts[selectedShiftForDetail] ? (
+                      <Tag color="success" icon={<CheckCircleOutlined />}>Có thể tạo</Tag>
+                    ) : bulkInfo.shiftUnavailableReasons[selectedShiftForDetail] === 'complete' ? (
+                      <Tag color="default">Đã đầy đủ</Tag>
+                    ) : (
+                      <Tag color="warning" icon={<WarningOutlined />}>Đang tắt</Tag>
+                    )}
+                  </div>
+                  {bulkInfo.shiftUnavailableReasons[selectedShiftForDetail] && (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      {bulkInfo.shiftUnavailableReasons[selectedShiftForDetail] === 'complete' 
+                        ? 'Tất cả phòng đã có ca này trong khoảng thời gian đã chọn'
+                        : 'Ca này đang bị tắt trong cấu hình hệ thống hoặc lịch'}
+                    </Text>
+                  )}
+                </Space>
+              }
+              type={bulkInfo.availableShifts[selectedShiftForDetail] ? 'success' : 'info'}
+            />
+
+            {/* List phòng/buồng */}
+            <List
+              size="small"
+              bordered
+              dataSource={bulkInfo.roomsAnalysis}
+              renderItem={(room) => {
+                // Analyze shift status across all months
+                let hasScheduleWithShift = false;
+                let hasScheduleWithoutShift = false;
+                let hasShiftDisabled = false;
+                let noSchedule = false;
+                let monthDetails = [];
+
+                room.monthsAnalysis.forEach(monthAnalysis => {
+                  const shiftStatus = monthAnalysis.shiftStatus[selectedShiftForDetail];
+                  
+                  if (monthAnalysis.hasSchedule) {
+                    if (shiftStatus.allHave) {
+                      hasScheduleWithShift = true;
+                      monthDetails.push({
+                        month: monthAnalysis.month,
+                        year: monthAnalysis.year,
+                        status: 'complete',
+                        label: 'Đã có'
+                      });
+                    } else if (shiftStatus.anyActive) {
+                      hasScheduleWithoutShift = true;
+                      monthDetails.push({
+                        month: monthAnalysis.month,
+                        year: monthAnalysis.year,
+                        status: 'missing',
+                        label: 'Chưa tạo'
+                      });
+                    } else {
+                      hasShiftDisabled = true;
+                      monthDetails.push({
+                        month: monthAnalysis.month,
+                        year: monthAnalysis.year,
+                        status: 'disabled',
+                        label: 'Đang tắt'
+                      });
+                    }
+                  } else {
+                    noSchedule = true;
+                    // Check config
+                    if (bulkInfo.currentConfigShifts[selectedShiftForDetail]) {
+                      monthDetails.push({
+                        month: monthAnalysis.month,
+                        year: monthAnalysis.year,
+                        status: 'no-schedule-active',
+                        label: 'Chưa có lịch (Config bật)'
+                      });
+                    } else {
+                      monthDetails.push({
+                        month: monthAnalysis.month,
+                        year: monthAnalysis.year,
+                        status: 'no-schedule-disabled',
+                        label: 'Chưa có lịch (Config tắt)'
+                      });
+                    }
+                  }
+                });
+
+                return (
+                  <List.Item>
+                    <Space direction="vertical" style={{ width: '100%' }} size="small">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Space>
+                          <Text strong>{room.roomName}</Text>
+                          {room.hasSubRooms && (
+                            <Tag color="blue">{room.subRoomCount} buồng</Tag>
+                          )}
+                        </Space>
+                        <Space size={4}>
+                          {hasScheduleWithShift && <Tag color="success">✓ Đã có</Tag>}
+                          {hasScheduleWithoutShift && <Tag color="warning">⚠ Chưa tạo</Tag>}
+                          {hasShiftDisabled && <Tag color="error">✗ Đang tắt</Tag>}
+                          {noSchedule && <Tag color="default">○ Chưa có lịch</Tag>}
+                        </Space>
+                      </div>
+
+                      {/* Month-by-month details */}
+                      <div style={{ paddingLeft: 16 }}>
+                        <Row gutter={[8, 8]}>
+                          {monthDetails.map((detail, idx) => (
+                            <Col key={idx} span={8}>
+                              <Space size={4} style={{ fontSize: 12 }}>
+                                <Text type="secondary">{detail.month}/{detail.year}:</Text>
+                                {detail.status === 'complete' && (
+                                  <Tag color="success" style={{ margin: 0, fontSize: 11 }}>✓ {detail.label}</Tag>
+                                )}
+                                {detail.status === 'missing' && (
+                                  <Tag color="warning" style={{ margin: 0, fontSize: 11 }}>⚠ {detail.label}</Tag>
+                                )}
+                                {detail.status === 'disabled' && (
+                                  <Tag color="error" style={{ margin: 0, fontSize: 11 }}>✗ {detail.label}</Tag>
+                                )}
+                                {detail.status === 'no-schedule-active' && (
+                                  <Tag color="cyan" style={{ margin: 0, fontSize: 11 }}>○ {detail.label}</Tag>
+                                )}
+                                {detail.status === 'no-schedule-disabled' && (
+                                  <Tag color="default" style={{ margin: 0, fontSize: 11 }}>○ {detail.label}</Tag>
+                                )}
+                              </Space>
+                            </Col>
+                          ))}
+                        </Row>
+                      </div>
+                    </Space>
+                  </List.Item>
+                );
+              }}
+            />
+
+            {/* Legend */}
+            <Alert
+              message="Chú thích"
+              description={
+                <Space direction="vertical" size={4}>
+                  <div><Tag color="success">✓ Đã có</Tag> = Ca đã được tạo slots trong tháng này</div>
+                  <div><Tag color="warning">⚠ Chưa tạo</Tag> = Có lịch nhưng chưa tạo ca này (ca đang bật)</div>
+                  <div><Tag color="error">✗ Đang tắt</Tag> = Ca bị tắt trong schedule (isActive=false)</div>
+                  <div><Tag color="cyan">○ Chưa có lịch (Config bật)</Tag> = Chưa có schedule, config global bật ca</div>
+                  <div><Tag color="default">○ Chưa có lịch (Config tắt)</Tag> = Chưa có schedule, config global tắt ca</div>
+                </Space>
+              }
+              type="info"
+              showIcon
+            />
+          </Space>
+        )}
+      </Modal>
     </Modal>
   );
 };
