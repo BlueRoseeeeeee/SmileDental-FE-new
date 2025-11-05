@@ -14,6 +14,7 @@ import {
   Tooltip,
   Drawer,
   Descriptions,
+  Divider,
   message,
   Empty,
   Spin
@@ -183,23 +184,6 @@ const PatientManagement = () => {
             {dayjs(date).format('HH:mm')}
           </Text>
         </Space>
-      )
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 120,
-      filters: [
-        { text: 'Hoạt động', value: true },
-        { text: 'Đã khóa', value: false }
-      ],
-      onFilter: (value, record) => record.isActive === value,
-      render: (isActive) => (
-        <Badge 
-          status={isActive ? 'success' : 'error'} 
-          text={isActive ? 'Hoạt động' : 'Đã khóa'}
-        />
       )
     },
     {
