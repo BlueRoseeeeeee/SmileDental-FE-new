@@ -12,7 +12,8 @@ import {
   Tag, 
   Breadcrumb,
   Spin,
-  Empty
+  Empty,
+  Tooltip
 } from 'antd';
 import { 
   ArrowLeftOutlined,
@@ -230,26 +231,51 @@ const PublicServiceAddOns = () => {
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
-                  height: '100%'
+                  height: '100%',
+                  justifyContent: 'space-between'
                 }}>
                   {/* AddOn Name */}
-                  <h3 
-                    style={{ 
-                      fontSize: '1.2rem',
-                      color: '#313b79',
-                      fontWeight: '600',
-                      lineHeight: '1.3',
-                      textAlign: 'center',
-                      margin: '0 0 4px 0',
-                      minHeight: '48px',
-                      overflow: 'hidden',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical'
+                  <Tooltip 
+                    title={addOn.name} 
+                    placement="top"
+                    overlayInnerStyle={{
+                      fontSize: '12px',
+                      padding: '4px 8px',
+                      maxWidth: '300px',
+                      lineHeight: '1.4'
                     }}
                   >
-                    {addOn.name}
-                  </h3>
+                    <div style={{ 
+                      marginTop: '-22px',
+                      marginBottom: '10px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'center',
+                      // height: '70px',
+                      // maxHeight: '70px',
+                      overflow: 'hidden'
+                    }}>
+                      <h3 
+                        style={{ 
+                          fontSize: '1rem',
+                          color: '#313b79',
+                          fontWeight: '600',
+                          lineHeight: '2rem',
+                          textAlign: 'center',
+                          margin: 0,
+                          wordWrap: 'break-word',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word',
+                          width: '100%',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical'
+                        }}
+                      >
+                        {addOn.name}
+                      </h3>
+                    </div>
+                  </Tooltip>
 
                   {/* Category Tag */}
                   <div style={{ marginBottom: '8px' }}>
@@ -271,7 +297,7 @@ const PublicServiceAddOns = () => {
                   </div>
 
                   {/* Price */}
-                  <div style={{ marginBottom: '16px', flex: 1 }}>
+                  <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     {addOn.isPriceModified && addOn.effectivePrice ? (
                       <div>
                         {/* Original Price - Strikethrough */}
@@ -332,7 +358,8 @@ const PublicServiceAddOns = () => {
                        borderColor: '#1890ff',
                        fontSize: '13px',
                        fontWeight: '500',
-                       boxShadow: 'none'
+                       boxShadow: 'none',
+                       marginTop: 'auto'
                      }}
                    >
                      Xem chi tiết
