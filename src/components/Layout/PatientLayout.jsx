@@ -12,6 +12,7 @@ import {
   DollarOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import ChatBox from '../ChatBox';
 import './PatientLayout.css';
 
 const { Header, Content, Footer } = Layout;
@@ -210,6 +211,9 @@ const PatientLayout = () => {
           </Space>
         </div>
       </Footer>
+
+      {/* AI Chatbot - Floating icon in bottom right */}
+      <ChatBox />
     </Layout>
   );
 };
