@@ -126,9 +126,34 @@ const PaymentModal = ({ visible, onCancel, recordId, onSuccess }) => {
     }
   };
 
-  const handleVNPayPayment = () => {
-    message.info('Chức năng thanh toán VNPay đang được phát triển');
-    // TODO: Implement VNPay payment
+  const handleVNPayPayment = async () => {
+    if (!payment) {
+      message.error('Không có thông tin thanh toán');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      console.log('💳 [PaymentModal] Creating VNPay URL for payment:', payment._id);
+
+      const response = await paymentService.createVNPayUrlForPayment(payment._id);
+      
+      console.log('✅ [PaymentModal] VNPay URL created:', response);
+
+      if (response.success && response.data?.paymentUrl) {
+        message.success('Đang chuyển đến trang thanh toán VNPay...');
+        
+        // Redirect to VNPay payment page
+        window.location.href = response.data.paymentUrl;
+      } else {
+        message.error('Không thể tạo link thanh toán VNPay');
+      }
+    } catch (error) {
+      console.error('❌ [PaymentModal] VNPay payment error:', error);
+      message.error(error.response?.data?.message || 'Không thể tạo link thanh toán VNPay');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -263,10 +288,14 @@ const PaymentModal = ({ visible, onCancel, recordId, onSuccess }) => {
                     size="large"
                     icon={<CreditCardOutlined />}
                     onClick={handleVNPayPayment}
+                    loading={processing}
                     style={{ backgroundColor: '#00b14f', color: 'white', borderColor: '#00b14f' }}
                   >
                     Thanh toán qua VNPay
                   </Button>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                    Bạn sẽ được chuyển đến trang VNPay để thanh toán
+                  </Text>
                 </Card>
               </>
             )}

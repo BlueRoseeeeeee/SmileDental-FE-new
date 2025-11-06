@@ -41,8 +41,8 @@ export const groupConsecutiveSlots = (slots, serviceDurationMinutes, slotDuratio
         endTime: slot.endTimeVN || slot.endTime,
         displayTime: formatSlotTime(slot.startTimeVN || slot.startTime, slot.endTimeVN || slot.endTime),
         isAvailable: slot.status === 'available',
-        unavailableReason: slot.status === 'locked' ? 'Đang được giữ chỗ' : 
-                          slot.status === 'booked' ? 'Đã có người đặt' : null
+        unavailableReason: slot.status === 'locked' ? 'Slot đang được giữ chỗ' : 
+                          slot.status === 'booked' ? 'Slot đã được đặt' : null
       }));
   }
   

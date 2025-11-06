@@ -14,7 +14,7 @@ import {
 import { FaPhone, FaCheckCircle, FaTimesCircle, FaUsers, FaClock } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { io } from 'socket.io-client';
-import PaymentConfirmModal from '../components/PaymentConfirmModal';
+import PaymentModal from '../components/Payment/PaymentModal';
 import roomService from '../services/roomService';
 import queueService from '../services/queueService';
 
@@ -32,8 +32,7 @@ const QueueDashboard = () => {
   
   // Payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [completedRecord, setCompletedRecord] = useState(null);
-  const [paymentData, setPaymentData] = useState(null);
+  const [completedRecordId, setCompletedRecordId] = useState(null);
   
   // Socket.IO
   const socketRef = useRef(null);
@@ -195,13 +194,10 @@ const QueueDashboard = () => {
       const response = await queueService.completeRecord(recordId);
 
       if (response.success) {
-        const { record, paymentData } = response.data;
-        
         toast.success('Đã hoàn thành khám bệnh');
         
-        // Show payment modal
-        setCompletedRecord(record);
-        setPaymentData(paymentData);
+        // Show payment modal with recordId (modal will auto-load payment)
+        setCompletedRecordId(recordId);
         setShowPaymentModal(true);
         
         fetchQueueStatus();
@@ -554,19 +550,19 @@ const QueueDashboard = () => {
       </Modal>
 
       {/* Payment Confirm Modal */}
-      {showPaymentModal && (
-        <PaymentConfirmModal
-          show={showPaymentModal}
-          onHide={() => {
+      {showPaymentModal && completedRecordId && (
+        <PaymentModal
+          visible={showPaymentModal}
+          recordId={completedRecordId}
+          onCancel={() => {
             setShowPaymentModal(false);
-            setCompletedRecord(null);
-            setPaymentData(null);
+            setCompletedRecordId(null);
           }}
-          record={completedRecord}
-          paymentData={paymentData}
-          onPaymentConfirmed={() => {
+          onSuccess={() => {
             setShowPaymentModal(false);
+            setCompletedRecordId(null);
             fetchQueueStatus();
+            toast.success('Thanh toán thành công!');
           }}
         />
       )}

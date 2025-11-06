@@ -74,9 +74,9 @@ const paymentService = {
     return response.data;
   },
 
-  // Get payment by recordId
+  // Get payment by recordId (auto-creates if not exists)
   getPaymentByRecordId: async (recordId) => {
-    const response = await paymentApi.get(`/payments/by-record/${recordId}`);
+    const response = await paymentApi.get(`/payments/record/${recordId}`);
     return response.data;
   },
 
@@ -86,6 +86,12 @@ const paymentService = {
       paidAmount,
       notes
     });
+    return response.data;
+  },
+
+  // Create VNPay URL for existing payment
+  createVNPayUrlForPayment: async (paymentId) => {
+    const response = await paymentApi.post(`/payments/${paymentId}/vnpay-url`);
     return response.data;
   },
 
