@@ -381,11 +381,17 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
                   optionFilterProp="children"
                   onChange={handleServiceChange}
                 >
-                  {services.map(service => (
-                    <Option key={service._id} value={service._id}>
-                      {service.name} - {service.price.toLocaleString('vi-VN')}đ
-                    </Option>
-                  ))}
+                  {services.map(service => {
+                    // Get min price from serviceAddOns
+                    const minPrice = service.serviceAddOns && service.serviceAddOns.length > 0
+                      ? Math.min(...service.serviceAddOns.map(a => a.price || 0))
+                      : 0;
+                    return (
+                      <Option key={service._id} value={service._id}>
+                        {service.name}{minPrice > 0 ? ` - Từ ${minPrice.toLocaleString('vi-VN')}đ` : ''}
+                      </Option>
+                    );
+                  })}
                 </Select>
               </Form.Item>
 

@@ -32,11 +32,13 @@ import {
 } from '@ant-design/icons';
 import medicineService from '../services/medicineService';
 import { searchAndFilter, debounce } from '../utils/searchUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const MedicineList = () => {
+  const { user } = useAuth();
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -57,6 +59,13 @@ const MedicineList = () => {
 
   // Toggle loading map
   const [toggleLoadingMap, setToggleLoadingMap] = useState({});
+
+  // Check permission: Manager or Admin can perform CRUD
+  const isManagerOrAdmin = useMemo(() => {
+    if (!user) return false;
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+    return userRoles.includes('manager') || userRoles.includes('admin');
+  }, [user]);
 
   // Medicine categories - matching backend enum
   const categories = [
@@ -296,15 +305,20 @@ const MedicineList = () => {
       key: 'isActive',
       width: 120,
       align: 'center',
-      render: (isActive, record) => (
-        <Switch
-          checked={isActive}
-          loading={toggleLoadingMap[record._id]}
-          onChange={() => handleToggleStatus(record)}
-          checkedChildren="Hoạt động"
-          unCheckedChildren="Ngưng"
-        />
-      )
+      render: (isActive, record) => 
+        isManagerOrAdmin ? (
+          <Switch
+            checked={isActive}
+            loading={toggleLoadingMap[record._id]}
+            onChange={() => handleToggleStatus(record)}
+            checkedChildren="Hoạt động"
+            unCheckedChildren="Ngưng"
+          />
+        ) : (
+          <Tag color={isActive ? 'green' : 'red'}>
+            {isActive ? 'Hoạt động' : 'Ngưng'}
+          </Tag>
+        )
     },
     {
       title: 'Thao tác',
@@ -312,25 +326,28 @@ const MedicineList = () => {
       fixed: 'right',
       width: 150,
       align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => handleEditMedicine(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Xóa">
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDeleteMedicine(record)}
-            />
-          </Tooltip>
-        </Space>
-      )
+      render: (_, record) => 
+        isManagerOrAdmin ? (
+          <Space size="small">
+            <Tooltip title="Chỉnh sửa">
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => handleEditMedicine(record)}
+              />
+            </Tooltip>
+            <Tooltip title="Xóa">
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteMedicine(record)}
+              />
+            </Tooltip>
+          </Space>
+        ) : (
+          <Text type="secondary">-</Text>
+        )
     }
   ];
 
@@ -347,16 +364,18 @@ const MedicineList = () => {
               Quản lý danh mục thuốc để kê đơn cho bệnh nhân
             </Text>
           </Col>
-          <Col>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreateMedicine}
-              size="large"
-            >
-              Thêm thuốc mới
-            </Button>
-          </Col>
+          {isManagerOrAdmin && (
+            <Col>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreateMedicine}
+                size="large"
+              >
+                Thêm thuốc mới
+              </Button>
+            </Col>
+          )}
         </Row>
 
         {/* Statistics */}

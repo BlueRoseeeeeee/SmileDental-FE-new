@@ -129,10 +129,12 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         setPatients(patientsResponse.data);
       }
 
-      // Load services
+      // Load services (only active services)
       const servicesResponse = await servicesService.getAllServices();
       if (servicesResponse.success && servicesResponse.data) {
-        setServices(servicesResponse.data);
+        // Filter only active services for selection
+        const activeServices = servicesResponse.data.filter(s => s.isActive === true);
+        setServices(activeServices);
       }
 
       // Load dentists (all staff with dentist role will be filtered on backend)
@@ -149,10 +151,10 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         setRooms(roomsResponse.data);
       }
 
-      // 🆕 Load medicines from medicine service
+      // 🆕 Load medicines from medicine service (limit max 100)
       const medicinesResponse = await medicineService.getMedicines({ 
         isActive: true, 
-        limit: 1000 
+        limit: 100 
       });
       if (medicinesResponse.success && medicinesResponse.data) {
         setMedicines(medicinesResponse.data);
@@ -170,20 +172,28 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   // Load service addons when service is selected in treatment indications
   const loadServiceAddOns = async (serviceId) => {
     if (serviceAddOnsMap[serviceId]) {
+      console.log('⚠️ ServiceAddOns already cached for', serviceId);
       return; // Already loaded
     }
     
     try {
       setLoadingAddOns(true);
+      console.log('🔄 Loading serviceAddOns for serviceId:', serviceId);
       const response = await servicesService.getServiceById(serviceId);
+      console.log('📦 getServiceById response:', response);
+      
       if (response.success && response.data && response.data.serviceAddOns) {
+        const activeAddOns = response.data.serviceAddOns.filter(addon => addon.isActive);
+        console.log('✅ Found active serviceAddOns:', activeAddOns.length, activeAddOns);
         setServiceAddOnsMap(prev => ({
           ...prev,
-          [serviceId]: response.data.serviceAddOns.filter(addon => addon.isActive)
+          [serviceId]: activeAddOns
         }));
+      } else {
+        console.log('⚠️ No serviceAddOns in response');
       }
     } catch (error) {
-      console.error('Load service addons error:', error);
+      console.error('❌ Load service addons error:', error);
       message.error('Không thể tải danh sách dịch vụ con');
     } finally {
       setLoadingAddOns(false);
@@ -200,13 +210,21 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     if (!record || !record.serviceId) return;
     
     try {
+      console.log('🔍 Loading service details for serviceId:', record.serviceId);
       const response = await servicesService.getServiceById(record.serviceId);
+      console.log('📦 Service API response:', response);
+      
       if (response.success && response.data) {
         setMainServiceDetails(response.data);
-        setSelectedMainServiceAddOns(response.data.serviceAddOns.filter(addon => addon.isActive));
+        // ✅ Check if serviceAddOns exists before filtering
+        const serviceAddOns = response.data.serviceAddOns || [];
+        console.log('🎯 ServiceAddOns found:', serviceAddOns.length);
+        const activeAddOns = serviceAddOns.filter(addon => addon.isActive);
+        console.log('✅ Active ServiceAddOns:', activeAddOns.length);
+        setSelectedMainServiceAddOns(activeAddOns);
       }
     } catch (error) {
-      console.error('Load main service error:', error);
+      console.error('❌ Load main service error:', error);
       message.error('Không thể tải thông tin dịch vụ chính');
     }
   };
@@ -568,11 +586,17 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                     showSearch
                     optionFilterProp="children"
                   >
-                    {services.map(service => (
-                      <Option key={service._id} value={service._id}>
-                        {service.name} - {service.price.toLocaleString('vi-VN')}đ
-                      </Option>
-                    ))}
+                    {services.map(service => {
+                      // Get min price from serviceAddOns
+                      const minPrice = service.serviceAddOns && service.serviceAddOns.length > 0
+                        ? Math.min(...service.serviceAddOns.map(a => a.price || 0))
+                        : 0;
+                      return (
+                        <Option key={service._id} value={service._id}>
+                          {service.name}{minPrice > 0 ? ` - Từ ${minPrice.toLocaleString('vi-VN')}đ` : ''}
+                        </Option>
+                      );
+                    })}
                   </Select>
                 </Form.Item>
               </Col>
@@ -795,27 +819,43 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
               </div>
             </Col>
             <Col span={12}>
-              <div><Text type="secondary">Dịch vụ con:</Text></div>
-              {mainServiceDetails && selectedMainServiceAddOns.length > 0 ? (
+              <div>
+                <Text type="secondary">Dịch vụ con: </Text>
+                <Text type="warning" style={{ fontSize: 12 }}>
+                  (Bắt buộc chọn)
+                </Text>
+              </div>
+              {loading ? (
+                <div><Text type="secondary">Đang tải danh sách dịch vụ con...</Text></div>
+              ) : selectedMainServiceAddOns.length > 0 ? (
                 <Select
                   value={record.serviceAddOnId}
                   onChange={handleChangeMainServiceAddOn}
                   style={{ width: '100%' }}
-                  loading={loading}
+                  placeholder="Vui lòng chọn dịch vụ con"
+                  showSearch
+                  optionFilterProp="children"
                 >
                   {selectedMainServiceAddOns.map(addon => (
                     <Option key={addon._id} value={addon._id}>
-                      {addon.name} - {addon.price.toLocaleString('vi-VN')}đ
+                      <Space>
+                        <span>{addon.name}</span>
+                        <Text type="secondary">-</Text>
+                        <Text strong style={{ color: '#1890ff' }}>
+                          {addon.price.toLocaleString('vi-VN')}đ
+                        </Text>
+                        <Tag color="blue">{addon.unit}</Tag>
+                      </Space>
                     </Option>
                   ))}
                 </Select>
               ) : (
-                <>
-                  <div><Text strong>{record.serviceAddOnName || 'Chưa chọn'}</Text></div>
-                  <div style={{ fontSize: 12, color: '#666' }}>
-                    Giá: {(record.serviceAddOnPrice || 0).toLocaleString('vi-VN')}đ
-                  </div>
-                </>
+                <Alert
+                  message="Dịch vụ này không có dịch vụ con"
+                  type="warning"
+                  showIcon
+                  style={{ marginTop: 8 }}
+                />
               )}
             </Col>
           </Row>
@@ -1013,21 +1053,29 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                                 s.type === 'treatment' && 
                                 s.requireExamFirst === true && 
                                 s.isActive === true
-                              ).map(service => (
-                                <Option key={service._id} value={service._id}>
-                                  <Space>
-                                    <span>{service.name}</span>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
-                                      - {service.price.toLocaleString('vi-VN')}đ
-                                    </Text>
-                                  </Space>
-                                </Option>
-                              ))}
+                              ).map(service => {
+                                // Get min price from serviceAddOns
+                                const minPrice = service.serviceAddOns && service.serviceAddOns.length > 0
+                                  ? Math.min(...service.serviceAddOns.map(a => a.price || 0))
+                                  : 0;
+                                return (
+                                  <Option key={service._id} value={service._id}>
+                                    <Space>
+                                      <span>{service.name}</span>
+                                      {minPrice > 0 && (
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          - Từ {minPrice.toLocaleString('vi-VN')}đ
+                                        </Text>
+                                      )}
+                                    </Space>
+                                  </Option>
+                                );
+                              })}
                             </Select>
                           </Form.Item>
-                          {selectedService && (
+                          {selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
                             <div style={{ marginTop: -12, marginBottom: 8, fontSize: 12, color: '#666' }}>
-                              Giá cơ bản: <strong>{selectedService.price.toLocaleString('vi-VN')}đ</strong>
+                              Giá từ: <strong>{Math.min(...selectedService.serviceAddOns.map(a => a.price || 0)).toLocaleString('vi-VN')}đ</strong>
                             </div>
                           )}
                         </Col>
