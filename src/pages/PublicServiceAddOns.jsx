@@ -247,12 +247,12 @@ const PublicServiceAddOns = () => {
                   >
                     <div style={{ 
                       marginTop: '-22px',
-                      marginBottom: '10px',
+                      marginBottom: '5px',
                       display: 'flex',
                       alignItems: 'flex-start',
                       justifyContent: 'center',
-                      // height: '70px',
-                      // maxHeight: '70px',
+                      height: '70px',
+                      maxHeight: '70px',
                       overflow: 'hidden'
                     }}>
                       <h3 
@@ -261,7 +261,7 @@ const PublicServiceAddOns = () => {
                           color: '#313b79',
                           fontWeight: '600',
                           lineHeight: '2rem',
-                          textAlign: 'center',
+                          // textAlign: 'center',
                           margin: 0,
                           wordWrap: 'break-word',
                           wordBreak: 'break-word',
