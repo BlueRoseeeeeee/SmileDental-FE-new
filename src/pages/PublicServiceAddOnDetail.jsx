@@ -478,7 +478,7 @@ const PublicServiceAddOnDetail = () => {
               fontSize: '20px',
               fontWeight: 'bold'
             }}>
-              Có thể bạn sẽ quan tâm
+              Có thể bạn quan tâm
             </h2>
           </div>
 
