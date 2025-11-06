@@ -19,6 +19,8 @@ import roomService from '../services/roomService';
 import queueService from '../services/queueService';
 
 const QueueDashboard = () => {
+  console.log('🚀 QueueDashboard component rendered');
+  
   const [loading, setLoading] = useState(true);
   const [queueStatus, setQueueStatus] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -33,6 +35,33 @@ const QueueDashboard = () => {
   // Payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [completedRecordId, setCompletedRecordId] = useState(null);
+  
+  // Waiting list modal
+  const [showWaitingListModal, setShowWaitingListModal] = useState(false);
+  const [waitingListStatus, setWaitingListStatus] = useState('pending'); // 'pending' | 'in-progress' | 'completed' | 'cancelled'
+  
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('📊 showWaitingListModal changed:', showWaitingListModal);
+  }, [showWaitingListModal]);
+  
+  useEffect(() => {
+    console.log('📊 waitingListStatus changed:', waitingListStatus);
+  }, [waitingListStatus]);
+  
+  // Open waiting list modal
+  const openWaitingListModal = (status) => {
+    console.log('🎯 Opening waiting list modal with status:', status);
+    console.log('🎯 Current queueStatus:', queueStatus);
+    setWaitingListStatus(status);
+    setShowWaitingListModal(true);
+  };
+
+  // Close waiting list modal
+  const closeWaitingListModal = () => {
+    console.log('🎯 Closing waiting list modal');
+    setShowWaitingListModal(false);
+  };
   
   // Socket.IO
   const socketRef = useRef(null);
@@ -90,7 +119,7 @@ const QueueDashboard = () => {
         fetchQueueStatus(true);
         const statusText = {
           pending: 'Chờ khám',
-          in_progress: 'Đang khám',
+          'in-progress': 'Đang khám',
           completed: 'Hoàn thành',
           cancelled: 'Đã hủy'
         }[data.status] || data.status;
@@ -247,7 +276,7 @@ const QueueDashboard = () => {
   const getStatusBadge = (status) => {
     const statusMap = {
       pending: { text: 'Chờ', variant: 'secondary' },
-      in_progress: { text: 'Đang khám', variant: 'primary' },
+      'in-progress': { text: 'Đang khám', variant: 'primary' },
       completed: { text: 'Hoàn thành', variant: 'success' },
       cancelled: { text: 'Đã hủy', variant: 'danger' }
     };
@@ -465,54 +494,160 @@ const QueueDashboard = () => {
             </Col>
           </Row>
 
-          {/* Upcoming Records */}
+          {/* All Appointments Timeline with Scroll */}
           <Row>
             <Col>
               <Card>
                 <Card.Header>
-                  <h5 className="mb-0">Hàng Đợi ({queueStatus.upcoming?.length || 0})</h5>
+                  <h5 className="mb-0">
+                    Lịch Khám Trong Ngày 
+                    {queueStatus.summary && (
+                      <Badge bg="secondary" className="ms-2">
+                        {queueStatus.summary.total} lịch
+                      </Badge>
+                    )}
+                  </h5>
+                  {queueStatus.summary && (
+                    <div className="mt-2">
+                      <Badge 
+                        bg="warning" 
+                        text="dark" 
+                        className="me-2"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => openWaitingListModal('pending')}
+                        title="Click để xem danh sách"
+                      >
+                        <FaUsers className="me-1" />
+                        Chờ: {queueStatus.summary.pending}
+                      </Badge>
+                      <Badge 
+                        bg="primary" 
+                        className="me-2"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => openWaitingListModal('in-progress')}
+                        title="Click để xem danh sách"
+                      >
+                        <FaClock className="me-1" />
+                        Đang khám: {queueStatus.summary.inProgress}
+                      </Badge>
+                      <Badge 
+                        bg="success" 
+                        className="me-2"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => openWaitingListModal('completed')}
+                        title="Click để xem danh sách"
+                      >
+                        <FaCheckCircle className="me-1" />
+                        Hoàn thành: {queueStatus.summary.completed}
+                      </Badge>
+                      <Badge 
+                        bg="danger"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => openWaitingListModal('cancelled')}
+                        title="Click để xem danh sách"
+                      >
+                        <FaTimesCircle className="me-1" />
+                        Đã hủy: {queueStatus.summary.cancelled}
+                      </Badge>
+                    </div>
+                  )}
                 </Card.Header>
                 <Card.Body>
-                  {queueStatus.upcoming && queueStatus.upcoming.length > 0 ? (
-                    <div className="table-responsive">
-                      <table className="table table-hover">
-                        <thead>
-                          <tr>
-                            <th>STT</th>
-                            <th>Bệnh Nhân</th>
-                            <th>Điện Thoại</th>
-                            <th>Trạng Thái</th>
-                            <th>Thao Tác</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {queueStatus.upcoming.map((record, index) => (
-                            <tr key={record._id}>
-                              <td>
-                                <strong>
-                                  {record.queueNumber || `#${index + 1}`}
-                                </strong>
-                              </td>
-                              <td>{record.patientInfo?.name}</td>
-                              <td>{record.patientInfo?.phone}</td>
-                              <td>{getStatusBadge(record.status)}</td>
-                              <td>
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => openCancelModal(record._id)}
-                                >
-                                  Hủy
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                  {queueStatus.timeSlots && queueStatus.timeSlots.length > 0 ? (
+                    <div 
+                      style={{ 
+                        maxHeight: '400px', 
+                        overflowY: 'auto',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        padding: '10px'
+                      }}
+                    >
+                      {queueStatus.timeSlots.map((slot, index) => (
+                        <div key={index} className="mb-2">
+                          {slot.type === 'appointment' ? (
+                            <Card 
+                              className={`
+                                ${slot.status === 'in-progress' ? 'border-primary bg-light' : ''}
+                                ${slot.status === 'completed' ? 'border-success' : ''}
+                                ${slot.status === 'cancelled' ? 'border-danger text-muted' : ''}
+                                ${slot.status === 'pending' ? 'border-warning' : ''}
+                              `}
+                            >
+                              <Card.Body className="py-2 px-3">
+                                <Row className="align-items-center">
+                                  <Col md={2}>
+                                    <div className="text-center">
+                                      <h5 className="mb-0">
+                                        {slot.queueNumber ? (
+                                          <Badge bg="primary">{slot.queueNumber}</Badge>
+                                        ) : (
+                                          <Badge bg="secondary">-</Badge>
+                                        )}
+                                      </h5>
+                                    </div>
+                                  </Col>
+                                  <Col md={3}>
+                                    <div>
+                                      <FaClock className="me-1 text-muted" />
+                                      <strong>{formatTime(slot.startTime)}</strong>
+                                      {' - '}
+                                      <strong>{formatTime(slot.endTime)}</strong>
+                                    </div>
+                                  </Col>
+                                  <Col md={3}>
+                                    <div>
+                                      <strong>{slot.patientName}</strong>
+                                      {slot.patientPhone && (
+                                        <div className="text-muted small">
+                                          {slot.patientPhone}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </Col>
+                                  <Col md={2}>
+                                    {getStatusBadge(slot.status)}
+                                  </Col>
+                                  <Col md={2} className="text-end">
+                                    {slot.status === 'pending' && (
+                                      <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        onClick={() => openCancelModal(slot.recordId)}
+                                      >
+                                        Hủy
+                                      </Button>
+                                    )}
+                                  </Col>
+                                </Row>
+                              </Card.Body>
+                            </Card>
+                          ) : (
+                            // Gap slot
+                            <div 
+                              className="text-center py-2" 
+                              style={{ 
+                                backgroundColor: '#f8f9fa',
+                                border: '1px dashed #dee2e6',
+                                borderRadius: '4px'
+                              }}
+                            >
+                              <small className="text-muted">
+                                <FaClock className="me-1" />
+                                Trống lịch: {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                                {' '}
+                                <Badge bg="light" text="dark">
+                                  {slot.durationMinutes} phút
+                                </Badge>
+                              </small>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <Alert variant="secondary" className="mb-0">
-                      Không có bệnh nhân trong hàng đợi
+                      Không có lịch khám trong ngày này
                     </Alert>
                   )}
                 </Card.Body>
@@ -521,6 +656,222 @@ const QueueDashboard = () => {
           </Row>
         </>
       )}
+
+      {/* Waiting List Modal */}
+      <Modal 
+        show={showWaitingListModal} 
+        onHide={() => setShowWaitingListModal(false)}
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {waitingListStatus === 'pending' && (
+              <>
+                <Badge bg="warning" text="dark" className="me-2">
+                  <FaUsers />
+                </Badge>
+                Danh Sách Bệnh Nhân Đang Chờ
+              </>
+            )}
+            {waitingListStatus === 'in-progress' && (
+              <>
+                <Badge bg="primary" className="me-2">
+                  <FaClock />
+                </Badge>
+                Danh Sách Bệnh Nhân Đang Khám
+              </>
+            )}
+            {waitingListStatus === 'completed' && (
+              <>
+                <Badge bg="success" className="me-2">
+                  <FaCheckCircle />
+                </Badge>
+                Danh Sách Bệnh Nhân Đã Hoàn Thành
+              </>
+            )}
+            {waitingListStatus === 'cancelled' && (
+              <>
+                <Badge bg="danger" className="me-2">
+                  <FaTimesCircle />
+                </Badge>
+                Danh Sách Bệnh Nhân Đã Hủy
+              </>
+            )}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '500px', overflowY: 'auto' }}>
+          {queueStatus && queueStatus.timeSlots ? (
+            <>
+              {(() => {
+                console.log('🔍 All timeSlots:', queueStatus.timeSlots);
+                console.log('🔍 Waiting list status:', waitingListStatus);
+                console.log('🔍 Appointment slots:', queueStatus.timeSlots.filter(slot => slot.type === 'appointment'));
+                console.log('🔍 Status values:', queueStatus.timeSlots.filter(slot => slot.type === 'appointment').map(s => s.status));
+                
+                const filteredSlots = queueStatus.timeSlots
+                  .filter(slot => slot.type === 'appointment' && slot.status === waitingListStatus)
+                  .sort((a, b) => {
+                    const timeA = a.startTime || '';
+                    const timeB = b.startTime || '';
+                    return timeA.localeCompare(timeB);
+                  });
+                
+                console.log('🔍 Filtered slots:', filteredSlots);
+                
+                if (filteredSlots.length === 0) {
+                  return (
+                    <div className="text-center py-5">
+                      <FaUsers size={50} className="text-muted mb-3" />
+                      <p className="text-muted">Không có bệnh nhân nào</p>
+                    </div>
+                  );
+                }
+                
+                return filteredSlots.map((slot, index) => (
+                  <Card 
+                    key={slot.recordId || `${slot.appointmentCode}-${index}`} 
+                    className={`mb-3 ${
+                      slot.status === 'in-progress' ? 'border-primary' : 
+                      slot.status === 'completed' ? 'border-success' : 
+                      slot.status === 'cancelled' ? 'border-danger' : 
+                      'border-warning'
+                    }`}
+                  >
+                    <Card.Body>
+                      <Row className="align-items-center">
+                        <Col md={1}>
+                          <h4 className="mb-0 text-center">
+                            {slot.queueNumber ? (
+                              <Badge bg="primary">{slot.queueNumber}</Badge>
+                            ) : (
+                              <Badge bg="secondary">-</Badge>
+                            )}
+                          </h4>
+                        </Col>
+                        <Col md={3}>
+                          <div className="text-primary">
+                            <FaClock className="me-2" />
+                            <strong>{formatTime(slot.startTime)}</strong>
+                            {' - '}
+                            <strong>{formatTime(slot.endTime)}</strong>
+                          </div>
+                        </Col>
+                        <Col md={4}>
+                          <div>
+                            <strong className="d-block">{slot.patientName}</strong>
+                            {slot.patientPhone && (
+                              <small className="text-muted">
+                                <FaPhone className="me-1" />
+                                {slot.patientPhone}
+                              </small>
+                            )}
+                          </div>
+                        </Col>
+                        <Col md={2}>
+                          <div className="text-muted small">
+                            {slot.serviceName || 'Không rõ dịch vụ'}
+                          </div>
+                        </Col>
+                        <Col md={2} className="text-end">
+                          {slot.status === 'pending' && (
+                            <>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                className="mb-1 w-100"
+                                onClick={() => {
+                                  setShowWaitingListModal(false);
+                                  handleCallRecord(slot.recordId);
+                                }}
+                              >
+                                <FaPhone className="me-1" />
+                                Gọi
+                              </Button>
+                              <Button
+                                variant="outline-danger"
+                                size="sm"
+                                className="w-100"
+                                onClick={() => {
+                                  setShowWaitingListModal(false);
+                                  openCancelModal(slot.recordId);
+                                }}
+                              >
+                                Hủy
+                              </Button>
+                            </>
+                          )}
+                          {slot.status === 'in-progress' && (
+                            <Button
+                              variant="success"
+                              size="sm"
+                              className="w-100"
+                              onClick={() => {
+                                setShowWaitingListModal(false);
+                                handleCompleteRecord(slot.recordId);
+                              }}
+                            >
+                              <FaCheckCircle className="me-1" />
+                              Hoàn thành
+                            </Button>
+                          )}
+                        </Col>
+                      </Row>
+                      
+                      {/* Show subroom info if available */}
+                      {slot.subroomName && (
+                        <Row className="mt-2">
+                          <Col>
+                            <Badge bg="info" text="dark">
+                              {slot.subroomName}
+                            </Badge>
+                          </Col>
+                        </Row>
+                      )}
+                      
+                      {/* Show gap slots between appointments */}
+                      {index < queueStatus.timeSlots.filter(s => s.type === 'appointment' && s.status === waitingListStatus).length - 1 && (
+                        (() => {
+                          const currentSlot = slot;
+                          const nextSlot = queueStatus.timeSlots
+                            .filter(s => s.type === 'appointment' && s.status === waitingListStatus)
+                            [index + 1];
+                          
+                          if (nextSlot) {
+                            const currentEnd = currentSlot.endTime;
+                            const nextStart = nextSlot.startTime;
+                            
+                            if (currentEnd < nextStart) {
+                              return (
+                                <div className="mt-2 text-center">
+                                  <small className="text-muted">
+                                    <FaClock className="me-1" />
+                                    Trống: {currentEnd} - {nextStart}
+                                  </small>
+                                </div>
+                              );
+                            }
+                          }
+                          return null;
+                        })()
+                      )}
+                    </Card.Body>
+                  </Card>
+                ));
+              })()}
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <Spinner animation="border" variant="primary" />
+              <p className="mt-2">Đang tải danh sách...</p>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowWaitingListModal(false)}>
+            Đóng
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Cancel Modal */}
       <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)}>

@@ -68,7 +68,7 @@ const RecordDetailDrawer = ({
   // Status config
   const statusConfig = {
     pending: { color: 'orange', text: 'Chờ khám' },
-    in_progress: { color: 'blue', text: 'Đang khám' },
+    'in-progress': { color: 'blue', text: 'Đang khám' },
     completed: { color: 'green', text: 'Hoàn thành' },
     cancelled: { color: 'red', text: 'Đã hủy' }
   };
@@ -104,7 +104,7 @@ const RecordDetailDrawer = ({
       open={visible}
       extra={
         <Space>
-          {record.status === 'in_progress' && (
+          {record.status === 'in-progress' && (
             <>
               <Button
                 icon={<EditOutlined />}

@@ -540,7 +540,7 @@ export const getRecordStatistics = async (params = {}) => {
   
   const completedRecords = filteredRecords.filter(r => r.status === 'completed');
   const pendingRecords = filteredRecords.filter(r => r.status === 'pending');
-  const inProgressRecords = filteredRecords.filter(r => r.status === 'in_progress');
+  const inProgressRecords = filteredRecords.filter(r => r.status === 'in-progress');
   
   const paidRecords = filteredRecords.filter(r => r.paymentStatus === 'paid');
   const unpaidRecords = filteredRecords.filter(r => r.paymentStatus === 'unpaid');

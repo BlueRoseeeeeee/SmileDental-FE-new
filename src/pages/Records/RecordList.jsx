@@ -167,7 +167,7 @@ const RecordList = () => {
   // Handle start treatment button
   const handleStart = async (record) => {
     try {
-      const response = await recordService.updateRecordStatus(record._id, 'in_progress');
+      const response = await recordService.updateRecordStatus(record._id, 'in-progress');
       if (response.success) {
         message.success('Đã bắt đầu khám');
         loadRecords(); // Reload to update button display
@@ -305,6 +305,20 @@ const RecordList = () => {
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
+      title: 'Giờ bắt đầu DK',
+      dataIndex: 'appointmentStartTime',
+      key: 'appointmentStartTime',
+      width: 110,
+      render: (time) => time || '-'
+    },
+    {
+      title: 'Giờ kết thúc DK',
+      dataIndex: 'appointmentEndTime',
+      key: 'appointmentEndTime',
+      width: 110,
+      render: (time) => time || '-'
+    },
+    {
       title: 'Dịch vụ',
       dataIndex: 'serviceName',
       key: 'serviceName',
@@ -319,20 +333,6 @@ const RecordList = () => {
       ellipsis: true
     },
     {
-      title: 'Chẩn đoán',
-      dataIndex: 'diagnosis',
-      key: 'diagnosis',
-      width: 200,
-      ellipsis: {
-        showTitle: false
-      },
-      render: (text) => (
-        <Tooltip title={text}>
-          <span>{text || '-'}</span>
-        </Tooltip>
-      )
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
@@ -340,7 +340,7 @@ const RecordList = () => {
       render: (status, record) => {
         const statusConfig = {
           pending: { color: 'orange', text: 'Chờ khám' },
-          in_progress: { color: 'blue', text: 'Đang khám' },
+          'in-progress': { color: 'blue', text: 'Đang khám' },
           completed: { color: 'green', text: 'Hoàn thành' },
           cancelled: { color: 'red', text: 'Đã hủy' }
         };
@@ -350,7 +350,7 @@ const RecordList = () => {
         return (
           <Space direction="vertical" size={0}>
             <Tag color={config.color}>{config.text}</Tag>
-            {record.startedAt && status === 'in_progress' && (
+            {record.startedAt && status === 'in-progress' && (
               <Text type="secondary" style={{ fontSize: 11 }}>
                 {dayjs(record.startedAt).format('HH:mm')}
               </Text>
@@ -362,23 +362,6 @@ const RecordList = () => {
             )}
           </Space>
         );
-      }
-    },
-    {
-      title: 'Thanh toán',
-      dataIndex: 'paymentStatus',
-      key: 'paymentStatus',
-      width: 120,
-      render: (status) => {
-        const statusConfig = {
-          unpaid: { color: 'red', text: 'Chưa TT' },
-          partial: { color: 'orange', text: 'TT 1 phần' },
-          paid: { color: 'green', text: 'Đã TT' }
-        };
-        
-        const config = statusConfig[status] || { color: 'default', text: status };
-        
-        return <Tag color={config.color}>{config.text}</Tag>;
       }
     },
     {
@@ -397,13 +380,13 @@ const RecordList = () => {
             />
           </Tooltip>
           
-          <Tooltip title={record.status === 'in_progress' ? 'Sửa' : 'Chỉ có thể sửa khi đang khám'}>
+          <Tooltip title={record.status === 'in-progress' ? 'Sửa' : 'Chỉ có thể sửa khi đang khám'}>
             <Button
               type="text"
               size="small"
               icon={<EditOutlined />}
               onClick={() => handleEdit(record)}
-              disabled={record.status !== 'in_progress'}
+              disabled={record.status !== 'in-progress'}
             />
           </Tooltip>
           
@@ -420,7 +403,7 @@ const RecordList = () => {
             </Tooltip>
           )}
           
-          {record.status === 'in_progress' && (
+          {record.status === 'in-progress' && (
             <Tooltip
               title={record.diagnosis && record.totalCost > 0 ? 'Hoàn thành hồ sơ' : 'Cần cập nhật chẩn đoán & giá trước khi hoàn thành'}
             >
@@ -544,7 +527,7 @@ const RecordList = () => {
               style={{ width: '100%' }}
             >
               <Option value="pending">Chờ khám</Option>
-              <Option value="in_progress">Đang khám</Option>
+              <Option value="in-progress">Đang khám</Option>
               <Option value="completed">Hoàn thành</Option>
               <Option value="cancelled">Đã hủy</Option>
             </Select>

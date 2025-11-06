@@ -43,6 +43,11 @@ const QueueManagement = () => {
   const [currentTime, setCurrentTime] = useState(dayjs());
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  
+  // Waiting list modal
+  const [waitingListModalVisible, setWaitingListModalVisible] = useState(false);
+  const [selectedWaitingList, setSelectedWaitingList] = useState([]);
+  const [selectedRoomInfo, setSelectedRoomInfo] = useState(null);
 
   // Update clock every second
   useEffect(() => {
@@ -243,6 +248,16 @@ const QueueManagement = () => {
     );
   };
 
+  // Handle open waiting list modal
+  const handleOpenWaitingListModal = (room) => {
+    setSelectedWaitingList(room.waitingList || []);
+    setSelectedRoomInfo({
+      roomName: room.roomName,
+      subroomName: room.subroomName
+    });
+    setWaitingListModalVisible(true);
+  };
+
   // Render compact patient info - MINIMIZED
   const renderPatientInfo = (appointment, isWaiting = false) => {
     if (!appointment) return null;
@@ -279,7 +294,7 @@ const QueueManagement = () => {
     const upcomingCount = (nextPatient ? 1 : 0) + waitingList.length;
 
     return (
-      <Col xs={24} sm={12} md={8} lg={6} xl={4} key={room.roomId}>
+      <Col xs={24} sm={12} md={8} lg={6} xl={4} key={room.subroomId ? `${room.roomId}-${room.subroomId}` : room.roomId}>
         <Card 
           className={`room-card-compact ${hasActivePatient ? 'room-busy' : 'room-empty'}`}
           bodyStyle={{ padding: '12px' }}
@@ -402,6 +417,29 @@ const QueueManagement = () => {
                   ⏳ {waitingList.length} BN đang chờ
                 </Text>
               </div>
+              
+              {/* Clickable badge - NEW */}
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenWaitingListModal(room);
+                }}
+                style={{ 
+                  cursor: 'pointer',
+                  marginTop: '4px',
+                  padding: '4px',
+                  backgroundColor: '#e6f7ff',
+                  borderRadius: '4px',
+                  textAlign: 'center'
+                }}
+                title="Click để xem danh sách chi tiết"
+              >
+                <Text 
+                  style={{ fontSize: '11px', color: '#1890ff', fontWeight: 500 }}
+                >
+                  👁️ Xem danh sách
+                </Text>
+              </div>
             </>
           )}
         </Card>
@@ -460,6 +498,118 @@ const QueueManagement = () => {
 
       {/* Detail Modal */}
       {renderDetailModal()}
+
+      {/* Waiting List Modal */}
+      <Modal
+        title={
+          <Space>
+            <TeamOutlined style={{ color: '#1890ff' }} />
+            <span>
+              Danh sách bệnh nhân đang chờ
+              {selectedRoomInfo && (
+                <Text type="secondary" style={{ fontSize: '14px', marginLeft: '8px' }}>
+                  ({selectedRoomInfo.roomName}{selectedRoomInfo.subroomName ? ` - ${selectedRoomInfo.subroomName}` : ''})
+                </Text>
+              )}
+            </span>
+          </Space>
+        }
+        open={waitingListModalVisible}
+        onCancel={() => setWaitingListModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        {selectedWaitingList.length > 0 ? (
+          <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              {selectedWaitingList
+                .sort((a, b) => {
+                  // Sort by startTime
+                  const timeA = a.startTime || '';
+                  const timeB = b.startTime || '';
+                  return timeA.localeCompare(timeB);
+                })
+                .map((appointment, index) => (
+                  <Card 
+                    key={appointment._id || index}
+                    size="small"
+                    hoverable
+                    onClick={() => {
+                      setSelectedAppointment(appointment);
+                      setDetailModalVisible(true);
+                      setWaitingListModalVisible(false);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <Row gutter={[16, 8]} align="middle">
+                      <Col span={2}>
+                        <Avatar 
+                          size="large" 
+                          style={{ backgroundColor: '#1890ff' }}
+                        >
+                          {index + 1}
+                        </Avatar>
+                      </Col>
+                      <Col span={6}>
+                        <Space direction="vertical" size={0}>
+                          <Text strong style={{ fontSize: '15px' }}>
+                            {appointment.patientInfo?.name || 'N/A'}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: '13px' }}>
+                            <PhoneOutlined /> {appointment.patientInfo?.phone || 'N/A'}
+                          </Text>
+                        </Space>
+                      </Col>
+                      <Col span={5}>
+                        <Space direction="vertical" size={0}>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            <ClockCircleOutlined /> Thời gian
+                          </Text>
+                          <Text strong style={{ fontSize: '14px' }}>
+                            {appointment.startTime} - {appointment.endTime}
+                          </Text>
+                        </Space>
+                      </Col>
+                      <Col span={6}>
+                        <Space direction="vertical" size={0}>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            <MedicineBoxOutlined /> Dịch vụ
+                          </Text>
+                          <Text ellipsis style={{ fontSize: '13px' }}>
+                            {appointment.serviceAddOnName || appointment.serviceName || 'N/A'}
+                          </Text>
+                        </Space>
+                      </Col>
+                      <Col span={5}>
+                        {getStatusTag(appointment.status)}
+                      </Col>
+                    </Row>
+                    
+                    {/* Show gap to next appointment */}
+                    {index < selectedWaitingList.length - 1 && (
+                      (() => {
+                        const currentEnd = appointment.endTime;
+                        const nextStart = selectedWaitingList[index + 1].startTime;
+                        if (currentEnd && nextStart && currentEnd < nextStart) {
+                          return (
+                            <Divider style={{ margin: '8px 0' }}>
+                              <Text type="secondary" style={{ fontSize: '11px' }}>
+                                <FieldTimeOutlined /> Trống: {currentEnd} - {nextStart}
+                              </Text>
+                            </Divider>
+                          );
+                        }
+                        return null;
+                      })()
+                    )}
+                  </Card>
+                ))}
+            </Space>
+          </div>
+        ) : (
+          <Empty description="Không có bệnh nhân nào trong danh sách chờ" />
+        )}
+      </Modal>
     </div>
   );
 };

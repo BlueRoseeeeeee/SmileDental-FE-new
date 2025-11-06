@@ -168,7 +168,7 @@ let mockInvoices = [
         subtotal: 15000000,
         discountAmount: 500000,
         totalPrice: 14500000,
-        status: 'in_progress',
+        status: 'in-progress',
         description: 'Giai đoạn 1: Lắp mắc cài'
       }
     ],
