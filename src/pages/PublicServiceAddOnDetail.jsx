@@ -112,15 +112,11 @@ const PublicServiceAddOnDetail = () => {
       ),
     },
     {
-      title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          Dịch vụ
-        </span>
-      ),
+      title: 'Dịch vụ',
     },
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(`/services/pl/${encodeURIComponent(service?.name || '')}`)}>
+        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(`/services/pl/${encodeURIComponent(service?.name || '')}/addons`)}>
           {service?.name || 'Dịch vụ'}
         </span>
       ),

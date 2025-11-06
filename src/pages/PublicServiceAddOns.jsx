@@ -92,7 +92,7 @@ const PublicServiceAddOns = () => {
     },
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <span>
           Dịch vụ
         </span>
       ),
