@@ -13,7 +13,8 @@ import {
   Breadcrumb,
   Spin,
   Divider,
-  Space
+  Space,
+  Tooltip
 } from 'antd';
 import { 
   ArrowLeftOutlined,
@@ -84,6 +85,23 @@ const PublicServiceAddOnDetail = () => {
     return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
   };
 
+  // Lấy danh sách các serviceAddOns khác cùng service (trừ sản phẩm hiện tại đang xem)
+  const getOtherAddOns = () => {
+    if (!service || !addOn) return [];
+    // Lọc các serviceAddOns đang active
+    const activeAddOns = service.serviceAddOns?.filter(addon => addon.isActive) || [];
+    // Loại bỏ sản phẩm hiện tại khỏi danh sách
+    return activeAddOns.filter(addon => addon._id !== addOn._id);
+  };
+
+  // Xử lý khi người dùng click vào một serviceAddOn trong danh sách "Có thể bạn sẽ quan tâm"
+  const handleAddOnClick = (selectedAddOn) => {
+    navigate(`/services/pl/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(selectedAddOn.name)}/detail`);
+  };
+
+  // Lấy danh sách các serviceAddOns khác để hiển thị
+  const otherAddOns = getOtherAddOns();
+
   // Breadcrumb items
   const breadcrumbItems = [
     {
@@ -94,15 +112,11 @@ const PublicServiceAddOnDetail = () => {
       ),
     },
     {
-      title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          Dịch vụ
-        </span>
-      ),
+      title: 'Dịch vụ',
     },
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(`/services/pl/${encodeURIComponent(service?.name || '')}`)}>
+        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(`/services/pl/${encodeURIComponent(service?.name || '')}/addons`)}>
           {service?.name || 'Dịch vụ'}
         </span>
       ),
@@ -434,6 +448,234 @@ const PublicServiceAddOnDetail = () => {
               __html: addOn.description
             }}
           />
+        </div>
+      )}
+
+      {/* Section hiển thị các serviceAddOns khác cùng service - "Có thể bạn sẽ quan tâm" */}
+      {otherAddOns.length > 0 && (
+        <div style={{ marginTop: '64px' }}>
+          {/* Tiêu đề section */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            marginBottom: '32px'
+          }}>
+            {/* Thanh màu xanh bên trái tiêu đề */}
+            <div style={{
+              width: '4px',
+              height: '24px',
+              backgroundColor: '#1890ff',
+              marginRight: '12px',
+              borderRadius: '2px'
+            }} />
+            <h2 style={{
+              margin: 0,
+              color: '#1890ff',
+              fontSize: '20px',
+              fontWeight: 'bold'
+            }}>
+              Có thể bạn quan tâm
+            </h2>
+          </div>
+
+          {/* Grid hiển thị các card serviceAddOns */}
+          <Row gutter={[16, 16]}>
+            {otherAddOns.map((relatedAddOn) => (
+              <Col xs={24} sm={12} md={8} lg={6} xl={6} key={relatedAddOn._id}>
+                <Card
+                  hoverable
+                  onClick={() => handleAddOnClick(relatedAddOn)}
+                  style={{
+                    height: '100%',
+                    borderRadius: '12px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    transition: 'all 0.3s ease',
+                    border: 'none',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    background: 'white'
+                  }}
+                  bodyStyle={{ padding: '0' }}
+                  cover={
+                    <div style={{
+                      height: '200px',
+                      backgroundColor: '#fafafa',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '12px 12px 0 0',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      {/* Hiển thị hình ảnh serviceAddOn nếu có, nếu không thì hiển thị logo mặc định */}
+                      {relatedAddOn.imageUrl ? (
+                        <img 
+                          src={relatedAddOn.imageUrl} 
+                          alt={relatedAddOn.name}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      ) : (
+                        <img 
+                          src={smileDentalLogo} 
+                          alt="SmileDental Logo"
+                          style={{
+                            width: '80px',
+                            height: '80px',
+                            objectFit: 'contain',
+                            opacity: 0.7
+                          }}
+                        />
+                      )}
+                    </div>
+                  }
+                >
+                  <div style={{ 
+                    padding: '16px',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    justifyContent: 'space-between'
+                  }}>
+                    {/* Tên serviceAddOn - có tooltip khi tên quá dài */}
+                    <Tooltip 
+                      title={relatedAddOn.name} 
+                      placement="top"
+                      overlayInnerStyle={{
+                        fontSize: '12px',
+                        padding: '4px 8px',
+                        maxWidth: '300px',
+                        lineHeight: '1.4'
+                      }}
+                    >
+                      <div style={{ 
+                        marginTop: '-22px',
+                        marginBottom: '5px',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'center',
+                        height: '70px',
+                        maxHeight: '70px',
+                        overflow: 'hidden'
+                      }}>
+                        <h3 
+                          style={{ 
+                            fontSize: '1rem',
+                            color: '#313b79',
+                            fontWeight: '600',
+                            lineHeight: '2rem',
+                            margin: 0,
+                            wordWrap: 'break-word',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word',
+                            width: '100%',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical'
+                          }}
+                        >
+                          {relatedAddOn.name}
+                        </h3>
+                      </div>
+                    </Tooltip>
+
+                    {/* Tag hiển thị loại dịch vụ */}
+                    <div style={{ marginBottom: '8px' }}>
+                      <Tag 
+                        style={{ 
+                          borderRadius: '12px',
+                          padding: '4px 12px',
+                          fontSize: '12px',
+                          backgroundColor: '#f0f0f0',
+                          color: '#313b79',
+                          border: 'none',
+                          fontWeight: '500',
+                          height: 'auto',
+                          lineHeight: '1.2'
+                        }}
+                      >
+                        {translateServiceType(service.type)}
+                      </Tag>
+                    </div>
+
+                    {/* Phần hiển thị giá - hỗ trợ hiển thị giá khuyến mãi */}
+                    <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      {relatedAddOn.isPriceModified && relatedAddOn.effectivePrice ? (
+                        <div>
+                          {/* Giá gốc bị gạch ngang */}
+                          <div style={{ marginBottom: '4px' }}>
+                            <span style={{ 
+                              color: '#999',
+                              fontSize: '14px',
+                              textDecoration: 'line-through',
+                              lineHeight: '20px'
+                            }}>
+                              {formatPrice(relatedAddOn.basePrice || relatedAddOn.price)}
+                            </span>
+                          </div>
+                          
+                          {/* Giá khuyến mãi hiện tại */}
+                          <div style={{ marginBottom: '8px' }}>
+                            <span style={{ 
+                              color: '#ff4d4f',
+                              fontSize: '18px',
+                              fontWeight: 'bold',
+                              lineHeight: '24px'
+                            }}>
+                              {formatPrice(relatedAddOn.effectivePrice)}
+                            </span>
+                          </div>
+                          
+                          {/* Thời gian áp dụng giá khuyến mãi */}
+                          <div>
+                            <Text style={{ 
+                              fontSize: '10px',
+                              fontStyle: 'italic',
+                              color: '#666',
+                              lineHeight: '14px'
+                            }}>
+                              Giá áp dụng từ {new Date(relatedAddOn.priceSchedules?.[0]?.startDate).toLocaleDateString('vi-VN')} đến {new Date(relatedAddOn.priceSchedules?.[0]?.endDate).toLocaleDateString('vi-VN')}
+                            </Text>
+                          </div>
+                        </div>
+                      ) : (
+                        // Hiển thị giá thường nếu không có khuyến mãi
+                        <h3 style={{ 
+                          color: '#1D7646', 
+                          fontSize: '18px',
+                          fontWeight: 'bold'
+                        }}>
+                          {formatPrice(relatedAddOn.price)}
+                        </h3>
+                      )}
+                    </div>
+
+                    {/* Nút xem chi tiết */}
+                    <Button
+                      type="primary"
+                      style={{
+                        width: '100%',
+                        borderRadius: '6px',
+                        height: '36px',
+                        backgroundColor: '#e6f7ff',
+                        borderColor: '#1890ff',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        boxShadow: 'none',
+                        marginTop: 'auto'
+                      }}
+                    >
+                      Xem chi tiết
+                    </Button>
+                  </div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
         </div>
       )}
     </div>

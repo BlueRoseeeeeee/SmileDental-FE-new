@@ -21,6 +21,7 @@ import HomepageLayout from './components/Layout/HomepageLayout.jsx';
 
 // Pages
 import Homepage from './pages/Homepage.jsx';
+import About from './pages/About.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
@@ -233,6 +234,13 @@ function App() {
           <Route path="/home" element={
             <HomepageLayout>
               <Homepage />
+            </HomepageLayout>
+          } />
+          
+          {/* Public About Page */}
+          <Route path="/about" element={
+            <HomepageLayout>
+              <About />
             </HomepageLayout>
           } />
            
