@@ -112,19 +112,7 @@ const Header = () => {
           key: '/about',
           label: 'Giới thiệu'
         },
-        {
-          key: '/pricing',
-          label: 'Bảng giá'
-        },
-        servicesMenuItem,
-        {
-          key: '/knowledge',
-          label: 'Kiến thức nha khoa'
-        },
-        {
-          key: '/contact',
-          label: 'Liên hệ'
-        }
+        servicesMenuItem
       ];
     }
   };
