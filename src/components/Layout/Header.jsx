@@ -34,7 +34,7 @@ const Header = () => {
       const response = await servicesService.getServices(1, 100);
       setServices(response.services || []);
     } catch (error) {
-      console.error('Error loading services:', error);
+      setServices([]);
     }
   };
 
@@ -68,12 +68,12 @@ const Header = () => {
   ];
 
   const getServicesMenuItems = () => {
-    return services
-      .filter(service => service.isActive)
-      .map(service => ({
-        key: `/services/pl/${encodeURIComponent(service.name)}/addons`,
-        label: service.name
-      }));
+    const activeServices = services.filter(service => service.isActive);
+    const menuItems = activeServices.map(service => ({
+      key: `/services/pl/${encodeURIComponent(service.name)}/addons`,
+      label: service.name
+    }));
+    return menuItems;
   };
 
   // Menu items based on authentication status
@@ -92,6 +92,17 @@ const Header = () => {
       ];
     } else {
       // Menu for non-authenticated users
+      const serviceItems = getServicesMenuItems();
+      const servicesMenuItem = {
+        key: '/services',
+        label: 'Dịch vụ'
+      };
+      
+      // Chỉ thêm children nếu có services active
+      if (serviceItems.length > 0) {
+        servicesMenuItem.children = serviceItems;
+      }
+      
       return [
         {
           key: '/',
@@ -105,11 +116,7 @@ const Header = () => {
           key: '/pricing',
           label: 'Bảng giá'
         },
-        {
-          key: '/services',
-          label: 'Dịch vụ',
-          children: getServicesMenuItems()
-        },
+        servicesMenuItem,
         {
           key: '/knowledge',
           label: 'Kiến thức nha khoa'
@@ -220,11 +227,18 @@ const Header = () => {
           color: rgb(49, 59, 121) !important;
         }
 
+        .services-dropdown {
+          z-index: 10001 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup {
+          z-index: 10001 !important;
+        }
         .services-dropdown .ant-menu-submenu-popup .ant-menu {
           background: #ffffff !important;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
           border-radius: 6px !important;
           min-width: 200px !important;
+          z-index: 10001 !important;
         }
         .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item {
           color: #333 !important;

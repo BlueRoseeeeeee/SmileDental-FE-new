@@ -7,45 +7,66 @@ export const servicesService = {
   // Lấy tất cả services (không phân trang)
   async getAllServices() {
     const response = await serviceApi.get('/service?page=1&limit=1000');
-    return response.data;
+    const data = response.data;
+    
+    // Fix lại theo Cấu trúc mới: { success: true, data: [...], pagination: {...} }
+    return {
+      services: data.data || [],
+      total: data.pagination?.total || 0,
+      page: data.pagination?.page || 1,
+      limit: data.pagination?.limit || 1000,
+      totalPages: data.pagination?.totalPages || 1
+    };
   },
 
   // Lấy danh sách services
   async getServices(page = 1, limit = 10) {
     const response = await serviceApi.get(`/service?page=${page}&limit=${limit}`);
-    return response.data;
+    const data = response.data;
+    
+    // Fix lại theo Cấu trúc mới từ BE: { success: true, data: [...], pagination: {...} }
+    return {
+      services: data.data || [],
+      total: data.pagination?.total || 0,
+      page: data.pagination?.page || page,
+      limit: data.pagination?.limit || limit,
+      totalPages: data.pagination?.totalPages || 1
+    };
   },
 
   // Lấy chi tiết service theo ID
   async getServiceById(serviceId) {
     const response = await serviceApi.get(`/service/${serviceId}`);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Tạo service mới
   async createService(serviceData) {
-    // ✅ Don't set Content-Type for FormData - browser will set it automatically with boundary
-    // This also prevents overriding the Authorization header from apiFactory interceptor
     const response = await serviceApi.post('/service', serviceData);
-    return response.data;
+    //Fix lại theo Cấu trúc mới từ BE: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Cập nhật service
   async updateService(serviceId, serviceData) {
     const response = await serviceApi.put(`/service/${serviceId}`, serviceData);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Bật/tắt trạng thái dịch vụ
   async toggleServiceStatus(serviceId) {
     const response = await serviceApi.patch(`/service/${serviceId}/toggle`);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Xóa dịch vụ
   async deleteService(serviceId) {
     const response = await serviceApi.delete(`/service/${serviceId}`);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // === SERVICE ADD-ONS APIs ===
@@ -53,7 +74,8 @@ export const servicesService = {
   // Lấy chi tiết add-on theo ID
   async getServiceAddOnById(serviceId, addOnId) {
     const response = await serviceApi.get(`/service/${serviceId}/addons/${addOnId}`);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Thêm add-on cho dịch vụ
@@ -61,7 +83,8 @@ export const servicesService = {
     // ✅ Don't set Content-Type for FormData - browser will set it automatically
     // This prevents overriding the Authorization header
     const response = await serviceApi.post(`/service/${serviceId}/addons`, addOnData);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Cập nhật add-on
@@ -86,25 +109,30 @@ export const servicesService = {
     
     const response = await serviceApi.put(`/service/${serviceId}/addons/${addOnId}`, addOnData);
     console.log('✅ [servicesService] Response:', response.data);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Toggle trạng thái add-on
   async toggleServiceAddOn(serviceId, addOnId) {
     const response = await serviceApi.patch(`/service/${serviceId}/addons/${addOnId}/toggle`);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Xóa add-on
   async deleteServiceAddOn(serviceId, addOnId) {
     const response = await serviceApi.delete(`/service/${serviceId}/addons/${addOnId}`);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Get room types enum
   async getRoomTypes() {
     const response = await serviceApi.get('/service/enums/room-types');
-    return response.data?.data || {};
+    // Cấu trúc mới: { success: true, data: {...} }
+    const data = response.data.data || response.data;
+    return data?.data || data || {};
   },
 
   // === 🆕 PRICE SCHEDULE APIs ===
@@ -115,7 +143,8 @@ export const servicesService = {
       `/service/${serviceId}/addons/${addOnId}/price-schedules`, 
       scheduleData
     );
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Cập nhật lịch giá
@@ -124,7 +153,8 @@ export const servicesService = {
       `/service/${serviceId}/addons/${addOnId}/price-schedules/${scheduleId}`, 
       scheduleData
     );
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Xóa lịch giá
@@ -132,7 +162,8 @@ export const servicesService = {
     const response = await serviceApi.delete(
       `/service/${serviceId}/addons/${addOnId}/price-schedules/${scheduleId}`
     );
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Toggle trạng thái active của lịch giá
@@ -140,7 +171,8 @@ export const servicesService = {
     const response = await serviceApi.patch(
       `/service/${serviceId}/addons/${addOnId}/price-schedules/${scheduleId}/toggle`
     );
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // === 🆕 TEMPORARY PRICE APIs (for Service) ===
@@ -151,12 +183,14 @@ export const servicesService = {
       `/service/${serviceId}/temporary-price`, 
       temporaryPriceData
     );
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   },
 
   // Xóa giá tạm thời
   async removeTemporaryPrice(serviceId) {
     const response = await serviceApi.delete(`/service/${serviceId}/temporary-price`);
-    return response.data;
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
   }
 };
