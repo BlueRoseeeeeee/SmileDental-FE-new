@@ -253,6 +253,45 @@
   white-space: pre-wrap;
 }
 
+/* Image Preview in Message */
+.message-image-preview {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.message-image-preview img {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Service Suggestions */
+.message-suggestions {
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.message-suggestions strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #667eea;
+}
+
+.message-suggestions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.message-suggestions li {
+  margin: 2px 0;
+}
+
 .message-time {
   font-size: 11px;
   opacity: 0.7;
@@ -343,11 +382,112 @@
   cursor: not-allowed;
 }
 
+/* Image Upload Button */
+.chatbox-input .ant-btn-default {
+  border-radius: 20px;
+  height: 36px;
+  min-width: 110px;
+  border-color: #667eea;
+  color: #667eea;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.chatbox-input .ant-btn-default:hover:not(:disabled) {
+  border-color: #5568d3;
+  color: #5568d3;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.chatbox-input .ant-btn-default:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Drag Overlay */
+.chatbox-drag-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(102, 126, 234, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  color: white;
+  pointer-events: none;
+}
+
+.chatbox-drag-overlay p {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* Image Preview Container */
+.chatbox-image-preview-container {
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  animation: slideUp 0.3s ease;
+}
+
+.image-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.image-preview-header span {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.image-preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+/* Upload Button Highlight */
+.chatbox-input .ant-btn-text:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+/* Image Upload Instructions */
+.chatbox-input::after {
+  content: '';
+  display: block;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .chatbox-window {
     width: calc(100vw - 40px);
     height: calc(100vh - 40px);
     max-height: 600px;
+  }
+  
+  .image-preview {
+    max-height: 150px;
   }
 }
