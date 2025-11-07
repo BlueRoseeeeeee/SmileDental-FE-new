@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-const RECORD_API_BASE = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010/api/record';
+const RECORD_API_BASE = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010';
 
 // Create API instance with base URL
 const api = axios.create({
-  baseURL: RECORD_API_BASE,
+  baseURL: `${RECORD_API_BASE}/api/record`,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',

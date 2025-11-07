@@ -64,7 +64,8 @@ const QueueDashboard = () => {
   };
   
   // Socket.IO
-  const socketRef = useRef(null);
+  const socketRef = useRef(null); // Record socket
+  const appointmentSocketRef = useRef(null); // Appointment socket
   const [isConnected, setIsConnected] = useState(false);
 
   // Fetch rooms on mount
@@ -74,47 +75,86 @@ const QueueDashboard = () => {
 
   // Setup Socket.IO connection
   useEffect(() => {
-    // Initialize socket connection
-    const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000', {
+    // ✅ Connect to BOTH services for complete real-time updates
+    // 1. APPOINTMENT SERVICE (port 3006) - for appointment updates (check-in, cancel)
+    // 2. RECORD SERVICE (port 3010) - for record updates (in-progress, completed)
+    
+    const APPOINTMENT_SERVICE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    const RECORD_SERVICE_URL = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010';
+    
+    // Socket 1: Appointment Service
+    const appointmentSocket = io(APPOINTMENT_SERVICE_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5
     });
 
-    socketRef.current = socket;
+    // Socket 2: Record Service
+    const recordSocket = io(RECORD_SERVICE_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
 
-    // Connection events
-    socket.on('connect', () => {
-      console.log('✅ Socket.IO connected:', socket.id);
+    socketRef.current = recordSocket; // Keep main reference to record socket
+    appointmentSocketRef.current = appointmentSocket; // Save appointment socket
+
+    // ===== APPOINTMENT SOCKET EVENTS =====
+    appointmentSocket.on('connect', () => {
+      console.log('✅ Appointment Socket connected:', appointmentSocket.id);
+      toast.success('Kết nối appointment service thành công', { autoClose: 1000 });
+    });
+
+    appointmentSocket.on('disconnect', () => {
+      console.log('❌ Appointment Socket disconnected');
+    });
+
+    appointmentSocket.on('appointment:status-changed', (data) => {
+      console.log('📅 [Appointment Socket] Status changed:', data);
+      if (data.roomId === selectedRoomId) {
+        fetchQueueStatus(true);
+        toast.info(`${data.patientName || 'Bệnh nhân'}: ${data.message}`, { autoClose: 2000 });
+      }
+    });
+
+    appointmentSocket.on('queue:updated', (data) => {
+      console.log('🔄 [Appointment Socket] Queue updated:', data);
+      if (data.roomId === selectedRoomId && data.date === selectedDate) {
+        fetchQueueStatus(true);
+      }
+    });
+
+    // ===== RECORD SOCKET EVENTS =====
+    recordSocket.on('connect', () => {
+      console.log('✅ Record Socket connected:', recordSocket.id);
       setIsConnected(true);
-      toast.success('Kết nối real-time thành công', { autoClose: 2000 });
+      toast.success('Kết nối record service thành công', { autoClose: 1000 });
     });
 
-    socket.on('disconnect', () => {
-      console.log('❌ Socket.IO disconnected');
+    recordSocket.on('disconnect', () => {
+      console.log('❌ Record Socket disconnected');
       setIsConnected(false);
-      toast.warning('Mất kết nối real-time', { autoClose: 2000 });
+      toast.warning('Mất kết nối record service', { autoClose: 2000 });
     });
 
-    socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+    recordSocket.on('connect_error', (error) => {
+      console.error('Record Socket connection error:', error);
       setIsConnected(false);
     });
 
     // Listen for record updates
-    socket.on('record:updated', (data) => {
-      console.log('📨 Record updated:', data);
-      // Refresh queue status if it's the current room
+    recordSocket.on('record:updated', (data) => {
+      console.log('📨 [Record Socket] Record updated:', data);
       if (data.roomId === selectedRoomId) {
-        fetchQueueStatus(true); // Silent refresh
+        fetchQueueStatus(true);
         toast.info(`Cập nhật: ${data.message || 'Hàng đợi đã thay đổi'}`, { autoClose: 2000 });
       }
     });
 
-    // Listen for record status changes
-    socket.on('record:status-changed', (data) => {
-      console.log('📊 Record status changed:', data);
+    recordSocket.on('record:status-changed', (data) => {
+      console.log('📊 [Record Socket] Status changed:', data);
       if (data.roomId === selectedRoomId) {
         fetchQueueStatus(true);
         const statusText = {
@@ -127,9 +167,8 @@ const QueueDashboard = () => {
       }
     });
 
-    // Listen for queue updates
-    socket.on('queue:updated', (data) => {
-      console.log('🔄 Queue updated:', data);
+    recordSocket.on('queue:updated', (data) => {
+      console.log('� [Record Socket] Queue updated:', data);
       if (data.roomId === selectedRoomId && data.date === selectedDate) {
         fetchQueueStatus(true);
       }
@@ -137,25 +176,43 @@ const QueueDashboard = () => {
 
     // Cleanup on unmount
     return () => {
-      console.log('🔌 Disconnecting socket...');
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('connect_error');
-      socket.off('record:updated');
-      socket.off('record:status-changed');
-      socket.off('queue:updated');
-      socket.disconnect();
+      console.log('� Disconnecting sockets...');
+      appointmentSocket.off('connect');
+      appointmentSocket.off('disconnect');
+      appointmentSocket.off('appointment:status-changed');
+      appointmentSocket.off('queue:updated');
+      appointmentSocket.disconnect();
+
+      recordSocket.off('connect');
+      recordSocket.off('disconnect');
+      recordSocket.off('connect_error');
+      recordSocket.off('record:updated');
+      recordSocket.off('record:status-changed');
+      recordSocket.off('queue:updated');
+      recordSocket.disconnect();
     };
   }, [selectedRoomId, selectedDate]);
 
   // Join room when selected
   useEffect(() => {
-    if (socketRef.current && socketRef.current.connected && selectedRoomId) {
-      console.log('🚪 Joining room:', selectedRoomId);
-      socketRef.current.emit('join:room', {
+    // Join BOTH sockets to the room
+    if (selectedRoomId) {
+      const roomData = {
         roomId: selectedRoomId,
         date: selectedDate
-      });
+      };
+
+      // Join appointment socket
+      if (appointmentSocketRef.current && appointmentSocketRef.current.connected) {
+        console.log('🚪 [Appointment Socket] Joining room:', selectedRoomId);
+        appointmentSocketRef.current.emit('join:room', roomData);
+      }
+
+      // Join record socket
+      if (socketRef.current && socketRef.current.connected) {
+        console.log('🚪 [Record Socket] Joining room:', selectedRoomId);
+        socketRef.current.emit('join:room', roomData);
+      }
     }
   }, [selectedRoomId, selectedDate]);
 
