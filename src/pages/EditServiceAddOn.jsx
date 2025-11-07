@@ -91,7 +91,9 @@ const EditServiceAddOn = () => {
       // Fetch service details
       const serviceResponse = await servicesService.getServiceById(serviceId);
       console.log('Service response:', serviceResponse);
-      setService(serviceResponse);
+      // Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const serviceData = serviceResponse?.data || serviceResponse;
+      setService(serviceData);
 
       // Fetch add-on details
       const addOnResponse = await servicesService.getServiceAddOnById(serviceId, addonId);

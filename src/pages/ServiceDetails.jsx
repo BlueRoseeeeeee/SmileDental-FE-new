@@ -201,7 +201,9 @@ const ServiceDetails = () => {
     setLoading(true);
     try {
       const response = await servicesService.getServiceById(serviceId);
-      setService(response);
+      // Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const serviceData = response?.data || response;
+      setService(serviceData);
     } catch {
       toastService.error('Không thể tải chi tiết dịch vụ');
       navigate('/dashboard/services');
@@ -466,11 +468,13 @@ const ServiceDetails = () => {
         toastService.success('Thêm lịch giá thành công!');
       }
 
-      // 🆕 Refresh service data and update selectedAddOnForPrice
+      // Refresh service data and update selectedAddOnForPrice
       await fetchServiceDetails();
       
-      // 🆕 Update selectedAddOnForPrice with fresh data
-      const updatedService = await servicesService.getServiceById(serviceId);
+      //  Update selectedAddOnForPrice with fresh data
+      const updatedServiceResponse = await servicesService.getServiceById(serviceId);
+      //  Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const updatedService = updatedServiceResponse?.data || updatedServiceResponse;
       const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
       if (updatedAddOn) {
         setSelectedAddOnForPrice(updatedAddOn);
@@ -499,7 +503,9 @@ const ServiceDetails = () => {
       // 🆕 Refresh service data and update selectedAddOnForPrice
       await fetchServiceDetails();
       
-      const updatedService = await servicesService.getServiceById(serviceId);
+      const updatedServiceResponse = await servicesService.getServiceById(serviceId);
+      // Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const updatedService = updatedServiceResponse?.data || updatedServiceResponse;
       const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
       if (updatedAddOn) {
         setSelectedAddOnForPrice(updatedAddOn);
@@ -519,10 +525,12 @@ const ServiceDetails = () => {
       );
       toastService.success('Cập nhật trạng thái lịch giá thành công!');
       
-      // 🆕 Refresh service data and update selectedAddOnForPrice
+      // Refresh service data and update selectedAddOnForPrice
       await fetchServiceDetails();
       
-      const updatedService = await servicesService.getServiceById(serviceId);
+      const updatedServiceResponse = await servicesService.getServiceById(serviceId);
+      //  Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const updatedService = updatedServiceResponse?.data || updatedServiceResponse;
       const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
       if (updatedAddOn) {
         setSelectedAddOnForPrice(updatedAddOn);

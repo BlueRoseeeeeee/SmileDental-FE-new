@@ -81,7 +81,9 @@ const AddServiceAddOn = () => {
     setLoading(true);
     try {
       const response = await servicesService.getServiceById(serviceId);
-      setService(response);
+      //  Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const serviceData = response?.data || response;
+      setService(serviceData);
       
       // Load draft if exists
       const draft = loadDraft();

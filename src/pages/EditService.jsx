@@ -126,8 +126,13 @@ const EditService = () => {
     try {
       console.log('Fetching service details for ID:', serviceId);
       const response = await servicesService.getServiceById(serviceId);
-      console.log('Service response:', response);
-      setService(response);
+      
+      //  Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      // Nếu response có structure { success: true, data: {...} } thì extract data
+      // Nếu response đã là service object thì dùng trực tiếp
+      const serviceData = response?.data || response;
+      console.log('Service data tram test:', serviceData);
+      setService(serviceData);
       
       // Load draft if exists
       const draft = loadDraft();
@@ -138,12 +143,12 @@ const EditService = () => {
         message.info('Đã khôi phục bản nháp chưa lưu');
       } else {
         form.setFieldsValue({
-          name: response.name,
-          type: response.type,
-          requireExamFirst: response.requireExamFirst,
-          allowedRoomTypes: response.allowedRoomTypes || []
+          name: serviceData.name,
+          type: serviceData.type,
+          requireExamFirst: serviceData.requireExamFirst,
+          allowedRoomTypes: serviceData.allowedRoomTypes || []
         });
-        setServiceDescription(response.description || '');
+        setServiceDescription(serviceData.description || '');
       }
     } catch (error) {
       console.error('Error fetching service details:', error);
@@ -464,7 +469,9 @@ const EditService = () => {
       await fetchServiceDetails();
       
       // Update selectedAddOnForPrice with fresh data
-      const updatedService = await servicesService.getServiceById(serviceId);
+      const updatedServiceResponse = await servicesService.getServiceById(serviceId);
+      //  Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const updatedService = updatedServiceResponse?.data || updatedServiceResponse;
       const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
       if (updatedAddOn) {
         setSelectedAddOnForPrice(updatedAddOn);
