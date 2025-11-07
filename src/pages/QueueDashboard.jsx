@@ -119,10 +119,20 @@ const QueueDashboard = () => {
       }
     });
 
-    appointmentSocket.on('queue:updated', (data) => {
-      console.log('🔄 [Appointment Socket] Queue updated:', data);
-      if (data.roomId === selectedRoomId && data.date === selectedDate) {
+    appointmentSocket.on('queue_updated', (data) => {
+      console.log('='.repeat(80));
+      console.log('� [QueueDashboard - Appointment Socket] Received queue_updated event!');
+      console.log('📋 Event data:', data);
+      console.log('🏥 Current room:', selectedRoomId);
+      console.log('🏥 Event room:', data.roomId);
+      console.log('✅ Match:', data.roomId === selectedRoomId);
+      console.log('='.repeat(80));
+      
+      if (data.roomId === selectedRoomId) {
+        console.log('🔄 [QueueDashboard] Calling fetchQueueStatus(true) to refresh...');
         fetchQueueStatus(true);
+      } else {
+        console.log('⏭️ [QueueDashboard] Skipping refresh - different room');
       }
     });
 
@@ -167,20 +177,30 @@ const QueueDashboard = () => {
       }
     });
 
-    recordSocket.on('queue:updated', (data) => {
-      console.log('� [Record Socket] Queue updated:', data);
-      if (data.roomId === selectedRoomId && data.date === selectedDate) {
+    recordSocket.on('queue_updated', (data) => {
+      console.log('='.repeat(80));
+      console.log('� [QueueDashboard - Record Socket] Received queue_updated event!');
+      console.log('📋 Event data:', data);
+      console.log('🏥 Current room:', selectedRoomId);
+      console.log('🏥 Event room:', data.roomId);
+      console.log('✅ Match:', data.roomId === selectedRoomId);
+      console.log('='.repeat(80));
+      
+      if (data.roomId === selectedRoomId) {
+        console.log('🔄 [QueueDashboard] Calling fetchQueueStatus(true) to refresh...');
         fetchQueueStatus(true);
+      } else {
+        console.log('⏭️ [QueueDashboard] Skipping refresh - different room');
       }
     });
 
     // Cleanup on unmount
     return () => {
-      console.log('� Disconnecting sockets...');
+      console.log('🔌 Disconnecting sockets...');
       appointmentSocket.off('connect');
       appointmentSocket.off('disconnect');
       appointmentSocket.off('appointment:status-changed');
-      appointmentSocket.off('queue:updated');
+      appointmentSocket.off('queue_updated');
       appointmentSocket.disconnect();
 
       recordSocket.off('connect');
@@ -188,7 +208,7 @@ const QueueDashboard = () => {
       recordSocket.off('connect_error');
       recordSocket.off('record:updated');
       recordSocket.off('record:status-changed');
-      recordSocket.off('queue:updated');
+      recordSocket.off('queue_updated');
       recordSocket.disconnect();
     };
   }, [selectedRoomId, selectedDate]);
@@ -247,14 +267,24 @@ const QueueDashboard = () => {
     if (!silent) setLoading(true);
 
     try {
+      console.log('🔄 [fetchQueueStatus] Fetching queue data...', {
+        date: selectedDate,
+        roomId: selectedRoomId,
+        silent
+      });
+      
       const response = await queueService.getQueueStatus(selectedDate, selectedRoomId);
 
       if (response.success) {
+        console.log('✅ [fetchQueueStatus] Queue data loaded:', {
+          appointmentsCount: response.data?.appointments?.length || 0,
+          room: response.data?.room?.name
+        });
         setQueueStatus(response.data);
       }
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching queue status:', error);
+      console.error('❌ [fetchQueueStatus] Error:', error);
       toast.error('Không thể tải trạng thái hàng đợi');
       setQueueStatus(null);
       setLoading(false);

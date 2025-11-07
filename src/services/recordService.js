@@ -255,12 +255,30 @@ class RecordService {
    * @param {String} id - Record ID
    * @returns {Promise<Object>} { success, message, data: {...} }
    */
-  async completeRecord(id) {
+  async completeRecord(id, paymentMethod = 'cash') {
     try {
-      const response = await api.patch(`/${id}/complete`);
+      const response = await api.patch(`/${id}/complete`, { paymentMethod });
       return response.data;
     } catch (error) {
       console.error('completeRecord error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get payment info for record (preview before completing)
+   * Fetches appointment and invoice data to calculate deposit
+   * @param {String} id - Record ID
+   * @returns {Promise<Object>} { success, data: { totalCost, depositAmount, finalAmount, hasDeposit, ... } }
+   */
+  async getPaymentInfo(id) {
+    try {
+      console.log(`📞 [recordService.getPaymentInfo] Calling API for record: ${id}`);
+      const response = await api.get(`/${id}/payment-info`);
+      console.log('✅ [recordService.getPaymentInfo] Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ [recordService.getPaymentInfo] Error:', error);
       throw error;
     }
   }

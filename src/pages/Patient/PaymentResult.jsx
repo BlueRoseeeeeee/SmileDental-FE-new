@@ -24,16 +24,22 @@ const PaymentResult = () => {
     }, 1000);
   }, []);
 
-  // Determine appointments page based on user role
-  const getAppointmentsPath = () => {
-    if (user?.role === 'admin' || user?.role === 'manager') {
-      return '/patient-appointments'; // Admin appointments management page
+  // Check if user is staff (admin, manager, or receptionist)
+  const isStaff = () => {
+    const roles = user?.roles || [];
+    return roles.includes('admin') || roles.includes('manager') || roles.includes('receptionist');
+  };
+
+  // Determine redirect path based on user role
+  const getSuccessRedirectPath = () => {
+    if (isStaff()) {
+      return '/dashboard/invoices'; // Staff -> Invoices page
     }
-    return '/patient/appointments'; // Patient appointments page
+    return '/patient/appointments'; // Patient -> Appointments page
   };
 
   const getResultConfig = () => {
-    const appointmentsPath = getAppointmentsPath();
+    const successRedirectPath = getSuccessRedirectPath();
     
     switch (status) {
       case 'success':
@@ -41,12 +47,14 @@ const PaymentResult = () => {
           status: 'success',
           icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
           title: 'Thanh toán thành công!',
-          subTitle: 'Cảm ơn bạn đã thanh toán. Lịch khám đã được xác nhận.',
+          subTitle: isStaff() 
+            ? 'Thanh toán đã được xác nhận. Hóa đơn đã được cập nhật.' 
+            : 'Cảm ơn bạn đã thanh toán. Lịch khám đã được xác nhận.',
           extra: [
-            <Button type="primary" key="appointments" onClick={() => navigate(appointmentsPath)}>
-              Xem lịch khám
+            <Button type="primary" key="redirect" onClick={() => navigate(successRedirectPath)}>
+              {isStaff() ? 'Về danh sách hóa đơn' : 'Xem lịch khám'}
             </Button>,
-            <Button key="home" onClick={() => navigate(user?.role === 'patient' ? '/patient' : '/dashboard')}>
+            <Button key="home" onClick={() => navigate(isStaff() ? '/dashboard' : '/patient')}>
               Về trang chủ
             </Button>,
           ],
@@ -59,10 +67,10 @@ const PaymentResult = () => {
           title: 'Thanh toán thất bại',
           subTitle: `Đã có lỗi xảy ra trong quá trình thanh toán. ${message || 'Vui lòng thử lại.'}`,
           extra: [
-            <Button type="primary" key="retry" onClick={() => navigate('/patient/booking/create-appointment')}>
-              Thử lại
+            <Button type="primary" key="retry" onClick={() => navigate(isStaff() ? '/dashboard/invoices' : '/patient/booking/create-appointment')}>
+              {isStaff() ? 'Quay lại hóa đơn' : 'Thử lại'}
             </Button>,
-            <Button key="home" onClick={() => navigate('/patient/dashboard')}>
+            <Button key="home" onClick={() => navigate(isStaff() ? '/dashboard' : '/patient')}>
               Về trang chủ
             </Button>,
           ],
@@ -75,10 +83,10 @@ const PaymentResult = () => {
           title: 'Có lỗi xảy ra',
           subTitle: message || 'Không thể xác nhận thanh toán. Vui lòng liên hệ với chúng tôi.',
           extra: [
-            <Button type="primary" key="support" onClick={() => navigate('/patient/support')}>
-              Liên hệ hỗ trợ
+            <Button type="primary" key="support" onClick={() => navigate(isStaff() ? '/dashboard/invoices' : '/patient/support')}>
+              {isStaff() ? 'Quay lại hóa đơn' : 'Liên hệ hỗ trợ'}
             </Button>,
-            <Button key="home" onClick={() => navigate('/patient/dashboard')}>
+            <Button key="home" onClick={() => navigate(isStaff() ? '/dashboard' : '/patient')}>
               Về trang chủ
             </Button>,
           ],

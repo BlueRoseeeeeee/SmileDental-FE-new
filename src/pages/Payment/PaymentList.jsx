@@ -21,7 +21,10 @@ import {
   Descriptions,
   Statistic,
   Tooltip,
-  Spin
+  Spin,
+  Alert,
+  Divider,
+  InputNumber
 } from 'antd';
 import {
   SearchOutlined,
@@ -37,12 +40,15 @@ import {
   getPayments,
   searchPayments,
   getPaymentById,
-  confirmPayment,
+  confirmCashPayment as confirmCashPaymentApi,
+  updatePayment,
+  createVNPayUrlForPayment,
   cancelPayment
 } from '../../services/payment.api';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+const { TextArea } = Input;
 
 const PaymentList = () => {
   const [loading, setLoading] = useState(false);
@@ -68,6 +74,14 @@ const PaymentList = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  
+  // 🆕 Payment method selection modal
+  const [paymentMethodModalVisible, setPaymentMethodModalVisible] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cash');
+  const [processingPayment, setProcessingPayment] = useState(null);
+  const [cashPaidAmount, setCashPaidAmount] = useState(0);
+  const [cashNotes, setCashNotes] = useState('');
+  const [modalSubmitting, setModalSubmitting] = useState(false);
 
   useEffect(() => {
     fetchPayments();
@@ -169,22 +183,96 @@ const PaymentList = () => {
     }
   };
 
-  const handleConfirmPayment = async (paymentId) => {
-    Modal.confirm({
-      title: 'Xác nhận thanh toán',
-      content: 'Bạn có chắc chắn muốn xác nhận thanh toán này?',
-      onOk: async () => {
-        try {
-          const response = await confirmPayment(paymentId);
-          if (response.success) {
-            message.success('Xác nhận thanh toán thành công');
-            fetchPayments();
-          }
-        } catch (error) {
-          message.error('Không thể xác nhận thanh toán');
+  const handleConfirmPayment = (payment) => {
+    setProcessingPayment(payment);
+    setSelectedPaymentMethod(payment.method || 'cash');
+    setCashPaidAmount(payment.finalAmount || payment.originalAmount || 0);
+    setCashNotes('');
+    setModalSubmitting(false);
+    setPaymentMethodModalVisible(true);
+  };
+  
+  // 🆕 Handle payment method confirmation
+  const handleProcessPayment = async () => {
+    if (!processingPayment) {
+      return;
+    }
+
+    if (!selectedPaymentMethod) {
+      message.warning('Vui lòng chọn phương thức thanh toán');
+      return;
+    }
+
+    try {
+      setModalSubmitting(true);
+
+      if (!processingPayment.method || selectedPaymentMethod !== processingPayment.method) {
+        console.log(`📝 Updating payment method from ${processingPayment.method || 'null'} to ${selectedPaymentMethod}`);
+        const updateResponse = await updatePayment(processingPayment._id, {
+          method: selectedPaymentMethod
+        });
+
+        if (!updateResponse.success) {
+          throw new Error(updateResponse.message || 'Không thể cập nhật phương thức thanh toán');
         }
+
+        setProcessingPayment(prev => (prev ? { ...prev, method: selectedPaymentMethod } : prev));
+        setPayments(prev => prev.map(item => (
+          item._id === processingPayment._id
+            ? { ...item, method: selectedPaymentMethod }
+            : item
+        )));
+        console.log('✅ Payment method updated successfully');
       }
-    });
+
+      if (selectedPaymentMethod === 'vnpay') {
+        console.log('💳 Creating VNPay URL for payment:', processingPayment.paymentCode);
+        const vnpayResponse = await createVNPayUrlForPayment(processingPayment._id);
+
+        if (vnpayResponse.success && vnpayResponse.data?.paymentUrl) {
+          message.success('Đang mở trang thanh toán VNPay...');
+          setPaymentMethodModalVisible(false);
+          setProcessingPayment(null);
+          setCashPaidAmount(0);
+          setCashNotes('');
+          window.open(vnpayResponse.data.paymentUrl, '_blank');
+          return;
+        }
+
+        throw new Error(vnpayResponse.message || 'Không thể tạo URL thanh toán VNPay');
+      }
+
+      if (selectedPaymentMethod === 'cash') {
+        const requiredAmount = processingPayment.finalAmount || 0;
+
+        if (!cashPaidAmount || cashPaidAmount < requiredAmount) {
+          message.error('Số tiền thanh toán chưa đủ');
+          return;
+        }
+
+        const confirmResponse = await confirmCashPaymentApi(
+          processingPayment._id,
+          cashPaidAmount,
+          cashNotes
+        );
+
+        if (!confirmResponse.success) {
+          throw new Error(confirmResponse.message || 'Không thể xác nhận thanh toán tiền mặt');
+        }
+
+        message.success('Xác nhận thanh toán tiền mặt thành công');
+        setPaymentMethodModalVisible(false);
+        setProcessingPayment(null);
+        setCashPaidAmount(0);
+        setCashNotes('');
+        fetchPayments();
+      }
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      message.error(error.message || 'Có lỗi xảy ra khi xử lý thanh toán');
+    } finally {
+      setModalSubmitting(false);
+    }
   };
 
   const handleCancelPayment = async (paymentId) => {
@@ -321,11 +409,16 @@ const PaymentList = () => {
       dataIndex: 'method',
       key: 'method',
       width: 130,
-      render: (method) => (
-        <Tag color={getMethodColor(method)}>
-          {getMethodText(method)}
-        </Tag>
-      )
+      render: (method) => {
+        if (!method) {
+          return <Tag color="default">Chưa chọn</Tag>;
+        }
+        return (
+          <Tag color={getMethodColor(method)}>
+            {getMethodText(method)}
+          </Tag>
+        );
+      }
     },
     {
       title: 'Số tiền',
@@ -338,9 +431,14 @@ const PaymentList = () => {
           <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
             {amount?.toLocaleString('vi-VN')} đ
           </div>
-          {record.discountAmount > 0 && (
-            <small style={{ color: '#999', textDecoration: 'line-through' }}>
-              {record.originalAmount?.toLocaleString('vi-VN')} đ
+          {record.depositAmount > 0 && (
+            <small style={{ color: '#52c41a' }}>
+              (Đã cọc: {record.depositAmount?.toLocaleString('vi-VN')} đ)
+            </small>
+          )}
+          {record.depositAmount === 0 && record.originalAmount && (
+            <small style={{ color: '#999' }}>
+              (Chưa cọc)
             </small>
           )}
         </div>
@@ -385,13 +483,15 @@ const PaymentList = () => {
             />
           </Tooltip>
           {record.status === 'pending' && (
-            <Tooltip title="Xác nhận">
+            <Tooltip title="Thanh toán">
               <Button
-                type="text"
+                type="primary"
+                size="small"
                 icon={<CheckCircleOutlined />}
-                onClick={() => handleConfirmPayment(record._id)}
-                style={{ color: '#52c41a' }}
-              />
+                onClick={() => handleConfirmPayment(record)}
+              >
+                Thanh toán
+              </Button>
             </Tooltip>
           )}
           {['pending', 'processing'].includes(record.status) && (
@@ -625,6 +725,190 @@ const PaymentList = () => {
               </Descriptions.Item>
             )}
           </Descriptions>
+        )}
+      </Modal>
+
+      {/* 🆕 Payment Method Selection Modal */}
+      <Modal
+        title={
+          <Space>
+            <span>Chọn phương thức thanh toán</span>
+            {processingPayment && !processingPayment.method && (
+              <Tag color="orange">Chưa chọn phương thức</Tag>
+            )}
+          </Space>
+        }
+        open={paymentMethodModalVisible}
+        onCancel={() => {
+          setPaymentMethodModalVisible(false);
+          setProcessingPayment(null);
+          setCashPaidAmount(0);
+          setCashNotes('');
+        }}
+        onOk={handleProcessPayment}
+        okText={selectedPaymentMethod === 'vnpay' ? 'Thanh toán VNPay' : 'Xác nhận thanh toán'}
+        cancelText="Hủy"
+        width={600}
+        confirmLoading={modalSubmitting}
+        okButtonProps={{
+          disabled: !selectedPaymentMethod || (
+            selectedPaymentMethod === 'cash' && (
+              !cashPaidAmount ||
+              cashPaidAmount < (processingPayment?.finalAmount || 0)
+            )
+          )
+        }}
+      >
+        {processingPayment && (
+          <div>
+            <Card size="small" style={{ marginBottom: 16, background: '#f0f5ff' }}>
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="Mã thanh toán">
+                  <strong>{processingPayment.paymentCode}</strong>
+                </Descriptions.Item>
+                <Descriptions.Item label="Bệnh nhân">
+                  {processingPayment.patientInfo?.name}
+                </Descriptions.Item>
+                <Descriptions.Item label="Mô tả">
+                  {processingPayment.description}
+                </Descriptions.Item>
+                <Descriptions.Item label="Tổng tiền dịch vụ">
+                  <span style={{ fontSize: 14 }}>
+                    {processingPayment.originalAmount?.toLocaleString('vi-VN')} đ
+                  </span>
+                </Descriptions.Item>
+                {processingPayment.depositAmount > 0 && (
+                  <Descriptions.Item label="Đã cọc trước">
+                    <Tag color="green">
+                      -{processingPayment.depositAmount?.toLocaleString('vi-VN')} đ
+                    </Tag>
+                  </Descriptions.Item>
+                )}
+                <Descriptions.Item label="Số tiền cần thanh toán">
+                  <strong style={{ fontSize: 16, color: '#1890ff' }}>
+                    {processingPayment.finalAmount?.toLocaleString('vi-VN')} đ
+                  </strong>
+                </Descriptions.Item>
+                {processingPayment.depositAmount === 0 && (
+                  <Descriptions.Item label="Ghi chú">
+                    <Tag color="default">Chưa có cọc trước</Tag>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+
+            {/* Warning nếu chưa có method */}
+            {!processingPayment.method && (
+              <Alert
+                message="Phương thức thanh toán chưa được chọn"
+                description="Vui lòng chọn phương thức thanh toán phù hợp bên dưới trước khi xác nhận."
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 8 }}>
+                <Space>
+                  <span style={{ fontWeight: 'bold' }}>Chọn phương thức thanh toán:</span>
+                  {processingPayment.method && (
+                    <Tag color="blue">Hiện tại: {getMethodText(processingPayment.method)}</Tag>
+                  )}
+                </Space>
+              </div>
+              <Select
+                value={selectedPaymentMethod}
+                onChange={setSelectedPaymentMethod}
+                style={{ width: '100%' }}
+                size="large"
+              >
+                <Option value="cash">
+                  <Space>
+                    <DollarOutlined />
+                    <span>Tiền mặt</span>
+                  </Space>
+                </Option>
+                <Option value="vnpay">
+                  <Space>
+                    <span style={{ color: '#1890ff' }}>💳</span>
+                    <span>VNPay (Chuyển khoản)</span>
+                  </Space>
+                </Option>
+              </Select>
+            </div>
+
+            {selectedPaymentMethod === 'cash' && (
+              <Card size="small" style={{ background: '#fffbe6' }}>
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <Space>
+                    <DollarOutlined style={{ color: '#faad14' }} />
+                    <span>
+                      Vui lòng xác nhận đã nhận đủ <strong>{processingPayment.finalAmount?.toLocaleString('vi-VN')} đ</strong> tiền mặt từ bệnh nhân
+                    </span>
+                  </Space>
+
+                  <div>
+                    <span style={{ fontWeight: 500 }}>Số tiền nhận từ bệnh nhân:</span>
+                    <InputNumber
+                      style={{ width: '100%', marginTop: 8 }}
+                      value={cashPaidAmount}
+                      min={processingPayment.finalAmount || 0}
+                      step={10000}
+                      formatter={(value) => {
+                        if (value === null || value === undefined || value === '') {
+                          return '₫ ';
+                        }
+                        return `₫ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                      }}
+                      parser={(value) => (value ? value.replace(/₫\s?|,/g, '') : '')}
+                      onChange={(value) => setCashPaidAmount(Number(value) || 0)}
+                    />
+                  </div>
+
+                  <div>
+                    <span style={{ fontWeight: 500 }}>Ghi chú (tùy chọn):</span>
+                    <TextArea
+                      value={cashNotes}
+                      onChange={(e) => setCashNotes(e.target.value)}
+                      placeholder="Ví dụ: bệnh nhân thanh toán đủ tiền mặt, đã khấu trừ tiền cọc, v.v."
+                      rows={2}
+                      style={{ marginTop: 8 }}
+                    />
+                  </div>
+
+                  <Divider style={{ margin: '8px 0' }} />
+
+                  <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                    <span>Tổng tiền cần thanh toán:</span>
+                    <strong>{processingPayment.finalAmount?.toLocaleString('vi-VN')} đ</strong>
+                  </Space>
+                  <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                    <span>Khách đưa:</span>
+                    <strong>{cashPaidAmount?.toLocaleString('vi-VN')} đ</strong>
+                  </Space>
+
+                  {cashPaidAmount > (processingPayment.finalAmount || 0) && (
+                    <Space style={{ width: '100%', justifyContent: 'space-between', color: '#52c41a' }}>
+                      <span>Tiền thừa:</span>
+                      <strong>{(cashPaidAmount - (processingPayment.finalAmount || 0))?.toLocaleString('vi-VN')} đ</strong>
+                    </Space>
+                  )}
+                </Space>
+              </Card>
+            )}
+
+            {selectedPaymentMethod === 'vnpay' && (
+              <Card size="small" style={{ background: '#e6f7ff' }}>
+                <Space>
+                  <span>💳</span>
+                  <span>
+                    Bệnh nhân sẽ được chuyển đến trang thanh toán VNPay để quét mã QR hoặc nhập thông tin thẻ
+                  </span>
+                </Space>
+              </Card>
+            )}
+          </div>
         )}
       </Modal>
     </div>

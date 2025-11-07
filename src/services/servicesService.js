@@ -38,7 +38,8 @@ export const servicesService = {
   async getServiceById(serviceId) {
     const response = await serviceApi.get(`/service/${serviceId}`);
     // Cấu trúc mới: { success: true, data: {...} }
-    return response.data.data || response.data;
+    // ✅ Return full response to preserve success flag
+    return response.data;
   },
 
   // Tạo service mới

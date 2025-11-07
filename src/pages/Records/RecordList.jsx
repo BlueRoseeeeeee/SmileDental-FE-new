@@ -45,7 +45,7 @@ import dayjs from 'dayjs';
 import recordService from '../../services/recordService';
 import RecordFormModal from './RecordFormModal';
 import RecordDetailDrawer from './RecordDetailDrawer';
-import PaymentModal from '../../components/Payment/PaymentModal';
+import PaymentConfirmModal from '../../components/Payment/PaymentConfirmModal';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -91,17 +91,17 @@ const RecordList = () => {
     dateRange
   ]);
 
-  // Auto refresh every 30 seconds (only when no filters applied)
-  useEffect(() => {
-    const hasFilters = searchKeyword || filterType || filterStatus || filterDentist || dateRange;
-    if (hasFilters) return; // Don't auto-refresh when filtering
+  // ❌ Auto refresh disabled - use manual refresh button instead
+  // useEffect(() => {
+  //   const hasFilters = searchKeyword || filterType || filterStatus || filterDentist || dateRange;
+  //   if (hasFilters) return; // Don't auto-refresh when filtering
 
-    const intervalId = setInterval(() => {
-      loadRecords();
-    }, 30000); // 30 seconds
+  //   const intervalId = setInterval(() => {
+  //     loadRecords();
+  //   }, 30000); // 30 seconds
 
-    return () => clearInterval(intervalId);
-  }, [searchKeyword, filterType, filterStatus, filterDentist, dateRange]);
+  //   return () => clearInterval(intervalId);
+  // }, [searchKeyword, filterType, filterStatus, filterDentist, dateRange]);
 
   // Load records
   const loadRecords = async () => {
@@ -185,30 +185,93 @@ const RecordList = () => {
   };
 
   // Handle complete button
-  const handleComplete = (record) => {
-    confirm({
-      title: 'Hoàn thành hồ sơ?',
-      content: `Bạn có chắc muốn hoàn thành hồ sơ ${record.recordCode}?`,
-      okText: 'Hoàn thành',
-      cancelText: 'Hủy',
-      onOk: async () => {
-        try {
-          const response = await recordService.completeRecord(record._id);
-          
-          if (response.success) {
-            message.success('Hồ sơ đã được hoàn thành');
-            loadRecords();
-            
-            // Show payment modal after completion
-            setSelectedRecord(record);
-            setShowPaymentModal(true);
-          }
-        } catch (error) {
-          console.error('Complete record error:', error);
-          message.error('Không thể hoàn thành hồ sơ');
-        }
-      }
+  const handleComplete = async (record) => {
+    console.log('='.repeat(80));
+    console.log('🎯 [RecordList] handleComplete called');
+    console.log('📋 Record details:', {
+      _id: record._id,
+      recordCode: record.recordCode,
+      appointmentId: record.appointmentId,
+      status: record.status,
+      diagnosis: record.diagnosis,
+      totalCost: record.totalCost,
+      serviceAddOnId: record.serviceAddOnId,
+      serviceAddOnName: record.serviceAddOnName,
+      bookingChannel: record.bookingChannel
     });
+    console.log('='.repeat(80));
+    
+    // ✅ Validation: Check required fields
+    const errors = [];
+    
+    if (!record.diagnosis || record.diagnosis.trim() === '') {
+      errors.push('Chưa nhập chẩn đoán');
+    }
+    
+    if (!record.serviceAddOnId) {
+      errors.push('Chưa chọn dịch vụ con cho dịch vụ chính');
+    }
+    
+    if (errors.length > 0) {
+      console.warn('❌ [RecordList] Validation failed:', errors);
+      Modal.warning({
+        title: 'Không thể hoàn thành hồ sơ',
+        content: (
+          <div>
+            <p>Vui lòng hoàn thiện các thông tin sau:</p>
+            <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+              {errors.map((error, index) => (
+                <li key={index} style={{ color: '#ff4d4f' }}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        ),
+        okText: 'Đã hiểu'
+      });
+      return;
+    }
+    
+    console.log('✅ [RecordList] All validations passed - fetching payment info...');
+    
+    try {
+      // 🆕 Fetch payment info from backend (appointment + invoice data)
+      setLoading(true);
+      console.log(`📞 [RecordList] Calling API: GET /api/records/${record._id}/payment-info`);
+      
+      const response = await recordService.getPaymentInfo(record._id);
+      
+      if (response.success) {
+        console.log('✅ [RecordList] Payment info received:', response.data);
+        
+        // Merge payment info with record data
+        const recordWithPaymentInfo = {
+          ...record,
+          appointmentDeposit: response.data.depositAmount || 0,
+          appointmentBookingChannel: response.data.bookingChannel || 'offline',
+          hasDeposit: response.data.hasDeposit || false,
+          invoiceNumber: response.data.invoiceNumber,
+          finalAmount: response.data.finalAmount
+        };
+        
+        console.log('🎯 [RecordList] Opening payment modal with enriched data:', {
+          totalCost: recordWithPaymentInfo.totalCost,
+          depositAmount: recordWithPaymentInfo.appointmentDeposit,
+          finalAmount: recordWithPaymentInfo.finalAmount,
+          hasDeposit: recordWithPaymentInfo.hasDeposit
+        });
+        
+        // Show payment confirmation modal
+        setSelectedRecord(recordWithPaymentInfo);
+        setShowPaymentModal(true);
+      } else {
+        throw new Error(response.message || 'Không thể lấy thông tin thanh toán');
+      }
+    } catch (error) {
+      console.error('❌ [RecordList] Error fetching payment info:', error);
+      message.error(error.message || 'Không thể lấy thông tin thanh toán');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle delete button
@@ -322,8 +385,21 @@ const RecordList = () => {
       title: 'Dịch vụ',
       dataIndex: 'serviceName',
       key: 'serviceName',
-      width: 180,
-      ellipsis: true
+      width: 220,
+      render: (serviceName, record) => (
+        <Space direction="vertical" size={0}>
+          <Text strong>{serviceName}</Text>
+          {record.serviceAddOnName ? (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              ↳ {record.serviceAddOnName}
+            </Text>
+          ) : (
+            <Text type="warning" style={{ fontSize: 11 }}>
+              ⚠️ Chưa chọn dịch vụ con
+            </Text>
+          )}
+        </Space>
+      )
     },
     {
       title: 'Nha sĩ',
@@ -405,18 +481,40 @@ const RecordList = () => {
           
           {record.status === 'in-progress' && (
             <Tooltip
-              title={record.diagnosis && record.totalCost > 0 ? 'Hoàn thành hồ sơ' : 'Cần cập nhật chẩn đoán & giá trước khi hoàn thành'}
+              title={
+                (() => {
+                  const missingFields = [];
+                  if (!record.diagnosis || record.diagnosis.trim() === '') {
+                    missingFields.push('chẩn đoán');
+                  }
+                  if (!record.serviceAddOnId) {
+                    missingFields.push('dịch vụ con');
+                  }
+                  
+                  if (missingFields.length > 0) {
+                    return `Cần cập nhật: ${missingFields.join(', ')}`;
+                  }
+                  return 'Hoàn thành hồ sơ';
+                })()
+              }
             >
               <Button
                 type="primary"
                 size="small"
                 icon={<CheckCircleOutlined />}
-                onClick={() => handleComplete(record)}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent row click
+                  handleComplete(record);
+                }}
                 style={{ 
                   backgroundColor: '#52c41a',
                   borderColor: '#52c41a'
                 }}
-                disabled={!(record.diagnosis && record.diagnosis.trim() && record.totalCost > 0)}
+                disabled={
+                  !record.diagnosis || 
+                  record.diagnosis.trim() === '' || 
+                  !record.serviceAddOnId
+                }
               >
                 Hoàn thành
               </Button>
@@ -607,19 +705,20 @@ const RecordList = () => {
         />
       )}
 
-      {/* Payment Modal */}
+      {/* Payment Confirmation Modal - Preview before completing record */}
       {showPaymentModal && selectedRecord && (
-        <PaymentModal
+        <PaymentConfirmModal
           visible={showPaymentModal}
-          recordId={selectedRecord._id}
+          record={selectedRecord}
           onCancel={() => {
             setShowPaymentModal(false);
             setSelectedRecord(null);
           }}
-          onSuccess={(payment) => {
-            console.log('✅ Payment completed:', payment);
-            message.success('Thanh toán thành công!');
-            loadRecords(); // Reload to update payment status
+          onSuccess={(completedRecord) => {
+            console.log('✅ Record completed:', completedRecord);
+            setShowPaymentModal(false);
+            setSelectedRecord(null);
+            loadRecords(); // Reload to update status
           }}
         />
       )}

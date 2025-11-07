@@ -224,14 +224,50 @@ export const confirmPayment = async (id) => {
 /**
  * Confirm cash payment
  * @param {string} id - Payment ID
+ * @param {number} paidAmount - Amount received from patient
+ * @param {string} notes - Optional notes
  * @returns {Promise} Confirmed payment
  */
-export const confirmCashPayment = async (id) => {
+export const confirmCashPayment = async (id, paidAmount, notes = '') => {
   try {
-    const response = await paymentApi.post(`/payments/${id}/confirm-cash`);
+    const response = await paymentApi.post(`/payments/${id}/confirm-cash`, {
+      paidAmount,
+      notes
+    });
     return response.data;
   } catch (error) {
     console.error('Error confirming cash payment:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update payment (e.g., method, notes)
+ * @param {string} id - Payment ID
+ * @param {Object} payload - Fields to update
+ * @returns {Promise} Updated payment
+ */
+export const updatePayment = async (id, payload) => {
+  try {
+    const response = await paymentApi.put(`/payments/${id}`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating payment:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create VNPay URL for an existing payment
+ * @param {string} id - Payment ID
+ * @returns {Promise} Payment URL payload
+ */
+export const createVNPayUrlForPayment = async (id) => {
+  try {
+    const response = await paymentApi.post(`/payments/${id}/vnpay-url`);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating VNPay URL:', error);
     throw error;
   }
 };
@@ -344,6 +380,8 @@ export default {
   createCashPayment,
   confirmPayment,
   confirmCashPayment,
+  updatePayment,
+  createVNPayUrlForPayment,
   cancelPayment,
   createRefund,
   verifyPayment,
