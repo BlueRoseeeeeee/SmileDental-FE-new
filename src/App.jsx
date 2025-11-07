@@ -76,8 +76,10 @@ import InvoiceTemplate from './pages/Invoices/InvoiceTemplate.jsx';
 // Payment Management
 import PaymentList from './pages/Payment/PaymentList.jsx';
 
-// Statistics Dashboard
-import StatisticsDashboard from './pages/Statistics/StatisticsDashboard.jsx';
+// Statistics Dashboard (New - 3 pages based on model analysis)
+import RevenueStatistics from './pages/Statistics/RevenueStatistics.jsx';
+import BookingChannelStatistics from './pages/Statistics/BookingChannelStatistics.jsx';
+import PatientRetentionStatistics from './pages/Statistics/PatientRetentionStatistics.jsx';
 
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
@@ -455,12 +457,29 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* Statistics Dashboard */}
-            <Route path="statistics" element={
-              <ProtectedRoute roles={['admin', 'manager']}>
-                <StatisticsDashboard />
-              </ProtectedRoute>
-            } />
+            {/* Statistics Dashboard - New (3 pages based on model analysis) */}
+            <Route path="statistics">
+              <Route index element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <RevenueStatistics />
+                </ProtectedRoute>
+              } />
+              <Route path="revenue" element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <RevenueStatistics />
+                </ProtectedRoute>
+              } />
+              <Route path="booking-channels" element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <BookingChannelStatistics />
+                </ProtectedRoute>
+              } />
+              <Route path="patient-retention" element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <PatientRetentionStatistics />
+                </ProtectedRoute>
+              } />
+            </Route>
             
             {/* Room Management */}
             <Route path="rooms" element={

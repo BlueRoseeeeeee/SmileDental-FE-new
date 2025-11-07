@@ -162,7 +162,18 @@ const DashboardLayout = () => {
         children: [
           { key: '/dashboard/invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined /> },
           { key: '/dashboard/payments', label: 'Quản lý thanh toán', icon: <DollarOutlined /> },
-                    { key: '/dashboard/statistics', label: 'Thống kê & Báo cáo', icon: <BarChartOutlined /> },
+        ]
+      });
+
+      // 📊 V. THỐNG KÊ & BÁO CÁO (New - 3 pages based on model analysis)
+      addMenuItem({
+        key: 'statistics',
+        icon: <BarChartOutlined />,
+        label: 'Thống kê & Báo cáo',
+        children: [
+          { key: '/dashboard/statistics/revenue', label: '💰 Thống kê Doanh thu', icon: <DollarOutlined /> },
+          { key: '/dashboard/statistics/booking-channels', label: '📱 Thống kê Online/Offline', icon: <CalendarOutlined /> },
+          { key: '/dashboard/statistics/patient-retention', label: '👥 Thống kê BN Quay lại', icon: <HeartOutlined /> },
         ]
       });
     }
