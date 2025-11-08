@@ -3616,7 +3616,7 @@ const StaffAssignmentUnified = () => {
                 </Space>
               </Col>
               <Col>
-                <Space size="middle" wrap align="center">
+                <Space size="middle" wrap align="center" style={{marginTop:10}}>
                   <Space size={8} align="center">
                     <Text strong>Chọn ca:</Text>
                     <Checkbox.Group
@@ -3641,19 +3641,18 @@ const StaffAssignmentUnified = () => {
               </Col>
             </Row>
 
-            {roomCalendarData && roomCalendarData?.shiftOverview && Object.keys(roomCalendarData.shiftOverview).length > 0 && selectedShiftFilters.length === 0 && availableShiftKeys.length > 0 && (
+            {/* {roomCalendarData && roomCalendarData?.shiftOverview && Object.keys(roomCalendarData.shiftOverview).length > 0 && selectedShiftFilters.length === 0 && availableShiftKeys.length > 0 && (
               <Alert
                 message="Vui lòng chọn ca làm việc"
                 description="Bạn cần chọn ít nhất một ca làm việc (Ca Sáng, Ca Chiều, Ca Tối) để có thể phân công nhân sự."
                 type="info"
                 showIcon
               />
-            )}
+            )} */}
 
             {roomCalendarData && selectableSlotStats.total === 0 && selectedShiftFilters.length > 0 && roomCalendarData?.shiftOverview && Object.keys(roomCalendarData.shiftOverview).length > 0 && (
               <Alert
                 message="Không có slot khả dụng để phân công"
-                description="Tất cả các slot trong tháng này đã qua hoặc không thuộc ca làm việc đã chọn. Vui lòng kiểm tra bộ lọc ca làm việc hoặc chọn tháng khác."
                 type="info"
                 showIcon
               />
@@ -4909,7 +4908,7 @@ const StaffAssignmentUnified = () => {
                     <Empty description="Không có dữ liệu lịch" />
                   ) : (
                     <>
-                      {/* ⭐ Loading overlay when selecting all slots */}
+                      {/*  Loading overlay when selecting all slots */}
                       {selectingAllMonthStaff && (
                         <div
                           style={{
@@ -4982,7 +4981,7 @@ const StaffAssignmentUnified = () => {
                           </Space>
                         </Col>
                         <Col>
-                          <Space size="middle" wrap align="center">
+                          <Space size="middle" wrap align="center" style={{marginTop:10}}>
                             <Space size={8} align="center">
                               <Text strong>Chọn ca:</Text>
                               <Checkbox.Group
@@ -5007,14 +5006,14 @@ const StaffAssignmentUnified = () => {
                         </Col>
                       </Row>
 
-                      {staffCalendarData && availableShiftKeysStaff.length > 0 && selectedShiftFiltersStaff.length === 0 && (
+                      {/* {staffCalendarData && availableShiftKeysStaff.length > 0 && selectedShiftFiltersStaff.length === 0 && (
                         <Alert
                           message="Vui lòng chọn ca làm việc"
                           description="Bạn cần chọn ít nhất một ca làm việc để xem và chọn slot cần thay thế."
                           type="info"
                           showIcon
                         />
-                      )}
+                      )} */}
 
                       {staffCalendarData && selectableSlotStatsForStaff.total === 0 && selectedShiftFiltersStaff.length > 0 && availableShiftKeysStaff.length > 0 && (
                         <Alert
