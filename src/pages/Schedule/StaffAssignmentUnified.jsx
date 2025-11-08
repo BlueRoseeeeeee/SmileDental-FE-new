@@ -3788,6 +3788,68 @@ const StaffAssignmentUnified = () => {
                                   const slotDetailsForPopover = shiftSelection?.slots?.length ? shiftSelection.slots : cachedSlots;
                                   const isQuickSelectLoading = quickSelectLoadingKey === cacheKey;
                                   
+                                  // ⭐ Collect staff info from all slots in shift (for display)
+                                  const dentistInfoMap = new Map();
+                                  const nurseInfoMap = new Map();
+                                  if (Array.isArray(slotsForInfo) && slotsForInfo.length > 0) {
+                                    slotsForInfo.forEach(slot => {
+                                      // Collect dentist info
+                                      if (Array.isArray(slot.dentist)) {
+                                        slot.dentist.forEach(d => {
+                                          if (d?._id || d?.id) {
+                                            const id = (d._id || d.id).toString();
+                                            if (!dentistInfoMap.has(id)) {
+                                              const fullName = d.fullName || d.name || 'N/A';
+                                              const employeeCode = d.employeeCode || d.code || null;
+                                              dentistInfoMap.set(id, { fullName, employeeCode });
+                                            }
+                                          }
+                                        });
+                                      } else if (slot.dentist) {
+                                        const d = slot.dentist;
+                                        if (d?._id || d?.id) {
+                                          const id = (d._id || d.id).toString();
+                                          if (!dentistInfoMap.has(id)) {
+                                            const fullName = d.fullName || d.name || 'N/A';
+                                            const employeeCode = d.employeeCode || d.code || null;
+                                            dentistInfoMap.set(id, { fullName, employeeCode });
+                                          }
+                                        }
+                                      }
+                                      
+                                      // Collect nurse info
+                                      if (Array.isArray(slot.nurse)) {
+                                        slot.nurse.forEach(n => {
+                                          if (n?._id || n?.id) {
+                                            const id = (n._id || n.id).toString();
+                                            if (!nurseInfoMap.has(id)) {
+                                              const fullName = n.fullName || n.name || 'N/A';
+                                              const employeeCode = n.employeeCode || n.code || null;
+                                              nurseInfoMap.set(id, { fullName, employeeCode });
+                                            }
+                                          }
+                                        });
+                                      } else if (slot.nurse) {
+                                        const n = slot.nurse;
+                                        if (n?._id || n?.id) {
+                                          const id = (n._id || n.id).toString();
+                                          if (!nurseInfoMap.has(id)) {
+                                            const fullName = n.fullName || n.name || 'N/A';
+                                            const employeeCode = n.employeeCode || n.code || null;
+                                            nurseInfoMap.set(id, { fullName, employeeCode });
+                                          }
+                                        }
+                                      }
+                                    });
+                                  }
+                                  
+                                  const dentistList = Array.from(dentistInfoMap.values())
+                                    .map(info => info.employeeCode ? `${info.employeeCode}| ${info.fullName}` : info.fullName)
+                                    .join(', ');
+                                  const nurseList = Array.from(nurseInfoMap.values())
+                                    .map(info => info.employeeCode ? `${info.employeeCode}| ${info.fullName}` : info.fullName)
+                                    .join(', ');
+                                  
                                   return (
                                     <td 
                                       key={date.format('YYYY-MM-DD')} 
@@ -3843,23 +3905,25 @@ const StaffAssignmentUnified = () => {
                                             }}
                                           >
                                             <div style={{ cursor: 'pointer' }}>
-                                              <Tag color="cyan" size="small">
-                                                {totalSlotsInShift || slotCount} slot
-                                              </Tag>
-                                              <div style={{ fontSize: '10px', marginTop: 2 }}>
-                                                <Text style={{
-                                                  color:
-                                                    coverageNumerator === coverageDenominator && coverageDenominator > 0
-                                                      ? '#52c41a'
-                                                      : coverageNumerator > 0
-                                                        ? '#faad14'
-                                                        : '#ff4d4f'
-                                                }}>
-                                                  PC: {coverageNumerator}/{coverageDenominator || totalSlotsInShift || slotCount}
-                                                </Text>
-                                              </div>
-                                              <div style={{ fontSize: '10px', color: '#1890ff', marginTop: 4 }}>
-                                                Hover hoặc click để chọn slot
+                                              <div style={{ fontSize: '13px', marginTop: 2 }}>
+                                                {coverageNumerator > 0 ? (
+                                                  <div>
+                                                    {dentistList && (
+                                                      <div style={{ color: '#1890ff' }}>
+                                                        <span style={{ fontWeight: '600' }}>NS:</span>{dentistList}
+                                                      </div>
+                                                    )}
+                                                    {nurseList && (
+                                                      <div style={{ color: '#52c41a', marginTop: 4, marginBottom: 4}}>
+                                                        <span style={{ fontWeight: '600' }}>YT:</span> {nurseList}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                ) : (
+                                                  <div style={{ color: '#ff4d4f' }}>
+                                                    Chưa phân công
+                                                  </div>
+                                                )}
                                               </div>
                                             </div>
                                           </Popover>
