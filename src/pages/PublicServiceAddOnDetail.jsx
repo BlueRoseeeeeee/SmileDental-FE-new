@@ -33,12 +33,9 @@ const PublicServiceAddOnDetail = () => {
   const [service, setService] = useState(null);
   const [addOn, setAddOn] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (serviceName && addOnName) {
-      fetchServiceAddOnDetail();
-    }
-  }, [serviceName, addOnName]);
+  
+  // Detect xem đang ở patient layout hay homepage layout
+  const isPatientLayout = window.location.pathname.startsWith('/patient');
 
   const fetchServiceAddOnDetail = async () => {
     setLoading(true);
@@ -58,18 +55,25 @@ const PublicServiceAddOnDetail = () => {
         if (foundAddOn) {
           setAddOn(foundAddOn);
         } else {
-          navigate('/');
+          navigate(isPatientLayout ? '/patient' : '/');
         }
       } else {
-        navigate('/');
+        navigate(isPatientLayout ? '/patient' : '/');
       }
     } catch (error) {
       console.error('Error fetching service add-on detail:', error);
-      navigate('/');
+      navigate(isPatientLayout ? '/patient' : '/');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (serviceName && addOnName) {
+      fetchServiceAddOnDetail();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceName, addOnName]);
 
   // Dịch loại dịch vụ sang tiếng Việt
   const translateServiceType = (type) => {
@@ -96,7 +100,8 @@ const PublicServiceAddOnDetail = () => {
 
   // Xử lý khi người dùng click vào một serviceAddOn trong danh sách "Có thể bạn sẽ quan tâm"
   const handleAddOnClick = (selectedAddOn) => {
-    navigate(`/services/pl/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(selectedAddOn.name)}/detail`);
+    const basePath = isPatientLayout ? '/patient/services/pl' : '/services/pl';
+    navigate(`${basePath}/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(selectedAddOn.name)}/detail`);
   };
 
   // Lấy danh sách các serviceAddOns khác để hiển thị
@@ -106,7 +111,7 @@ const PublicServiceAddOnDetail = () => {
   const breadcrumbItems = [
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(isPatientLayout ? '/patient' : '/')}>
           Trang chủ
         </span>
       ),
@@ -116,7 +121,10 @@ const PublicServiceAddOnDetail = () => {
     },
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(`/services/pl/${encodeURIComponent(service?.name || '')}/addons`)}>
+        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => {
+          const basePath = isPatientLayout ? '/patient/services/pl' : '/services/pl';
+          navigate(`${basePath}/${encodeURIComponent(service?.name || '')}/addons`);
+        }}>
           {service?.name || 'Dịch vụ'}
         </span>
       ),
@@ -149,7 +157,7 @@ const PublicServiceAddOnDetail = () => {
       }}>
         <Text type="secondary">Không tìm thấy thông tin dịch vụ</Text>
         <br />
-        <Button onClick={() => navigate('/')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate(isPatientLayout ? '/patient' : '/')} style={{ marginTop: 16 }}>
           Về trang chủ
         </Button>
       </div>
@@ -174,7 +182,10 @@ const PublicServiceAddOnDetail = () => {
       <div style={{ marginBottom: '24px' }}>
         <Button 
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate(`/services/pl/${encodeURIComponent(service.name)}/addons`)}
+          onClick={() => {
+            const basePath = isPatientLayout ? '/patient/services/pl' : '/services/pl';
+            navigate(`${basePath}/${encodeURIComponent(service.name)}/addons`);
+          }}
           style={{
             border: '1px solid #d9d9d9',
             borderRadius: '8px',

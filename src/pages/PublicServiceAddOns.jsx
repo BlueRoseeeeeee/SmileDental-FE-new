@@ -34,12 +34,9 @@ const PublicServiceAddOns = () => {
   const { serviceName } = useParams();
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (serviceName) {
-      fetchServiceDetails();
-    }
-  }, [serviceName]);
+  
+  // Detect xem đang ở patient layout hay homepage layout
+  const isPatientLayout = window.location.pathname.startsWith('/patient');
 
   const fetchServiceDetails = async () => {
     setLoading(true);
@@ -51,15 +48,22 @@ const PublicServiceAddOns = () => {
       if (foundService) {
         setService(foundService);
       } else {
-        navigate('/');
+        navigate(isPatientLayout ? '/patient' : '/');
       }
     } catch (error) {
       console.error('Error fetching service details:', error);
-      navigate('/');
+      navigate(isPatientLayout ? '/patient' : '/');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (serviceName) {
+      fetchServiceDetails();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceName]);
 
   // Dịch loại dịch vụ sang tiếng Việt
   const translateServiceType = (type) => {
@@ -77,15 +81,16 @@ const PublicServiceAddOns = () => {
 
   // Xử lý click vào serviceAddOn
   const handleAddOnClick = (addOn) => {
-    // Chuyển đến trang chi tiết dịch vụ
-    navigate(`/services/pl/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(addOn.name)}/detail`);
+    // Chuyển đến trang chi tiết dịch vụ với đúng layout path
+    const basePath = isPatientLayout ? '/patient/services/pl' : '/services/pl';
+    navigate(`${basePath}/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(addOn.name)}/detail`);
   };
 
   // Breadcrumb items
   const breadcrumbItems = [
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(isPatientLayout ? '/patient' : '/')}>
           Trang chủ
         </span>
       ),
@@ -125,7 +130,7 @@ const PublicServiceAddOns = () => {
       }}>
         <Text type="secondary">Không tìm thấy dịch vụ</Text>
         <br />
-        <Button onClick={() => navigate('/')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate(isPatientLayout ? '/patient' : '/')} style={{ marginTop: 16 }}>
           Về trang chủ
         </Button>
       </div>

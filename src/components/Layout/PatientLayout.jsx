@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Button, Typography, Space, Drawer } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -17,6 +17,7 @@ import './PatientLayout.css';
 import Footer from './Footer';
 import logo from '../../assets/image/smile-dental-logo.png';
 import { COLOR_BRAND_NAME } from '../../utils/common-colors';
+import { servicesService } from '../../services/servicesService';
 
 const { Header, Content} = Layout;
 const { Text } = Typography;
@@ -26,12 +27,26 @@ const PatientLayout = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [services, setServices] = useState([]);
 
   // Debug logging
   console.log('🏥 PatientLayout rendered', {
     pathname: location.pathname,
     user: user ? { id: user._id, role: user.role, name: user.fullName } : null
   });
+
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const loadServices = async () => {
+    try {
+      const response = await servicesService.getServices(1, 100);
+      setServices(response.services || []);
+    } catch {
+      setServices([]);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -42,6 +57,18 @@ const PatientLayout = () => {
     }
   };
 
+  const getServicesMenuItems = () => {
+    const activeServices = services.filter(service => service.isActive);
+    const menuItems = activeServices.map(service => ({
+      key: `/patient/services/pl/${encodeURIComponent(service.name)}/addons`,
+      label: service.name,
+      onClick: () => navigate(`/patient/services/pl/${encodeURIComponent(service.name)}/addons`)
+    }));
+    return menuItems;
+  };
+
+  const serviceMenuItems = getServicesMenuItems();
+  
   const menuItems = [
     {
       key: '/patient',
@@ -52,22 +79,26 @@ const PatientLayout = () => {
       key: '/patient/about',
       label: 'Giới thiệu',
       onClick: () => navigate('/patient/about')
-    }
-    ,
+    },
+    // Thêm menu Dịch vụ với dropdown
+    {
+      key: '/patient/services',
+      label: 'Dịch vụ',
+      children: serviceMenuItems.length > 0 ? serviceMenuItems : undefined,
+      onClick: serviceMenuItems.length === 0 ? () => navigate('/patient/services') : undefined
+    },
     {
       key: '/patient/booking/select-service',
       icon: <CalendarOutlined />,
       label: 'Đặt lịch khám',
       onClick: () => navigate('/patient/booking/select-service')
-    }
-    ,
+    },
     {
       key: '/patient/appointments',
       icon: <HistoryOutlined />,
       label: 'Lịch khám của tôi',
       onClick: () => navigate('/patient/appointments')
     },
-    
     {
       key: '/patient/records',
       icon: <FileTextOutlined />,
@@ -120,6 +151,16 @@ const PatientLayout = () => {
     }
     if (path === '/patient/about') {
       return '/patient/about';
+    }
+    // Xử lý cho services menu
+    if (path.startsWith('/patient/services/pl/')) {
+      // Trích xuất service name từ path để highlight đúng service trong dropdown
+      const match = path.match(/\/patient\/services\/pl\/([^/]+)/);
+      if (match) {
+        const serviceName = match[1];
+        return `/patient/services/pl/${serviceName}/addons`;
+      }
+      return '/patient/services';
     }
     return '/patient';
   };
