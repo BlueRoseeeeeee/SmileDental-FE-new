@@ -52,7 +52,6 @@
 .user-info {
   padding: 8px 12px;
   border-radius: 8px;
-  /* Transition removed for better performance */
 }
 
 .user-info:hover {
@@ -136,4 +135,133 @@
 
 .mobile-drawer .ant-menu {
   padding: 8px 0;
+}
+
+/* Căn chỉnh đồng đều tất cả menu items */
+.patient-layout .ant-menu-horizontal {
+  border-bottom: none !important;
+}
+
+.patient-layout .ant-menu-horizontal > .ant-menu-item,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu {
+  height: 64px !important;
+  line-height: 64px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  top: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.patient-layout .ant-menu-horizontal > .ant-menu-item > span,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title {
+  height: 64px !important;
+  line-height: 64px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+  padding: 0 20px !important;
+  margin: 0 !important;
+}
+
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title > span {
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+}
+
+/* Căn chỉnh icon arrow của submenu */
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  margin-top: 0 !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+}
+
+/* Bỏ border bottom mặc định */
+.patient-layout .ant-menu-horizontal > .ant-menu-item::after,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu::after {
+  display: none !important;
+}
+
+/* Style cho menu được chọn (active) */
+.patient-layout .ant-menu-horizontal > .ant-menu-item-selected,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu-selected {
+  background: transparent !important;
+}
+
+.patient-layout .ant-menu-horizontal > .ant-menu-item-selected > span,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  background: transparent !important;
+  position: relative !important;
+}
+
+/* Gạch dưới khi được chọn */
+.patient-layout .ant-menu-horizontal > .ant-menu-item-selected > span::after,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 15px !important;
+  right: 15px !important;
+  height: 3px !important;
+  background: #2c5f4f !important;
+}
+
+/* Hover effect */
+.patient-layout .ant-menu-horizontal > .ant-menu-item:hover,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu:hover {
+  background: transparent !important;
+}
+
+/* Màu chữ */
+.patient-layout .ant-menu-horizontal > .ant-menu-item,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title {
+  color: #333 !important;
+}
+
+.patient-layout .ant-menu-horizontal > .ant-menu-item-selected,
+.patient-layout .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title {
+  color: #2c5f4f !important;
+  font-weight: 500 !important;
+}
+
+/* Giảm khoảng cách giữa icon và text - Sát lại với nhau */
+.patient-layout .ant-menu-horizontal .ant-menu-item .anticon,
+.patient-layout .ant-menu-horizontal .ant-menu-submenu-title .anticon {
+  margin-inline-end: -30px !important;
+  margin-inline-start: 0 !important;
+}
+
+.patient-layout .ant-menu-horizontal .ant-menu-item-icon {
+  font-size: 16px !important;
+  margin-inline-end: 4px !important;
+}
+
+/* Căn chỉnh content bên trong menu item */
+.patient-layout .ant-menu-horizontal .ant-menu-title-content {
+  margin-inline-start: 0 !important;
+}
+
+/* Services Dropdown Styling */
+.patient-layout .ant-menu-submenu-popup {
+  z-index: 1001 !important;
+}
+
+.patient-layout .ant-menu-submenu-popup .ant-menu {
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 6px !important;
+  min-width: 200px !important;
+}
+
+.patient-layout .ant-menu-submenu-popup .ant-menu .ant-menu-item {
+  color: #333 !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  padding: 0 12px !important;
+}
+
+.patient-layout .ant-menu-submenu-popup .ant-menu .ant-menu-item:hover {
+  background: #f0f8ff !important;
+  color: #2c5f4f !important;
 }

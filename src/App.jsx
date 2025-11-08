@@ -269,6 +269,13 @@ function App() {
           <Route path="/patient" element={<PatientLayout />}>
             <Route index element={<PatientHomePage />} />
             
+            {/* Patient About Page */}
+            <Route path="about" element={<About />} />
+            
+            {/* Patient Service Routes */}
+            <Route path="services/pl/:serviceName/addons" element={<PublicServiceAddOns />} />
+            <Route path="services/pl/:serviceName/addons/:addOnName/detail" element={<PublicServiceAddOnDetail />} />
+            
             {/* Patient Booking Flow */}
             <Route path="booking">
               <Route index element={<Navigate to="/patient/booking/select-service" replace />} />
