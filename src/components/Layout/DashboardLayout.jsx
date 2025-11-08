@@ -119,7 +119,7 @@ const DashboardLayout = () => {
         children: [
           { key: '/dashboard/schedules', label: 'Cấu hình hệ thống', icon: <SettingOutlined /> },
           { key: '/dashboard/users', label: 'Quản lý nhân sự', icon: <UserSwitchOutlined /> },
-          { key: '/dashboard/schedules/staff-assignment', label: 'Phân công ca', icon: <CalendarOutlined /> },
+          { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined /> },
           { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
           { key: '/dashboard/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
         ]

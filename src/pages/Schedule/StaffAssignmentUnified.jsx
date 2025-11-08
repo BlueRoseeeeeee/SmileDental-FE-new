@@ -3708,7 +3708,7 @@ const StaffAssignmentUnified = () => {
                     {selectingAllMonth ? 'Đang chọn...' : 'Chọn tất cả tháng này'}
                   </Checkbox>
                   <Badge count={totalSelectedSlotCount} showZero>
-                    <Tag color="blue">Đã chọn slot</Tag>
+                    <Tag color="blue" style={{fontSize:10}}>Đã chọn slot</Tag>
                   </Badge>
                 </Space>
               </Col>
@@ -4948,9 +4948,9 @@ const StaffAssignmentUnified = () => {
                     <Space>
                       <CalendarOutlined style={{ color: '#1890ff' }} />
                       <span style={{ color: '#000' }}>
-                        <strong>Lịch làm việc của:</strong> {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn nhân sự'}
+                        Lịch làm việc của: {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn nhân sự'}
                         {selectedRoleForViewing && (
-                          <Tag color={getRoleTagColor(selectedRoleForViewing)} style={{ marginLeft: 8 }}>
+                          <Tag color={getRoleTagColor(selectedRoleForViewing)} style={{ marginLeft: 8, fontSize: 12 }}>
                             {getRoleLabel(selectedRoleForViewing)}
                           </Tag>
                         )}
@@ -5072,7 +5072,7 @@ const StaffAssignmentUnified = () => {
                               Chọn tất cả tháng này
                             </Checkbox>
                             <Badge count={totalSelectedSlotCountForStaff} showZero>
-                              <Tag color="blue">Đã chọn slot</Tag>
+                              <Tag color="blue" style={{fontSize:10}}>Đã chọn slot</Tag>
                             </Badge>
                           </Space>
                         </Col>
