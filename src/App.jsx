@@ -269,6 +269,9 @@ function App() {
           <Route path="/patient" element={<PatientLayout />}>
             <Route index element={<PatientHomePage />} />
             
+            {/* Patient About Page */}
+            <Route path="about" element={<About />} />
+            
             {/* Patient Booking Flow */}
             <Route path="booking">
               <Route index element={<Navigate to="/patient/booking/select-service" replace />} />

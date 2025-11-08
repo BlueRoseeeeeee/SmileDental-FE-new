@@ -7,7 +7,6 @@ import HeroCarousel from '../components/Homepage/HeroCarousel';
 import ServicesSection from '../components/Homepage/ServicesSection';
 import FeaturesSection from '../components/Homepage/FeaturesSection';
 import DentistsSection from '../components/Homepage/DentistsSection';
-import TestimonialsSection from '../components/Homepage/TestimonialsSection';
 
 const { Content } = Layout;
 
@@ -19,7 +18,6 @@ const Homepage = () => {
       <ServicesSection />
       <FeaturesSection />
       <DentistsSection />
-      <TestimonialsSection />
     </Content>
   );
 };

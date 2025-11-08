@@ -14,8 +14,11 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import ChatBox from '../ChatBox';
 import './PatientLayout.css';
+import Footer from './Footer';
+import logo from '../../assets/image/smile-dental-logo.png';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors';
 
-const { Header, Content, Footer } = Layout;
+const { Header, Content} = Layout;
 const { Text } = Typography;
 
 const PatientLayout = () => {
@@ -42,22 +45,29 @@ const PatientLayout = () => {
   const menuItems = [
     {
       key: '/patient',
-      icon: <HomeOutlined />,
       label: 'Trang chủ',
       onClick: () => navigate('/patient')
     },
+    {
+      key: '/patient/about',
+      label: 'Giới thiệu',
+      onClick: () => navigate('/patient/about')
+    }
+    ,
     {
       key: '/patient/booking/select-service',
       icon: <CalendarOutlined />,
       label: 'Đặt lịch khám',
       onClick: () => navigate('/patient/booking/select-service')
-    },
+    }
+    ,
     {
       key: '/patient/appointments',
       icon: <HistoryOutlined />,
       label: 'Lịch khám của tôi',
       onClick: () => navigate('/patient/appointments')
     },
+    
     {
       key: '/patient/records',
       icon: <FileTextOutlined />,
@@ -70,12 +80,6 @@ const PatientLayout = () => {
       label: 'Hóa đơn của tôi',
       onClick: () => navigate('/patient/invoices')
     },
-    {
-      key: '/patient/profile',
-      icon: <UserOutlined />,
-      label: 'Thông tin cá nhân',
-      onClick: () => navigate('/patient/profile')
-    }
   ];
 
   const userMenuItems = [
@@ -114,6 +118,9 @@ const PatientLayout = () => {
     if (path === '/patient/invoices') {
       return '/patient/invoices';
     }
+    if (path === '/patient/about') {
+      return '/patient/about';
+    }
     return '/patient';
   };
 
@@ -128,20 +135,30 @@ const PatientLayout = () => {
               icon={<MenuOutlined />}
               onClick={() => setDrawerVisible(true)}
             />
-            <div className="logo" onClick={() => navigate('/patient')}>
-              <Space>
-                <img 
-                  src="/smile-icon.png" 
-                  alt="SmileCare" 
-                  style={{ height: 32 }}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-                <Text strong style={{ color: '#2c5f4f', fontSize: 18 }}>
-                  SmileCare Dental
-                </Text>
-              </Space>
+            {/* Logo and Brand */}
+            <div 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                cursor: 'pointer' 
+              }}
+              onClick={() => navigate('/patient')}
+            >
+              <img 
+                src={logo} 
+                alt="SmileDental Logo"
+                style={{
+                  width: '50px',
+                  height: '50px',
+                  marginRight: '12px'
+                }}
+              />
+              <div style={{display:'flex', flexDirection:'column', marginRight: '50px', marginTop:'15px',maxWidth:'150px'}}>
+                <h3 style={{color: COLOR_BRAND_NAME , fontSize: '22px', fontWeight: 'bold', marginBottom: '0'}}>
+                  SmileCare
+                </h3>
+                <h3 style={{color: COLOR_BRAND_NAME, fontSize: '20px', fontWeight: 'bold', textAlign:'right'}}> Dental</h3>
+              </div>
             </div>
           </div>
 
@@ -202,15 +219,7 @@ const PatientLayout = () => {
         </div>
       </Content>
 
-      <Footer className="patient-footer">
-        <div className="footer-content">
-          <Text>© 2025 Smile Care Dental Clinic. All rights reserved.</Text>
-          <Space>
-            <Text type="secondary">Hotline: 1900-xxxx</Text>
-            <Text type="secondary">Email: contact@smilecare.vn</Text>
-          </Space>
-        </div>
-      </Footer>
+      <Footer/>
 
       {/* AI Chatbot - Floating icon in bottom right */}
       <ChatBox />

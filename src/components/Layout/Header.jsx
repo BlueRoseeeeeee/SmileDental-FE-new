@@ -88,7 +88,7 @@ const Header = () => {
         {
           key: '/dashboard',
           label: 'Dashboard'
-        }
+        },
       ];
     } else {
       // Menu for non-authenticated users
