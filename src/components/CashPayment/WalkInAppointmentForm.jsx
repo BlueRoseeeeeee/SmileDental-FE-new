@@ -661,30 +661,36 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
               />
 
               <Card title={<Space><SearchOutlined />Tìm kiếm bệnh nhân</Space>} style={{ marginBottom: 16 }}>
-                <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
-                  <Select
-                    value={searchType}
-                    onChange={setSearchType}
-                    style={{ width: 150 }}
-                  >
-                    <Option value="phone">Số điện thoại</Option>
-                    <Option value="email">Email</Option>
-                    <Option value="name">Tên</Option>
-                  </Select>
-                  <Form.Item name="searchValue" noStyle>
-                    <Input
-                      placeholder={
-                        searchType === 'phone' ? 'Nhập số điện thoại' :
-                        searchType === 'email' ? 'Nhập email' :
-                        'Nhập tên bệnh nhân'
-                      }
-                      style={{ flex: 1 }}
-                    />
-                  </Form.Item>
-                  <Button type="primary" icon={<SearchOutlined />} onClick={handleSearchPatient}>
-                    Tìm kiếm
-                  </Button>
-                </Space.Compact>
+                <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                  <Col xs={24} sm={6} md={5}>
+                    <Select
+                      value={searchType}
+                      onChange={setSearchType}
+                      style={{ width: '100%' }}
+                    >
+                      <Option value="phone">Số điện thoại</Option>
+                      <Option value="email">Email</Option>
+                      <Option value="name">Tên</Option>
+                    </Select>
+                  </Col>
+                  <Col xs={24} sm={14} md={16}>
+                    <Form.Item name="searchValue" noStyle>
+                      <Input
+                        placeholder={
+                          searchType === 'phone' ? 'Nhập số điện thoại' :
+                          searchType === 'email' ? 'Nhập email' :
+                          'Nhập tên bệnh nhân'
+                        }
+                        style={{ width: '100%' }}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={4} md={3}>
+                    <button style={{ width: '100%', height: '100%', borderRadius: '5px', background:'#2596be', border: 'none', color: 'white', fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} type="primary" icon={<SearchOutlined />} onClick={handleSearchPatient}>
+                      <SearchOutlined /> Tìm kiếm
+                    </button>
+                  </Col>
+                </Row>
 
                 {searchResults.length > 0 && (
                   <Form.Item label="Kết quả tìm kiếm">
