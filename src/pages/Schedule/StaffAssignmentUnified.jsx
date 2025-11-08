@@ -687,72 +687,54 @@ const SlotQuickSelect = ({
                       <Text strong>{startTime} - {endTime}</Text>
                       
                       {/* ⭐ Show dentist info with employeeCode| fullName (thống nhất với calendar cell) */}
-                      {slot?.dentist && (
-                        <div style={{ fontSize: '13px', marginTop: 2 }}>
-                          {Array.isArray(slot.dentist) ? (
-                            slot.dentist.map((d, idx) => {
+                      {slot?.dentist && (() => {
+                        const dentists = Array.isArray(slot.dentist) ? slot.dentist : [slot.dentist];
+                        const hasMultiple = dentists.length > 1;
+                        return (
+                          <div style={{ fontSize: '13px', marginTop: 2 }}>
+                            {dentists.map((d, idx) => {
                               const fullName = d?.fullName || d?.name || 'N/A';
                               const employeeCode = d?.employeeCode || d?.code;
                               const displayText = employeeCode ? `${employeeCode}| ${fullName}` : fullName;
                               return (
-                                <div key={idx} style={{ marginBottom: 2 }}>
+                                <div key={idx} style={{ marginBottom: idx < dentists.length - 1 ? 2 : 0 }}>
                                   <span style={{ color: '#1890ff', fontWeight: '600' }}>
-                                    NS:{' '}
+                                    {hasMultiple ? `NS${idx + 1}:` : 'NS:'}{' '}
                                   </span>
                                   <span style={{ color: '#1890ff' }}>
                                     {displayText}
                                   </span>
                                 </div>
                               );
-                            })
-                          ) : (
-                            <div style={{ marginBottom: 2 }}>
-                              <span style={{ color: '#1890ff', fontWeight: '600' }}>
-                                NS:{' '}
-                              </span>
-                              <span style={{ color: '#1890ff' }}>
-                                {slot.dentist?.employeeCode || slot.dentist?.code 
-                                  ? `${slot.dentist.employeeCode || slot.dentist.code}| ${slot.dentist?.fullName || slot.dentist?.name || 'N/A'}`
-                                  : (slot.dentist?.fullName || slot.dentist?.name || 'N/A')}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                            })}
+                          </div>
+                        );
+                      })()}
                       
                       {/* ⭐ Show nurse info with employeeCode| fullName (thống nhất với calendar cell) */}
-                      {slot?.nurse && (
-                        <div style={{ fontSize: '13px', marginTop: 2 }}>
-                          {Array.isArray(slot.nurse) ? (
-                            slot.nurse.map((n, idx) => {
+                      {slot?.nurse && (() => {
+                        const nurses = Array.isArray(slot.nurse) ? slot.nurse : [slot.nurse];
+                        const hasMultiple = nurses.length > 1;
+                        return (
+                          <div style={{ fontSize: '13px', marginTop: 2 }}>
+                            {nurses.map((n, idx) => {
                               const fullName = n?.fullName || n?.name || 'N/A';
                               const employeeCode = n?.employeeCode || n?.code;
                               const displayText = employeeCode ? `${employeeCode}| ${fullName}` : fullName;
                               return (
-                                <div key={idx} style={{ marginBottom: 2 }}>
+                                <div key={idx} style={{ marginBottom: idx < nurses.length - 1 ? 2 : 0 }}>
                                   <span style={{ color: '#52c41a', fontWeight: '600' }}>
-                                    YT:{' '}
+                                    {hasMultiple ? `YT${idx + 1}:` : 'YT:'}{' '}
                                   </span>
                                   <span style={{ color: '#52c41a' }}>
                                     {displayText}
                                   </span>
                                 </div>
                               );
-                            })
-                          ) : (
-                            <div style={{ marginBottom: 2 }}>
-                              <span style={{ color: '#52c41a', fontWeight: '600' }}>
-                                YT:{' '}
-                              </span>
-                              <span style={{ color: '#52c41a' }}>
-                                {slot.nurse?.employeeCode || slot.nurse?.code 
-                                  ? `${slot.nurse.employeeCode || slot.nurse.code}| ${slot.nurse?.fullName || slot.nurse?.name || 'N/A'}`
-                                  : (slot.nurse?.fullName || slot.nurse?.name || 'N/A')}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                            })}
+                          </div>
+                        );
+                      })()}
                       
                       {slot?.room?.name && slot.room.name !== 'Phòng không xác định' && (
                         <Space size={4}>
@@ -3867,12 +3849,10 @@ const StaffAssignmentUnified = () => {
                                     });
                                   }
                                   
-                                  const dentistList = Array.from(dentistInfoMap.values())
-                                    .map(info => info.employeeCode ? `${info.employeeCode}| ${info.fullName}` : info.fullName)
-                                    .join(', ');
-                                  const nurseList = Array.from(nurseInfoMap.values())
-                                    .map(info => info.employeeCode ? `${info.employeeCode}| ${info.fullName}` : info.fullName)
-                                    .join(', ');
+                                  const dentistListArray = Array.from(dentistInfoMap.values())
+                                    .map(info => info.employeeCode ? `${info.employeeCode}| ${info.fullName}` : info.fullName);
+                                  const nurseListArray = Array.from(nurseInfoMap.values())
+                                    .map(info => info.employeeCode ? `${info.employeeCode}| ${info.fullName}` : info.fullName);
                                   
                                   return (
                                     <td 
@@ -3932,14 +3912,28 @@ const StaffAssignmentUnified = () => {
                                               <div style={{ fontSize: '13px', marginTop: 2 }}>
                                                 {coverageNumerator > 0 ? (
                                                   <div>
-                                                    {dentistList && (
+                                                    {dentistListArray.length > 0 && (
                                                       <div style={{ color: '#1890ff' }}>
-                                                        <span style={{ fontWeight: '600' }}>NS:</span>{dentistList}
+                                                        {dentistListArray.map((info, idx) => (
+                                                          <div key={idx} style={{ marginBottom: idx < dentistListArray.length - 1 ? 2 : 0 }}>
+                                                            <span style={{ fontWeight: '600' }}>
+                                                              {dentistListArray.length > 1 ? `NS${idx + 1}:` : 'NS:'}
+                                                            </span>{' '}
+                                                            <span>{info}</span>
+                                                          </div>
+                                                        ))}
                                                       </div>
                                                     )}
-                                                    {nurseList && (
+                                                    {nurseListArray.length > 0 && (
                                                       <div style={{ color: '#52c41a', marginTop: 4, marginBottom: 4}}>
-                                                        <span style={{ fontWeight: '600' }}>YT:</span> {nurseList}
+                                                        {nurseListArray.map((info, idx) => (
+                                                          <div key={idx} style={{ marginBottom: idx < nurseListArray.length - 1 ? 2 : 0 }}>
+                                                            <span style={{ fontWeight: '600' }}>
+                                                              {nurseListArray.length > 1 ? `YT${idx + 1}:` : 'YT:'}
+                                                            </span>{' '}
+                                                            <span>{info}</span>
+                                                          </div>
+                                                        ))}
                                                       </div>
                                                     )}
                                                   </div>
@@ -4060,13 +4054,13 @@ const StaffAssignmentUnified = () => {
                                 }
                               });
                               
-                              // Format: "Tên (Mã)" or just "Tên"
-                              const dentistList = Array.from(dentistInfo.values())
-                                .map(info => info.employeeCode ? `${info.fullName} (${info.employeeCode})` : info.fullName)
-                                .join(', ');
-                              const nurseList = Array.from(nurseInfo.values())
-                                .map(info => info.employeeCode ? `${info.fullName} (${info.employeeCode})` : info.fullName)
-                                .join(', ');
+                              // Format: "Mã| Tên" (thống nhất với các chỗ khác)
+                              const dentistListArray = Array.from(dentistInfo.values())
+                                .map(info => info.employeeCode ? `${info.employeeCode}| ${info.fullName}` : info.fullName);
+                              const nurseListArray = Array.from(nurseInfo.values())
+                                .map(info => info.employeeCode ? `${info.employeeCode}| ${info.fullName}` : info.fullName);
+                              const hasMultipleDentists = dentistListArray.length > 1;
+                              const hasMultipleNurses = nurseListArray.length > 1;
                               
                               return (
                                 <div key={slot.slotKey} style={{ fontSize: 12, color: '#666', marginBottom: 6, paddingBottom: 6, borderBottom: '1px solid #f0f0f0' }}>
@@ -4076,10 +4070,26 @@ const StaffAssignmentUnified = () => {
                                       {' '}({slot.slotIds?.length || 0}/{slot.totalSlots || slot.slotIds?.length || 0} slot | PC: {assignedInSelection}/{slot.slotIds?.length || 0})
                                     </Text>
                                   </div>
-                                  {(dentistList || nurseList) && (
+                                  {(dentistListArray.length > 0 || nurseListArray.length > 0) && (
                                     <div style={{ marginTop: 2, fontSize: 11, color: '#8c8c8c' }}>
-                                      {dentistList && <div>• NS: {dentistList}</div>}
-                                      {nurseList && <div>• YT: {nurseList}</div>}
+                                      {dentistListArray.length > 0 && (
+                                        <div>
+                                          {dentistListArray.map((info, idx) => (
+                                            <div key={idx} style={{ marginLeft: 8 }}>
+                                              • {hasMultipleDentists ? `NS${idx + 1}:` : 'NS:'} {info}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {nurseListArray.length > 0 && (
+                                        <div>
+                                          {nurseListArray.map((info, idx) => (
+                                            <div key={idx} style={{ marginLeft: 8 }}>
+                                              • {hasMultipleNurses ? `YT${idx + 1}:` : 'YT:'} {info}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -4096,7 +4106,7 @@ const StaffAssignmentUnified = () => {
                     {/* Filter Controls */}
                     <Row gutter={16} style={{ marginBottom: 16 }}>
                       <Col span={12}>
-                        <Card size="small" title="nha sĩ" headStyle={{ backgroundColor: '#e6f7ff' }}>
+                        <Card size="small" title="Nha sĩ" headStyle={{ backgroundColor: '#e6f7ff' }}>
                           <Space direction="vertical" style={{ width: '100%' }}>
                             <Radio.Group 
                               value={dentistConflictFilter} 
@@ -4484,32 +4494,26 @@ const StaffAssignmentUnified = () => {
                     const endTime = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
                     
                     // ⭐ Lấy thông tin dentist với employeeCode| fullName (giống như calendar cell)
-                    let dentistDisplay = '';
-                    if (Array.isArray(slot.dentist) && slot.dentist.length > 0) {
-                      dentistDisplay = slot.dentist.map(d => {
-                        const fullName = d?.fullName || d?.name || 'N/A';
-                        const employeeCode = d?.employeeCode || d?.code;
-                        return employeeCode ? `${employeeCode}| ${fullName}` : fullName;
-                      }).join(', ');
-                    } else if (slot.dentist && typeof slot.dentist === 'object') {
-                      const fullName = slot.dentist?.fullName || slot.dentist?.name || 'N/A';
-                      const employeeCode = slot.dentist?.employeeCode || slot.dentist?.code;
-                      dentistDisplay = employeeCode ? `${employeeCode}| ${fullName}` : fullName;
-                    }
+                    const dentists = Array.isArray(slot.dentist) 
+                      ? slot.dentist 
+                      : (slot.dentist ? [slot.dentist] : []);
+                    const dentistDisplayArray = dentists.map(d => {
+                      const fullName = d?.fullName || d?.name || 'N/A';
+                      const employeeCode = d?.employeeCode || d?.code;
+                      return employeeCode ? `${employeeCode}| ${fullName}` : fullName;
+                    });
+                    const hasMultipleDentists = dentistDisplayArray.length > 1;
                     
                     // ⭐ Lấy thông tin nurse với employeeCode| fullName (giống như calendar cell)
-                    let nurseDisplay = '';
-                    if (Array.isArray(slot.nurse) && slot.nurse.length > 0) {
-                      nurseDisplay = slot.nurse.map(n => {
-                        const fullName = n?.fullName || n?.name || 'N/A';
-                        const employeeCode = n?.employeeCode || n?.code;
-                        return employeeCode ? `${employeeCode}| ${fullName}` : fullName;
-                      }).join(', ');
-                    } else if (slot.nurse && typeof slot.nurse === 'object') {
-                      const fullName = slot.nurse?.fullName || slot.nurse?.name || 'N/A';
-                      const employeeCode = slot.nurse?.employeeCode || slot.nurse?.code;
-                      nurseDisplay = employeeCode ? `${employeeCode}| ${fullName}` : fullName;
-                    }
+                    const nurses = Array.isArray(slot.nurse) 
+                      ? slot.nurse 
+                      : (slot.nurse ? [slot.nurse] : []);
+                    const nurseDisplayArray = nurses.map(n => {
+                      const fullName = n?.fullName || n?.name || 'N/A';
+                      const employeeCode = n?.employeeCode || n?.code;
+                      return employeeCode ? `${employeeCode}| ${fullName}` : fullName;
+                    });
+                    const hasMultipleNurses = nurseDisplayArray.length > 1;
                     
                     const slotId = resolveSlotId(slot);
                     const cardKey = slotId || `${startTime}-${endTime}-${index}`;
@@ -4546,14 +4550,18 @@ const StaffAssignmentUnified = () => {
                           </Space>
                           
                           <Space direction="vertical" size={4} align="end">
-                            {dentistDisplay ? (
+                            {dentistDisplayArray.length > 0 ? (
                               <div>
-                                <span style={{ color: '#1890ff', fontSize: '13px', fontWeight: '600' }}>
-                                  NS:{' '}
-                                </span>
-                                <span style={{ color: '#1890ff', fontSize: '13px' }}>
-                                  {dentistDisplay}
-                                </span>
+                                {dentistDisplayArray.map((info, idx) => (
+                                  <div key={idx} style={{ marginBottom: idx < dentistDisplayArray.length - 1 ? 2 : 0 }}>
+                                    <span style={{ color: '#1890ff', fontSize: '13px', fontWeight: '600' }}>
+                                      {hasMultipleDentists ? `NS${idx + 1}:` : 'NS:'}{' '}
+                                    </span>
+                                    <span style={{ color: '#1890ff', fontSize: '13px' }}>
+                                      {info}
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
                             ) : (
                               <div>
@@ -4565,14 +4573,18 @@ const StaffAssignmentUnified = () => {
                                 </span>
                               </div>
                             )}
-                            {nurseDisplay ? (
+                            {nurseDisplayArray.length > 0 ? (
                               <div>
-                                <span style={{ color: '#52c41a', fontSize: '13px', fontWeight: '600' }}>
-                                  YT:{' '}
-                                </span>
-                                <span style={{ color: '#52c41a', fontSize: '13px' }}>
-                                  {nurseDisplay}
-                                </span>
+                                {nurseDisplayArray.map((info, idx) => (
+                                  <div key={idx} style={{ marginBottom: idx < nurseDisplayArray.length - 1 ? 2 : 0 }}>
+                                    <span style={{ color: '#52c41a', fontSize: '13px', fontWeight: '600' }}>
+                                      {hasMultipleNurses ? `YT${idx + 1}:` : 'YT:'}{' '}
+                                    </span>
+                                    <span style={{ color: '#52c41a', fontSize: '13px' }}>
+                                      {info}
+                                    </span>
+                                  </div>
+                                ))}
                               </div>
                             ) : (
                               <div>
