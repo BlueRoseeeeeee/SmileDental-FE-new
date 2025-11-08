@@ -836,6 +836,16 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                     placeholder="Chọn dịch vụ khám"
                     onChange={handleServiceChange}
                     value={selectedService?._id}
+                    showSearch
+                    filterOption={(input, option) => {
+                      // Tìm kiếm theo tên dịch vụ từ service object
+                      const service = services.find(s => s._id === option.value);
+                      if (!service) return false;
+                      const serviceName = service.name?.toLowerCase() || '';
+                      const searchTerm = input.toLowerCase();
+                      return serviceName.includes(searchTerm);
+                    }}
+                    optionFilterProp="children"
                   >
                     {services.map(service => (
                       <Option key={service._id} value={service._id}>
