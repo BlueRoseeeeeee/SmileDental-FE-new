@@ -3539,6 +3539,8 @@ const StaffAssignmentUnified = () => {
             </span>
           </Space>
         }
+        centered
+        bodyStyle={{ maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}
         open={showAssignmentModal}
         onCancel={() => {
           setShowAssignmentModal(false);
