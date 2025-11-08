@@ -26,7 +26,8 @@ import {
   Divider,
   Steps,
   Alert,
-  InputNumber
+  InputNumber,
+  Badge
 } from 'antd';
 
 const { Step } = Steps;
@@ -693,7 +694,19 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                 </Row>
 
                 {searchResults.length > 0 && (
-                  <Form.Item label="Kết quả tìm kiếm">
+                  <Form.Item 
+                    label={
+                      <Space>
+                        <span>Kết quả tìm kiếm</span>
+                        <Badge 
+                          count={searchResults.length} 
+                          showZero 
+                          size="small"
+                          style={{ backgroundColor: '#ff4d4f' }} 
+                        />
+                      </Space>
+                    }
+                  >
                     <Select
                       placeholder="Chọn bệnh nhân"
                       onChange={handleSelectPatient}
