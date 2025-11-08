@@ -686,45 +686,69 @@ const SlotQuickSelect = ({
                     <Space direction="vertical" size={0} style={{ flex: 1, marginLeft: 8 }}>
                       <Text strong>{startTime} - {endTime}</Text>
                       
-                      {/* ⭐ Show dentist info with fullName + employeeCode */}
+                      {/* ⭐ Show dentist info with employeeCode| fullName (thống nhất với calendar cell) */}
                       {slot?.dentist && (
-                        <div style={{ fontSize: 11, color: '#1890ff' }}>
+                        <div style={{ fontSize: '13px', marginTop: 2 }}>
                           {Array.isArray(slot.dentist) ? (
                             slot.dentist.map((d, idx) => {
                               const fullName = d?.fullName || d?.name || 'N/A';
                               const employeeCode = d?.employeeCode || d?.code;
+                              const displayText = employeeCode ? `${employeeCode}| ${fullName}` : fullName;
                               return (
-                                <div key={idx}>
-                                  NS: {fullName}{employeeCode ? ` (${employeeCode})` : ''}
+                                <div key={idx} style={{ marginBottom: 2 }}>
+                                  <span style={{ color: '#1890ff', fontWeight: '600' }}>
+                                    NS:{' '}
+                                  </span>
+                                  <span style={{ color: '#1890ff' }}>
+                                    {displayText}
+                                  </span>
                                 </div>
                               );
                             })
                           ) : (
-                            <div>
-                              NS: {slot.dentist?.fullName || slot.dentist?.name || 'N/A'}
-                              {(slot.dentist?.employeeCode || slot.dentist?.code) && ` (${slot.dentist.employeeCode || slot.dentist.code})`}
+                            <div style={{ marginBottom: 2 }}>
+                              <span style={{ color: '#1890ff', fontWeight: '600' }}>
+                                NS:{' '}
+                              </span>
+                              <span style={{ color: '#1890ff' }}>
+                                {slot.dentist?.employeeCode || slot.dentist?.code 
+                                  ? `${slot.dentist.employeeCode || slot.dentist.code}| ${slot.dentist?.fullName || slot.dentist?.name || 'N/A'}`
+                                  : (slot.dentist?.fullName || slot.dentist?.name || 'N/A')}
+                              </span>
                             </div>
                           )}
                         </div>
                       )}
                       
-                      {/* ⭐ Show nurse info with fullName + employeeCode */}
+                      {/* ⭐ Show nurse info with employeeCode| fullName (thống nhất với calendar cell) */}
                       {slot?.nurse && (
-                        <div style={{ fontSize: 11, color: '#52c41a' }}>
+                        <div style={{ fontSize: '13px', marginTop: 2 }}>
                           {Array.isArray(slot.nurse) ? (
                             slot.nurse.map((n, idx) => {
                               const fullName = n?.fullName || n?.name || 'N/A';
                               const employeeCode = n?.employeeCode || n?.code;
+                              const displayText = employeeCode ? `${employeeCode}| ${fullName}` : fullName;
                               return (
-                                <div key={idx}>
-                                  YT: {fullName}{employeeCode ? ` (${employeeCode})` : ''}
+                                <div key={idx} style={{ marginBottom: 2 }}>
+                                  <span style={{ color: '#52c41a', fontWeight: '600' }}>
+                                    YT:{' '}
+                                  </span>
+                                  <span style={{ color: '#52c41a' }}>
+                                    {displayText}
+                                  </span>
                                 </div>
                               );
                             })
                           ) : (
-                            <div>
-                              YT: {slot.nurse?.fullName || slot.nurse?.name || 'N/A'}
-                              {(slot.nurse?.employeeCode || slot.nurse?.code) && ` (${slot.nurse.employeeCode || slot.nurse.code})`}
+                            <div style={{ marginBottom: 2 }}>
+                              <span style={{ color: '#52c41a', fontWeight: '600' }}>
+                                YT:{' '}
+                              </span>
+                              <span style={{ color: '#52c41a' }}>
+                                {slot.nurse?.employeeCode || slot.nurse?.code 
+                                  ? `${slot.nurse.employeeCode || slot.nurse.code}| ${slot.nurse?.fullName || slot.nurse?.name || 'N/A'}`
+                                  : (slot.nurse?.fullName || slot.nurse?.name || 'N/A')}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -4459,32 +4483,32 @@ const StaffAssignmentUnified = () => {
                     const startTime = slot.startTimeVN || dayjs(slot.startTime).format('HH:mm');
                     const endTime = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
                     
-                    // ⭐ Lấy thông tin dentist với fullName + employeeCode (giống như hover)
+                    // ⭐ Lấy thông tin dentist với employeeCode| fullName (giống như calendar cell)
                     let dentistDisplay = '';
                     if (Array.isArray(slot.dentist) && slot.dentist.length > 0) {
                       dentistDisplay = slot.dentist.map(d => {
                         const fullName = d?.fullName || d?.name || 'N/A';
                         const employeeCode = d?.employeeCode || d?.code;
-                        return employeeCode ? `${fullName} (${employeeCode})` : fullName;
+                        return employeeCode ? `${employeeCode}| ${fullName}` : fullName;
                       }).join(', ');
                     } else if (slot.dentist && typeof slot.dentist === 'object') {
                       const fullName = slot.dentist?.fullName || slot.dentist?.name || 'N/A';
                       const employeeCode = slot.dentist?.employeeCode || slot.dentist?.code;
-                      dentistDisplay = employeeCode ? `${fullName} (${employeeCode})` : fullName;
+                      dentistDisplay = employeeCode ? `${employeeCode}| ${fullName}` : fullName;
                     }
                     
-                    // ⭐ Lấy thông tin nurse với fullName + employeeCode (giống như hover)
+                    // ⭐ Lấy thông tin nurse với employeeCode| fullName (giống như calendar cell)
                     let nurseDisplay = '';
                     if (Array.isArray(slot.nurse) && slot.nurse.length > 0) {
                       nurseDisplay = slot.nurse.map(n => {
                         const fullName = n?.fullName || n?.name || 'N/A';
                         const employeeCode = n?.employeeCode || n?.code;
-                        return employeeCode ? `${fullName} (${employeeCode})` : fullName;
+                        return employeeCode ? `${employeeCode}| ${fullName}` : fullName;
                       }).join(', ');
                     } else if (slot.nurse && typeof slot.nurse === 'object') {
                       const fullName = slot.nurse?.fullName || slot.nurse?.name || 'N/A';
                       const employeeCode = slot.nurse?.employeeCode || slot.nurse?.code;
-                      nurseDisplay = employeeCode ? `${fullName} (${employeeCode})` : fullName;
+                      nurseDisplay = employeeCode ? `${employeeCode}| ${fullName}` : fullName;
                     }
                     
                     const slotId = resolveSlotId(slot);
@@ -4521,24 +4545,44 @@ const StaffAssignmentUnified = () => {
                             </div>
                           </Space>
                           
-                          <Space direction="vertical" size={0} align="end">
+                          <Space direction="vertical" size={4} align="end">
                             {dentistDisplay ? (
-                              <Tag color="blue" size="small">
-                                NS: {dentistDisplay}
-                              </Tag>
+                              <div>
+                                <span style={{ color: '#1890ff', fontSize: '13px', fontWeight: '600' }}>
+                                  NS:{' '}
+                                </span>
+                                <span style={{ color: '#1890ff', fontSize: '13px' }}>
+                                  {dentistDisplay}
+                                </span>
+                              </div>
                             ) : (
-                              <Tag color="orange" size="small">
-                                NS: Chưa phân công
-                              </Tag>
+                              <div>
+                                <span style={{ color: '#fa8c16', fontSize: '13px', fontWeight: '600' }}>
+                                  NS:{' '}
+                                </span>
+                                <span style={{ color: '#fa8c16', fontSize: '13px' }}>
+                                  Chưa phân công
+                                </span>
+                              </div>
                             )}
                             {nurseDisplay ? (
-                              <Tag color="green" size="small">
-                                YT: {nurseDisplay}
-                              </Tag>
+                              <div>
+                                <span style={{ color: '#52c41a', fontSize: '13px', fontWeight: '600' }}>
+                                  YT:{' '}
+                                </span>
+                                <span style={{ color: '#52c41a', fontSize: '13px' }}>
+                                  {nurseDisplay}
+                                </span>
+                              </div>
                             ) : (
-                              <Tag color="orange" size="small">
-                                YT: Chưa phân công
-                              </Tag>
+                              <div>
+                                <span style={{ color: '#fa8c16', fontSize: '13px', fontWeight: '600' }}>
+                                  YT:{' '}
+                                </span>
+                                <span style={{ color: '#fa8c16', fontSize: '13px' }}>
+                                  Chưa phân công
+                                </span>
+                              </div>
                             )}
                           </Space>
                         </Space>
