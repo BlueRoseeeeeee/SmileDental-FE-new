@@ -44,7 +44,8 @@ import {
   LeftOutlined,
   RightOutlined,
   DeleteOutlined,
-  MedicineBoxOutlined
+  MedicineBoxOutlined,
+  EnvironmentOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../../services/toastService';
@@ -5148,11 +5149,64 @@ const StaffAssignmentUnified = () => {
                                             const cacheKey = createSlotKeyForStaff(dateStr, shift.name);
                                             const cachedSlots = slotDetailsCacheStaff[cacheKey] || [];
                                             // Backend summary doesn't have slots array, need to fetch details
-                                            const slotsForInfo = cachedSlots.length ? cachedSlots : [];
+                                            //  Ưu tiên dùng shiftData.slots nếu có, sau đó mới dùng cachedSlots
+                                            const slotsForInfo = (shiftData?.slots && Array.isArray(shiftData.slots) && shiftData.slots.length > 0) 
+                                              ? shiftData.slots 
+                                              : (cachedSlots.length ? cachedSlots : []);
                                             const totalSlotsInShift = slotCount;
                                             const isEntireShiftSelected = hasSelectedSlots && totalSlotsInShift > 0 && selectedSlotCount >= totalSlotsInShift;
                                             const hasPartialSelection = hasSelectedSlots && !isEntireShiftSelected;
                                             const isQuickSelectLoading = quickSelectLoadingKeyStaff === cacheKey;
+                                            
+                                            // Collect thông tin nhân viên làm cùng từ slotsForInfo
+                                            const getCoworkerInfo = () => {
+                                              const currentRole = selectedRoleForViewing;
+                                              if (!currentRole || slotsForInfo.length === 0) return null;
+                                              
+                                              const coworkerInfoMap = new Map();
+                                              
+                                              slotsForInfo.forEach(slot => {
+                                                // Nếu là dentist → hiển thị nurse
+                                                // Nếu là nurse → hiển thị dentist
+                                                const targetStaff = currentRole === 'dentist' || currentRole === 'doctor' 
+                                                  ? slot.nurse 
+                                                  : slot.dentist;
+                                                
+                                                if (Array.isArray(targetStaff)) {
+                                                  targetStaff.forEach(staff => {
+                                                    if (staff?._id || staff?.id) {
+                                                      const id = (staff._id || staff.id).toString();
+                                                      if (!coworkerInfoMap.has(id)) {
+                                                        const fullName = staff.fullName || staff.name || 'N/A';
+                                                        const employeeCode = staff.employeeCode || staff.code || null;
+                                                        coworkerInfoMap.set(id, { fullName, employeeCode });
+                                                      }
+                                                    }
+                                                  });
+                                                } else if (targetStaff) {
+                                                  const staff = targetStaff;
+                                                  if (staff?._id || staff?.id) {
+                                                    const id = (staff._id || staff.id).toString();
+                                                    if (!coworkerInfoMap.has(id)) {
+                                                      const fullName = staff.fullName || staff.name || 'N/A';
+                                                      const employeeCode = staff.employeeCode || staff.code || null;
+                                                      coworkerInfoMap.set(id, { fullName, employeeCode });
+                                                    }
+                                                  }
+                                                }
+                                              });
+                                              
+                                              const coworkerList = Array.from(coworkerInfoMap.values());
+                                              if (coworkerList.length === 0) return null;
+                                              
+                                              const isDentist = currentRole === 'dentist' || currentRole === 'doctor';
+                                              const label = isDentist ? 'YT' : 'NS';
+                                              const labelColor = isDentist ? '#52c41a' : '#1890ff';
+                                              
+                                              return { coworkerList, label, labelColor };
+                                            };
+                                            
+                                            const coworkerInfo = getCoworkerInfo();
                                             
                                             return (
                                               <td 
@@ -5215,11 +5269,34 @@ const StaffAssignmentUnified = () => {
                                                         />
                                                         
                                                         {shiftData?.mostFrequentRoom && (
-                                                          <div style={{ fontSize: '10px', color: '#666', marginTop: 4 }}>
-                                                            <HomeOutlined /> {shiftData.mostFrequentRoom.name}
+                                                          <div style={{ fontSize: '13px', color: '#666', marginTop: 4 }}>
+                                                            <EnvironmentOutlined style={{color:'#1890ff'}} /> {shiftData.mostFrequentRoom.name}
                                                             {shiftData.mostFrequentRoom.subRoom && (
                                                               <span> - {shiftData.mostFrequentRoom.subRoom.name}</span>
                                                             )}
+                                                          </div>
+                                                        )}
+                                                        
+                                                        {/*Hiển thị danh sách nhân viên làm cùng */}
+                                                        {coworkerInfo && (
+                                                          <div style={{ fontSize: '13px', marginTop: 4 }}>
+                                                            {coworkerInfo.coworkerList.map((info, idx) => {
+                                                              const displayText = info.employeeCode 
+                                                                ? `${info.employeeCode}| ${info.fullName}` 
+                                                                : info.fullName;
+                                                              const hasMultiple = coworkerInfo.coworkerList.length > 1;
+                                                              
+                                                              return (
+                                                                <div key={idx} style={{ marginBottom: idx < coworkerInfo.coworkerList.length - 1 ? 2 : 0 }}>
+                                                                  <span style={{ color: coworkerInfo.labelColor, fontWeight: '600' }}>
+                                                                    {hasMultiple ? `${coworkerInfo.label}${idx + 1}:` : `${coworkerInfo.label}:`}{' '}
+                                                                  </span>
+                                                                  <span style={{ color: coworkerInfo.labelColor }}>
+                                                                    {displayText}
+                                                                  </span>
+                                                                </div>
+                                                              );
+                                                            })}
                                                           </div>
                                                         )}
                                                       </Space>
