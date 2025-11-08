@@ -31,7 +31,9 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  DollarOutlined
+  DollarOutlined,
+  UpOutlined,
+  DownOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
@@ -68,6 +70,7 @@ const EditService = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [roomTypes, setRoomTypes] = useState({});
+  const [showDescriptionEditor, setShowDescriptionEditor] = useState(false);
 
   // Add-on confirmation states
   const [showToggleConfirmModal, setShowToggleConfirmModal] = useState(false);
@@ -138,7 +141,12 @@ const EditService = () => {
       const draft = loadDraft();
       if (draft) {
         form.setFieldsValue(draft.formData);
-        setServiceDescription(draft.description);
+        const draftDescription = draft.description || '';
+        setServiceDescription(draftDescription);
+        // Tự động mở editor nếu có nội dung trong draft
+        if (draftDescription && draftDescription.trim().length > 0) {
+          setShowDescriptionEditor(true);
+        }
         setHasUnsavedChanges(true);
         message.info('Đã khôi phục bản nháp chưa lưu');
       } else {
@@ -148,7 +156,12 @@ const EditService = () => {
           requireExamFirst: serviceData.requireExamFirst,
           allowedRoomTypes: serviceData.allowedRoomTypes || []
         });
-        setServiceDescription(serviceData.description || '');
+        const description = serviceData.description || '';
+        setServiceDescription(description);
+        // Tự động mở editor nếu có nội dung mô tả
+        if (description && description.trim().length > 0) {
+          setShowDescriptionEditor(true);
+        }
       }
     } catch (error) {
       console.error('Error fetching service details:', error);
@@ -206,6 +219,7 @@ const EditService = () => {
   const handleFormChange = () => {
     setHasUnsavedChanges(true);
   };
+
 
   // Handle description change
   const handleDescriptionChange = (value) => {
@@ -696,19 +710,55 @@ const EditService = () => {
           <Row gutter={[16, 16]}>
             {/* Row 4: Mô tả - Full width */}
             <Col span={24}>
-              <Form.Item
-                label="Mô tả"
-              >
-                <TinyMCE
-                  value={serviceDescription}
-                  onChange={handleDescriptionChange}
-                  placeholder="Nhập mô tả dịch vụ (tùy chọn)..."
-                  containerStyle={{ 
-                    width: '100%',
-                    height: '600px'
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                marginBottom: '12px',
+                padding: '16px',
+                background: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                marginTop: '12px'
+              }}>
+                <div>
+                  <Text strong style={{ color: '#1e293b', fontSize: '14px', fontWeight: '600' }}>
+                    Mô tả dịch vụ (không bắt buộc)
+                  </Text>
+                </div>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={showDescriptionEditor ? <DownOutlined /> : <UpOutlined />}
+                  onClick={() => setShowDescriptionEditor(!showDescriptionEditor)}
+                  style={{
+                    color: '#3b82f6',
+                    height: '32px',
+                    width: '32px',
+                    padding: '0',
+                    borderRadius: '6px',
+                    fontWeight: '500',
+                    background: showDescriptionEditor ? '#eff6ff' : 'transparent',
+                    border: showDescriptionEditor ? '1px solid #dbeafe' : '1px solid transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 />
-              </Form.Item>
+              </div>
+              
+              {showDescriptionEditor && (
+                <div style={{
+                  height: '400px'
+                }}>
+                  <TinyMCE
+                    value={serviceDescription}
+                    onChange={handleDescriptionChange}
+                    placeholder="Nhập mô tả chi tiết về dịch vụ..."
+                    containerStyle={{ width: '100%'}}
+                  />
+                </div>
+              )}
             </Col>
           </Row>
         </Form>
