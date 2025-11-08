@@ -43,7 +43,6 @@ const ServiceList = () => {
     current: 1,
     pageSize: 10,
     total: 0,
-    showSizeChanger: true,
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
   });
@@ -110,8 +109,8 @@ const ServiceList = () => {
   const loadServices = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      // 🔥 When searching, fetch ALL services to enable search across all pages
-      const shouldFetchAll = searchTerm.trim() !== '';
+      //  Khi tìm kiếm HOẶC lọc, tải TẤT CẢ dịch vụ để có thể tìm/lọc trên tất cả các trang
+      const shouldFetchAll = searchTerm.trim() !== '' || typeFilter !== '';
       
       const response = await servicesService.getServices(
         shouldFetchAll ? 1 : page, 
@@ -132,14 +131,22 @@ const ServiceList = () => {
   };
 
   useEffect(() => {
-    loadServices(pagination.current, pagination.pageSize);
-  }, [searchTerm]); // 🔥 Re-fetch when search term changes
+    loadServices(pagination.current, 10); 
+  }, [searchTerm, typeFilter]); // Tải lại khi từ khóa tìm kiếm HOẶC bộ lọc loại thay đổi
+
+  // Reload services when pagination changes (page only, pageSize is fixed at 10)
+  // Chỉ tải từ API khi KHÔNG có filter. Khi có filter, phân trang được xử lý ở client-side
+  useEffect(() => {
+    if (!searchTerm && !typeFilter) {
+      loadServices(pagination.current, 10);
+    }
+  }, [pagination.current]);
 
   // 🆕 Reload data when navigating back from add/edit page
   useEffect(() => {
     if (location.state?.reload) {
-      console.log('🔄 Reloading services after add/update');
-      loadServices(pagination.current, pagination.pageSize);
+      
+      loadServices(pagination.current, 10);
       // Clear the state to prevent reload on subsequent renders
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -167,7 +174,7 @@ const ServiceList = () => {
       toastService.success(`Đã ${newStatus} dịch vụ "${selectedService.name}" thành công!`);
       
       // Reload data để cập nhật UI
-      loadServices(pagination.current, pagination.pageSize);
+      loadServices(pagination.current, 10); 
     } catch (error) {
       toastService.error('Lỗi khi cập nhật trạng thái!');
     } finally {
@@ -204,7 +211,7 @@ const ServiceList = () => {
       toastService.success(response.message || `Đã xóa dịch vụ "${selectedServiceForDelete.name}" thành công`);
       
       // Reload data để cập nhật UI
-      loadServices(pagination.current, pagination.pageSize);
+      loadServices(pagination.current, 10);
     } catch (error) {
       toastService.error('Lỗi khi xóa dịch vụ: ' + (error.response?.data?.message || error.message));
     } finally {
@@ -459,24 +466,41 @@ const ServiceList = () => {
               children: (
                 <Table
                   columns={columns}
-                  dataSource={filteredServices}
+                  dataSource={
+                    // Khi có filter, chỉ hiển thị 10 items mỗi trang từ filteredServices
+                    (searchTerm || typeFilter) 
+                      ? filteredServices.slice((pagination.current - 1) * 10, pagination.current * 10)
+                      : filteredServices
+                  }
                   rowKey="_id"
                   loading={loading}
                   pagination={
                     (searchTerm || typeFilter) 
-                      ? false 
-                      : {
+                      ? {
+                          // Phân trang phía client cho kết quả đã lọc
                           current: pagination.current,
-                          pageSize: pagination.pageSize,
+                          pageSize: 10,
                           total: filteredServices.length,
-                          showSizeChanger: true,
                           showQuickJumper: true,
                           showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
-                          onChange: (page, pageSize) => {
+                          onChange: (page) => {
                             setPagination(prev => ({
                               ...prev,
-                              current: page,
-                              pageSize: pageSize || 10
+                              current: page
+                            }));
+                          }
+                        }
+                      : {
+                          // Phân trang phía server khi không có filter
+                          current: pagination.current,
+                          pageSize: 10, 
+                          total: pagination.total, 
+                          showQuickJumper: true,
+                          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
+                          onChange: (page) => {
+                            setPagination(prev => ({
+                              ...prev,
+                              current: page
                             }));
                           }
                         }
@@ -492,24 +516,41 @@ const ServiceList = () => {
               children: (
                 <Table
                   columns={columns}
-                  dataSource={filteredServices}
+                  dataSource={
+                    // Khi có filter, chỉ hiển thị 10 items mỗi trang từ filteredServices
+                    (searchTerm || typeFilter) 
+                      ? filteredServices.slice((pagination.current - 1) * 10, pagination.current * 10)
+                      : filteredServices
+                  }
                   rowKey="_id"
                   loading={loading}
                   pagination={
                     (searchTerm || typeFilter) 
-                      ? false 
-                      : {
+                      ? {
+                          // Phân trang phía client cho kết quả đã lọc
                           current: pagination.current,
-                          pageSize: pagination.pageSize,
+                          pageSize: 10,
                           total: filteredServices.length,
-                          showSizeChanger: true,
                           showQuickJumper: true,
                           showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
-                          onChange: (page, pageSize) => {
+                          onChange: (page) => {
                             setPagination(prev => ({
                               ...prev,
-                              current: page,
-                              pageSize: pageSize || 10
+                              current: page
+                            }));
+                          }
+                        }
+                      : {
+                          // Phân trang phía server khi không có filter
+                          current: pagination.current,
+                          pageSize: 10,
+                          total: pagination.total, 
+                          showQuickJumper: true,
+                          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
+                          onChange: (page) => {
+                            setPagination(prev => ({
+                              ...prev,
+                              current: page
                             }));
                           }
                         }
