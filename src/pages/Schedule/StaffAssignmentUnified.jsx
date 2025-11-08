@@ -1871,7 +1871,80 @@ const StaffAssignmentUnified = () => {
     return totalCount;
   }, [selectedSlotsForReplacement, monthStateForStaff, currentPageForStaff]);
 
-  // ⭐ Auto-load replacement staff when slots are selected
+  //  Calculate number of slots that have assigned staff (for staff replacement)
+  const assignedSlotCountForStaff = useMemo(() => {
+    let assignedCount = 0;
+    
+    // Helper function to check if a slot has assigned staff
+    const hasAssignedStaff = (slot) => {
+      const hasDentist = Array.isArray(slot?.dentist) ? slot.dentist.length > 0 : Boolean(slot?.dentist);
+      const hasNurse = Array.isArray(slot?.nurse) ? slot.nurse.length > 0 : Boolean(slot?.nurse);
+      return hasDentist || hasNurse;
+    };
+    
+    // 1. Check slots from saved months
+    Object.values(monthStateForStaff).forEach(monthState => {
+      if (monthState?.slots && Array.isArray(monthState.slots)) {
+        monthState.slots.forEach(entry => {
+          if (entry.slotIds && entry.slotIds.length > 0) {
+            // Check if we have slots array
+            if (entry.slots && Array.isArray(entry.slots)) {
+              entry.slots.forEach(slot => {
+                if (hasAssignedStaff(slot)) {
+                  assignedCount++;
+                }
+              });
+            } else {
+              // If slots array not available, check cache
+              const cacheKey = createSlotKeyForStaff(entry.date, entry.shiftName);
+              const cachedSlots = slotDetailsCacheStaff[cacheKey] || [];
+              // Only count slots that are in entry.slotIds
+              const slotIdSet = new Set(entry.slotIds);
+              cachedSlots.forEach(slot => {
+                const slotId = slot._id || slot.id;
+                if (slotIdSet.has(slotId) && hasAssignedStaff(slot)) {
+                  assignedCount++;
+                }
+              });
+            }
+          }
+        });
+      }
+    });
+    
+    // 2. Check slots from current month
+    const currentMonthKey = dayjs().add(currentPageForStaff, 'month').format('YYYY-MM');
+    if (!monthStateForStaff[currentMonthKey] && selectedSlotsForReplacement.length > 0) {
+      selectedSlotsForReplacement.forEach(entry => {
+        if (entry.slotIds && entry.slotIds.length > 0) {
+          // Check if we have slots array
+          if (entry.slots && Array.isArray(entry.slots)) {
+            entry.slots.forEach(slot => {
+              if (hasAssignedStaff(slot)) {
+                assignedCount++;
+              }
+            });
+          } else {
+            // If slots array not available, check cache
+            const cacheKey = createSlotKeyForStaff(entry.date, entry.shiftName);
+            const cachedSlots = slotDetailsCacheStaff[cacheKey] || [];
+            // Only count slots that are in entry.slotIds
+            const slotIdSet = new Set(entry.slotIds);
+            cachedSlots.forEach(slot => {
+              const slotId = slot._id || slot.id;
+              if (slotIdSet.has(slotId) && hasAssignedStaff(slot)) {
+                assignedCount++;
+              }
+            });
+          }
+        }
+      });
+    }
+    
+    return assignedCount;
+  }, [selectedSlotsForReplacement, monthStateForStaff, currentPageForStaff, slotDetailsCacheStaff]);
+
+  //  Auto-load replacement staff when slots are selected
   useEffect(() => {
     console.log('🔄 useEffect totalSelectedSlotCountForStaff changed:', { 
       totalSelectedSlotCountForStaff,
@@ -1896,7 +1969,7 @@ const StaffAssignmentUnified = () => {
   const fetchReplacementStaff = async () => {
     console.log('🔄 fetchReplacementStaff START');
     
-    // ⭐ Check total slots from ALL months instead of just current month
+    //  Check total slots from ALL months instead of just current month
     if (totalSelectedSlotCountForStaff === 0) {
       console.log('⚠️ No slots selected for replacement (checked all months)');
       toast.warning('Vui lòng chọn ít nhất 1 slot để thay thế');
@@ -1906,7 +1979,7 @@ const StaffAssignmentUnified = () => {
     console.log('🔄 Setting loadingReplacementStaff = TRUE');
     setLoadingReplacementStaff(true);
     try {
-      // ⭐ Build slot details from ALL months in monthStateForStaff
+      // Build slot details from ALL months in monthStateForStaff
       const selectedDetails = [];
       
       // Collect all slot entries from saved months
@@ -3979,19 +4052,16 @@ const StaffAssignmentUnified = () => {
                     
                     {/* Selected Slots Info */}
                     <Alert
-                      message="Thông tin các ca đã chọn (tất cả các tháng)"
+                      message="Thông tin các ca đã chọn"
                       description={
                         <div>
+                          <Text strong style={{marginRight:10}}>Tổng slot: {totalSelectedSlotCount}</Text>
                           <Space size={[8, 8]} wrap style={{ marginBottom: 8 }}>
-                            <Tag color="blue">Đã chọn: {totalSelectedSlotCount}/{totalAvailableSlotCount || totalSelectedSlotCount}</Tag>
-                            <Tag color={fullyAssignedSlotCount >= totalSelectedSlotCount && totalSelectedSlotCount > 0 ? 'green' : 'orange'}>
-                              PC: {fullyAssignedSlotCount}/{totalSelectedSlotCount || 0}
+                            <Tag color="blue" style={{fontSize:10}}>Đã chọn: {totalSelectedSlotCount}/{totalAvailableSlotCount || totalSelectedSlotCount}</Tag>
+                            <Tag style={{fontSize:10}} color={fullyAssignedSlotCount >= totalSelectedSlotCount && totalSelectedSlotCount > 0 ? 'green' : 'orange'}>
+                              Slot đã phân công: {fullyAssignedSlotCount}/{totalSelectedSlotCount || 0}
                             </Tag>
                           </Space>
-                          <Text strong>Tổng slot: {totalSelectedSlotCount}</Text>
-                          <div style={{ fontSize: 12, color: '#999', margin: '4px 0 8px' }}>
-                            Bao gồm {selectedSlotsForAssignment.length} ca trong tháng này. Tổng từ tất cả các tháng: {totalSelectedSlotCount} slot
-                          </div>
                           <div style={{ marginTop: 8, maxHeight: 200, overflowY: 'auto' }}>
                             {selectedSlotsForAssignment.map((slot, index) => {
                               // ⭐ Use cached slots if available (they have populated dentist/nurse with fullName+employeeCode)
@@ -4326,22 +4396,24 @@ const StaffAssignmentUnified = () => {
                     
                     {/* Action Buttons */}
                     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      {/* Remove Staff Button */}
-                      <Tooltip title={totalSelectedSlotCount === 0 ? 'Vui lòng chọn ít nhất 1 slot' : ''}>
-                        <Button 
-                          danger
-                          size="large"
-                          block
-                          icon={<DeleteOutlined />}
-                          onClick={() => {
-                            console.log('🔴 Remove Staff Button CLICKED!');
-                            handleRemoveStaffFromSlots();
-                          }}
-                          disabled={totalSelectedSlotCount === 0}
-                        >
-                          Xóa nhân sự khỏi {totalSelectedSlotCount} slot đã chọn
-                        </Button>
-                      </Tooltip>
+                      {/* Remove Staff Button - chỉ hiển thị khi có slot đã phân công */}
+                      {fullyAssignedSlotCount > 0 && (
+                        <Tooltip title={totalSelectedSlotCount === 0 ? 'Vui lòng chọn ít nhất 1 slot' : 'Xóa tất cả nhân sự đã phân công khỏi các slot đã chọn'}>
+                          <Button 
+                            danger
+                            size="large"
+                            block
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              console.log('🔴 Remove Staff Button CLICKED!');
+                              handleRemoveStaffFromSlots();
+                            }}
+                            disabled={totalSelectedSlotCount === 0}
+                          >
+                            Xóa nhân sự khỏi {fullyAssignedSlotCount} slot đã phân công
+                          </Button>
+                        </Tooltip>
+                      )}
 
                       {/* Confirm Assignment Button */}
                       <Tooltip
@@ -5331,11 +5403,11 @@ const StaffAssignmentUnified = () => {
                               
                               <Row gutter={16}>
                                 <Col span={12}>
-                                  <Card size="small" title="Thông tin thay thế (tất cả các tháng)">
+                                  <Card size="small" title="Thông tin thay thế">
                                     <Space direction="vertical" style={{ width: '100%' }}>
-                                      <Text><strong>Số slot đã chọn:</strong> {totalSelectedSlotCountForStaff} <Text type="secondary">(từ tất cả các tháng)</Text></Text>
+                                      <Text><strong>Số slot đã chọn:</strong> {totalSelectedSlotCountForStaff}</Text>
                                       <Text><strong>Nhân sự hiện tại:</strong> {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn'}</Text>
-                                      <Text><strong>Vai trò:</strong> <Tag color={getRoleTagColor(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}>
+                                      <Text><strong>Vai trò:</strong> <Tag style={{fontSize:12}} color={getRoleTagColor(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}>
                                         {getRoleLabel(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}
                                       </Tag></Text>
                                     </Space>
@@ -5452,19 +5524,21 @@ const StaffAssignmentUnified = () => {
                                         }
                                       </Select>
                                       
-                                      {/* Remove Staff Button */}
-                                      <Button 
-                                        danger
-                                        block 
-                                        onClick={() => {
-                                          console.log('🔴 Remove Staff Button (Tab 2) CLICKED!');
-                                          handleRemoveStaffFromReplacementSlots();
-                                        }}
-                                        disabled={totalSelectedSlotCountForStaff === 0}
-                                        icon={<DeleteOutlined />}
-                                      >
-                                        Xóa nhân sự khỏi {totalSelectedSlotCountForStaff} slot đã chọn
-                                      </Button>
+                                      {/* Remove Staff Button - chỉ hiển thị khi có slot đã phân công */}
+                                      {assignedSlotCountForStaff > 0 && (
+                                        <Button 
+                                          danger
+                                          block 
+                                          onClick={() => {
+                                            console.log('🔴 Remove Staff Button (Tab 2) CLICKED!');
+                                            handleRemoveStaffFromReplacementSlots();
+                                          }}
+                                          disabled={totalSelectedSlotCountForStaff === 0}
+                                          icon={<DeleteOutlined />}
+                                        >
+                                          Xóa nhân sự khỏi {assignedSlotCountForStaff} slot đã phân công
+                                        </Button>
+                                      )}
 
                                       {/* Confirm Replacement Button */}
                                       <Button 
