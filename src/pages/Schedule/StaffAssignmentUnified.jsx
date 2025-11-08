@@ -3848,15 +3848,6 @@ const StaffAssignmentUnified = () => {
                                               </Tag>
                                               <div style={{ fontSize: '10px', marginTop: 2 }}>
                                                 <Text style={{
-                                                  color: hasSelectedSlots
-                                                    ? (selectedSlotCount === coverageDenominator ? '#1890ff' : '#0958d9')
-                                                    : '#595959'
-                                                }}>
-                                                  Đã chọn: {selectedSlotCount}/{coverageDenominator}
-                                                </Text>
-                                              </div>
-                                              <div style={{ fontSize: '10px', marginTop: 2 }}>
-                                                <Text style={{
                                                   color:
                                                     coverageNumerator === coverageDenominator && coverageDenominator > 0
                                                       ? '#52c41a'
@@ -5104,15 +5095,6 @@ const StaffAssignmentUnified = () => {
                                                         <Tag color="cyan" size="small">
                                                           {totalSlotsInShift || slotCount} slot
                                                         </Tag>
-                                                        <div style={{ fontSize: '10px', marginTop: 2 }}>
-                                                          <Text style={{
-                                                            color: hasSelectedSlots
-                                                              ? (selectedSlotCount === totalSlotsInShift ? '#1890ff' : '#0958d9')
-                                                              : '#595959'
-                                                          }}>
-                                                            Đã chọn: {selectedSlotCount}/{totalSlotsInShift}
-                                                          </Text>
-                                                        </div>
                                                         <div style={{ fontSize: '10px', color: '#1890ff', marginTop: 4 }}>
                                                           Hover hoặc click để chọn slot
                                                         </div>
