@@ -4381,8 +4381,8 @@ const StaffAssignmentUnified = () => {
                           style={{ width: '100%' }}
                         >
                           {allSlotsFullyAssigned 
-                            ? `Cập nhật phân công (${selectedDentists.length} NS + ${selectedNurses.length} YT) - ${selectedSlotsForAssignment.length} ca`
-                            : `Xác nhận phân công (${selectedDentists.length} NS + ${selectedNurses.length} YT) - ${selectedSlotsForAssignment.length} ca`
+                            ? `Cập nhật phân công`
+                            : `Xác nhận phân công`
                           }
                         </Button>
                       </Tooltip>
@@ -5162,7 +5162,7 @@ const StaffAssignmentUnified = () => {
                                                   border: '1px solid #d9d9d9',
                                                   backgroundColor: bgColor,
                                                   cursor: hasSlots ? 'pointer' : 'not-allowed',
-                                                  verticalAlign: 'top'
+                                                  verticalAlign: 'top',
                                                 }}
                                                 onClick={(e) => {
                                                   // Don't trigger if clicking on checkbox or inside Popover
@@ -5178,59 +5178,53 @@ const StaffAssignmentUnified = () => {
                                                 }}
                                               >
                                                 {hasSlots ? (
-                                                  <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                                    <Checkbox 
-                                                      checked={isEntireShiftSelected}
-                                                      indeterminate={hasPartialSelection}
-                                                      onClick={(e) => e.stopPropagation()}
-                                                      onChange={() => handleToggleEntireShiftForStaff(date, shift.name, shiftData, shift.endTime)}
-                                                    />
-                                                    
-                                                    <Popover
-                                                      trigger={['hover', 'click']}
-                                                      placement="right"
-                                                      overlayStyle={{ maxWidth: 360 }}
-                                                      content={(
-                                                        <SlotQuickSelect
-                                                          slots={slotsForInfo}
-                                                          selectedSlotIds={selectedSlotIds}
-                                                          loading={isQuickSelectLoading && slotsForInfo.length === 0}
-                                                          onToggleSlot={(slotId) => toggleSingleSlotSelectionForStaff(date, shift.name, slotsForInfo, slotId)}
-                                                          onToggleFiltered={(checked, slotIds) => toggleFilteredSlotSelectionForStaff(date, shift.name, slotsForInfo, slotIds, checked)}
-                                                          onOpenModal={() => handleOpenSlotModalForStaff(date, shift.name, shiftData, shift.endTime)}
-                                                        />
-                                                      )}
-                                                      onOpenChange={async (visible) => {
-                                                        if (visible && hasSlots && slotsForInfo.length === 0) {
-                                                          setQuickSelectLoadingKeyStaff(cacheKey);
-                                                          await fetchSlotDetailsForStaff(date, shift.name, shiftData);
-                                                          setQuickSelectLoadingKeyStaff(prev => (prev === cacheKey ? null : prev));
-                                                        }
-                                                        if (!visible && quickSelectLoadingKeyStaff === cacheKey) {
-                                                          setQuickSelectLoadingKeyStaff(null);
-                                                        }
-                                                      }}
-                                                    >
-                                                      <div style={{ cursor: 'pointer' }}>
-                                                        <Tag color="cyan" size="small">
-                                                          {totalSlotsInShift || slotCount} slot
-                                                        </Tag>
-                                                        <div style={{ fontSize: '10px', color: '#1890ff', marginTop: 4 }}>
-                                                          Hover hoặc click để chọn slot
-                                                        </div>
-                                                      </div>
-                                                    </Popover>
-                                                    
-                                                    
-                                                    {shiftData?.mostFrequentRoom && (
-                                                      <div style={{ fontSize: '10px', color: '#666', marginTop: 4 }}>
-                                                        <HomeOutlined /> {shiftData.mostFrequentRoom.name}
-                                                        {shiftData.mostFrequentRoom.subRoom && (
-                                                          <span> - {shiftData.mostFrequentRoom.subRoom.name}</span>
-                                                        )}
-                                                      </div>
+                                                  <Popover
+                                                    trigger={['hover', 'click']}
+                                                    placement="right"
+                                                    overlayStyle={{ maxWidth: 360 }}
+                                                    mouseEnterDelay={0.3}
+                                                    mouseLeaveDelay={0.1}
+                                                    content={(
+                                                      <SlotQuickSelect
+                                                        slots={slotsForInfo}
+                                                        selectedSlotIds={selectedSlotIds}
+                                                        loading={isQuickSelectLoading && slotsForInfo.length === 0}
+                                                        onToggleSlot={(slotId) => toggleSingleSlotSelectionForStaff(date, shift.name, slotsForInfo, slotId)}
+                                                        onToggleFiltered={(checked, slotIds) => toggleFilteredSlotSelectionForStaff(date, shift.name, slotsForInfo, slotIds, checked)}
+                                                        onOpenModal={() => handleOpenSlotModalForStaff(date, shift.name, shiftData, shift.endTime)}
+                                                      />
                                                     )}
-                                                  </Space>
+                                                    onOpenChange={async (visible) => {
+                                                      if (visible && hasSlots && slotsForInfo.length === 0) {
+                                                        setQuickSelectLoadingKeyStaff(cacheKey);
+                                                        await fetchSlotDetailsForStaff(date, shift.name, shiftData);
+                                                        setQuickSelectLoadingKeyStaff(prev => (prev === cacheKey ? null : prev));
+                                                      }
+                                                      if (!visible && quickSelectLoadingKeyStaff === cacheKey) {
+                                                        setQuickSelectLoadingKeyStaff(null);
+                                                      }
+                                                    }}
+                                                  >
+                                                    <div style={{ width: '100%', minHeight: '40px' }}>
+                                                      <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                                        <Checkbox 
+                                                          checked={isEntireShiftSelected}
+                                                          indeterminate={hasPartialSelection}
+                                                          onClick={(e) => e.stopPropagation()}
+                                                          onChange={() => handleToggleEntireShiftForStaff(date, shift.name, shiftData, shift.endTime)}
+                                                        />
+                                                        
+                                                        {shiftData?.mostFrequentRoom && (
+                                                          <div style={{ fontSize: '10px', color: '#666', marginTop: 4 }}>
+                                                            <HomeOutlined /> {shiftData.mostFrequentRoom.name}
+                                                            {shiftData.mostFrequentRoom.subRoom && (
+                                                              <span> - {shiftData.mostFrequentRoom.subRoom.name}</span>
+                                                            )}
+                                                          </div>
+                                                        )}
+                                                      </Space>
+                                                    </div>
+                                                  </Popover>
                                                 ) : (
                                                   <Text type="secondary" style={{ fontSize: '11px' }}>Không có lịch</Text>
                                                 )}
