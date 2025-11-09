@@ -40,6 +40,11 @@
   box-shadow: 0 4px 12px rgba(44, 95, 79, 0.15);
 }
 
+.service-item-card:hover h5 {
+  color: #1da1f2 !important;
+  transition: color 0.2s ease;
+}
+
 /* Custom scrollbar for service list - Nhỏ lại */
 .booking-select-service-page ::-webkit-scrollbar {
   width: 6px;
