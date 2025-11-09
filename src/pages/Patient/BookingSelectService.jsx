@@ -13,7 +13,6 @@ import {
   Tag,
   message,
   Select,
-  Popover,
   Radio
 } from 'antd';
 import { 
@@ -328,53 +327,13 @@ const BookingSelectService = () => {
                   marginBottom: '16px'
                 }}>
                   <Row gutter={[16, 16]}>
-                    {filteredServices.map((service) => {
-                    // Prepare addon content for Popover
-                    const addonsContent = (
-                      <div style={{ maxWidth: 400 }}>
-                        <div style={{ marginBottom: 8, fontWeight: 600, color: '#2c5f4f' }}>
-                          Các gói dịch vụ:
-                        </div>
-                        {service.serviceAddOns && service.serviceAddOns.length > 0 ? (
-                          <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                            {service.serviceAddOns.map((addon, idx) => (
-                              <div key={idx} style={{ 
-                                padding: '8px 12px', 
-                                background: '#f5f5f5', 
-                                borderRadius: 6,
-                                borderLeft: '3px solid #2c5f4f'
-                              }}>
-                                <div style={{ fontWeight: 500, marginBottom: 4 }}>
-                                  {addon.name}
-                                </div>
-                                <div style={{ fontSize: 13, color: '#666' }}>
-                                  <DollarOutlined /> <strong>{addon.price?.toLocaleString('vi-VN')} VNĐ</strong> / {addon.unit}
-                                </div>
-                                <div style={{ fontSize: 12, color: '#999' }}>
-                                  Thời gian: ~{addon.durationMinutes} phút
-                                </div>
-                              </div>
-                            ))}
-                          </Space>
-                        ) : (
-                          <Text type="secondary">Không có gói dịch vụ</Text>
-                        )}
-                      </div>
-                    );
-
-                    return (
+                    {filteredServices.map((service) => (
                       <Col xs={24} key={service._id}>
-                        <Popover 
-                          content={addonsContent} 
-                          title={null}
-                          placement="rightTop"
-                          trigger="hover"
+                        <Card
+                          hoverable
+                          className="service-item-card"
+                          onClick={() => handleSelectService(service)}
                         >
-                          <Card
-                            hoverable
-                            className="service-item-card"
-                            onClick={() => handleSelectService(service)}
-                          >
                             <Row align="middle" gutter={16}>
                               <Col flex="auto">
                                 <Space direction="vertical" size={4} style={{ width: '100%' }}>
@@ -422,10 +381,8 @@ const BookingSelectService = () => {
                               </Col>
                             </Row>
                           </Card>
-                        </Popover>
                       </Col>
-                    );
-                  })}
+                    ))}
                   </Row>
                 </div>
               )}
