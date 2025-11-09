@@ -1,28 +1,23 @@
 .booking-select-service-page {
   min-height: 100vh;
-  background-color: #f0f2f5;
 }
 
-.breadcrumb-section {
-  background-color: white;
-  padding: 16px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.breadcrumb-container-booking-select-service {
+  margin-top: -30px;
+  margin-bottom: 20px;
+  display: flex;
+  margin-left: 100px;
 }
 
-.breadcrumb-section .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.breadcrumb-section a {
-  color: #1890ff;
+.breadcrumb-container-booking-select-service a {
+  color: rgb(24, 144, 255);
   text-decoration: none;
   cursor: pointer;
 }
 
-.breadcrumb-section a:hover {
-  text-decoration: underline;
+.breadcrumb-container-booking-select-service a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
 }
 
 .main-content {
@@ -43,6 +38,30 @@
 .service-item-card:hover {
   border-color: #2c5f4f;
   box-shadow: 0 4px 12px rgba(44, 95, 79, 0.15);
+}
+
+.service-item-card:hover h5 {
+  color: #1da1f2 !important;
+  transition: color 0.2s ease;
+}
+
+/* Custom scrollbar for service list - Nhỏ lại */
+.booking-select-service-page ::-webkit-scrollbar {
+  width: 6px;
+  height: 10px;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
 }
 
 @media (max-width: 768px) {

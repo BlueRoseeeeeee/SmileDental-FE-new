@@ -9,30 +9,22 @@ import {
   Button, 
   Space,
   Spin,
-  Alert,
   Tag,
   message,
   Select,
-  Popover,
   Radio
 } from 'antd';
 import { 
   SearchOutlined, 
-  ArrowRightOutlined,
-  MedicineBoxOutlined,
-  DollarOutlined,
   InfoCircleOutlined,
   StarFilled
 } from '@ant-design/icons';
 import { servicesService, recordService } from '../../services';
-import { mockServices } from '../../services/mockData.js';
 import { useAuth } from '../../hooks/useAuth';
 import './BookingSelectService.css';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 const { Title, Text, Paragraph } = Typography;
-
-// Toggle this to use mock data for testing
-const USE_MOCK_DATA = false;
 
 const BookingSelectService = () => {
   const navigate = useNavigate();
@@ -58,29 +50,21 @@ const BookingSelectService = () => {
     try {
       setLoading(true);
       
-      if (USE_MOCK_DATA) {
-        // Use mock data for testing
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
-        setServices(mockServices);
-        setFilteredServices(mockServices);
-      } else {
-        // Use real API
-        const response = await servicesService.getAllServices();
-        console.log('📋 Services API response:', response);
+      const response = await servicesService.getAllServices();
+      console.log('📋 Services API response:', response);
+      
+      // API returns: { services: [...], total, page, limit, totalPages }
+      if (response.services && Array.isArray(response.services)) {
+        const activeServices = response.services.filter(s => s.isActive);
+        setServices(activeServices);
+        applyFilters(searchValue, selectedType, serviceSource, activeServices, unusedServices);
         
-        // API returns: { services: [...], total, page, limit, totalPages }
-        if (response.services && Array.isArray(response.services)) {
-          const activeServices = response.services.filter(s => s.isActive);
-          setServices(activeServices);
-          applyFilters(searchValue, selectedType, serviceSource, activeServices, unusedServices);
-          
-          if (activeServices.length === 0) {
-            message.warning('Hiện tại chưa có dịch vụ nào khả dụng');
-          }
-        } else {
-          console.error('Invalid API response format:', response);
-          message.error('Không thể tải danh sách dịch vụ');
+        if (activeServices.length === 0) {
+          message.warning('Hiện tại chưa có dịch vụ nào khả dụng');
         }
+      } else {
+        console.error('Invalid API response format:', response);
+        message.error('Không thể tải danh sách dịch vụ');
       }
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -168,7 +152,13 @@ const BookingSelectService = () => {
 
     // Filter by type
     if (type !== 'all') {
-      filtered = filtered.filter(service => service.type === type);
+      // Map Vietnamese thành English để so sánh
+      const typeMap = {
+        'Khám': 'exam',
+        'Điều trị': 'treatment'
+      };
+      const englishType = typeMap[type] || type;
+      filtered = filtered.filter(service => service.type === englishType);
     }
 
     // Filter by search
@@ -228,28 +218,29 @@ const BookingSelectService = () => {
     }
   };
 
-  const handleBack = () => {
-  navigate('/patient/booking/select-service');
+  // Hàm dịch type sang tiếng Việt
+  const translateServiceType = (type) => {
+    const typeMap = {
+      'exam': 'Khám',
+      'treatment': 'Điều trị',
+    };
+    return typeMap[type] || type;
   };
 
   return (
     <div className="booking-select-service-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
-        <div className="container">
-          <Space split=">">
-            <a href="/patient/booking/select-service">Trang chủ</a>
-            <a href="/patient/booking">Đặt lịch khám</a>
-            <Text>Chọn dịch vụ</Text>
-          </Space>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="main-content">
+      <div className="breadcrumb-container-booking-select-service">
+        <Space split=">">
+          <a href="/patient/booking/select-service">Trang chủ</a>
+          <a href="/patient/booking">Đặt lịch khám</a>
+          <Text>Chọn dịch vụ</Text>
+        </Space>
+      </div>
         <div className="container">
           <Card className="booking-card">
-            <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 16 }}>
+            <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
               Vui lòng chọn dịch vụ
             </Title>
 
@@ -300,136 +291,70 @@ const BookingSelectService = () => {
               </Col>
             </Row>
 
-            {/* Warning Message */}
-            {filteredServices.length > 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                message="Lưu ý"
-                description="Bất cứ dịch vụ bạn không thấy dịch vụ trong công cách đặt lịch trực tuyến hoặc bạn không biết chính xác dịch vụ này, bạn có thể liên hệ qua SĐT trên để tham khảo hoặc chọn dịch vụ 'Khám - Gặp bác sĩ tư vấn' và bác sĩ sẽ tư vấn chi tiết cho bạn nếu có nhu cầu thêm bất kì dịch vụ nào khác."
-                style={{ marginBottom: 24, fontSize: 13 }}
-              />
-            )}
-
             {/* Services List */}
             <Spin spinning={loading}>
               {filteredServices.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <MedicineBoxOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
                   <Paragraph type="secondary">
                     {searchValue ? 'Không tìm thấy dịch vụ phù hợp' : 'Chưa có dịch vụ nào'}
                   </Paragraph>
                 </div>
               ) : (
-                <Row gutter={[16, 16]}>
-                  {filteredServices.map((service) => {
-                    // Prepare addon content for Popover
-                    const addonsContent = (
-                      <div style={{ maxWidth: 400 }}>
-                        <div style={{ marginBottom: 8, fontWeight: 600, color: '#2c5f4f' }}>
-                          Các gói dịch vụ:
-                        </div>
-                        {service.serviceAddOns && service.serviceAddOns.length > 0 ? (
-                          <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                            {service.serviceAddOns.map((addon, idx) => (
-                              <div key={idx} style={{ 
-                                padding: '8px 12px', 
-                                background: '#f5f5f5', 
-                                borderRadius: 6,
-                                borderLeft: '3px solid #2c5f4f'
-                              }}>
-                                <div style={{ fontWeight: 500, marginBottom: 4 }}>
-                                  {addon.name}
-                                </div>
-                                <div style={{ fontSize: 13, color: '#666' }}>
-                                  <DollarOutlined /> <strong>{addon.price?.toLocaleString('vi-VN')} VNĐ</strong> / {addon.unit}
-                                </div>
-                                <div style={{ fontSize: 12, color: '#999' }}>
-                                  Thời gian: ~{addon.durationMinutes} phút
-                                </div>
-                              </div>
-                            ))}
-                          </Space>
-                        ) : (
-                          <Text type="secondary">Không có gói dịch vụ</Text>
-                        )}
-                      </div>
-                    );
-
-                    return (
+                <div style={{ 
+                  maxHeight: '450px', 
+                  overflowY: 'auto', 
+                  paddingRight: '8px',
+                  marginBottom: '16px'
+                }}>
+                  <Row gutter={[16, 16]}>
+                    {filteredServices.map((service) => (
                       <Col xs={24} key={service._id}>
-                        <Popover 
-                          content={addonsContent} 
-                          title={null}
-                          placement="rightTop"
-                          trigger="hover"
+                        <Card
+                          hoverable
+                          className="service-item-card"
+                          onClick={() => handleSelectService(service)}
                         >
-                          <Card
-                            hoverable
-                            className="service-item-card"
-                            onClick={() => handleSelectService(service)}
-                          >
-                            <Row align="middle" gutter={16}>
-                              <Col flex="auto">
-                                <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                  <Space>
-                                    <Title level={4} style={{ margin: 0, color: '#d4860f' }}>
-                                      <MedicineBoxOutlined /> {service.name}
-                                    </Title>
-                                    {service.type && (
-                                      <Tag color={service.type === 'Khám' ? 'blue' : 'green'}>
-                                        {service.type}
-                                      </Tag>
-                                    )}
-                                    {/* ✅ Recommended Badge */}
-                                    {isRecommended(service._id) && (
-                                      <Tag color="gold" icon={<StarFilled />}>
-                                        Chỉ định bác sĩ
-                                      </Tag>
-                                    )}
-                                    <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
-                                  </Space>
-                                  {service.description && (
-                                    <Text type="secondary" style={{ fontSize: 13 }}>
-                                      {service.description}
-                                    </Text>
-                                  )}
-                                  {service.serviceAddOns && service.serviceAddOns.length > 0 && (
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
-                                      {service.serviceAddOns.length} gói dịch vụ có sẵn
-                                    </Text>
-                                  )}
-                                </Space>
-                              </Col>
-                              <Col>
-                                <Button 
-                                  type="primary" 
-                                  icon={<ArrowRightOutlined />}
-                                  style={{ 
-                                    backgroundColor: '#2c5f4f',
-                                    borderColor: '#2c5f4f',
-                                    borderRadius: 6
-                                  }}
-                                >
-                                  Chọn
-                                </Button>
-                              </Col>
-                            </Row>
-                          </Card>
-                        </Popover>
+                          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                            <Space>
+                              <h5 style={{ margin: 0, color: COLOR_BRAND_NAME, fontSize: 16, fontWeight:600 }}>
+                                {service.name}
+                              </h5>
+                              {service.type && (
+                                <Tag style={{fontSize: 10}} color={translateServiceType(service.type) === 'Khám' ? 'blue' : 'green'}>
+                                  {translateServiceType(service.type)}
+                                </Tag>
+                              )}
+                              {/* ✅ Recommended Badge */}
+                              {isRecommended(service._id) && (
+                                <Tag color="gold" icon={<StarFilled />}>
+                                  Chỉ định bác sĩ
+                                </Tag>
+                              )}
+                              <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
+                            </Space>
+                            {service.description && (
+                              <div 
+                                style={{ 
+                                  fontSize: 13, 
+                                  color: 'rgba(0, 0, 0, 0.45)',
+                                  lineHeight: '1.5'
+                                }}
+                                dangerouslySetInnerHTML={{ __html: service.description }}
+                              />
+                            )}
+                            {service.serviceAddOns && service.serviceAddOns.length > 0 && (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {service.serviceAddOns.length} gói dịch vụ có sẵn
+                              </Text>
+                            )}
+                          </Space>
+                        </Card>
                       </Col>
-                    );
-                  })}
-                </Row>
+                    ))}
+                  </Row>
+                </div>
               )}
             </Spin>
-
-            {/* Actions */}
-            <div style={{ marginTop: 32, textAlign: 'center' }}>
-              <Button size="large" onClick={handleBack} style={{ borderRadius: 6 }}>
-                Quay lại bước trước
-              </Button>
-            </div>
           </Card>
         </div>
       </div>
