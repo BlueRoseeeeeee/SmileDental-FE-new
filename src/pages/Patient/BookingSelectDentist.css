@@ -17,15 +17,6 @@
   cursor: pointer;
 }
 
-.breadcrumb-section a {
-  color: #1890ff;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.breadcrumb-section a:hover {
-  text-decoration: underline;
-}
 
 .main-content {
   padding: 40px 0;
@@ -45,6 +36,11 @@
 .dentist-item-card:hover {
   border-color: #2c5f4f;
   box-shadow: 0 4px 12px rgba(44, 95, 79, 0.15);
+}
+
+.dentist-item-card:hover h4 {
+  color: #313b79 !important;
+  transition: color 0.2s ease;
 }
 
 @media (max-width: 768px) {

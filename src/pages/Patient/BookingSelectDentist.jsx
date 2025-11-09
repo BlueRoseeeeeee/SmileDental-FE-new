@@ -122,7 +122,7 @@ const BookingSelectDentist = () => {
   };
 
   const handleBack = () => {
-    navigate('/patient/booking/select-service');
+    navigate('/patient/booking/select-addon');
   };
 
   return (
@@ -189,9 +189,9 @@ const BookingSelectDentist = () => {
                           </Col>
                           <Col flex="auto">
                             <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                              <Title level={4} style={{ margin: 0, color: '#d4860f' }}>
-                                {dentist.title || 'BS'} {dentist.fullName}
-                              </Title>
+                              <h4 style={{ margin: 0, color: '#BE8600', fontWeight: 'bold', fontSize: '18px' }}>
+                                {dentist.title || 'NS.'} {dentist.fullName}
+                              </h4>
                               <Space size={4}>
                                 <Text type="secondary">Giới tính: {dentist.gender === 'male' ? 'Nam' : dentist.gender === 'female' ? 'Nữ' : 'Khác'}</Text>
                               </Space>

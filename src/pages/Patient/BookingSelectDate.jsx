@@ -20,12 +20,17 @@ import {
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import 'dayjs/locale/vi';
+import locale from 'antd/locale/vi_VN';
+import { ConfigProvider } from 'antd';
 import slotService from '../../services/slotService.js';
 import { mockServices, mockDentists } from '../../services/mockData.js';
 import './BookingSelectDate.css';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
+dayjs.locale('vi');
 
 const { Title, Text } = Typography;
 
@@ -35,6 +40,7 @@ const USE_MOCK_DATA = false;
 const BookingSelectDate = () => {
   const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState(null);
+  const [selectedServiceAddOn, setSelectedServiceAddOn] = useState(null);
   const [selectedDentist, setSelectedDentist] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(dayjs());
@@ -66,6 +72,7 @@ const BookingSelectDate = () => {
     const dentistData = JSON.parse(dentist);
     
     setSelectedService(serviceData);
+    setSelectedServiceAddOn(serviceAddOnData);
     setSelectedDentist(dentistData);
     
     // Calculate service duration (prioritize addon)
@@ -83,7 +90,6 @@ const BookingSelectDate = () => {
   const fetchWorkingDates = async (dentistId, serviceDuration = 15) => {
     try {
       const response = await slotService.getDentistWorkingDates(dentistId, serviceDuration);
-      console.log('📅 Working dates API response:', response);
       
       if (response.success && response.data.workingDates) {
         setWorkingDates(response.data.workingDates);
@@ -154,39 +160,44 @@ const BookingSelectDate = () => {
   };
 
   return (
+    <ConfigProvider locale={locale}>
     <div className="booking-select-date-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
+      {/* Main Content */}
+      <div className="main-content">
         <div className="container">
+        <div  className='breadcrumb-container-booking-select-date'>
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
             <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
-            <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn bác sĩ</a>
+            <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn nha sĩ</a>
             <Text>Chọn ngày khám</Text>
           </Space>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content">
-        <div className="container">
           <Row gutter={[24, 24]}>
             {/* Left: Summary Info */}
             <Col xs={24} md={8}>
               <Card className="summary-card" title={<><CalendarOutlined /> Thông tin chi tiết</>}>
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <div>
+                 <div>
                     <Text strong style={{ display: 'block', marginBottom: 8 }}>Dịch vụ:</Text>
-                    <Tag color="blue" style={{ fontSize: 13 }}>
+                    <Text style={{ fontSize: 13 }}>
                       {selectedService?.name}
-                    </Tag>
+                    </Text>
                   </div>
+                  {selectedServiceAddOn && (
+                    <div>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Gói dịch vụ đã chọn:</Text>
+                      <Text style={{ fontSize: 13 }}>
+                        {selectedServiceAddOn?.name}
+                      </Text>
+                    </div>
+                  )}
                   
                   <div>
-                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Bác sĩ:</Text>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Nha sĩ:</Text>
                     <Text style={{ fontSize: 13 }}>
-                      {selectedDentist?.title || 'BS'} {selectedDentist?.fullName}
+                      {selectedDentist?.title || 'NS.'} {selectedDentist?.fullName}
                     </Text>
                   </div>
                   
@@ -212,32 +223,9 @@ const BookingSelectDate = () => {
             {/* Right: Calendar */}
             <Col xs={24} md={16}>
               <Card className="booking-card">
-                <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 24 }}>
+                <h4 style={{ textAlign: 'center', color: COLOR_BRAND_NAME, marginBottom: 24, fontWeight: 'bold' }}>
                   Vui lòng chọn ngày khám
-                </Title>
-
-                <Alert
-                  type="info"
-                  showIcon
-                  message="Lưu ý"
-                  description={
-                    selectedDentist?.workingDays && selectedDentist.workingDays.length > 0 
-                      ? `Bác sĩ ${selectedDentist.fullName} chỉ làm việc vào: ${selectedDentist.workingDays.map(day => {
-                          const dayMap = {
-                            'monday': 'Thứ 2',
-                            'tuesday': 'Thứ 3',
-                            'wednesday': 'Thứ 4',
-                            'thursday': 'Thứ 5',
-                            'friday': 'Thứ 6',
-                            'saturday': 'Thứ 7',
-                            'sunday': 'Chủ nhật'
-                          };
-                          return dayMap[day] || day;
-                        }).join(', ')}`
-                      : 'Chỉ có thể chọn ngày từ hôm nay trở đi'
-                  }
-                  style={{ marginBottom: 24 }}
-                />
+                </h4>
 
                 <Calendar
                   fullscreen={false}
@@ -269,19 +257,19 @@ const BookingSelectDate = () => {
                     >
                       Quay lại bước trước
                     </Button>
-                    <Button 
-                      type="primary" 
-                      size="large"
+                    <button
                       onClick={handleContinue}
                       disabled={!selectedDate}
                       style={{ 
-                        backgroundColor: '#2c5f4f',
-                        borderColor: '#2c5f4f',
-                        borderRadius: 6
+                        backgroundColor: '#3498db',
+                        borderRadius: 6,
+                        padding: '2px 20px',
+                        color: 'white',
+                        fontSize: '16px',
                       }}
                     >
-                      Tiếp tục
-                    </Button>
+                      Tiếp tục 
+                    </button>
                   </Space>
                 </div>
               </Card>
@@ -290,6 +278,7 @@ const BookingSelectDate = () => {
         </div>
       </div>
     </div>
+    </ConfigProvider>
   );
 };
 
