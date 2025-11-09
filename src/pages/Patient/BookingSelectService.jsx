@@ -310,17 +310,6 @@ const BookingSelectService = () => {
               </Col>
             </Row>
 
-            {/* Warning Message */}
-            {filteredServices.length > 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                message="Lưu ý"
-                description="Bất cứ dịch vụ bạn không thấy dịch vụ trong công cách đặt lịch trực tuyến hoặc bạn không biết chính xác dịch vụ này, bạn có thể liên hệ qua SĐT trên để tham khảo hoặc chọn dịch vụ 'Khám - Gặp bác sĩ tư vấn' và bác sĩ sẽ tư vấn chi tiết cho bạn nếu có nhu cầu thêm bất kì dịch vụ nào khác."
-                style={{ marginBottom: 24, fontSize: 13 }}
-              />
-            )}
-
             {/* Services List */}
             <Spin spinning={loading}>
               {filteredServices.length === 0 ? (
