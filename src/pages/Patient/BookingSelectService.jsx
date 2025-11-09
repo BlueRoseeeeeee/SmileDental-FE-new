@@ -240,7 +240,7 @@ const BookingSelectService = () => {
       </div>
         <div className="container">
           <Card className="booking-card">
-            <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 16 }}>
+            <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
               Vui lòng chọn dịch vụ
             </Title>
 
