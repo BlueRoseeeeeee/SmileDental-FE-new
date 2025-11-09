@@ -295,9 +295,9 @@ const BookingSelectTime = () => {
           <Title level={5} style={{ margin: 0, color: '#2c5f4f' }}>
             <ClockCircleOutlined /> {shiftName}
           </Title>
-          <Tooltip title={`Mỗi khung giờ sẽ đặt ${requiredSlots} slot liên tục (${serviceDuration} phút)`}>
+          {/* <Tooltip title={`Mỗi khung giờ sẽ đặt ${requiredSlots} slot liên tục (${serviceDuration} phút)`}>
             <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
-          </Tooltip>
+          </Tooltip> */}
         </Space>
         {slotGroups.length === 0 ? (
           <div style={{ 
@@ -307,7 +307,7 @@ const BookingSelectTime = () => {
             borderRadius: 8,
             color: '#999'
           }}>
-            Không có khung giờ nào trong ca này (cần {requiredSlots} slot liên tục)
+            Không có khung giờ nào trong ca này
           </div>
         ) : (
           <Row gutter={[12, 12]}>
@@ -382,9 +382,11 @@ const BookingSelectTime = () => {
 
   return (
     <div className="booking-select-time-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
+
+      {/* Main Content */}
+      <div className="main-content">
         <div className="container">
+        <div className='breadcrumb-container-booking-select-time'>
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
@@ -394,11 +396,6 @@ const BookingSelectTime = () => {
             <Text>Chọn giờ khám</Text>
           </Space>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content">
-        <div className="container">
           <Row gutter={[24, 24]}>
             {/* Left: Summary Info */}
             <Col xs={24} md={8}>
@@ -406,15 +403,16 @@ const BookingSelectTime = () => {
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                   <div>
                     <Text strong style={{ display: 'block', marginBottom: 8 }}>Dịch vụ:</Text>
-                    <Tag color="blue" style={{ fontSize: 13 }}>
+                    <Text color="blue" style={{ fontSize: 13 }}>
                       {selectedService?.name}
-                    </Tag>
+                    </Text>
                     {selectedServiceAddOn ? (
                       <div style={{ marginTop: 4 }}>
-                        <Tag color="green" style={{ fontSize: 12 }}>
-                          📦 {selectedServiceAddOn.name}
-                        </Tag>
-                        <Tag color="cyan" style={{ fontSize: 12 }}>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Gói dịch vụ đã chọn:</Text>
+                        <Text style={{ fontSize: 13 }}>
+                          {selectedServiceAddOn.name} &nbsp;
+                        </Text>
+                        <Tag color="cyan" style={{ fontSize: 13 }}>
                           ⏱️ {selectedServiceAddOn.durationMinutes} phút
                         </Tag>
                       </div>
@@ -463,17 +461,17 @@ const BookingSelectTime = () => {
                           {selectedSlotGroup.displayTime}
                         </Tag>
                       </div>
-                      <div>
+                      {/* <div>
                         <Text strong style={{ display: 'block', marginBottom: 8 }}>Số slot đặt:</Text>
                         <Tag color="purple" style={{ fontSize: 13 }}>
                           {selectedSlotGroup.slots.length} slot × 15 phút
                         </Tag>
-                      </div>
+                      </div> */}
                       <Alert
                         type="success"
                         showIcon
                         message="💰 Tiền cọc"
-                        description={`${formatCurrency(selectedSlotGroup.slots.length * scheduleConfig.depositAmount)} (${formatCurrency(scheduleConfig.depositAmount)} × ${selectedSlotGroup.slots.length} slot)`}
+                        description={`${formatCurrency(selectedSlotGroup.slots.length * scheduleConfig.depositAmount)}`}
                         style={{ marginTop: 8 }}
                       />
                     </>
@@ -485,9 +483,11 @@ const BookingSelectTime = () => {
             {/* Right: Time Slots */}
             <Col xs={24} md={16}>
               <Card className="booking-card">
-                <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 24 }}>
+              <div className='booking-card-header'>
+                <h5>
                   Vui lòng chọn giờ khám
-                </Title>
+                </h5>
+              </div>
 
                 <Spin spinning={loading}>
                   <div style={{ marginBottom: 24 }}>
@@ -498,14 +498,14 @@ const BookingSelectTime = () => {
                         ? `Có ${totalGroups} khung giờ phù hợp trong ngày ${selectedDate?.format('DD/MM/YYYY')}`
                         : `Ngày ${selectedDate?.format('DD/MM/YYYY')} - Chọn khung giờ phù hợp`
                       }
-                      description={
-                        (() => {
-                          const duration = getServiceDuration();
-                          const slotsNeeded = Math.ceil(duration / 15);
-                          const serviceName = selectedServiceAddOn ? `${selectedService?.name} - ${selectedServiceAddOn.name}` : selectedService?.name;
-                          return serviceName && `Dịch vụ "${serviceName}" cần ${slotsNeeded} slot liên tục (${duration} phút)`;
-                        })()
-                      }
+                      // description={
+                      //   (() => {
+                      //     const duration = getServiceDuration();
+                      //     const slotsNeeded = Math.ceil(duration / 15);
+                      //     const serviceName = selectedServiceAddOn ? `${selectedService?.name} - ${selectedServiceAddOn.name}` : selectedService?.name;
+                      //     return serviceName && `Dịch vụ "${serviceName}" cần ${slotsNeeded} slot liên tục (${duration} phút)`;
+                      //   })()
+                      // }
                     />
                   </div>
 
@@ -518,7 +518,7 @@ const BookingSelectTime = () => {
                     <Alert
                       type="success"
                       showIcon
-                      message={`✅ Đã chọn: ${selectedSlotGroup.displayTime} (${selectedSlotGroup.slots.length} slot)`}
+                      message={`Đã chọn: ${selectedSlotGroup.displayTime}`}
                       description={`Tiền cọc: ${formatCurrency(selectedSlotGroup.slots.length * scheduleConfig.depositAmount)}`}
                       style={{ marginTop: 16 }}
                     />
@@ -536,19 +536,22 @@ const BookingSelectTime = () => {
                     >
                       Quay lại bước trước
                     </Button>
-                    <Button 
-                      type="primary" 
-                      size="large"
-                      onClick={handleContinue}
-                      disabled={!selectedSlotGroup}
-                      style={{ 
-                        backgroundColor: '#2c5f4f',
-                        borderColor: '#2c5f4f',
-                        borderRadius: 6
-                      }}
-                    >
-                      Tiếp tục {selectedSlotGroup && scheduleConfig && `(${formatCurrency(selectedSlotGroup.slots.length * scheduleConfig.depositAmount)})`}
-                    </Button>
+                    {selectedSlotGroup && (
+                      <button 
+                        onClick={handleContinue}
+                        style={{ 
+                          backgroundColor: '#3498db',
+                          borderRadius: 6,
+                          color: 'white',
+                          fontSize: 16,
+                          padding: '4px 20px',
+                          cursor: 'pointer',
+                          border: 'none'
+                        }}
+                      >
+                        Tiếp tục {scheduleConfig && `(${formatCurrency(selectedSlotGroup.slots.length * scheduleConfig.depositAmount)})`}
+                      </button>
+                    )}
                   </Space>
                 </div>
               </Card>
