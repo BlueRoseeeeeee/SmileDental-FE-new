@@ -35,7 +35,6 @@ const BookingSelectDentist = () => {
   const [filteredDentists, setFilteredDentists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [selectedService, setSelectedService] = useState(null);
 
   useEffect(() => {
     // Pre-populate localStorage with mock data if using mocks
@@ -56,8 +55,6 @@ const BookingSelectDentist = () => {
     const serviceData = JSON.parse(service);
     const serviceAddOnData = serviceAddOn ? JSON.parse(serviceAddOn) : null;
     
-    setSelectedService(serviceData);
-    
     // Calculate service duration (prioritize addon)
     const serviceDuration = serviceAddOnData?.durationMinutes 
                          || serviceData?.durationMinutes 
@@ -68,7 +65,7 @@ const BookingSelectDentist = () => {
     console.log('🏥 Service ID:', serviceData._id, '| Allowed RoomTypes:', serviceData.allowedRoomTypes);
     
     fetchDentists(serviceDuration, serviceData._id);
-  }, []);
+  }, [navigate]);
 
   const fetchDentists = async (serviceDuration = 15, serviceId = null) => {
     try {
@@ -150,14 +147,6 @@ const BookingSelectDentist = () => {
             </h5>
           </div>
             <div style={{padding:20}}>
-            {selectedService && (
-              <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <Text type="secondary">
-                  Dịch vụ đã chọn: <Tag color="blue">{selectedService.name}</Tag>
-                </Text>
-              </div>
-            )}
-
             {/* Search */}
             <div style={{ marginBottom: 24 }}>
               <Input
