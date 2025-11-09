@@ -231,14 +231,14 @@ const BookingSelectService = () => {
     <div className="booking-select-service-page">
       {/* Main Content */}
       <div className="main-content">
-      <div className="breadcrumb-container-booking-select-service">
+        <div className="container">
+        <div className="breadcrumb-container-booking-select-service">
         <Space split=">">
           <a href="/patient/booking/select-service">Trang chủ</a>
           <a href="/patient/booking">Đặt lịch khám</a>
           <Text>Chọn dịch vụ</Text>
         </Space>
       </div>
-        <div className="container">
           <Card className="booking-card">
             <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
               Vui lòng chọn dịch vụ

@@ -1,5 +1,4 @@
 .booking-select-addon-page {
-  background: linear-gradient(135deg, #e8f5e9 0%, #fff9e6 100%);
   min-height: 100vh;
   padding: 24px 0;
 }
@@ -16,6 +15,22 @@
   margin: 0 auto;
   padding: 0 16px;
 }
+.breadcrumb-container-booking-select-service-addon {
+  margin-top: -30px;
+  margin-bottom: 20px;
+  display: flex;
+}
+
+.breadcrumb-container-booking-select-service-addon a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-container-booking-select-service a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+}
 
 .booking-select-addon-page .booking-card {
   border-radius: 12px;
@@ -26,11 +41,14 @@
 .booking-select-addon-page .addon-card {
   border-radius: 12px;
   cursor: pointer;
-  min-height: 180px;
 }
 
 .booking-select-addon-page .addon-card:hover:not(.disabled) {
   box-shadow: 0 6px 16px rgba(44, 95, 79, 0.15);
+}
+
+.booking-select-addon-page .addon-card:hover:not(.disabled) h5 {
+  color: #1da1f2 !important;
 }
 
 .booking-select-addon-page .addon-card.selected {
@@ -64,7 +82,7 @@
 }
 
 @media (max-width: 768px) {
-  .booking-select-addon-page .addon-card {
-    min-height: 160px;
+  .booking-select-addon-page .addon-card .ant-card-body {
+    padding: 16px;
   }
 }

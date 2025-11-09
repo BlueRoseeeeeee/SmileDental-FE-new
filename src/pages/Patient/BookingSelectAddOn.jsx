@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Card, 
   Row, 
@@ -11,11 +11,9 @@ import {
   Tag,
   message,
   Empty,
-  Radio,
   Spin
 } from 'antd';
 import { 
-  ArrowRightOutlined,
   ArrowLeftOutlined,
   DollarOutlined,
   ClockCircleOutlined,
@@ -34,7 +32,6 @@ const BookingSelectAddOn = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [service, setService] = useState(null);
-  const [selectedAddOn, setSelectedAddOn] = useState(null);
   const [treatmentIndications, setTreatmentIndications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [canSelectAddOn, setCanSelectAddOn] = useState(false);
@@ -82,12 +79,6 @@ const BookingSelectAddOn = () => {
         if (indications.length > 0 && indications[0].serviceAddOnId) {
           setCanSelectAddOn(true);
           // Auto-select the indicated addon
-          const indicatedAddon = serviceData.serviceAddOns.find(
-            addon => addon._id === indications[0].serviceAddOnId
-          );
-          if (indicatedAddon) {
-            setSelectedAddOn(indicatedAddon._id);
-          }
         }
       } catch (error) {
         console.error('❌ Error fetching treatment indications:', error);
@@ -100,7 +91,7 @@ const BookingSelectAddOn = () => {
     }
   };
 
-  const handleSelectAddOn = (addonId) => {
+  const handleSelectAddOn = (addon) => {
     if (!canSelectAddOn) {
       message.warning('Bạn cần khám trước để được chỉ định gói điều trị phù hợp');
       return;
@@ -108,27 +99,15 @@ const BookingSelectAddOn = () => {
     
     // Only allow selecting the indicated addon if there's an indication
     if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId) {
-      if (addonId !== treatmentIndications[0].serviceAddOnId) {
+      if (addon._id !== treatmentIndications[0].serviceAddOnId) {
         message.warning('Bạn chỉ được chọn gói điều trị đã được chỉ định');
         return;
       }
     }
     
-    setSelectedAddOn(addonId);
-  };
-
-  const handleNext = () => {
-    // Save selected addon if available
-    if (selectedAddOn && canSelectAddOn) {
-      const addon = service.serviceAddOns.find(a => a._id === selectedAddOn);
-      if (addon) {
-        localStorage.setItem('booking_serviceAddOn', JSON.stringify(addon));
-        message.success(`Đã chọn gói: ${addon.name}`);
-      }
-    } else {
-      // Clear addon selection - will use longest duration for slot calculation
-      localStorage.removeItem('booking_serviceAddOn');
-    }
+    // Save selected addon and navigate immediately
+    localStorage.setItem('booking_serviceAddOn', JSON.stringify(addon));
+    message.success(`Đã chọn gói: ${addon.name}`);
     navigate('/patient/booking/select-dentist');
   };
 
@@ -151,69 +130,55 @@ const BookingSelectAddOn = () => {
 
   return (
     <div className="booking-select-addon-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
+
+      {/* Main Content */}
+      <div className="main-content">
         <div className="container">
-          <Space split=">">
+        <div className="breadcrumb-container-booking-select-service-addon"> 
+        <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
             <a href="/patient/booking/select-service">Chọn dịch vụ</a>
             <Text>Chọn gói dịch vụ</Text>
           </Space>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content">
-        <div className="container">
+          </div>
           <Card className="booking-card">
-            <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 16 }}>
-              Danh sách gói dịch vụ
-            </Title>
+            <h5 style={{ textAlign: 'center',  marginBottom: 24 , fontWeight:600, fontSize:25}}>
+              Danh sách gói dịch vụ: <span style={{ color: COLOR_BRAND_NAME, fontWeight:'normal' }}>{service.name}</span>
+            </h5>
 
-            {/* Service Info */}
-            <Alert
-              type="info"
-              showIcon
-              icon={<MedicineBoxOutlined />}
-              message={
-                <Space direction="vertical" size={4}>
-                  <Space>
-                    <Text strong>Dịch vụ:</Text>
-                    <Tag color="green">{service.name}</Tag>
-                  </Space>
-                  {service.requireExamFirst && (
-                    <Text type="warning" style={{ fontSize: 12 }}>
-                      ⚠️ Dịch vụ này yêu cầu khám trước khi điều trị
-                    </Text>
-                  )}
-                  {treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId && (
-                    <Alert
-                      type="success"
-                      showIcon
-                      icon={<FileTextOutlined />}
-                      message={
-                        <Text style={{ fontSize: 12 }}>
-                          ✅ Bạn đã được chỉ định gói: <strong>{treatmentIndications[0].serviceAddOnName}</strong>
-                        </Text>
-                      }
-                      style={{ marginTop: 8 }}
-                    />
-                  )}
-                  {service.requireExamFirst && treatmentIndications.length === 0 && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      Bạn cần khám trước để được nha sỹ chỉ định gói điều trị phù hợp.
-                    </Text>
-                  )}
-                  {!service.requireExamFirst && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      Bạn có thể chọn gói dịch vụ phù hợp với nhu cầu.
-                    </Text>
-                  )}
-                </Space>
-              }
-              style={{ marginBottom: 24 }}
-            />
+            {/* Important Notifications */}
+            {service.requireExamFirst && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Dịch vụ này yêu cầu khám trước khi điều trị"
+                style={{ marginBottom: 16 }}
+              />
+            )}
+            
+            {treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId && (
+              <Alert
+                type="success"
+                showIcon
+                icon={<FileTextOutlined />}
+                message={
+                  <span>
+                    Bạn đã được chỉ định gói: <strong>{treatmentIndications[0].serviceAddOnName}</strong>
+                  </span>
+                }
+                style={{ marginBottom: 16 }}
+              />
+            )}
+            
+            {service.requireExamFirst && treatmentIndications.length === 0 && (
+              <Alert
+                type="info"
+                showIcon
+                message="Bạn cần khám trước để được nha sỹ chỉ định gói điều trị phù hợp."
+                style={{ marginBottom: 16 }}
+              />
+            )}
 
             {/* Service AddOns List */}
             {service.serviceAddOns && service.serviceAddOns.length > 0 ? (
@@ -221,13 +186,13 @@ const BookingSelectAddOn = () => {
                 {canSelectAddOn ? (
                   <Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 24, fontWeight: 500 }}>
                     {treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId
-                      ? '✅ Vui lòng xác nhận gói điều trị đã được chỉ định'
-                      : '📋 Chọn gói dịch vụ phù hợp với nhu cầu của bạn'
+                      ? 'Vui lòng xác nhận gói điều trị đã được chỉ định'
+                      : 'Chọn gói dịch vụ phù hợp với nhu cầu của bạn'
                     }
                   </Paragraph>
                 ) : (
                   <Paragraph type="warning" style={{ textAlign: 'center', marginBottom: 24, fontWeight: 500 }}>
-                    ⚠️ Các gói dịch vụ chỉ để tham khảo. Bạn cần khám trước để được chỉ định gói phù hợp.
+                    Các gói dịch vụ chỉ để tham khảo. Bạn cần khám trước để được chỉ định gói phù hợp.
                   </Paragraph>
                 )}
 
@@ -237,13 +202,7 @@ const BookingSelectAddOn = () => {
                   paddingRight: '8px',
                   marginBottom: '16px'
                 }}>
-                  <Radio.Group 
-                    value={selectedAddOn} 
-                    onChange={(e) => handleSelectAddOn(e.target.value)}
-                    style={{ width: '100%' }}
-                    disabled={!canSelectAddOn}
-                  >
-                    <Row gutter={[16, 16]}>
+                  <Row gutter={[16, 16]}>
                     {service.serviceAddOns.filter(addon => addon.isActive).map((addon) => {
                       const isIndicated = treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
                       const isDisabled = !canSelectAddOn || 
@@ -254,62 +213,62 @@ const BookingSelectAddOn = () => {
                       return (
                         <Col xs={24} key={addon._id}>
                           <Card
-                            className={`addon-card ${selectedAddOn === addon._id ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
+                            className={`addon-card ${isDisabled ? 'disabled' : ''}`}
                             style={{
-                              borderColor: selectedAddOn === addon._id ? '#2c5f4f' : (isIndicated ? '#52c41a' : '#d9d9d9'),
-                              borderWidth: selectedAddOn === addon._id ? 2 : 1,
-                              backgroundColor: isDisabled ? '#f5f5f5' : (selectedAddOn === addon._id ? '#f6ffed' : '#fff'),
+                              borderColor: isIndicated ? '#52c41a' : '#bfbfbf',
+                              borderWidth: 2,
+                              backgroundColor: isDisabled ? '#f5f5f5' : '#fff',
                               cursor: isDisabled ? 'not-allowed' : 'pointer',
                               opacity: isDisabled ? 0.6 : 1
                             }}
-                            onClick={() => !isDisabled && handleSelectAddOn(addon._id)}
+                            onClick={() => !isDisabled && handleSelectAddOn(addon)}
                           >
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                              {canSelectAddOn && (
-                                <Radio value={addon._id} disabled={isDisabled} />
-                              )}
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                  <h5 style={{ marginBottom: 0, color: COLOR_BRAND_NAME, fontSize:16, fontWeight:600 }}>
-                                    {addon.name}
-                                  </h5>
-                                  {isIndicated && (
-                                    <Tag color="success" icon={<CheckCircleOutlined />}>
-                                      Đã chỉ định
-                                    </Tag>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                <h5 style={{ marginBottom: 0, color: COLOR_BRAND_NAME, fontSize:16, fontWeight:600 }}>
+                                  {addon.name}
+                                </h5>
+                                {isIndicated && (
+                                  <Tag color="success" icon={<CheckCircleOutlined />}>
+                                    Đã chỉ định
+                                  </Tag>
+                                )}
+                              </div>
+
+                              <Space direction="vertical" size={8} style={{ width: '100%', marginBottom: 12 }}>
+                                <Space>
+                                  <DollarOutlined style={{ color: '#d4860f' }} />
+                                  <Text strong style={{ fontSize: 14, color: '#d4860f' }}>
+                                    {addon.effectivePrice 
+                                      ? addon.effectivePrice.toLocaleString('vi-VN')
+                                      : addon.price?.toLocaleString('vi-VN')} VNĐ
+                                  </Text>
+                                  <Text type="secondary">/ {addon.unit}</Text>
+                                  {addon.isPriceModified && (
+                                    <Tag color="red" style={{ fontSize: 10 }}>🎉 Khuyến mãi</Tag>
                                   )}
-                                </div>
-
-                                {/* {addon.description && (
-                                  <Paragraph 
-                                    type="secondary" 
-                                    style={{ fontSize: 13, marginBottom: 16 }}
-                                  >
-                                    {addon.description}
-                                  </Paragraph>
-                                )} */}
-
-                                <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                  <Space>
-                                    <DollarOutlined style={{ color: '#d4860f' }} />
-                                    <Text strong style={{ fontSize: 16, color: '#d4860f' }}>
-                                      {addon.effectivePrice 
-                                        ? addon.effectivePrice.toLocaleString('vi-VN')
-                                        : addon.price?.toLocaleString('vi-VN')} VNĐ
-                                    </Text>
-                                    <Text type="secondary">/ {addon.unit}</Text>
-                                    {addon.isPriceModified && (
-                                      <Tag color="red" style={{ fontSize: 10 }}>🎉 Khuyến mãi</Tag>
-                                    )}
-                                  </Space>
-
-                                  <Space>
-                                    <ClockCircleOutlined style={{ color: '#1890ff' }} />
-                                    <Text type="secondary">
-                                      Thời gian: ~{addon.durationMinutes} phút
-                                    </Text>
-                                  </Space>
                                 </Space>
+
+                                <Space>
+                                  <ClockCircleOutlined style={{ color: '#1890ff' }} />
+                                  <Text type="secondary">
+                                    Thời gian: ~{addon.durationMinutes} phút
+                                  </Text>
+                                </Space>
+                              </Space>
+
+                              <div style={{ textAlign: 'right', marginTop: 8 }}>
+                                <Link
+                                  to={`/patient/services/pl/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(addon.name)}/detail`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{ 
+                                    color: '#1890ff',
+                                    textDecoration: 'none',
+                                    fontSize: 14
+                                  }}
+                                >
+                                  Xem chi tiết
+                                </Link>
                               </div>
                             </div>
                           </Card>
@@ -317,7 +276,6 @@ const BookingSelectAddOn = () => {
                       );
                     })}
                   </Row>
-                </Radio.Group>
                 </div>
 
                 {!canSelectAddOn && (
@@ -339,29 +297,14 @@ const BookingSelectAddOn = () => {
 
             {/* Actions */}
             <div style={{ marginTop: 32, textAlign: 'center' }}>
-              <Space size="large">
-                <Button 
-                  size="large" 
-                  icon={<ArrowLeftOutlined />}
-                  onClick={handleBack}
-                  style={{ borderRadius: 6 }}
-                >
-                  Quay lại
-                </Button>
-                <Button 
-                  type="primary"
-                  size="large" 
-                  icon={<ArrowRightOutlined />}
-                  onClick={handleNext}
-                  style={{ 
-                    backgroundColor: '#2c5f4f',
-                    borderColor: '#2c5f4f',
-                    borderRadius: 6
-                  }}
-                >
-                  Tiếp tục đặt lịch
-                </Button>
-              </Space>
+              <Button 
+                size="large" 
+                icon={<ArrowLeftOutlined />}
+                onClick={handleBack}
+                style={{ borderRadius: 6 }}
+              >
+                Quay lại
+              </Button>
             </div>
           </Card>
         </div>
