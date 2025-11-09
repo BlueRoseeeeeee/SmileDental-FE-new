@@ -25,6 +25,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import recordService from '../../services/recordService';
 import './BookingSelectAddOn.css';
 import { COLOR_BRAND_NAME } from '../../utils/common-colors';
+import ToothIcon from "../../assets/icon/tooth-icon.png"
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -142,11 +143,13 @@ const BookingSelectAddOn = () => {
             <Text>Chọn gói dịch vụ</Text>
           </Space>
           </div>
-          <Card className="booking-card">
-            <h5 style={{ textAlign: 'center',  marginBottom: 24 , fontWeight:600, fontSize:25}}>
-              Danh sách gói dịch vụ: <span style={{ color: COLOR_BRAND_NAME, fontWeight:'normal' }}>{service.name}</span>
+          <div className="booking-card-custom">
+          <div className='booking-card-header'>
+            <h5>
+              Danh sách gói dịch vụ: <span style={{fontSize:24}}>{service.name}</span>
             </h5>
-
+          </div>
+          <div style={{padding:'20px'}}>
             {/* Important Notifications */}
             {service.requireExamFirst && (
               <Alert
@@ -233,7 +236,8 @@ const BookingSelectAddOn = () => {
                           >
                             <div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                <h5 style={{ marginBottom: 0, color: COLOR_BRAND_NAME, fontSize:16, fontWeight:600 }}>
+                                <img src={ToothIcon}/>
+                                <h5 style={{ marginBottom: 0, color: '#BE8600', fontSize:16, fontWeight:600 }}>
                                   {addon.name}
                                 </h5>
                                 {isIndicated && (
@@ -346,7 +350,8 @@ const BookingSelectAddOn = () => {
                 Quay lại
               </Button>
             </div>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
