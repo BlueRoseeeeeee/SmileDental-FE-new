@@ -1,28 +1,22 @@
 .booking-select-time-page {
   min-height: 100vh;
   background-color: #f0f2f5;
+  margin-top: -46px;
+}
+.breadcrumb-container-booking-select-time {
+  margin-top: -5px;
+  margin-bottom: 25px;
 }
 
-.breadcrumb-section {
-  background-color: white;
-  padding: 16px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.breadcrumb-section .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.breadcrumb-section a {
-  color: #1890ff;
+.breadcrumb-container-booking-select-time a {
+  color: rgb(24, 144, 255);
   text-decoration: none;
   cursor: pointer;
 }
 
-.breadcrumb-section a:hover {
-  text-decoration: underline;
+.breadcrumb-container-booking-select-time a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
 }
 
 .main-content {

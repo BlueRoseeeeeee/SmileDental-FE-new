@@ -25,6 +25,7 @@ import './BookingSelectService.css';
 import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 const { Title, Text, Paragraph } = Typography;
+import toothIcon from '../../assets/icon/tooth-icon.png';
 
 const BookingSelectService = () => {
   const navigate = useNavigate();
@@ -231,19 +232,21 @@ const BookingSelectService = () => {
     <div className="booking-select-service-page">
       {/* Main Content */}
       <div className="main-content">
-      <div className="breadcrumb-container-booking-select-service">
+        <div className="container">
+        <div className="breadcrumb-container-booking-select-time">
         <Space split=">">
           <a href="/patient/booking/select-service">Trang chủ</a>
           <a href="/patient/booking">Đặt lịch khám</a>
           <Text>Chọn dịch vụ</Text>
         </Space>
       </div>
-        <div className="container">
-          <Card className="booking-card">
-            <Title level={2} style={{ textAlign: 'center', marginBottom: 30 }}>
+          <div className="booking-card">
+          <div className="booking-card-header">
+            <h5 >
               Vui lòng chọn dịch vụ
-            </Title>
-
+            </h5>
+            </div>
+            <div style={{padding:'20px'}}>
             {/* ✅ Service Source Filter */}
             {unusedServices.length > 0 && (
               <Row justify="center" style={{ marginBottom: 24 }}>
@@ -257,7 +260,7 @@ const BookingSelectService = () => {
                     Tất cả dịch vụ
                   </Radio.Button>
                   <Radio.Button value="recommended">
-                    <StarFilled style={{ color: '#faad14' }} /> Theo chỉ định bác sĩ ({unusedServices.length})
+                    <StarFilled style={{ color: '#faad14' }} /> Theo chỉ định nha sĩ ({unusedServices.length})
                   </Radio.Button>
                 </Radio.Group>
               </Row>
@@ -316,7 +319,12 @@ const BookingSelectService = () => {
                         >
                           <Space direction="vertical" size={4} style={{ width: '100%' }}>
                             <Space>
-                              <h5 style={{ margin: 0, color: COLOR_BRAND_NAME, fontSize: 16, fontWeight:600 }}>
+                              <img 
+                                src={toothIcon} 
+                                alt="Service Icon" 
+                                style={{ width: 24, height: 24 }} 
+                              />
+                              <h5 style={{ margin: 0, color: '#BE8600', fontSize: 16, fontWeight:600 }}>
                                 {service.name}
                               </h5>
                               {service.type && (
@@ -327,7 +335,7 @@ const BookingSelectService = () => {
                               {/* ✅ Recommended Badge */}
                               {isRecommended(service._id) && (
                                 <Tag color="gold" icon={<StarFilled />}>
-                                  Chỉ định bác sĩ
+                                  Chỉ định nha sĩ
                                 </Tag>
                               )}
                               <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
@@ -355,7 +363,8 @@ const BookingSelectService = () => {
                 </div>
               )}
             </Spin>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

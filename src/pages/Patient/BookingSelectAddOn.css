@@ -1,5 +1,4 @@
 .booking-select-addon-page {
-  background: linear-gradient(135deg, #e8f5e9 0%, #fff9e6 100%);
   min-height: 100vh;
   padding: 24px 0;
 }
@@ -12,27 +11,60 @@
 }
 
 .booking-select-addon-page .container {
-  max-width: 1200px;
+  max-width: 1050px;
   margin: 0 auto;
   padding: 0 16px;
 }
+.breadcrumb-container-booking-select-service-addon {
+  margin-top: -80px;
+  margin-bottom: 20px;
+  display: flex;
+}
 
-.booking-select-addon-page .booking-card {
+.breadcrumb-container-booking-select-service-addon a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-container-booking-select-service a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+}
+
+.booking-select-addon-page .booking-card-custom {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 0;
+  overflow: hidden;
+}
+
+.booking-select-addon-page .booking-card-header {
+  background: linear-gradient(135deg, #2596BE 0%, #1a7a9e 100%);
   padding: 24px;
+  margin: 0;
+  width: 100%;
+}
+
+.booking-select-addon-page .booking-card-header h5 {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
 }
 
 .booking-select-addon-page .addon-card {
   border-radius: 12px;
-  transition: all 0.3s ease;
   cursor: pointer;
-  min-height: 180px;
 }
 
 .booking-select-addon-page .addon-card:hover:not(.disabled) {
   box-shadow: 0 6px 16px rgba(44, 95, 79, 0.15);
-  transform: translateY(-2px);
+}
+
+.booking-select-addon-page .addon-card:hover:not(.disabled) h5 {
+  color: #1da1f2 !important;
 }
 
 .booking-select-addon-page .addon-card.selected {
@@ -46,8 +78,27 @@
   opacity: 0.6;
 }
 
+/* Custom scrollbar for addon list */
+.booking-select-addon-page ::-webkit-scrollbar {
+  width: 6px;
+  height: 10px;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
 @media (max-width: 768px) {
-  .booking-select-addon-page .addon-card {
-    min-height: 160px;
+  .booking-select-addon-page .addon-card .ant-card-body {
+    padding: 16px;
   }
 }

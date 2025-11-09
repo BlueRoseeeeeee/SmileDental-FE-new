@@ -35,7 +35,6 @@ const BookingSelectDentist = () => {
   const [filteredDentists, setFilteredDentists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [selectedService, setSelectedService] = useState(null);
 
   useEffect(() => {
     // Pre-populate localStorage with mock data if using mocks
@@ -56,8 +55,6 @@ const BookingSelectDentist = () => {
     const serviceData = JSON.parse(service);
     const serviceAddOnData = serviceAddOn ? JSON.parse(serviceAddOn) : null;
     
-    setSelectedService(serviceData);
-    
     // Calculate service duration (prioritize addon)
     const serviceDuration = serviceAddOnData?.durationMinutes 
                          || serviceData?.durationMinutes 
@@ -68,7 +65,7 @@ const BookingSelectDentist = () => {
     console.log('🏥 Service ID:', serviceData._id, '| Allowed RoomTypes:', serviceData.allowedRoomTypes);
     
     fetchDentists(serviceDuration, serviceData._id);
-  }, []);
+  }, [navigate]);
 
   const fetchDentists = async (serviceDuration = 15, serviceId = null) => {
     try {
@@ -125,39 +122,31 @@ const BookingSelectDentist = () => {
   };
 
   const handleBack = () => {
-    navigate('/patient/booking/select-service');
+    navigate('/patient/booking/select-addon');
   };
 
   return (
     <div className="booking-select-dentist-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
-        <div className="container">
-          <Space split=">">
-            <a href="/patient/booking/select-service">Trang chủ</a>
-            <a href="/patient/booking">Đặt lịch khám</a>
-            <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
-            <Text>Chọn bác sĩ</Text>
-          </Space>
-        </div>
-      </div>
 
       {/* Main Content */}
       <div className="main-content">
         <div className="container">
-          <Card className="booking-card">
-            <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 8 }}>
-              Vui lòng chọn Bác sĩ
-            </Title>
-            
-            {selectedService && (
-              <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                <Text type="secondary">
-                  Dịch vụ đã chọn: <Tag color="blue">{selectedService.name}</Tag>
-                </Text>
-              </div>
-            )}
-
+        <div className="breadcrumb-container-booking-select-dentist">
+          <Space split=">">
+            <a href="/patient/booking/select-service">Trang chủ</a>
+            <a href="/patient/booking">Đặt lịch khám</a>
+            <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
+            <a onClick={() => navigate('/patient/booking/select-addon')}>Chọn gói dịch vụ</a>
+            <Text>Chọn nha sĩ</Text>
+          </Space>
+        </div>
+          <div className="booking-card">
+          <div className='booking-card-header'>
+            <h5>
+              Vui lòng chọn Nha sĩ
+            </h5>
+          </div>
+            <div style={{padding:20}}>
             {/* Search */}
             <div style={{ marginBottom: 24 }}>
               <Input
@@ -200,9 +189,9 @@ const BookingSelectDentist = () => {
                           </Col>
                           <Col flex="auto">
                             <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                              <Title level={4} style={{ margin: 0, color: '#d4860f' }}>
-                                {dentist.title || 'BS'} {dentist.fullName}
-                              </Title>
+                              <h4 style={{ margin: 0, color: '#BE8600', fontWeight: 'bold', fontSize: '18px' }}>
+                                {dentist.title || 'NS.'} {dentist.fullName}
+                              </h4>
                               <Space size={4}>
                                 <Text type="secondary">Giới tính: {dentist.gender === 'male' ? 'Nam' : dentist.gender === 'female' ? 'Nữ' : 'Khác'}</Text>
                               </Space>
@@ -246,19 +235,6 @@ const BookingSelectDentist = () => {
                               </Space>
                             </Space>
                           </Col>
-                          <Col>
-                            <Button 
-                              type="primary" 
-                              icon={<ArrowRightOutlined />}
-                              style={{ 
-                                backgroundColor: '#2c5f4f',
-                                borderColor: '#2c5f4f',
-                                borderRadius: 6
-                              }}
-                            >
-                              Chọn
-                            </Button>
-                          </Col>
                         </Row>
                       </Card>
                     </Col>
@@ -273,7 +249,8 @@ const BookingSelectDentist = () => {
                 Quay lại bước trước
               </Button>
             </div>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -178,24 +178,6 @@ const PublicServiceAddOnDetail = () => {
         style={{ marginBottom: '24px' }}
       />
 
-      {/* Back Button */}
-      <div style={{ marginBottom: '24px' }}>
-        <Button 
-          icon={<ArrowLeftOutlined />}
-          onClick={() => {
-            const basePath = isPatientLayout ? '/patient/services/pl' : '/services/pl';
-            navigate(`${basePath}/${encodeURIComponent(service.name)}/addons`);
-          }}
-          style={{
-            border: '1px solid #d9d9d9',
-            borderRadius: '8px',
-            height: '40px',
-            padding: '0 16px'
-          }}
-        >
-          Quay lại danh sách
-        </Button>
-      </div>
 
       {/* Service Name */}
       <div style={{ marginBottom: '16px' }}>
