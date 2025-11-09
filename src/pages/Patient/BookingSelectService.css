@@ -45,6 +45,25 @@
   box-shadow: 0 4px 12px rgba(44, 95, 79, 0.15);
 }
 
+/* Custom scrollbar for service list - Nhỏ lại */
+.booking-select-service-page ::-webkit-scrollbar {
+  width: 6px;
+  height: 10px;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
 @media (max-width: 768px) {
   .main-content {
     padding: 20px 0;

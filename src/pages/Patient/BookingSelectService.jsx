@@ -321,8 +321,14 @@ const BookingSelectService = () => {
                   </Paragraph>
                 </div>
               ) : (
-                <Row gutter={[16, 16]}>
-                  {filteredServices.map((service) => {
+                <div style={{ 
+                  maxHeight: '450px', 
+                  overflowY: 'auto', 
+                  paddingRight: '8px',
+                  marginBottom: '16px'
+                }}>
+                  <Row gutter={[16, 16]}>
+                    {filteredServices.map((service) => {
                     // Prepare addon content for Popover
                     const addonsContent = (
                       <div style={{ maxWidth: 400 }}>
@@ -420,7 +426,8 @@ const BookingSelectService = () => {
                       </Col>
                     );
                   })}
-                </Row>
+                  </Row>
+                </div>
               )}
             </Spin>
 
