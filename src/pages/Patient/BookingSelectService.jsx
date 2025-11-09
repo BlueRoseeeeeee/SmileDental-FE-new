@@ -167,7 +167,13 @@ const BookingSelectService = () => {
 
     // Filter by type
     if (type !== 'all') {
-      filtered = filtered.filter(service => service.type === type);
+      // Map Vietnamese thành English để so sánh
+      const typeMap = {
+        'Khám': 'exam',
+        'Điều trị': 'treatment'
+      };
+      const englishType = typeMap[type] || type;
+      filtered = filtered.filter(service => service.type === englishType);
     }
 
     // Filter by search
@@ -242,19 +248,15 @@ const BookingSelectService = () => {
 
   return (
     <div className="booking-select-service-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
-        <div className="container">
-          <Space split=">">
-            <a href="/patient/booking/select-service">Trang chủ</a>
-            <a href="/patient/booking">Đặt lịch khám</a>
-            <Text>Chọn dịch vụ</Text>
-          </Space>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="main-content">
+      <div className="breadcrumb-container-booking-select-service">
+        <Space split=">">
+          <a href="/patient/booking/select-service">Trang chủ</a>
+          <a href="/patient/booking">Đặt lịch khám</a>
+          <Text>Chọn dịch vụ</Text>
+        </Space>
+      </div>
         <div className="container">
           <Card className="booking-card">
             <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 16 }}>
@@ -401,13 +403,6 @@ const BookingSelectService = () => {
                 </div>
               )}
             </Spin>
-
-            {/* Actions */}
-            <div style={{ marginTop: 32, textAlign: 'center' }}>
-              <Button size="large" onClick={handleBack} style={{ borderRadius: 6 }}>
-                Quay lại bước trước
-              </Button>
-            </div>
           </Card>
         </div>
       </div>
