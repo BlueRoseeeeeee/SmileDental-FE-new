@@ -231,6 +231,15 @@ const BookingSelectService = () => {
   navigate('/patient/booking/select-service');
   };
 
+  // Hàm dịch type sang tiếng Việt
+  const translateServiceType = (type) => {
+    const typeMap = {
+      'exam': 'Khám',
+      'treatment': 'Điều trị',
+    };
+    return typeMap[type] || type;
+  };
+
   return (
     <div className="booking-select-service-page">
       {/* Breadcrumb */}
@@ -342,8 +351,8 @@ const BookingSelectService = () => {
                                       <MedicineBoxOutlined /> {service.name}
                                     </Title>
                                     {service.type && (
-                                      <Tag color={service.type === 'Khám' ? 'blue' : 'green'}>
-                                        {service.type}
+                                      <Tag style={{fontSize: 12}} color={translateServiceType(service.type) === 'Khám' ? 'blue' : 'green'}>
+                                        {translateServiceType(service.type)}
                                       </Tag>
                                     )}
                                     {/* ✅ Recommended Badge */}
@@ -355,9 +364,14 @@ const BookingSelectService = () => {
                                     <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
                                   </Space>
                                   {service.description && (
-                                    <Text type="secondary" style={{ fontSize: 13 }}>
-                                      {service.description}
-                                    </Text>
+                                    <div 
+                                      style={{ 
+                                        fontSize: 13, 
+                                        color: 'rgba(0, 0, 0, 0.45)',
+                                        lineHeight: '1.5'
+                                      }}
+                                      dangerouslySetInnerHTML={{ __html: service.description }}
+                                    />
                                   )}
                                   {service.serviceAddOns && service.serviceAddOns.length > 0 && (
                                     <Text type="secondary" style={{ fontSize: 12 }}>
