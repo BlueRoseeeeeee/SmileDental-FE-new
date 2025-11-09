@@ -27,6 +27,7 @@ import { servicesService, recordService } from '../../services';
 import { mockServices } from '../../services/mockData.js';
 import { useAuth } from '../../hooks/useAuth';
 import './BookingSelectService.css';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -233,10 +234,6 @@ const BookingSelectService = () => {
     }
   };
 
-  const handleBack = () => {
-  navigate('/patient/booking/select-service');
-  };
-
   // Hàm dịch type sang tiếng Việt
   const translateServiceType = (type) => {
     const typeMap = {
@@ -314,7 +311,6 @@ const BookingSelectService = () => {
             <Spin spinning={loading}>
               {filteredServices.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                  <MedicineBoxOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
                   <Paragraph type="secondary">
                     {searchValue ? 'Không tìm thấy dịch vụ phù hợp' : 'Chưa có dịch vụ nào'}
                   </Paragraph>
@@ -338,11 +334,11 @@ const BookingSelectService = () => {
                               <Col flex="auto">
                                 <Space direction="vertical" size={4} style={{ width: '100%' }}>
                                   <Space>
-                                    <Title level={4} style={{ margin: 0, color: '#d4860f' }}>
-                                      <MedicineBoxOutlined /> {service.name}
-                                    </Title>
+                                    <h5 style={{ margin: 0, color: COLOR_BRAND_NAME, fontSize: 16, fontWeight:600 }}>
+                                      {service.name}
+                                    </h5>
                                     {service.type && (
-                                      <Tag style={{fontSize: 12}} color={translateServiceType(service.type) === 'Khám' ? 'blue' : 'green'}>
+                                      <Tag style={{fontSize: 10}} color={translateServiceType(service.type) === 'Khám' ? 'blue' : 'green'}>
                                         {translateServiceType(service.type)}
                                       </Tag>
                                     )}
