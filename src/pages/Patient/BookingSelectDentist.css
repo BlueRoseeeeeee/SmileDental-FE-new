@@ -1,18 +1,20 @@
 .booking-select-dentist-page {
   min-height: 100vh;
-  background-color: #f0f2f5;
 }
-
-.breadcrumb-section {
-  background-color: white;
-  padding: 16px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.breadcrumb-section .container {
-  max-width: 1200px;
+.booking-select-dentist-page .container{
+  max-width: 1050px;
   margin: 0 auto;
-  padding: 0 24px;
+}
+.breadcrumb-container-booking-select-dentist {
+  margin-top: -55px;
+  margin-bottom: 20px;
+  display: flex;
+}
+
+.breadcrumb-container-booking-select-dentist a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .breadcrumb-section a {

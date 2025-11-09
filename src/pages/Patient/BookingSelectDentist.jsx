@@ -130,9 +130,11 @@ const BookingSelectDentist = () => {
 
   return (
     <div className="booking-select-dentist-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
+
+      {/* Main Content */}
+      <div className="main-content">
         <div className="container">
+        <div className="breadcrumb-container-booking-select-dentist">
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
@@ -140,16 +142,13 @@ const BookingSelectDentist = () => {
             <Text>Chọn bác sĩ</Text>
           </Space>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content">
-        <div className="container">
-          <Card className="booking-card">
-            <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 8 }}>
-              Vui lòng chọn Bác sĩ
-            </Title>
-            
+          <div className="booking-card">
+          <div className='booking-card-header'>
+            <h5>
+              Vui lòng chọn Nha sĩ
+            </h5>
+          </div>
+            <div style={{padding:20}}>
             {selectedService && (
               <div style={{ textAlign: 'center', marginBottom: 24 }}>
                 <Text type="secondary">
@@ -273,7 +272,8 @@ const BookingSelectDentist = () => {
                 Quay lại bước trước
               </Button>
             </div>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
