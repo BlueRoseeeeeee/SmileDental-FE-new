@@ -260,7 +260,7 @@ const BookingSelectService = () => {
                     Tất cả dịch vụ
                   </Radio.Button>
                   <Radio.Button value="recommended">
-                    <StarFilled style={{ color: '#faad14' }} /> Theo chỉ định bác sĩ ({unusedServices.length})
+                    <StarFilled style={{ color: '#faad14' }} /> Theo chỉ định nha sĩ ({unusedServices.length})
                   </Radio.Button>
                 </Radio.Group>
               </Row>
@@ -335,7 +335,7 @@ const BookingSelectService = () => {
                               {/* ✅ Recommended Badge */}
                               {isRecommended(service._id) && (
                                 <Tag color="gold" icon={<StarFilled />}>
-                                  Chỉ định bác sĩ
+                                  Chỉ định nha sĩ
                                 </Tag>
                               )}
                               <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />

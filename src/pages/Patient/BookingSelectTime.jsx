@@ -391,7 +391,7 @@ const BookingSelectTime = () => {
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
             <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
-            <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn bác sĩ</a>
+            <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn nha sĩ</a>
             <a onClick={() => navigate('/patient/booking/select-date')}>Chọn ngày khám</a>
             <Text>Chọn giờ khám</Text>
           </Space>
@@ -433,9 +433,9 @@ const BookingSelectTime = () => {
                   </div>
                   
                   <div>
-                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Bác sĩ:</Text>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Nha sĩ:</Text>
                     <Text style={{ fontSize: 13 }}>
-                      {selectedDentist?.title || 'BS'} {selectedDentist?.fullName}
+                      {selectedDentist?.title || 'NS. '} {selectedDentist?.fullName}
                     </Text>
                   </div>
                   
