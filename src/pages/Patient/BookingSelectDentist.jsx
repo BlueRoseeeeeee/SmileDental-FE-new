@@ -139,7 +139,8 @@ const BookingSelectDentist = () => {
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
             <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
-            <Text>Chọn bác sĩ</Text>
+            <a onClick={() => navigate('/patient/booking/select-addon')}>Chọn gói dịch vụ</a>
+            <Text>Chọn nha sĩ</Text>
           </Space>
         </div>
           <div className="booking-card">
@@ -244,19 +245,6 @@ const BookingSelectDentist = () => {
                                 )}
                               </Space>
                             </Space>
-                          </Col>
-                          <Col>
-                            <Button 
-                              type="primary" 
-                              icon={<ArrowRightOutlined />}
-                              style={{ 
-                                backgroundColor: '#2c5f4f',
-                                borderColor: '#2c5f4f',
-                                borderRadius: 6
-                              }}
-                            >
-                              Chọn
-                            </Button>
                           </Col>
                         </Row>
                       </Card>
