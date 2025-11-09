@@ -16,7 +16,6 @@ import {
 } from 'antd';
 import { 
   SearchOutlined, 
-  ArrowRightOutlined,
   InfoCircleOutlined,
   StarFilled
 } from '@ant-design/icons';
@@ -315,58 +314,41 @@ const BookingSelectService = () => {
                           className="service-item-card"
                           onClick={() => handleSelectService(service)}
                         >
-                            <Row align="middle" gutter={16}>
-                              <Col flex="auto">
-                                <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                  <Space>
-                                    <h5 style={{ margin: 0, color: COLOR_BRAND_NAME, fontSize: 16, fontWeight:600 }}>
-                                      {service.name}
-                                    </h5>
-                                    {service.type && (
-                                      <Tag style={{fontSize: 10}} color={translateServiceType(service.type) === 'Khám' ? 'blue' : 'green'}>
-                                        {translateServiceType(service.type)}
-                                      </Tag>
-                                    )}
-                                    {/* ✅ Recommended Badge */}
-                                    {isRecommended(service._id) && (
-                                      <Tag color="gold" icon={<StarFilled />}>
-                                        Chỉ định bác sĩ
-                                      </Tag>
-                                    )}
-                                    <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
-                                  </Space>
-                                  {service.description && (
-                                    <div 
-                                      style={{ 
-                                        fontSize: 13, 
-                                        color: 'rgba(0, 0, 0, 0.45)',
-                                        lineHeight: '1.5'
-                                      }}
-                                      dangerouslySetInnerHTML={{ __html: service.description }}
-                                    />
-                                  )}
-                                  {service.serviceAddOns && service.serviceAddOns.length > 0 && (
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
-                                      {service.serviceAddOns.length} gói dịch vụ có sẵn
-                                    </Text>
-                                  )}
-                                </Space>
-                              </Col>
-                              <Col>
-                                <Button 
-                                  type="primary" 
-                                  icon={<ArrowRightOutlined />}
-                                  style={{ 
-                                    backgroundColor: '#2c5f4f',
-                                    borderColor: '#2c5f4f',
-                                    borderRadius: 6
-                                  }}
-                                >
-                                  Chọn
-                                </Button>
-                              </Col>
-                            </Row>
-                          </Card>
+                          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                            <Space>
+                              <h5 style={{ margin: 0, color: COLOR_BRAND_NAME, fontSize: 16, fontWeight:600 }}>
+                                {service.name}
+                              </h5>
+                              {service.type && (
+                                <Tag style={{fontSize: 10}} color={translateServiceType(service.type) === 'Khám' ? 'blue' : 'green'}>
+                                  {translateServiceType(service.type)}
+                                </Tag>
+                              )}
+                              {/* ✅ Recommended Badge */}
+                              {isRecommended(service._id) && (
+                                <Tag color="gold" icon={<StarFilled />}>
+                                  Chỉ định bác sĩ
+                                </Tag>
+                              )}
+                              <InfoCircleOutlined style={{ color: '#1890ff', cursor: 'pointer' }} />
+                            </Space>
+                            {service.description && (
+                              <div 
+                                style={{ 
+                                  fontSize: 13, 
+                                  color: 'rgba(0, 0, 0, 0.45)',
+                                  lineHeight: '1.5'
+                                }}
+                                dangerouslySetInnerHTML={{ __html: service.description }}
+                              />
+                            )}
+                            {service.serviceAddOns && service.serviceAddOns.length > 0 && (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {service.serviceAddOns.length} gói dịch vụ có sẵn
+                              </Text>
+                            )}
+                          </Space>
+                        </Card>
                       </Col>
                     ))}
                   </Row>
