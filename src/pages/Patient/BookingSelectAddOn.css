@@ -25,14 +25,12 @@
 
 .booking-select-addon-page .addon-card {
   border-radius: 12px;
-  transition: all 0.3s ease;
   cursor: pointer;
   min-height: 180px;
 }
 
 .booking-select-addon-page .addon-card:hover:not(.disabled) {
   box-shadow: 0 6px 16px rgba(44, 95, 79, 0.15);
-  transform: translateY(-2px);
 }
 
 .booking-select-addon-page .addon-card.selected {
@@ -44,6 +42,25 @@
 .booking-select-addon-page .addon-card.disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Custom scrollbar for addon list */
+.booking-select-addon-page ::-webkit-scrollbar {
+  width: 6px;
+  height: 10px;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
 }
 
 @media (max-width: 768px) {

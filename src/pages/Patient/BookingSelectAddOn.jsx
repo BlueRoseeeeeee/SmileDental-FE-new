@@ -26,6 +26,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import recordService from '../../services/recordService';
 import './BookingSelectAddOn.css';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -230,13 +231,19 @@ const BookingSelectAddOn = () => {
                   </Paragraph>
                 )}
 
-                <Radio.Group 
-                  value={selectedAddOn} 
-                  onChange={(e) => handleSelectAddOn(e.target.value)}
-                  style={{ width: '100%' }}
-                  disabled={!canSelectAddOn}
-                >
-                  <Row gutter={[16, 16]}>
+                <div style={{ 
+                  maxHeight: '450px', 
+                  overflowY: 'auto', 
+                  paddingRight: '8px',
+                  marginBottom: '16px'
+                }}>
+                  <Radio.Group 
+                    value={selectedAddOn} 
+                    onChange={(e) => handleSelectAddOn(e.target.value)}
+                    style={{ width: '100%' }}
+                    disabled={!canSelectAddOn}
+                  >
+                    <Row gutter={[16, 16]}>
                     {service.serviceAddOns.filter(addon => addon.isActive).map((addon) => {
                       const isIndicated = treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
                       const isDisabled = !canSelectAddOn || 
@@ -245,7 +252,7 @@ const BookingSelectAddOn = () => {
                          treatmentIndications[0].serviceAddOnId !== addon._id);
                       
                       return (
-                        <Col xs={24} md={12} key={addon._id}>
+                        <Col xs={24} key={addon._id}>
                           <Card
                             className={`addon-card ${selectedAddOn === addon._id ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`}
                             style={{
@@ -263,9 +270,9 @@ const BookingSelectAddOn = () => {
                               )}
                               <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                  <Title level={4} style={{ marginBottom: 0, color: '#2c5f4f' }}>
+                                  <h5 style={{ marginBottom: 0, color: COLOR_BRAND_NAME, fontSize:16, fontWeight:600 }}>
                                     {addon.name}
-                                  </Title>
+                                  </h5>
                                   {isIndicated && (
                                     <Tag color="success" icon={<CheckCircleOutlined />}>
                                       Đã chỉ định
@@ -273,14 +280,14 @@ const BookingSelectAddOn = () => {
                                   )}
                                 </div>
 
-                                {addon.description && (
+                                {/* {addon.description && (
                                   <Paragraph 
                                     type="secondary" 
                                     style={{ fontSize: 13, marginBottom: 16 }}
                                   >
                                     {addon.description}
                                   </Paragraph>
-                                )}
+                                )} */}
 
                                 <Space direction="vertical" size={8} style={{ width: '100%' }}>
                                   <Space>
@@ -311,6 +318,7 @@ const BookingSelectAddOn = () => {
                     })}
                   </Row>
                 </Radio.Group>
+                </div>
 
                 {!canSelectAddOn && (
                   <Alert
