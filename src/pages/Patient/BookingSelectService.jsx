@@ -9,7 +9,6 @@ import {
   Button, 
   Space,
   Spin,
-  Alert,
   Tag,
   message,
   Select,
@@ -18,21 +17,15 @@ import {
 import { 
   SearchOutlined, 
   ArrowRightOutlined,
-  MedicineBoxOutlined,
-  DollarOutlined,
   InfoCircleOutlined,
   StarFilled
 } from '@ant-design/icons';
 import { servicesService, recordService } from '../../services';
-import { mockServices } from '../../services/mockData.js';
 import { useAuth } from '../../hooks/useAuth';
 import './BookingSelectService.css';
 import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 const { Title, Text, Paragraph } = Typography;
-
-// Toggle this to use mock data for testing
-const USE_MOCK_DATA = false;
 
 const BookingSelectService = () => {
   const navigate = useNavigate();
@@ -58,29 +51,21 @@ const BookingSelectService = () => {
     try {
       setLoading(true);
       
-      if (USE_MOCK_DATA) {
-        // Use mock data for testing
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
-        setServices(mockServices);
-        setFilteredServices(mockServices);
-      } else {
-        // Use real API
-        const response = await servicesService.getAllServices();
-        console.log('📋 Services API response:', response);
+      const response = await servicesService.getAllServices();
+      console.log('📋 Services API response:', response);
+      
+      // API returns: { services: [...], total, page, limit, totalPages }
+      if (response.services && Array.isArray(response.services)) {
+        const activeServices = response.services.filter(s => s.isActive);
+        setServices(activeServices);
+        applyFilters(searchValue, selectedType, serviceSource, activeServices, unusedServices);
         
-        // API returns: { services: [...], total, page, limit, totalPages }
-        if (response.services && Array.isArray(response.services)) {
-          const activeServices = response.services.filter(s => s.isActive);
-          setServices(activeServices);
-          applyFilters(searchValue, selectedType, serviceSource, activeServices, unusedServices);
-          
-          if (activeServices.length === 0) {
-            message.warning('Hiện tại chưa có dịch vụ nào khả dụng');
-          }
-        } else {
-          console.error('Invalid API response format:', response);
-          message.error('Không thể tải danh sách dịch vụ');
+        if (activeServices.length === 0) {
+          message.warning('Hiện tại chưa có dịch vụ nào khả dụng');
         }
+      } else {
+        console.error('Invalid API response format:', response);
+        message.error('Không thể tải danh sách dịch vụ');
       }
     } catch (error) {
       console.error('Error fetching services:', error);
