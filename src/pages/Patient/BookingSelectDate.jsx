@@ -223,9 +223,11 @@ const BookingSelectDate = () => {
             {/* Right: Calendar */}
             <Col xs={24} md={16}>
               <Card className="booking-card">
-                <h4 style={{ textAlign: 'center', color: COLOR_BRAND_NAME, marginBottom: 24, fontWeight: 'bold' }}>
+              <div className='booking-card-header'>
+                <h5>
                   Vui lòng chọn ngày khám
-                </h4>
+                </h5>
+              </div>
 
                 <Calendar
                   fullscreen={false}
