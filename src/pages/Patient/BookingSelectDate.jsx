@@ -257,19 +257,22 @@ const BookingSelectDate = () => {
                     >
                       Quay lại bước trước
                     </Button>
-                    <button
-                      onClick={handleContinue}
-                      disabled={!selectedDate}
-                      style={{ 
-                        backgroundColor: '#3498db',
-                        borderRadius: 6,
-                        padding: '2px 20px',
-                        color: 'white',
-                        fontSize: '16px',
-                      }}
-                    >
-                      Tiếp tục 
-                    </button>
+                    {selectedDate && (
+                      <button
+                        onClick={handleContinue}
+                        style={{ 
+                          backgroundColor: '#3498db',
+                          borderRadius: 6,
+                          padding: '2px 20px',
+                          color: 'white',
+                          fontSize: '16px',
+                          cursor: 'pointer',
+                          border: 'none'
+                        }}
+                      >
+                        Tiếp tục 
+                      </button>
+                    )}
                   </Space>
                 </div>
               </Card>
