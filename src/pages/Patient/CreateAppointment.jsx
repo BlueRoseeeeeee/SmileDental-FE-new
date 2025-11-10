@@ -5,35 +5,25 @@ import {
   Typography, 
   Button, 
   Space,
-  Tag,
   Alert,
-  Row,
-  Col,
   Descriptions,
-  Radio,
   Input,
   Form,
-  message,
-  Modal
+  message
 } from 'antd';
 import { 
   ArrowLeftOutlined,
   CheckCircleOutlined,
-  DollarOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import appointmentService from '../../services/appointmentService.js';
 import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { mockPatient, mockServices, mockDentists, mockSlots } from '../../services/mockData.js';
 import './CreateAppointment.css';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text } = Typography;
 const { TextArea } = Input;
-
-// Toggle this to use mock data for testing
-const USE_MOCK_DATA = false;
 
 const CreateAppointment = () => {
   const navigate = useNavigate();
@@ -43,11 +33,9 @@ const CreateAppointment = () => {
   const [selectedServiceAddOn, setSelectedServiceAddOn] = useState(null);
   const [selectedDentist, setSelectedDentist] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedSlotGroup, setSelectedSlotGroup] = useState(null); // 🆕 Changed from single slot
+  const [selectedSlotGroup, setSelectedSlotGroup] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [createdAppointment, setCreatedAppointment] = useState(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [scheduleConfig, setScheduleConfig] = useState({ depositAmount: 100000 }); // 🆕 Default fallback
+  const [scheduleConfig, setScheduleConfig] = useState({ depositAmount: 100000 });
 
   // 🆕 Fetch schedule config on mount
   useEffect(() => {
@@ -66,28 +54,12 @@ const CreateAppointment = () => {
   }, []);
 
   useEffect(() => {
-    // Pre-populate localStorage with mock data if using mocks
-    if (USE_MOCK_DATA) {
-      if (!localStorage.getItem('booking_service')) {
-        localStorage.setItem('booking_service', JSON.stringify(mockServices[0]));
-      }
-      if (!localStorage.getItem('booking_dentist')) {
-        localStorage.setItem('booking_dentist', JSON.stringify(mockDentists[0]));
-      }
-      if (!localStorage.getItem('booking_date')) {
-        localStorage.setItem('booking_date', '2025-10-20');
-      }
-      if (!localStorage.getItem('booking_slot')) {
-        localStorage.setItem('booking_slot', JSON.stringify(mockSlots.morning[0]));
-      }
-    }
-
     // Kiểm tra xem đã chọn đủ thông tin chưa
     const service = localStorage.getItem('booking_service');
-    const serviceAddOn = localStorage.getItem('booking_serviceAddOn'); // Get selected addon
+    const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
     const dentist = localStorage.getItem('booking_dentist');
     const date = localStorage.getItem('booking_date');
-    const slotGroup = localStorage.getItem('booking_slotGroup'); // 🆕 Changed from booking_slot
+    const slotGroup = localStorage.getItem('booking_slotGroup');
     
     if (!service || !dentist || !date || !slotGroup) {
       navigate('/patient/booking/select-service');
@@ -100,24 +72,17 @@ const CreateAppointment = () => {
     }
     setSelectedDentist(JSON.parse(dentist));
     setSelectedDate(dayjs(date));
-    setSelectedSlotGroup(JSON.parse(slotGroup)); // 🆕 Set slot group
+    setSelectedSlotGroup(JSON.parse(slotGroup));
 
-    // Pre-fill patient info from mock data if using mocks
-    if (USE_MOCK_DATA) {
-      form.setFieldsValue({
-        patientName: mockPatient.fullName,
-        patientPhone: mockPatient.phone,
-        patientDOB: dayjs(mockPatient.dateOfBirth).format('DD/MM/YYYY')
-      });
-    } else if (user) {
-      // Pre-fill from logged in user
+    // Pre-fill from logged in user
+    if (user) {
       form.setFieldsValue({
         patientName: user.fullName || '',
         patientPhone: user.phone || '',
         patientDOB: user.dateOfBirth ? dayjs(user.dateOfBirth).format('DD/MM/YYYY') : ''
       });
     }
-  }, []);
+  }, [navigate, user, form]);
 
   const handleSubmit = async (values) => {
     try {
@@ -192,21 +157,13 @@ const CreateAppointment = () => {
     navigate('/patient/booking/select-time');
   };
 
-  const handlePayment = () => {
-    // Always redirect to payment (online only)
-    message.info('Đang chuyển đến trang thanh toán...');
-    navigate('/patient/payment/select');
-  };
-
-  const handleViewAppointment = () => {
-    navigate('/patient/appointments');
-  };
-
   return (
     <div className="create-appointment-page">
-      {/* Breadcrumb */}
-      <div className="breadcrumb-section">
+
+      {/* Main Content */}
+      <div className="main-content">
         <div className="container">
+        <div className='breadcrumb-container-booking-appoiment'>
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
@@ -217,15 +174,12 @@ const CreateAppointment = () => {
             <Text>Tạo phiếu khám</Text>
           </Space>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content">
-        <div className="container">
           <Card className="booking-card">
-            <Title level={2} style={{ textAlign: 'center', color: '#2c5f4f', marginBottom: 32 }}>
+          <div>
+            <h5 className='booking-card-header'>
               <FileTextOutlined /> Tạo phiếu khám
-            </Title>
+            </h5>
+          </div>
 
             <Alert
               type="info"
@@ -247,17 +201,15 @@ const CreateAppointment = () => {
               >
                 <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered>
                   <Descriptions.Item label="Dịch vụ">
-                    <Tag color="blue">{selectedService?.name}</Tag>
+                   {selectedService?.name}
                   </Descriptions.Item>
                   {selectedServiceAddOn ? (
                     <>
                       <Descriptions.Item label="Gói dịch vụ">
-                        <Tag color="green">{selectedServiceAddOn.name}</Tag>
+                        {selectedServiceAddOn.name}
                       </Descriptions.Item>
                       <Descriptions.Item label="Giá gói">
-                        <Text strong style={{ color: '#2c5f4f', fontSize: 16 }}>
                           {selectedServiceAddOn.price?.toLocaleString('vi-VN')} VNĐ / {selectedServiceAddOn.unit}
-                        </Text>
                       </Descriptions.Item>
                       <Descriptions.Item label="Thời gian dự kiến">
                         <Text>~{selectedServiceAddOn.durationMinutes} phút</Text>
@@ -265,30 +217,26 @@ const CreateAppointment = () => {
                     </>
                   ) : (
                     <Descriptions.Item label="Giá dịch vụ">
-                      <Text strong style={{ color: '#2c5f4f', fontSize: 16 }}>
                         {selectedService?.price?.toLocaleString('vi-VN')} VNĐ
-                      </Text>
                     </Descriptions.Item>
                   )}
-                  <Descriptions.Item label="Bác sĩ">
-                    {selectedDentist?.title || 'BS'} {selectedDentist?.fullName}
+                  <Descriptions.Item label="Nha sĩ">
+                    {selectedDentist?.title || 'NS. '} {selectedDentist?.fullName}
                   </Descriptions.Item>
                   <Descriptions.Item label="Giới tính">
                     {selectedDentist?.gender === 'male' ? 'Nam' : selectedDentist?.gender === 'female' ? 'Nữ' : 'Khác'}
                   </Descriptions.Item>
                   <Descriptions.Item label="Ngày khám">
-                    <Tag color="green">{selectedDate?.format('DD/MM/YYYY')}</Tag>
+                  {selectedDate?.format('DD/MM/YYYY')}
                   </Descriptions.Item>
                   <Descriptions.Item label="Thời gian">
-                    <Tag color="orange">
                       {selectedSlotGroup?.displayTime}
-                    </Tag>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Số slot đặt">
+                  {/* <Descriptions.Item label="Số slot đặt">
                     <Tag color="purple">
                       {selectedSlotGroup?.slots.length} slot × 15 phút = {selectedSlotGroup?.slots.length * 15} phút
                     </Tag>
-                  </Descriptions.Item>
+                  </Descriptions.Item> */}
                   <Descriptions.Item label="Mã phiếu khám">
                     <Text code>TT01</Text>
                   </Descriptions.Item>
@@ -323,6 +271,7 @@ const CreateAppointment = () => {
                 name="notes"
               >
                 <TextArea
+                className='custom-textarea '
                   rows={4}
                   placeholder="Nhập ghi chú nếu có (triệu chứng, yêu cầu đặc biệt...)"
                   maxLength={500}
@@ -337,18 +286,18 @@ const CreateAppointment = () => {
                 message={
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text strong>💰 Tiền cọc (phải thanh toán):</Text>
-                    <Text strong style={{ fontSize: 20, color: '#2c5f4f' }}>
+                    <h5 strong style={{ fontSize: 24, color: 'red', fontWeight:'bold' }}>
                       {(selectedSlotGroup?.slots.length * scheduleConfig.depositAmount).toLocaleString('vi-VN')} VNĐ
-                    </Text>
+                    </h5>
                   </div>
                 }
                 description={
                   <div style={{ marginTop: 8 }}>
-                    <Text type="secondary">
+                    {/* <Text type="secondary">
                       = {scheduleConfig.depositAmount.toLocaleString('vi-VN')} VNĐ/slot × {selectedSlotGroup?.slots.length} slot
-                    </Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    </Text> */}
+                    {/* <br /> */}
+                    <Text type="secondary" style={{ fontSize: 13 }}>
                       (Giá dịch vụ: {selectedServiceAddOn 
                         ? selectedServiceAddOn.price?.toLocaleString('vi-VN') 
                         : selectedService?.price?.toLocaleString('vi-VN')} VNĐ - thanh toán sau khi khám)
@@ -398,75 +347,6 @@ const CreateAppointment = () => {
           </Card>
         </div>
       </div>
-
-      {/* Success Modal */}
-      <Modal
-        open={showSuccessModal}
-        onCancel={() => setShowSuccessModal(false)}
-        footer={null}
-        width={700}
-        centered
-      >
-        <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <CheckCircleOutlined style={{ fontSize: 72, color: '#52c41a', marginBottom: 24 }} />
-          <Title level={2} style={{ color: '#52c41a', marginBottom: 16 }}>
-            Đặt khám thành công!
-          </Title>
-          <Paragraph style={{ fontSize: 16, marginBottom: 32 }}>
-            Phiếu khám của bạn đã được tạo thành công
-          </Paragraph>
-
-          {createdAppointment && (
-            <Card style={{ textAlign: 'left', marginBottom: 24 }}>
-              <Title level={4}>Thông tin phiếu khám</Title>
-              <Descriptions column={1} bordered>
-                <Descriptions.Item label="Mã phiếu">
-                  <Text code strong>{createdAppointment.appointmentCode}</Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Dịch vụ">
-                  {createdAppointment.service?.name}
-                </Descriptions.Item>
-                <Descriptions.Item label="Bác sĩ">
-                  {createdAppointment.dentist?.title || 'BS'} {createdAppointment.dentist?.fullName}
-                </Descriptions.Item>
-                <Descriptions.Item label="Ngày khám">
-                  {dayjs(createdAppointment.date).format('DD/MM/YYYY')}
-                </Descriptions.Item>
-                <Descriptions.Item label="Thời gian">
-                  {dayjs(createdAppointment.startTime).format('HH:mm')} - {dayjs(createdAppointment.endTime).format('HH:mm')}
-                </Descriptions.Item>
-                <Descriptions.Item label="Tổng tiền">
-                  <Text strong style={{ color: '#2c5f4f', fontSize: 16 }}>
-                    {createdAppointment.totalAmount?.toLocaleString('vi-VN')} VNĐ
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Thanh toán">
-                  <Tag color="green">
-                    Thanh toán trực tuyến
-                  </Tag>
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          )}
-
-          <Space size="large">
-            <Button size="large" onClick={handleViewAppointment}>
-              Xem lịch khám của tôi
-            </Button>
-            <Button 
-              type="primary" 
-              size="large"
-              onClick={handlePayment}
-              style={{ 
-                backgroundColor: '#2c5f4f',
-                borderColor: '#2c5f4f'
-              }}
-            >
-              Thanh toán ngay
-            </Button>
-          </Space>
-        </div>
-      </Modal>
     </div>
   );
 };
