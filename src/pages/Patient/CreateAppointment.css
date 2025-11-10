@@ -1,6 +1,5 @@
 .create-appointment-page {
   min-height: 100vh;
-  background-color: #f0f2f5;
 }
 
 .breadcrumb-section {
@@ -37,6 +36,15 @@
 .booking-card .ant-descriptions-bordered .ant-descriptions-item-label {
   background-color: #fafafa;
   font-weight: 500;
+  width: 150px;
+  min-width: 110px;
+  max-width: 120px;
+}
+
+.booking-card .ant-descriptions-bordered .ant-descriptions-item-content {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
 }
 
 .ant-radio-wrapper {
@@ -51,6 +59,35 @@
 
 .ant-radio-wrapper .ant-radio-checked + span {
   color: #2c5f4f;
+}
+
+/* css thêm padding cho cái ghi chú để không bị sát lề */
+.create-appointment-page textarea.ant-input {
+  padding: 16px 20px !important;
+  line-height: 1.8 !important;
+  font-size: 14px !important;
+}
+
+.create-appointment-page .ant-input-textarea-show-count::after {
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
+
+/* css cho breadcrumb */
+.breadcrumb-container-booking-appoiment {
+  margin-top: -50px;
+  margin-bottom: 25px;
+}
+
+.breadcrumb-container-booking-appoiment a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-container-booking-appoiment a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
 }
 
 @media (max-width: 768px) {

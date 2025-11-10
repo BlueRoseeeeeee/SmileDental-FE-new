@@ -233,7 +233,7 @@ const BookingSelectService = () => {
       {/* Main Content */}
       <div className="main-content">
         <div className="container">
-        <div className="breadcrumb-container-booking-select-time">
+        <div className="breadcrumb-container-booking-select-service">
         <Space split=">">
           <a href="/patient/booking/select-service">Trang chủ</a>
           <a href="/patient/booking">Đặt lịch khám</a>
