@@ -134,10 +134,11 @@ const PatientProfile = () => {
               />
               <Upload
                 name="avatar"
+                accept="image/*"
                 showUploadList={false}
                 beforeUpload={beforeUpload}
                 onChange={handleAvatarChange}
-                customRequest={({ file, onSuccess }) => {
+                customRequest={({ onSuccess }) => {
                   setTimeout(() => {
                     onSuccess("ok");
                   }, 0);
