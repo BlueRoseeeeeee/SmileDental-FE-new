@@ -9,7 +9,8 @@ import {
   MenuOutlined,
   HistoryOutlined,
   FileTextOutlined,
-  DollarOutlined
+  DollarOutlined,
+  LockOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import ChatBox from '../ChatBox';
@@ -119,6 +120,12 @@ const PatientLayout = () => {
       icon: <UserOutlined />,
       label: 'Thông tin cá nhân',
       onClick: () => navigate('/patient/profile')
+    },
+    {
+      key: 'change-password',
+      icon: <LockOutlined />,
+      label: 'Đổi mật khẩu',
+      onClick: () => navigate('/patient/change-password')
     },
     {
       type: 'divider'

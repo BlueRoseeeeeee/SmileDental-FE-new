@@ -332,6 +332,11 @@ function App() {
                 <PatientProfile />
               </ProtectedRoute>
             } />
+            <Route path="change-password" element={
+              <ProtectedRoute roles={['patient']}>
+                <ChangePassword />
+              </ProtectedRoute>
+            } />
             <Route path="appointments" element={
               <ProtectedRoute roles={['patient']}>
                 <PatientAppointments />
