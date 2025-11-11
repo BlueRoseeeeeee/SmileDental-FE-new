@@ -38,13 +38,18 @@ const PaymentConfirmModal = ({ visible, onCancel, record, onSuccess }) => {
     
     // 1. Main service + serviceAddOn
     if (record.serviceName) {
+      const mainQuantity = record.quantity || 1;
+      const mainPrice = record.serviceAddOnPrice || 0; // Service addon price only
+      const mainTotal = mainPrice * mainQuantity;
+      
       items.push({
         key: 'main',
         name: record.serviceName,
         subName: record.serviceAddOnName || 'Chưa chọn dịch vụ con',
-        quantity: 1,
-        price: (record.servicePrice || 0) + (record.serviceAddOnPrice || 0),
-        total: (record.servicePrice || 0) + (record.serviceAddOnPrice || 0),
+        unit: record.serviceAddOnUnit || '',
+        quantity: mainQuantity,
+        price: mainPrice,
+        total: mainTotal,
         type: 'Dịch vụ chính'
       });
     }
@@ -56,9 +61,10 @@ const PaymentConfirmModal = ({ visible, onCancel, record, onSuccess }) => {
           key: `additional-${index}`,
           name: svc.serviceName,
           subName: svc.serviceAddOnName || '',
+          unit: svc.serviceAddOnUnit || '',
           quantity: svc.quantity || 1,
           price: svc.price || 0,
-          total: svc.totalPrice || (svc.price * svc.quantity),
+          total: svc.totalPrice || (svc.price * (svc.quantity || 1)),
           type: 'Dịch vụ bổ sung'
         });
       });
@@ -73,6 +79,20 @@ const PaymentConfirmModal = ({ visible, onCancel, record, onSuccess }) => {
   const remainingAmount = totalAmount - appointmentDeposit;
   const hasDeposit = appointmentDeposit > 0;
   const isOnlineBooking = record.appointmentBookingChannel === 'online';
+
+  // 🔍 Debug: Calculate actual total from service items
+  const calculatedTotal = serviceItems.reduce((sum, item) => sum + item.total, 0);
+  console.log('💰 [PaymentConfirmModal] Price calculation:', {
+    'record.totalCost': totalAmount,
+    'calculatedFromItems': calculatedTotal,
+    'difference': totalAmount - calculatedTotal,
+    serviceItems: serviceItems.map(item => ({
+      name: item.name,
+      quantity: item.quantity,
+      price: item.price,
+      total: item.total
+    }))
+  });
 
   // 🔍 Debug: Log appointment info
   console.log('🔍 [PaymentConfirmModal] Record appointment data:', {
@@ -109,8 +129,14 @@ const PaymentConfirmModal = ({ visible, onCancel, record, onSuccess }) => {
       title: 'Số lượng',
       dataIndex: 'quantity',
       key: 'quantity',
-      width: 100,
-      align: 'center'
+      width: 120,
+      align: 'center',
+      render: (quantity, record) => (
+        <Space size={4}>
+          <Text>{quantity}</Text>
+          {record.unit && <Tag color="blue" style={{ fontSize: 11 }}>{record.unit}</Tag>}
+        </Space>
+      )
     },
     {
       title: 'Đơn giá',

@@ -305,9 +305,18 @@ const RecordList = () => {
   };
 
   // Handle form success
-  const handleFormSuccess = () => {
-    setShowFormModal(false);
-    setSelectedRecord(null);
+  const handleFormSuccess = (updatedRecord) => {
+    // If updatedRecord is provided (from edit/delete operations), update selectedRecord
+    if (updatedRecord) {
+      console.log('✅ [RecordList] Updating selectedRecord with new data:', updatedRecord);
+      setSelectedRecord(updatedRecord);
+    } else {
+      // For create operations, close modal and reload list
+      setShowFormModal(false);
+      setSelectedRecord(null);
+    }
+    
+    // Always reload the records list
     loadRecords();
   };
 

@@ -55,14 +55,28 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
     loadServices();
   }, []);
 
+  // 🆕 Debug: Watch serviceAddOns state changes
+  useEffect(() => {
+    console.log('🔔 [AdditionalServicesManager] serviceAddOns state changed:', serviceAddOns.length, 'items');
+    console.log('📦 [AdditionalServicesManager] Current serviceAddOns:', serviceAddOns);
+  }, [serviceAddOns]);
+
+  // 🆕 Debug: Watch selectedServiceId changes
+  useEffect(() => {
+    console.log('🔔 [AdditionalServicesManager] selectedServiceId changed:', selectedServiceId);
+  }, [selectedServiceId]);
+
   const loadServices = async () => {
     try {
       const response = await servicesService.getAllServices();
-      if (response.success && response.data) {
-        setServices(response.data);
+      console.log('🔵 [AdditionalServicesManager] getAllServices response:', response);
+      if (response.services) {
+        console.log('✅ [AdditionalServicesManager] Services loaded:', response.services.length, 'services');
+        console.log('🔍 [AdditionalServicesManager] First service:', response.services[0]);
+        setServices(response.services);
       }
     } catch (error) {
-      console.error('Load services error:', error);
+      console.error('[AdditionalServicesManager] Load services error:', error);
       message.error('Không thể tải danh sách dịch vụ');
     }
   };
@@ -70,19 +84,51 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
   const loadServiceAddOns = async (serviceId) => {
     try {
       setLoadingAddOns(true);
+      
+      // 🆕 First, try to get serviceAddOns from already loaded services
+      const selectedService = services.find(s => s._id === serviceId);
+      console.log('🔍 [AdditionalServicesManager] Selected service:', selectedService);
+      
+      if (selectedService && selectedService.serviceAddOns) {
+        console.log('🔍 [AdditionalServicesManager] All serviceAddOns from cache:', selectedService.serviceAddOns);
+        const activeAddOns = selectedService.serviceAddOns.filter(addon => {
+          console.log('  - [AdditionalServicesManager] AddOn:', addon.name, 'isActive:', addon.isActive);
+          return addon.isActive !== false; // Include if isActive is true or undefined
+        });
+        console.log('✅ [AdditionalServicesManager] Using cached serviceAddOns:', activeAddOns.length, 'active addons');
+        console.log('📝 [AdditionalServicesManager] Active addOns:', activeAddOns);
+        setServiceAddOns(activeAddOns);
+        setLoadingAddOns(false);
+        return;
+      }
+      
+      // If not available, fetch from API
+      console.log('🔄 [AdditionalServicesManager] Fetching serviceAddOns from API for', serviceId);
       const response = await servicesService.getServiceById(serviceId);
+      console.log('🔵 [AdditionalServicesManager] getServiceById response:', response);
       if (response.success && response.data && response.data.serviceAddOns) {
-        setServiceAddOns(response.data.serviceAddOns.filter(addon => addon.isActive));
+        console.log('🔍 [AdditionalServicesManager] All serviceAddOns from API:', response.data.serviceAddOns);
+        const activeAddOns = response.data.serviceAddOns.filter(addon => {
+          console.log('  - [AdditionalServicesManager] AddOn:', addon.name, 'isActive:', addon.isActive);
+          return addon.isActive !== false;
+        });
+        console.log('✅ [AdditionalServicesManager] ServiceAddOns loaded from API:', activeAddOns.length, 'active addons');
+        setServiceAddOns(activeAddOns);
+      } else {
+        console.log('⚠️ [AdditionalServicesManager] No serviceAddOns found or invalid response');
+        setServiceAddOns([]);
       }
     } catch (error) {
-      console.error('Load service addons error:', error);
+      console.error('[AdditionalServicesManager] Load service addons error:', error);
       message.error('Không thể tải danh sách dịch vụ con');
+      setServiceAddOns([]);
     } finally {
       setLoadingAddOns(false);
     }
   };
 
   const handleServiceChange = (serviceId) => {
+    console.log('🎯 [AdditionalServicesManager] handleServiceChange called with serviceId:', serviceId);
     setSelectedServiceId(serviceId);
     form.setFieldValue('serviceAddOnId', null);
     if (serviceId) {
@@ -404,12 +450,22 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
                   disabled={!selectedServiceId || loadingAddOns}
                   loading={loadingAddOns}
                   allowClear
+                  notFoundContent={loadingAddOns ? "Đang tải..." : "Không có dịch vụ con"}
                 >
-                  {serviceAddOns.map(addOn => (
-                    <Option key={addOn._id} value={addOn._id}>
-                      {addOn.name} - {addOn.price.toLocaleString('vi-VN')}đ
-                    </Option>
-                  ))}
+                  {(() => {
+                    console.log('🎨 [AdditionalServicesManager] Rendering serviceAddOns dropdown');
+                    console.log('🎨 [AdditionalServicesManager] selectedServiceId:', selectedServiceId);
+                    console.log('🎨 [AdditionalServicesManager] serviceAddOns.length:', serviceAddOns.length);
+                    console.log('🎨 [AdditionalServicesManager] serviceAddOns:', serviceAddOns);
+                    return serviceAddOns.map(addOn => {
+                      console.log('  🎯 [AdditionalServicesManager] Rendering option for:', addOn.name, addOn._id);
+                      return (
+                        <Option key={addOn._id} value={addOn._id}>
+                          {addOn.name} - {addOn.price.toLocaleString('vi-VN')}đ
+                        </Option>
+                      );
+                    });
+                  })()}
                 </Select>
               </Form.Item>
             </>

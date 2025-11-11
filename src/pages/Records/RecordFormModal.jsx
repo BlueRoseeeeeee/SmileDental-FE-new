@@ -41,7 +41,8 @@ import {
   FileTextOutlined,
   PlusOutlined,
   DeleteOutlined,
-  ExperimentOutlined
+  ExperimentOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import recordService from '../../services/recordService';
@@ -66,6 +67,9 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   // 🆕 Track temporary main service addon selection (before saving)
   const [tempServiceAddOnId, setTempServiceAddOnId] = useState(null);
   
+  // 🆕 Track quantity for main service
+  const [tempMainServiceQuantity, setTempMainServiceQuantity] = useState(1);
+  
   // Real data from APIs
   const [patients, setPatients] = useState([]);
   const [services, setServices] = useState([]);
@@ -77,11 +81,23 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   const [serviceAddOnsMap, setServiceAddOnsMap] = useState({}); // { serviceId: [addOns] }
   const [loadingAddOns, setLoadingAddOns] = useState(false);
   
-  // 🆕 Additional Services modal state
-  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  // 🆕 Additional Services state
   const [addServiceForm] = Form.useForm();
   const [selectedMainServiceAddOns, setSelectedMainServiceAddOns] = useState([]);
   const [mainServiceDetails, setMainServiceDetails] = useState(null);
+  const [selectedAddServiceId, setSelectedAddServiceId] = useState(null); // Track selected service in Add Service form
+  
+  // 🆕 Temporary additional services (before saving to DB)
+  const [tempAdditionalServices, setTempAdditionalServices] = useState([]);
+  
+  // 🆕 Track service IDs to be deleted (will be deleted when user clicks "Cập nhật")
+  const [servicesToDelete, setServicesToDelete] = useState([]);
+  
+  // 🆕 Track editing state for additional services (_id -> { quantity, notes })
+  const [editingAdditionalServices, setEditingAdditionalServices] = useState({});
+  
+  // 🆕 Inline form state
+  const [showAddServiceForm, setShowAddServiceForm] = useState(false);
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -104,6 +120,13 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           
           // 🆕 Initialize temp service addon ID from record
           setTempServiceAddOnId(record.serviceAddOnId || null);
+          
+          // 🆕 Initialize temp main service quantity from record
+          setTempMainServiceQuantity(record.quantity || 1);
+          
+          // 🆕 Reset temp additional services and services to delete
+          setTempAdditionalServices([]);
+          setServicesToDelete([]);
           
           // 🆕 Load main service details for additional services tab
           await loadMainServiceDetails();
@@ -172,6 +195,19 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         const activeServices = servicesResponse.services.filter(s => s.isActive === true);
         setServices(activeServices);
         console.log('✅ Loaded services:', activeServices.length);
+        
+        // 🆕 Build serviceAddOnsMap from loaded services
+        const addOnsMap = {};
+        activeServices.forEach(service => {
+          if (service.serviceAddOns && Array.isArray(service.serviceAddOns)) {
+            // Filter only active addons
+            addOnsMap[service._id] = service.serviceAddOns.filter(addon => addon.isActive);
+          } else {
+            addOnsMap[service._id] = [];
+          }
+        });
+        setServiceAddOnsMap(addOnsMap);
+        console.log('✅ Built serviceAddOnsMap for', Object.keys(addOnsMap).length, 'services');
       }
 
       // Load dentists (all staff with dentist role will be filtered on backend)
@@ -298,8 +334,16 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       }
     }
     
-    // Reset state
+    // Reset all states
     setRecordModified(false);
+    setTempServiceAddOnId(null);
+    setTempMainServiceQuantity(1);
+    setTempAdditionalServices([]);
+    setServicesToDelete([]);
+    setEditingAdditionalServices({});
+    setShowAddServiceForm(false);
+    addServiceForm.resetFields();
+    setSelectedAddServiceId(null);
     
     // Call original onCancel
     if (onCancel) {
@@ -315,122 +359,172 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   
   // 🆕 Handle add additional service
   const handleAddAdditionalService = () => {
-    addServiceForm.resetFields();
-    
-    // ✅ Auto-fill main service info if it's a treatment service with requireExamFirst
-    if (record && record.serviceId && record.type === 'exam') {
-      const mainService = services.find(s => s._id === record.serviceId);
-      console.log('🔍 [Add Service Modal] Main service:', mainService);
-      
-      if (mainService && mainService.type === 'treatment' && mainService.requireExamFirst === true) {
-        console.log('✅ Auto-filling service and serviceAddOn from main record');
-        addServiceForm.setFieldsValue({
-          serviceId: record.serviceId,
-          serviceAddOnId: record.serviceAddOnId,
-          quantity: 1
-        });
-        
-        // Load serviceAddOns if not already loaded
-        if (!serviceAddOnsMap[record.serviceId]) {
-          loadServiceAddOns(record.serviceId);
-        }
-      }
+    if (showAddServiceForm) {
+      // If form is open, close it and reset
+      setShowAddServiceForm(false);
+      addServiceForm.resetFields();
+      setSelectedAddServiceId(null);
+    } else {
+      // Open the form
+      setShowAddServiceForm(true);
     }
-    
-    setShowAddServiceModal(true);
   };
   
-  // 🆕 Handle submit add service modal
+  // 🆕 Handle submit add service form
   const handleSubmitAddService = async () => {
+    console.log('🔥 [handleSubmitAddService] CALLED!');
+    
     try {
       const values = await addServiceForm.validateFields();
+      console.log('📋 [handleSubmitAddService] Form values:', values);
       
       const service = services.find(s => s._id === values.serviceId);
       const addOns = serviceAddOnsMap[values.serviceId] || [];
       const addOn = addOns.find(a => a._id === values.serviceAddOnId);
       
+      console.log('🔍 [handleSubmitAddService] Found:', {
+        service: service ? service.name : 'NOT FOUND',
+        addOn: addOn ? addOn.name : 'NOT FOUND',
+        addOnsCount: addOns.length
+      });
+      
       if (!service || !addOn) {
         message.error('Không tìm thấy thông tin dịch vụ');
+        console.error('❌ Service or addon not found!');
         return;
       }
       
-      const serviceData = {
+      // 🆕 Create temporary service item (not saved to DB yet)
+      const newServiceItem = {
+        _id: `temp_${Date.now()}`, // Temporary ID
         serviceId: service._id,
         serviceName: service.name,
         serviceType: service.type,
         serviceAddOnId: addOn._id,
         serviceAddOnName: addOn.name,
+        serviceAddOnUnit: addOn.unit,
         price: addOn.price,
         quantity: values.quantity || 1,
-        notes: values.notes || ''
+        totalPrice: addOn.price * (values.quantity || 1),
+        notes: values.notes || '',
+        isTemporary: true // Flag to identify temp items
       };
       
-      setLoading(true);
-      const response = await recordService.addAdditionalService(record._id, serviceData);
+      console.log('➕ [handleSubmitAddService] Adding new service item:', newServiceItem);
+      console.log('📊 [handleSubmitAddService] Current tempAdditionalServices:', tempAdditionalServices);
       
-      if (response.success) {
-        message.success('Đã thêm dịch vụ bổ sung');
-        setShowAddServiceModal(false);
-        addServiceForm.resetFields();
-        
-        // ✅ Reload local record to reflect changes
-        // ❌ DON'T call onSuccess() here - it will close the main modal!
-        // User might want to add more services or edit other fields
-        
-        // Mark record as modified so we refresh RecordList when modal closes
-        setRecordModified(true);
-        
-        console.log('✅ [handleSubmitAddService] Service added, refreshing local record...');
-        
-        // Trigger a local reload to update the additionalServices list
-        if (response.data && record) {
-          // Update the local record state if possible
-          // This will refresh the "Dịch vụ bổ sung" tab
-        }
-      }
+      // Add to temporary state
+      setTempAdditionalServices(prev => {
+        const updated = [...prev, newServiceItem];
+        console.log('✅ [handleSubmitAddService] Updated tempAdditionalServices:', updated);
+        return updated;
+      });
+      
+      message.success('Đã thêm dịch vụ bổ sung vào form. Nhấn "Cập nhật" để lưu vào database.');
+      
+      // Reset form and close
+      addServiceForm.resetFields();
+      setSelectedAddServiceId(null);
+      setShowAddServiceForm(false);
+      
+      console.log('✅ [handleSubmitAddService] Service added successfully!');
     } catch (error) {
-      console.error('Add additional service error:', error);
-      message.error(error.response?.data?.message || 'Không thể thêm dịch vụ');
-    } finally {
-      setLoading(false);
+      console.error('❌ [handleSubmitAddService] Error:', error);
+      if (error.errorFields) {
+        message.error('Vui lòng điền đầy đủ thông tin');
+      } else {
+        message.error('Không thể thêm dịch vụ');
+      }
     }
   };
   
+  // 🆕 Handle remove temporary additional service (not saved yet)
+  const handleRemoveTempAdditionalService = (tempId) => {
+    setTempAdditionalServices(prev => prev.filter(item => item._id !== tempId));
+    message.success('Đã xóa dịch vụ');
+  };
+  
+  // 🆕 Handle edit existing additional service (quantity or notes)
+  const handleEditAdditionalService = (serviceId, field, value) => {
+    console.log('✏️ [handleEditAdditionalService]', { serviceId, field, value });
+    
+    setEditingAdditionalServices(prev => ({
+      ...prev,
+      [serviceId]: {
+        ...prev[serviceId],
+        [field]: value
+      }
+    }));
+    
+    setRecordModified(true);
+  };
+  
   // 🆕 Handle remove additional service
-  const handleRemoveAdditionalService = async (serviceItemId, serviceName) => {
+  const handleRemoveAdditionalService = (serviceItemId, serviceName) => {
     Modal.confirm({
       title: 'Xác nhận xóa dịch vụ',
-      content: `Bạn có chắc muốn xóa dịch vụ "${serviceName}"?`,
+      content: `Bạn có chắc muốn xóa dịch vụ "${serviceName}"? Thay đổi sẽ được lưu khi bạn nhấn "Cập nhật".`,
       okText: 'Xóa',
       okType: 'danger',
       cancelText: 'Hủy',
-      onOk: async () => {
-        try {
-          setLoading(true);
-          const response = await recordService.removeAdditionalService(record._id, serviceItemId);
-          
-          if (response.success) {
-            message.success('Đã xóa dịch vụ');
-            if (onSuccess) onSuccess(response.data);
-          }
-        } catch (error) {
-          console.error('Remove additional service error:', error);
-          message.error(error.response?.data?.message || 'Không thể xóa dịch vụ');
-        } finally {
-          setLoading(false);
-        }
+      onOk: () => {
+        console.log('🗑️ [handleRemoveAdditionalService] Removing service:', serviceItemId);
+        
+        // ✅ Add to deletion list
+        setServicesToDelete(prev => [...prev, serviceItemId]);
+        
+        // ✅ Remove from editingAdditionalServices if it was being edited
+        setEditingAdditionalServices(prev => {
+          const updated = { ...prev };
+          delete updated[serviceItemId];
+          return updated;
+        });
+        
+        // Mark record as modified
+        setRecordModified(true);
+        
+        message.success('Đã đánh dấu xóa dịch vụ. Nhấn "Cập nhật" để lưu thay đổi.');
+        
+        console.log('✅ [handleRemoveAdditionalService] Service marked for deletion');
       }
     });
   };
 
   // Handle form submit
   const handleSubmit = async () => {
+    console.log('🔥🔥🔥 [handleSubmit] CALLED!');
+    
     try {
+      console.log('🚀 [handleSubmit] Starting...', {
+        mode,
+        recordId: record?._id,
+        tempServiceAddOnId,
+        tempMainServiceQuantity,
+        recordServiceAddOnId: record?.serviceAddOnId,
+        recordQuantity: record?.quantity
+      });
+      
       let values;
       
       if (mode === 'edit') {
         // In edit mode, manually get form values (no validation for disabled fields)
-        values = form.getFieldsValue();
+        // ⚠️ getFieldsValue() returns {} for disabled fields, so we need to get specific fields
+        const allValues = form.getFieldsValue(true); // true = get all including disabled
+        
+        // For edit mode, prioritize form values but fallback to record if empty
+        values = {
+          diagnosis: allValues.diagnosis || record.diagnosis || '',
+          notes: allValues.notes || record.notes || '',
+          treatmentIndications: allValues.treatmentIndications || record.treatmentIndications || []
+        };
+        
+        console.log('📋 [handleSubmit] Form values:', values);
+        console.log('📋 [handleSubmit] All form values (including disabled):', allValues);
+        console.log('📋 [handleSubmit] Record data:', {
+          diagnosis: record.diagnosis,
+          notes: record.notes,
+          treatmentIndications: record.treatmentIndications
+        });
         
         // Only validate required editable fields
         if (!values.diagnosis || values.diagnosis.trim() === '') {
@@ -441,6 +535,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         // 🆕 Check if service addon was changed
         const serviceAddOnChanged = tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId;
         if (serviceAddOnChanged) {
+          console.log('✅ [handleSubmit] Service addon changed');
           // Validate service addon selection
           const newAddOn = selectedMainServiceAddOns.find(a => a._id === tempServiceAddOnId);
           if (!newAddOn) {
@@ -462,31 +557,118 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         
         // 🆕 Include service addon update if changed
         const serviceAddOnChanged = tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId;
-        if (serviceAddOnChanged) {
-          const newAddOn = selectedMainServiceAddOns.find(a => a._id === tempServiceAddOnId);
+        const quantityChanged = tempMainServiceQuantity !== record.quantity;
+        
+        console.log('🔍 [handleSubmit] Change detection:', {
+          serviceAddOnChanged,
+          quantityChanged,
+          tempServiceAddOnId,
+          recordServiceAddOnId: record.serviceAddOnId,
+          tempMainServiceQuantity,
+          recordQuantity: record.quantity,
+          selectedMainServiceAddOnsCount: selectedMainServiceAddOns.length
+        });
+        
+        if (serviceAddOnChanged || quantityChanged) {
+          const newAddOn = selectedMainServiceAddOns.find(a => a._id === (tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId));
           
-          // ⚠️ Recalculate totalCost (workaround vì backend không auto-recalculate)
-          const baseCost = (record.servicePrice || 0) + newAddOn.price;
-          const additionalCost = (record.additionalServices || []).reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
+          console.log('🔍 [handleSubmit] Finding addon:', {
+            searchId: tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId,
+            found: !!newAddOn,
+            newAddOn: newAddOn ? { id: newAddOn._id, name: newAddOn.name, price: newAddOn.price } : null
+          });
+          
+          if (!newAddOn) {
+            message.error('Không tìm thấy thông tin dịch vụ con đã chọn');
+            console.error('❌ newAddOn not found. tempServiceAddOnId:', tempServiceAddOnId, 'selectedMainServiceAddOns:', selectedMainServiceAddOns);
+            setLoading(false);
+            return;
+          }
+          
+          const finalQuantity = quantityChanged ? tempMainServiceQuantity : (record.quantity || 1);
+          
+          console.log('✅ Service addon or quantity changed:', newAddOn.name, newAddOn.price, 'x', finalQuantity);
+          
+          // ⚠️ Recalculate totalCost: Base cost is from service addon price * quantity
+          const baseCost = newAddOn.price * finalQuantity;
+          
+          // Calculate additional cost including edited services and temp services
+          const existingAdditionalCost = (record.additionalServices || []).reduce((sum, svc) => {
+            const editedValues = editingAdditionalServices[svc._id] || {};
+            const quantity = editedValues.quantity !== undefined ? editedValues.quantity : svc.quantity;
+            return sum + (svc.price * quantity);
+          }, 0);
+          
+          const tempAdditionalCost = tempAdditionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
+          const additionalCost = existingAdditionalCost + tempAdditionalCost;
           const newTotalCost = baseCost + additionalCost;
+          
+          console.log('💰 Recalculated costs - Base:', baseCost, '(', newAddOn.price, 'x', finalQuantity, '), Existing Additional:', existingAdditionalCost, 'Temp Additional:', tempAdditionalCost, 'Total Additional:', additionalCost, 'Grand Total:', newTotalCost);
           
           recordData = {
             diagnosis: values.diagnosis,
             notes: values.notes,
             serviceAddOnId: newAddOn._id,
             serviceAddOnName: newAddOn.name,
+            serviceAddOnUnit: newAddOn.unit,
             serviceAddOnPrice: newAddOn.price,
+            quantity: finalQuantity,
             totalCost: newTotalCost,
             treatmentIndications: [], // Will be set below
             lastModifiedBy: currentUser._id || 'unknown'
           };
         } else {
-          recordData = {
-            diagnosis: values.diagnosis,
-            notes: values.notes,
-            treatmentIndications: [], // Will be set below
-            lastModifiedBy: currentUser._id || 'unknown'
-          };
+          // No change in main service, but check if there are changes in additional services
+          const hasAdditionalServiceChanges = 
+            tempAdditionalServices.length > 0 || 
+            servicesToDelete.length > 0 || 
+            Object.keys(editingAdditionalServices).length > 0;
+          
+          console.log('🔍 [handleSubmit] Additional service changes:', {
+            hasAdditionalServiceChanges,
+            tempAdditionalServicesCount: tempAdditionalServices.length,
+            servicesToDeleteCount: servicesToDelete.length,
+            editingAdditionalServicesCount: Object.keys(editingAdditionalServices).length
+          });
+          
+          if (hasAdditionalServiceChanges) {
+            // Recalculate totalCost with additional service changes
+            const baseCost = (record.serviceAddOnPrice || 0) * (record.quantity || 1);
+            
+            const existingAdditionalCost = (record.additionalServices || [])
+              .filter(svc => !servicesToDelete.includes(svc._id)) // Exclude deleted services
+              .reduce((sum, svc) => {
+                const editedValues = editingAdditionalServices[svc._id] || {};
+                const quantity = editedValues.quantity !== undefined ? editedValues.quantity : svc.quantity;
+                return sum + (svc.price * quantity);
+              }, 0);
+            
+            const tempAdditionalCost = tempAdditionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
+            const additionalCost = existingAdditionalCost + tempAdditionalCost;
+            const newTotalCost = baseCost + additionalCost;
+            
+            console.log('💰 Recalculated totalCost with additional service changes:', {
+              baseCost,
+              existingAdditionalCost,
+              tempAdditionalCost,
+              newTotalCost
+            });
+            
+            recordData = {
+              diagnosis: values.diagnosis,
+              notes: values.notes,
+              totalCost: newTotalCost,
+              treatmentIndications: [], // Will be set below
+              lastModifiedBy: currentUser._id || 'unknown'
+            };
+          } else {
+            recordData = {
+              diagnosis: values.diagnosis,
+              notes: values.notes,
+              treatmentIndications: [], // Will be set below
+              lastModifiedBy: currentUser._id || 'unknown'
+            };
+          }
         }
         
         
@@ -583,15 +765,145 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
 
       let response;
       if (mode === 'edit' && record) {
-        console.log('📝 [RecordFormModal] Updating record:', record._id, recordData);
-        response = await recordService.updateRecord(record._id, recordData);
+        console.log('📝 [RecordFormModal] Updating record:', record._id);
+        console.log('📦 [RecordFormModal] Record data to send:', JSON.stringify(recordData, null, 2));
+        console.log('🔍 [RecordFormModal] Additional service operations:', {
+          tempAdditionalServicesCount: tempAdditionalServices.length,
+          servicesToDeleteCount: servicesToDelete.length,
+          editingAdditionalServicesCount: Object.keys(editingAdditionalServices).length
+        });
+        
+        try {
+          response = await recordService.updateRecord(record._id, recordData);
+          console.log('✅ [RecordFormModal] Update response:', response);
+        } catch (apiError) {
+          console.error('❌ [RecordFormModal] API Error:', apiError);
+          throw apiError;
+        }
+        
+        // 🆕 Delete marked services
+        if (response.success && servicesToDelete.length > 0) {
+          console.log('🗑️ [RecordFormModal] Deleting marked services:', servicesToDelete.length);
+          for (const serviceId of servicesToDelete) {
+            try {
+              await recordService.removeAdditionalService(record._id, serviceId);
+              console.log('✅ Deleted service:', serviceId);
+            } catch (deleteError) {
+              console.error('❌ Failed to delete service:', serviceId, deleteError);
+              // Continue with other deletions even if one fails
+            }
+          }
+          // Clear the deletion list
+          setServicesToDelete([]);
+        }
+        
+        // 🆕 Save temporary additional services if any
+        if (response.success && tempAdditionalServices.length > 0) {
+          console.log('💾 [RecordFormModal] Saving temp additional services:', tempAdditionalServices.length);
+          console.log('📋 [RecordFormModal] Temp services data:', tempAdditionalServices);
+          
+          for (const tempService of tempAdditionalServices) {
+            const serviceData = {
+              serviceId: tempService.serviceId,
+              serviceName: tempService.serviceName,
+              serviceType: tempService.serviceType,
+              serviceAddOnId: tempService.serviceAddOnId,
+              serviceAddOnName: tempService.serviceAddOnName,
+              serviceAddOnUnit: tempService.serviceAddOnUnit || null,
+              price: tempService.price,
+              quantity: tempService.quantity,
+              notes: tempService.notes
+            };
+            
+            console.log('➕ [RecordFormModal] Adding service to record:', serviceData);
+            
+            try {
+              const addResponse = await recordService.addAdditionalService(record._id, serviceData);
+              console.log('✅ [RecordFormModal] Added service successfully:', addResponse);
+            } catch (addError) {
+              console.error('❌ [RecordFormModal] Failed to add service:', addError);
+              throw addError; // Stop on first error
+            }
+          }
+          // Clear temp list after saving
+          setTempAdditionalServices([]);
+          console.log('✅ [RecordFormModal] All temp services saved and cleared');
+        } else if (tempAdditionalServices.length > 0) {
+          console.warn('⚠️ [RecordFormModal] Temp services exist but response.success is false or response is undefined');
+        } else {
+          console.log('ℹ️ [RecordFormModal] No temp services to save');
+        }
+        
+        // 🆕 Update edited existing services
+        if (response.success && Object.keys(editingAdditionalServices).length > 0) {
+          console.log('✏️ [RecordFormModal] Updating edited services:', Object.keys(editingAdditionalServices).length);
+          for (const [serviceId, editedFields] of Object.entries(editingAdditionalServices)) {
+            try {
+              // Find the original service
+              const originalService = record.additionalServices?.find(svc => svc._id === serviceId);
+              if (!originalService) {
+                console.warn('⚠️ Original service not found:', serviceId);
+                continue;
+              }
+              
+              // Merge with edited fields
+              const updatedServiceData = {
+                serviceId: originalService.serviceId,
+                serviceName: originalService.serviceName,
+                serviceType: originalService.serviceType,
+                serviceAddOnId: originalService.serviceAddOnId,
+                serviceAddOnName: originalService.serviceAddOnName,
+                serviceAddOnUnit: originalService.serviceAddOnUnit || null,
+                price: originalService.price,
+                quantity: editedFields.quantity !== undefined ? editedFields.quantity : originalService.quantity,
+                notes: editedFields.notes !== undefined ? editedFields.notes : originalService.notes
+              };
+              
+              console.log('📝 Updating service:', serviceId, updatedServiceData);
+              
+              // Delete old and add new (since backend doesn't have update endpoint)
+              await recordService.removeAdditionalService(record._id, serviceId);
+              await recordService.addAdditionalService(record._id, updatedServiceData);
+              
+              console.log('✅ Updated service:', serviceId);
+            } catch (updateError) {
+              console.error('❌ Failed to update service:', serviceId, updateError);
+              // Continue with other updates even if one fails
+            }
+          }
+          // Clear editing state after saving
+          setEditingAdditionalServices({});
+        }
       } else {
         console.log('📝 [RecordFormModal] Creating record:', recordData);
         response = await recordService.createRecord(recordData);
       }
 
       if (response.success) {
-        message.success(mode === 'edit' ? 'Cập nhật hồ sơ thành công' : 'Tạo hồ sơ thành công');
+        let successMsg = '';
+        
+        if (mode === 'edit') {
+          const parts = [];
+          if (tempAdditionalServices.length > 0) {
+            parts.push(`thêm ${tempAdditionalServices.length} dịch vụ bổ sung`);
+          }
+          if (servicesToDelete.length > 0) {
+            parts.push(`xóa ${servicesToDelete.length} dịch vụ`);
+          }
+          if (Object.keys(editingAdditionalServices).length > 0) {
+            parts.push(`cập nhật ${Object.keys(editingAdditionalServices).length} dịch vụ`);
+          }
+          
+          if (parts.length > 0) {
+            successMsg = `Cập nhật hồ sơ và ${parts.join(', ')} thành công`;
+          } else {
+            successMsg = 'Cập nhật hồ sơ thành công';
+          }
+        } else {
+          successMsg = 'Tạo hồ sơ thành công';
+        }
+        
+        message.success(successMsg);
         
         if (onSuccess) {
           onSuccess(response.data);
@@ -600,9 +912,18 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         throw new Error(response.message || 'Có lỗi xảy ra');
       }
     } catch (error) {
-      console.error('Submit record error:', error);
+      console.error('❌❌❌ [RecordFormModal] Submit record error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        stack: error.stack,
+        errorFields: error.errorFields
+      });
+      
       if (error.errorFields) {
         message.error('Vui lòng điền đầy đủ thông tin bắt buộc');
+      } else if (error.response?.data?.message) {
+        message.error(error.response.data.message);
       } else {
         message.error(error.message || 'Có lỗi xảy ra khi lưu hồ sơ');
       }
@@ -924,9 +1245,32 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       );
     }
 
-    const baseCost = (record.servicePrice || 0) + (record.serviceAddOnPrice || 0);
-    const additionalCost = (record.additionalServices || []).reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
-    const totalCost = record.totalCost || (baseCost + additionalCost);
+    // Base cost is from service addon only (not service itself) * quantity
+    const baseQuantity = tempMainServiceQuantity !== record.quantity ? tempMainServiceQuantity : (record.quantity || 1);
+    
+    // Get current addon price (from temp selection or record)
+    let basePrice = record.serviceAddOnPrice || 0;
+    if (tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId) {
+      const tempAddOn = selectedMainServiceAddOns.find(a => a._id === tempServiceAddOnId);
+      if (tempAddOn) {
+        basePrice = tempAddOn.price;
+      }
+    }
+    
+    const baseCost = basePrice * baseQuantity;
+    
+    // Calculate additional services cost (including edited values, excluding deleted)
+    const existingAdditionalCost = (record.additionalServices || [])
+      .filter(svc => !servicesToDelete.includes(svc._id)) // Exclude deleted services
+      .reduce((sum, svc) => {
+        const editedValues = editingAdditionalServices[svc._id] || {};
+        const quantity = editedValues.quantity !== undefined ? editedValues.quantity : svc.quantity;
+        return sum + (svc.price * quantity);
+      }, 0);
+    
+    const tempAdditionalCost = tempAdditionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
+    const additionalCost = existingAdditionalCost + tempAdditionalCost;
+    const totalCost = baseCost + additionalCost;
 
     return (
       <div>
@@ -937,14 +1281,11 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           title={<Text strong>📌 Dịch vụ chính (đã chọn khi tạo hồ sơ)</Text>}
         >
           <Row gutter={[16, 8]}>
-            <Col span={12}>
+            <Col span={8}>
               <div><Text type="secondary">Dịch vụ:</Text></div>
               <div><Text strong>{record.serviceName || 'N/A'}</Text></div>
-              <div style={{ fontSize: 12, color: '#666' }}>
-                Giá: {(record.servicePrice || 0).toLocaleString('vi-VN')}đ
-              </div>
             </Col>
-            <Col span={12}>
+            <Col span={10}>
               <div>
                 <Text type="secondary">Dịch vụ con: </Text>
                 <Text type="warning" style={{ fontSize: 12 }}>
@@ -989,98 +1330,483 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                 />
               )}
             </Col>
+            <Col span={6}>
+              <div>
+                <Text type="secondary">Số lượng: </Text>
+                {(() => {
+                  const currentAddOnId = tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId;
+                  const currentAddOn = selectedMainServiceAddOns.find(a => a._id === currentAddOnId);
+                  const unit = currentAddOn?.unit || '';
+                  return unit && <Tag color="blue" style={{ fontSize: 11 }}>{unit}</Tag>;
+                })()}
+                {tempMainServiceQuantity !== record.quantity && (
+                  <Text type="warning" style={{ fontSize: 11, marginLeft: 8 }}>
+                    ⚠️ Chưa lưu
+                  </Text>
+                )}
+              </div>
+              <InputNumber
+                min={1}
+                value={tempMainServiceQuantity}
+                onChange={(value) => setTempMainServiceQuantity(value || 1)}
+                style={{ width: '100%' }}
+                placeholder="Số lượng"
+              />
+            </Col>
           </Row>
         </Card>
 
         {/* Additional Services Section */}
-        <Card 
-          size="small"
-          title={
-            <Space>
-              <Text strong>➕ Dịch vụ bổ sung</Text>
-              <Tag color="blue">
-                {(record.additionalServices || []).length} dịch vụ
-              </Tag>
-            </Space>
-          }
-          extra={
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddAdditionalService}
-            >
-              Thêm dịch vụ
-            </Button>
-          }
-        >
-          {record.additionalServices && record.additionalServices.length > 0 ? (
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              {record.additionalServices.map((svc, index) => (
-                <Card
-                  key={svc._id || index}
-                  size="small"
-                  style={{ background: '#fafafa' }}
+        {(() => {
+          // Filter out services marked for deletion
+          const existingServices = (record.additionalServices || []).filter(
+            svc => !servicesToDelete.includes(svc._id)
+          );
+          const allServices = [...existingServices, ...tempAdditionalServices];
+          
+          return (
+            <Card 
+              size="small"
+              title={
+                <Space>
+                  <Text strong>➕ Dịch vụ bổ sung</Text>
+                  <Tag color="blue">
+                    {allServices.length} dịch vụ
+                  </Tag>
+                  {tempAdditionalServices.length > 0 && (
+                    <Tag color="orange">{tempAdditionalServices.length} chưa lưu</Tag>
+                  )}
+                  {servicesToDelete.length > 0 && (
+                    <Tag color="red">{servicesToDelete.length} sẽ bị xóa</Tag>
+                  )}
+                </Space>
+              }
+              extra={
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddAdditionalService}
                 >
-                  <Row gutter={16} align="middle">
-                    <Col span={18}>
-                      <Space direction="vertical" size={2} style={{ width: '100%' }}>
-                        <div>
-                          <Tag color="blue">{index + 1}</Tag>
-                          <Text strong>{svc.serviceName}</Text>
-                        </div>
-                        {svc.serviceAddOnName && (
-                          <div style={{ paddingLeft: 36 }}>
-                            <Text type="secondary">Dịch vụ con:</Text> {svc.serviceAddOnName}
-                          </div>
-                        )}
-                        <div style={{ paddingLeft: 36 }}>
-                          <Text type="secondary">Đơn giá:</Text> {svc.price.toLocaleString('vi-VN')}đ
-                          {' × '}
-                          <Text type="secondary">Số lượng:</Text> {svc.quantity}
-                          {' = '}
-                          <Text strong style={{ color: '#1890ff' }}>
-                            {svc.totalPrice.toLocaleString('vi-VN')}đ
-                          </Text>
-                        </div>
-                        {svc.notes && (
-                          <div style={{ paddingLeft: 36 }}>
-                            <Text type="secondary">Ghi chú:</Text> {svc.notes}
-                          </div>
-                        )}
-                      </Space>
-                    </Col>
-                    <Col span={6} style={{ textAlign: 'right' }}>
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => handleRemoveAdditionalService(svc._id, svc.serviceName)}
+                  Thêm dịch vụ
+                </Button>
+              }
+            >
+              {allServices.length === 0 && !showAddServiceForm ? (
+                <div style={{ 
+                  padding: '24px', 
+                  textAlign: 'center', 
+                  background: '#fafafa',
+                  borderRadius: '8px',
+                  border: '1px dashed #d9d9d9'
+                }}>
+                  <Text type="secondary">Chưa có dịch vụ bổ sung nào</Text>
+                </div>
+              ) : (
+                <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                  {/* Existing + Temp services - Editable Form */}
+                  {allServices.map((svc, index) => {
+                    // Get edited values or original values
+                    const editedValues = editingAdditionalServices[svc._id] || {};
+                    const currentQuantity = editedValues.quantity !== undefined ? editedValues.quantity : svc.quantity;
+                    const currentNotes = editedValues.notes !== undefined ? editedValues.notes : svc.notes;
+                    const currentTotalPrice = svc.price * currentQuantity;
+                    
+                    // Check if this service has been edited
+                    const isEdited = editedValues.quantity !== undefined || editedValues.notes !== undefined;
+                    
+                    return (
+                      <Card
+                        key={svc._id || index}
+                        size="small"
+                        style={{ 
+                          background: svc.isTemporary ? '#fff7e6' : (isEdited ? '#fff1f0' : '#f0f5ff'),
+                          border: svc.isTemporary ? '2px dashed #ffa940' : (isEdited ? '2px solid #ff7875' : '1px solid #d9d9d9')
+                        }}
+                        title={
+                          <Space>
+                            <Tag color="blue">{index + 1}</Tag>
+                            <Text strong>{svc.serviceName}</Text>
+                            {svc.isTemporary && (
+                              <Tag color="orange">Chưa lưu</Tag>
+                            )}
+                            {isEdited && !svc.isTemporary && (
+                              <Tag color="red">Đã sửa - Chưa lưu</Tag>
+                            )}
+                          </Space>
+                        }
+                        extra={
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              if (svc.isTemporary) {
+                                handleRemoveTempAdditionalService(svc._id);
+                              } else {
+                                handleRemoveAdditionalService(svc._id, svc.serviceName);
+                              }
+                            }}
+                          >
+                            Xóa
+                          </Button>
+                        }
                       >
-                        Xóa
-                      </Button>
-                    </Col>
-                  </Row>
-                </Card>
-              ))}
-            </Space>
-          ) : (
-            <div style={{ 
-              padding: '24px', 
-              textAlign: 'center', 
-              background: '#fafafa',
-              borderRadius: '8px',
-              border: '1px dashed #d9d9d9'
-            }}>
-              <Text type="secondary">Chưa có dịch vụ bổ sung nào</Text>
-            </div>
-          )}
+                        <Row gutter={16}>
+                          <Col span={8}>
+                            <div style={{ marginBottom: 4 }}>
+                              <Text type="secondary">Dịch vụ con:</Text>
+                            </div>
+                            <Select
+                              value={svc.serviceAddOnId}
+                              disabled
+                              style={{ width: '100%' }}
+                            >
+                              <Option value={svc.serviceAddOnId}>
+                                <Space>
+                                  <span>{svc.serviceAddOnName}</span>
+                                  <Text type="secondary">-</Text>
+                                  <Text strong style={{ color: '#1890ff' }}>
+                                    {svc.price.toLocaleString('vi-VN')}đ
+                                  </Text>
+                                  {svc.serviceAddOnUnit && (
+                                    <Tag color="blue">{svc.serviceAddOnUnit}</Tag>
+                                  )}
+                                </Space>
+                              </Option>
+                            </Select>
+                          </Col>
+                          <Col span={4}>
+                            <div style={{ marginBottom: 4 }}>
+                              <Text type="secondary">Số lượng:</Text>
+                              {svc.serviceAddOnUnit && (
+                                <Tag color="blue" style={{ marginLeft: 8, fontSize: 11 }}>
+                                  {svc.serviceAddOnUnit}
+                                </Tag>
+                              )}
+                              {isEdited && (
+                                <Text type="warning" style={{ fontSize: 10, marginLeft: 4 }}>
+                                  *
+                                </Text>
+                              )}
+                            </div>
+                            <InputNumber
+                              value={currentQuantity}
+                              disabled={svc.isTemporary} // Temporary services can't be edited here
+                              min={1}
+                              style={{ width: '100%' }}
+                              onChange={(value) => {
+                                if (!svc.isTemporary && value >= 1) {
+                                  handleEditAdditionalService(svc._id, 'quantity', value);
+                                }
+                              }}
+                            />
+                          </Col>
+                          <Col span={12}>
+                            <div style={{ marginBottom: 4 }}>
+                              <Text type="secondary">Ghi chú:</Text>
+                              {isEdited && editedValues.notes !== undefined && (
+                                <Text type="warning" style={{ fontSize: 10, marginLeft: 4 }}>
+                                  *
+                                </Text>
+                              )}
+                            </div>
+                            <Input.TextArea
+                              value={currentNotes}
+                              disabled={svc.isTemporary}
+                              placeholder="Nhập ghi chú (không bắt buộc)"
+                              rows={1}
+                              style={{ width: '100%' }}
+                              onChange={(e) => {
+                                if (!svc.isTemporary) {
+                                  handleEditAdditionalService(svc._id, 'notes', e.target.value);
+                                }
+                              }}
+                            />
+                          </Col>
+                        </Row>
+                        <Divider style={{ margin: '12px 0' }} />
+                        <Row>
+                          <Col span={24}>
+                            <Text type="secondary">Thành tiền: </Text>
+                            <Text strong style={{ color: isEdited ? '#ff4d4f' : '#1890ff', fontSize: 16 }}>
+                              {currentTotalPrice.toLocaleString('vi-VN')}đ
+                            </Text>
+                            <Text type="secondary" style={{ marginLeft: 8 }}>
+                              ({svc.price.toLocaleString('vi-VN')}đ × {currentQuantity})
+                            </Text>
+                            {isEdited && (
+                              <Text type="warning" style={{ marginLeft: 8, fontSize: 11 }}>
+                                (Đã thay đổi từ {svc.totalPrice.toLocaleString('vi-VN')}đ)
+                              </Text>
+                            )}
+                          </Col>
+                        </Row>
+                      </Card>
+                    );
+                  })}
+                </Space>
+              )}
 
-          {/* Total Cost Summary */}
-          <Divider />
-          <Row gutter={16} style={{ background: '#f0f0f0', padding: '12px', borderRadius: '4px' }}>
+              {/* 🆕 Add New Service Form */}
+              {showAddServiceForm && (
+            <Card
+              size="small"
+              style={{
+                marginTop: allServices.length > 0 ? 16 : 0,
+                background: '#f0f7ff',
+                border: '2px dashed #1890ff'
+              }}
+              title={<Text strong style={{ color: '#1890ff' }}>➕ Thêm dịch vụ bổ sung mới</Text>}
+            >
+              {/* ✅ Use component=false to prevent rendering nested <form> */}
+              <Form
+                form={addServiceForm}
+                layout="vertical"
+                component={false}
+              >
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="serviceId"
+                      label="Chọn dịch vụ"
+                      rules={[{ required: true, message: 'Vui lòng chọn dịch vụ' }]}
+                    >
+                      <Select
+                        placeholder="Chọn dịch vụ"
+                        showSearch
+                        optionFilterProp="children"
+                        onChange={(value) => {
+                          console.log('🎯 [Add Service Form] Service selected:', value);
+                          setSelectedAddServiceId(value);
+                          loadServiceAddOns(value);
+                          addServiceForm.setFieldValue('serviceAddOnId', null);
+                        }}
+                      >
+                        {(() => {
+                          // 🧠 Smart filtering logic:
+                          // 1. Get all used service addon IDs (from main service + additional services + temp services)
+                          const usedServiceAddOnIds = new Set();
+                          
+                          // Main service addon
+                          if (record?.serviceAddOnId) {
+                            usedServiceAddOnIds.add(record.serviceAddOnId);
+                          }
+                          // Temp main service addon (if changed but not saved)
+                          if (tempServiceAddOnId && tempServiceAddOnId !== record?.serviceAddOnId) {
+                            usedServiceAddOnIds.add(tempServiceAddOnId);
+                          }
+                          
+                          // Additional services (saved)
+                          (record?.additionalServices || []).forEach(svc => {
+                            if (svc.serviceAddOnId) {
+                              usedServiceAddOnIds.add(svc.serviceAddOnId);
+                            }
+                          });
+                          
+                          // Temp additional services (not saved yet)
+                          tempAdditionalServices.forEach(svc => {
+                            if (svc.serviceAddOnId) {
+                              usedServiceAddOnIds.add(svc.serviceAddOnId);
+                            }
+                          });
+                          
+                          console.log('🔍 [Filter] Used ServiceAddOn IDs:', Array.from(usedServiceAddOnIds));
+                          
+                          // 2. Filter services based on available addons
+                          const filteredServices = services.filter(service => {
+                            const serviceAddOns = serviceAddOnsMap[service._id] || [];
+                            
+                            // Filter out used addons
+                            const availableAddOns = serviceAddOns.filter(addon => 
+                              !usedServiceAddOnIds.has(addon._id)
+                            );
+                            
+                            // Only show service if it has available addons
+                            return availableAddOns.length > 0;
+                          });
+                          
+                          console.log('🔍 [Filter] Filtered services:', filteredServices.map(s => s.name));
+                          
+                          return filteredServices.map(service => {
+                            const allAddOns = serviceAddOnsMap[service._id] || [];
+                            const availableAddOns = allAddOns.filter(addon => 
+                              !usedServiceAddOnIds.has(addon._id)
+                            );
+                            
+                            return (
+                              <Option 
+                                key={service._id} 
+                                value={service._id}
+                              >
+                                <Space>
+                                  <span>{service.name}</span>
+                                  <Tag color={service.type === 'exam' ? 'blue' : 'green'}>
+                                    {service.type === 'exam' ? 'Khám' : 'Điều trị'}
+                                  </Tag>
+                                  <Tag color="cyan" style={{ fontSize: 10 }}>
+                                    Còn {availableAddOns.length}/{allAddOns.length} dịch vụ con
+                                  </Tag>
+                                </Space>
+                              </Option>
+                            );
+                          });
+                        })()}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+
+                  <Col span={12}>
+                    <Form.Item
+                      name="serviceAddOnId"
+                      label="Chọn dịch vụ con"
+                      rules={[{ required: true, message: 'Vui lòng chọn dịch vụ con' }]}
+                    >
+                      <Select
+                        placeholder={selectedAddServiceId ? "Chọn dịch vụ con" : "Chọn dịch vụ trước"}
+                        disabled={!selectedAddServiceId || loadingAddOns}
+                        loading={loadingAddOns}
+                      >
+                        {(() => {
+                          const allAddOns = serviceAddOnsMap[selectedAddServiceId] || [];
+                          
+                          // Get used service addon IDs
+                          const usedServiceAddOnIds = new Set();
+                          
+                          // Main service addon
+                          if (record?.serviceAddOnId) {
+                            usedServiceAddOnIds.add(record.serviceAddOnId);
+                          }
+                          // Temp main service addon
+                          if (tempServiceAddOnId && tempServiceAddOnId !== record?.serviceAddOnId) {
+                            usedServiceAddOnIds.add(tempServiceAddOnId);
+                          }
+                          
+                          // Additional services
+                          (record?.additionalServices || []).forEach(svc => {
+                            if (svc.serviceAddOnId) {
+                              usedServiceAddOnIds.add(svc.serviceAddOnId);
+                            }
+                          });
+                          
+                          // Temp additional services
+                          tempAdditionalServices.forEach(svc => {
+                            if (svc.serviceAddOnId) {
+                              usedServiceAddOnIds.add(svc.serviceAddOnId);
+                            }
+                          });
+                          
+                          // Filter available addons
+                          const availableAddOns = allAddOns.filter(addon => 
+                            !usedServiceAddOnIds.has(addon._id)
+                          );
+                          
+                          return availableAddOns.map(addon => (
+                            <Option key={addon._id} value={addon._id}>
+                              <Space>
+                                <span>{addon.name}</span>
+                                <Text type="secondary">- {addon.price.toLocaleString('vi-VN')}đ</Text>
+                                <Tag color="blue">{addon.unit}</Tag>
+                              </Space>
+                            </Option>
+                          ));
+                        })()}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+
+                  <Col span={8}>
+                    <Form.Item
+                      name="quantity"
+                      label="Số lượng"
+                      initialValue={1}
+                      rules={[
+                        { required: true, message: 'Vui lòng nhập số lượng' },
+                        { type: 'number', min: 1, message: 'Số lượng phải >= 1' }
+                      ]}
+                    >
+                      <InputNumber
+                        min={1}
+                        style={{ width: '100%' }}
+                        placeholder="Số lượng"
+                      />
+                    </Form.Item>
+                  </Col>
+
+                  <Col span={16}>
+                    <Form.Item
+                      name="notes"
+                      label="Ghi chú"
+                    >
+                      <Input.TextArea
+                        rows={1}
+                        placeholder="Ghi chú về dịch vụ này..."
+                        maxLength={200}
+                      />
+                    </Form.Item>
+                  </Col>
+
+                  <Col span={24}>
+                    <Space>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={handleSubmitAddService}
+                      >
+                        Xác nhận
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowAddServiceForm(false);
+                          addServiceForm.resetFields();
+                          setSelectedAddServiceId(null);
+                        }}
+                      >
+                        Hủy
+                      </Button>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        * Dịch vụ sẽ được lưu khi bạn nhấn nút "Cập nhật" ở cuối form
+                      </Text>
+                    </Space>
+                  </Col>
+                </Row>
+              </Form>
+            </Card>
+          )}
+            </Card>
+          );
+        })()}
+
+        {/* Total Cost Summary */}
+        <Divider />
+        <Card size="small" style={{ background: '#f0f0f0' }}>
+          <Row gutter={16}>
             <Col span={12}>
               <div><Text type="secondary">Dịch vụ chính:</Text></div>
-              <div><Text strong>{baseCost.toLocaleString('vi-VN')}đ</Text></div>
+              <div>
+                <Text strong>{baseCost.toLocaleString('vi-VN')}đ</Text>
+                {(() => {
+                  const currentAddOnId = tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId;
+                  const currentAddOn = selectedMainServiceAddOns.find(a => a._id === currentAddOnId);
+                  const unit = currentAddOn?.unit || '';
+                  const quantity = tempMainServiceQuantity !== record.quantity ? tempMainServiceQuantity : (record.quantity || 1);
+                  
+                  // Get price from temp addon or record
+                  let price = record.serviceAddOnPrice || 0;
+                  if (tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId && currentAddOn) {
+                    price = currentAddOn.price;
+                  }
+                  
+                  if (unit && quantity > 0 && price > 0) {
+                    return (
+                      <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+                        ({price.toLocaleString('vi-VN')}đ × {quantity} {unit})
+                      </Text>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
             </Col>
             <Col span={12}>
               <div><Text type="secondary">Dịch vụ bổ sung:</Text></div>
@@ -1418,203 +2144,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         </Form>
       )}
 
-      {/* 🆕 Add Service Modal */}
-      <Modal
-        title="Thêm dịch vụ bổ sung"
-        open={showAddServiceModal}
-        onCancel={() => setShowAddServiceModal(false)}
-        onOk={handleSubmitAddService}
-        okText="Thêm"
-        cancelText="Hủy"
-        width={600}
-        confirmLoading={loading}
-      >
-        <Form
-          form={addServiceForm}
-          layout="vertical"
-          initialValues={{ quantity: 1 }}
-        >
-          {/* ✅ Show alert if main service is auto-filled */}
-          {(() => {
-            const selectedServiceId = addServiceForm.getFieldValue('serviceId');
-            const mainService = services.find(s => s._id === selectedServiceId);
-            const isAutoFilled = record && 
-                                 selectedServiceId === record.serviceId && 
-                                 mainService?.type === 'treatment' && 
-                                 mainService?.requireExamFirst === true;
-            
-            if (isAutoFilled) {
-              return (
-                <Alert
-                  type="info"
-                  message="Dịch vụ điều trị từ hồ sơ chính"
-                  description={`Dịch vụ "${mainService.name}" yêu cầu khám trước (requireExamFirst). Dịch vụ và dịch vụ con đã được chọn từ hồ sơ ban đầu và không thể thay đổi.`}
-                  style={{ marginBottom: 16 }}
-                  showIcon
-                />
-              );
-            }
-            return null;
-          })()}
-          
-          <Form.Item
-            name="serviceId"
-            label="Chọn dịch vụ"
-            rules={[{ required: true, message: 'Vui lòng chọn dịch vụ' }]}
-            tooltip="Chỉ có thể chọn dịch vụ có dịch vụ con. Các dịch vụ không có dịch vụ con sẽ bị vô hiệu hóa."
-          >
-            {(() => {
-              const selectedServiceId = addServiceForm.getFieldValue('serviceId');
-              const mainService = services.find(s => s._id === selectedServiceId);
-              const isAutoFilled = record && 
-                                   selectedServiceId === record.serviceId && 
-                                   mainService?.type === 'treatment' && 
-                                   mainService?.requireExamFirst === true;
-              
-              return (
-                <Select
-                  placeholder="Chọn dịch vụ"
-                  showSearch
-                  optionFilterProp="children"
-                  disabled={isAutoFilled}
-                  onChange={(value) => {
-                    loadServiceAddOns(value);
-                    addServiceForm.setFieldValue('serviceAddOnId', null);
-                  }}
-                >
-                  {services.map(service => {
-                    const addOns = serviceAddOnsMap[service._id] || [];
-                    const hasAddOns = addOns.length > 0;
-                    
-                    return (
-                      <Option 
-                        key={service._id} 
-                        value={service._id}
-                        disabled={!hasAddOns}
-                      >
-                        <Space>
-                          <span style={{ color: hasAddOns ? 'inherit' : '#999' }}>
-                            {service.name}
-                          </span>
-                          <Tag color={service.type === 'exam' ? 'blue' : 'green'}>
-                            {service.type === 'exam' ? 'Khám' : 'Điều trị'}
-                          </Tag>
-                          {service.type === 'treatment' && service.requireExamFirst && (
-                            <Tag color="orange" style={{ fontSize: 10 }}>
-                              Yêu cầu khám trước
-                            </Tag>
-                          )}
-                          {!hasAddOns && (
-                            <Tag color="red" style={{ fontSize: 10 }}>
-                              Không có dịch vụ con
-                            </Tag>
-                          )}
-                        </Space>
-                      </Option>
-                    );
-                  })}
-                </Select>
-              );
-            })()}
-          </Form.Item>
-
-          <Form.Item
-            name="serviceAddOnId"
-            label="Chọn dịch vụ con"
-            rules={[
-              {
-                required: true,
-                validator: async (_, value) => {
-                  const selectedServiceId = addServiceForm.getFieldValue('serviceId');
-                  const addOns = serviceAddOnsMap[selectedServiceId] || [];
-                  
-                  console.log('🔍 [Validation] serviceId:', selectedServiceId, 'addOns:', addOns.length, 'value:', value);
-                  
-                  // If no service selected yet, skip validation
-                  if (!selectedServiceId) {
-                    return Promise.reject(new Error('Vui lòng chọn dịch vụ trước'));
-                  }
-                  
-                  // If service has no addons, show clear error
-                  if (addOns.length === 0) {
-                    return Promise.reject(new Error('Dịch vụ này không có dịch vụ con. Vui lòng chọn dịch vụ khác.'));
-                  }
-                  
-                  // If service has addons but none selected
-                  if (!value) {
-                    return Promise.reject(new Error('Vui lòng chọn dịch vụ con'));
-                  }
-                  
-                  return Promise.resolve();
-                }
-              }
-            ]}
-          >
-            {(() => {
-              const selectedServiceId = addServiceForm.getFieldValue('serviceId');
-              const mainService = services.find(s => s._id === selectedServiceId);
-              const isAutoFilled = record && 
-                                   selectedServiceId === record.serviceId && 
-                                   mainService?.type === 'treatment' && 
-                                   mainService?.requireExamFirst === true;
-              
-              return (
-                <Select
-                  placeholder="Chọn dịch vụ con"
-                  disabled={!selectedServiceId || loadingAddOns || isAutoFilled}
-                  loading={loadingAddOns}
-                  notFoundContent={
-                    selectedServiceId 
-                      ? (loadingAddOns ? 'Đang tải...' : 'Dịch vụ này không có dịch vụ con nào')
-                      : 'Vui lòng chọn dịch vụ trước'
-                  }
-                >
-                  {(() => {
-                    const addOns = serviceAddOnsMap[selectedServiceId] || [];
-                    console.log('🔍 [Add Service Modal - AddOns Select] serviceId:', selectedServiceId, 'addOns:', addOns.length, addOns);
-                    return addOns.map(addon => (
-                      <Option key={addon._id} value={addon._id}>
-                        <Space>
-                          <span>{addon.name}</span>
-                          <Text type="secondary">- {addon.price.toLocaleString('vi-VN')}đ</Text>
-                          <Tag>{addon.unit}</Tag>
-                        </Space>
-                      </Option>
-                    ));
-                  })()}
-                </Select>
-              );
-            })()}
-          </Form.Item>
-
-          <Form.Item
-            name="quantity"
-            label="Số lượng"
-            rules={[
-              { required: true, message: 'Vui lòng nhập số lượng' },
-              { type: 'number', min: 1, message: 'Số lượng phải >= 1' }
-            ]}
-          >
-            <InputNumber
-              min={1}
-              style={{ width: '100%' }}
-              placeholder="Nhập số lượng"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="notes"
-            label="Ghi chú"
-          >
-            <TextArea
-              rows={3}
-              placeholder="Nhập ghi chú (tùy chọn)..."
-              maxLength={300}
-              showCount
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
     </Modal>
   );
 };
