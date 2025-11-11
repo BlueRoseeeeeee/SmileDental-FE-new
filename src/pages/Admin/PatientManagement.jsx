@@ -43,6 +43,7 @@ const PatientManagement = () => {
   const [searchText, setSearchText] = useState('');
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 
   useEffect(() => {
     fetchPatients();
@@ -50,6 +51,7 @@ const PatientManagement = () => {
 
   useEffect(() => {
     filterPatients();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchText, patients]);
 
   const fetchPatients = async () => {
@@ -108,7 +110,17 @@ const PatientManagement = () => {
     return <Tag style={style}>Chưa xác định</Tag>;
   };
 
-  const columns = [
+  const getColumns = () => [
+    {
+      title: 'STT',
+      key: 'stt',
+      width: 50,
+      fixed: 'left',
+      align: 'center',
+      render: (_, __, index) => {
+        return (pagination.current - 1) * pagination.pageSize + index + 1;
+      }
+    },
     {
       title: 'Bệnh nhân',
       key: 'patient',
@@ -140,7 +152,7 @@ const PatientManagement = () => {
       title: 'Số điện thoại',
       dataIndex: 'phone',
       key: 'phone',
-      width: 150,
+      width: 120,
       render: (phone) => (
         <Text>
           <PhoneOutlined /> {phone || 'Chưa có'}
@@ -158,14 +170,14 @@ const PatientManagement = () => {
       title: 'Ngày sinh',
       dataIndex: 'dateOfBirth',
       key: 'dateOfBirth',
-      width: 120,
+      width: 100,
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : 'Chưa có'
     },
     {
       title: 'Địa chỉ',
       dataIndex: 'address',
       key: 'address',
-      width: 250,
+      width: 200,
       ellipsis: true,
       render: (address) => (
         <Tooltip title={address}>
@@ -177,7 +189,7 @@ const PatientManagement = () => {
       title: 'Ngày đăng ký',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 150,
+      width: 120,
       sorter: (a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix(),
       render: (date) => (
         <Space direction="vertical" size={0}>
@@ -237,17 +249,19 @@ const PatientManagement = () => {
 
         {/* Table */}
         <Table
-          columns={columns}
+          columns={getColumns()}
           dataSource={filteredPatients}
           rowKey="_id"
           loading={loading}
-          scroll={{ x: 1300, y: 600 }}
+          scroll={{ x: 800, y: 600 }}
           pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
             total: filteredPatients.length,
-            pageSize: 20,
-            showSizeChanger: true,
             showTotal: (total) => `Tổng ${total} bệnh nhân`,
-            pageSizeOptions: ['10', '20', '50', '100']
+            onChange: (page, pageSize) => {
+              setPagination({ current: page, pageSize });
+            }
           }}
           locale={{
             emptyText: (
