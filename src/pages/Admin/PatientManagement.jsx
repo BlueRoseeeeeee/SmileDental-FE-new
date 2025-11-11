@@ -97,13 +97,15 @@ const PatientManagement = () => {
     setDrawerVisible(true);
   };
 
-  const getGenderTag = (gender) => {
+  const getGenderTag = (gender, large = false) => {
+    const style = large ? { fontSize: '12px', padding: '8px 16px', lineHeight: '1.5' } : {};
+    
     if (gender === 'male') {
-      return <Tag icon={<ManOutlined />} color="blue">Nam</Tag>;
+      return <Tag icon={<ManOutlined />} color="blue" style={style}>Nam</Tag>;
     } else if (gender === 'female') {
-      return <Tag icon={<WomanOutlined />} color="pink">Nữ</Tag>;
+      return <Tag icon={<WomanOutlined />} color="pink" style={style}>Nữ</Tag>;
     }
-    return <Tag>Chưa xác định</Tag>;
+    return <Tag style={style}>Chưa xác định</Tag>;
   };
 
   const columns = [
@@ -117,7 +119,7 @@ const PatientManagement = () => {
           <Avatar 
             size={40} 
             icon={<UserOutlined />} 
-            src={record.profilePicture}
+            src={record.avatar}
             style={{ backgroundColor: record.isActive ? '#1890ff' : '#d9d9d9' }}
           />
           <div>
@@ -272,7 +274,7 @@ const PatientManagement = () => {
               <Avatar 
                 size={100} 
                 icon={<UserOutlined />} 
-                src={selectedPatient.profilePicture}
+                src={selectedPatient.avatar}
                 style={{ backgroundColor: selectedPatient.isActive ? '#1890ff' : '#d9d9d9' }}
               />
               <Title level={4} style={{ marginTop: 16, marginBottom: 0 }}>
@@ -300,7 +302,7 @@ const PatientManagement = () => {
                 <PhoneOutlined /> {selectedPatient.phone || 'Chưa có'}
               </Descriptions.Item>
               <Descriptions.Item label="Giới tính">
-                {getGenderTag(selectedPatient.gender)}
+                {getGenderTag(selectedPatient.gender, true)}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày sinh">
                 {selectedPatient.dateOfBirth ? (
