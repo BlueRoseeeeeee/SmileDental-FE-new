@@ -21,6 +21,7 @@ import appointmentService from '../../services/appointmentService.js';
 import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import './CreateAppointment.css';
+import { toast } from 'react-toastify';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -142,19 +143,13 @@ const CreateAppointment = () => {
           });
         }
       } else {
-        console.error('❌ Invalid API response format:', response);
-        message.error(response.message || 'Có lỗi xảy ra khi đặt chỗ');
+        toast.error(response.message || 'Có lỗi xảy ra khi đặt chỗ');
       }
     } catch (error) {
-      console.error('Error creating reservation:', error);
-      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi đặt chỗ');
+      toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi đặt chỗ');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleBack = () => {
-    navigate('/patient/booking/select-time');
   };
 
   return (
