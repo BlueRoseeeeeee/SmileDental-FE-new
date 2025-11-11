@@ -453,9 +453,8 @@ const QueueManagement = () => {
       <div className="queue-header">
         <div>
           <Title level={2} style={{ margin: 0 }}>
-            📋 Hàng đợi khám bệnh
+             Hàng đợi khám bệnh
           </Title>
-          <Text type="secondary">Cập nhật realtime</Text>
         </div>
         <div className="current-time-display">
           <ClockCircleOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
@@ -482,12 +481,6 @@ const QueueManagement = () => {
               description={
                 <Space direction="vertical" size="small">
                   <Text strong>Chưa có bệnh nhân trong hàng đợi hôm nay</Text>
-                  <Text type="secondary" style={{ fontSize: '13px' }}>
-                    💡 Để thấy hàng đợi, hãy tạo appointment và check-in cho bệnh nhân
-                  </Text>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Hoặc vào <Text code>/walk-in-appointments</Text> để tạo lịch khám trực tiếp
-                  </Text>
                 </Space>
               }
               image={Empty.PRESENTED_IMAGE_DEFAULT}

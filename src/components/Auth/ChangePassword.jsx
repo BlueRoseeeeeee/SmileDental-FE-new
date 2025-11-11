@@ -103,12 +103,11 @@ const ChangePassword = () => {
 
   return (
     <div style={{ 
-      minHeight: '100vh-180px', 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
       padding: '16px', 
-      background:'#bfedfc'
+      background:'#E8F2F7'
     }}>
       <div style={{ width: '100%', maxWidth: '500px' }}>
         <Card 
