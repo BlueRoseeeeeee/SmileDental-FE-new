@@ -126,6 +126,13 @@ const PatientManagement = () => {
       key: 'patient',
       width: 250,
       fixed: 'left',
+      sorter: (a, b) => {
+        const getLastName = (fullName) => {
+          const parts = fullName.trim().split(' ');
+          return parts[parts.length - 1];
+        };
+        return getLastName(a.fullName).localeCompare(getLastName(b.fullName), 'vi');
+      },
       render: (_, record) => (
         <Space>
           <Avatar 
@@ -153,6 +160,7 @@ const PatientManagement = () => {
       dataIndex: 'phone',
       key: 'phone',
       width: 120,
+      sorter: (a, b) => (a.phone || '').localeCompare(b.phone || ''),
       render: (phone) => (
         <Text>
           <PhoneOutlined /> {phone || 'Chưa có'}
@@ -171,6 +179,11 @@ const PatientManagement = () => {
       dataIndex: 'dateOfBirth',
       key: 'dateOfBirth',
       width: 100,
+      sorter: (a, b) => {
+        if (!a.dateOfBirth) return 1;
+        if (!b.dateOfBirth) return -1;
+        return dayjs(a.dateOfBirth).unix() - dayjs(b.dateOfBirth).unix();
+      },
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : 'Chưa có'
     },
     {

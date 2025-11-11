@@ -243,7 +243,7 @@ const ServiceList = () => {
     if (activeAddOns.length === 0) return null;
     
     // 🆕 Use effectivePrice if available, fallback to price
-    const prices = activeAddOns.map(addon => addon.effectivePrice || addon.price);
+    const prices = activeAddOns.map(addon => addon.effectivePrice || addon.basePrice);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     
@@ -290,28 +290,15 @@ const ServiceList = () => {
       dataIndex: 'serviceAddOns',
       key: 'price',
       width: 180,
-      render: (addOns, record) => {
+      render: (addOns) => {
         const priceRange = getAddOnPriceRange(addOns);
-        
-        // 🆕 Check if any addon has modified price
-        const hasPromotion = addOns?.some(addon => addon.isPriceModified);
-        const hasTemporaryPrice = record.hasActiveTemporaryPrice;
         
         return (
           <div>
             {priceRange ? (
-              <>
-                <Text strong style={{ color: hasPromotion ? '#ff4d4f' : '#52c41a' }}>
-                  {priceRange}
-                </Text>
-                {(hasPromotion || hasTemporaryPrice) && (
-                  <div style={{ marginTop: 4 }}>
-                    <Tag color="red" style={{ fontSize: 10 }}>
-                      🎉 Khuyến mãi
-                    </Tag>
-                  </div>
-                )}
-              </>
+              <Text strong style={{ color: '#52c41a' }}>
+                {priceRange}
+              </Text>
             ) : (
               <Text type="secondary">Liên hệ</Text>
             )}

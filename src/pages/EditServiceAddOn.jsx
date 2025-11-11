@@ -112,7 +112,7 @@ const EditServiceAddOn = () => {
         // Load actual data
         form.setFieldsValue({
           name: addOnData.name,
-          price: addOnData.price,
+          price: addOnData.effectivePrice || addOnData.basePrice,
           durationMinutes: addOnData.durationMinutes,
           unit: addOnData.unit
         });
@@ -314,7 +314,7 @@ const EditServiceAddOn = () => {
           onValuesChange={handleFormChange}
           initialValues={{
             name: addOn?.name || '',
-            price: addOn?.price || 0,
+            price: addOn?.effectivePrice || addOn?.basePrice || 0,
             durationMinutes: addOn?.durationMinutes || 30,
             unit: addOn?.unit || 'Răng'
           }}

@@ -807,38 +807,12 @@ const EditService = () => {
                 dataIndex: 'price',
                 key: 'price',
                 render: (price, record) => {
-                  // Show effective price with promotion badge
-                  const effectivePrice = record.effectivePrice || price;
-                  const isPriceModified = record.isPriceModified;
+                  const displayPrice = record.effectivePrice || record.basePrice;
                   
                   return (
-                    <div>
-                      {isPriceModified ? (
-                        <>
-                          <div>
-                            <Text 
-                              delete 
-                              type="secondary" 
-                              style={{ fontSize: 12 }}
-                            >
-                              {formatPrice(record.basePrice || price)}
-                            </Text>
-                          </div>
-                          <div>
-                            <Text strong style={{ color: '#ff4d4f', fontSize: 16 }}>
-                              {formatPrice(effectivePrice)}
-                            </Text>
-                            <Tag color="red" style={{ marginLeft: 8, fontSize: 10 }}>
-                              🎉 KM
-                            </Tag>
-                          </div>
-                        </>
-                      ) : (
-                        <Text strong style={{ color: '#52c41a' }}>
-                          {formatPrice(price)}
-                        </Text>
-                      )}
-                    </div>
+                    <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
+                      {formatPrice(displayPrice)}
+                    </Text>
                   );
                 },
               },
@@ -993,13 +967,12 @@ const EditService = () => {
                 <Text style={{ color: '#52c41a', fontSize: 16 }}>
                   {formatPrice(selectedAddOnForPrice.basePrice || selectedAddOnForPrice.price)}
                 </Text>
-                {selectedAddOnForPrice.isPriceModified && (
+                {selectedAddOnForPrice.effectivePrice && (
                   <>
                     <Text strong style={{ marginLeft: 16 }}>Giá hiệu lực:</Text>
-                    <Text style={{ color: '#ff4d4f', fontSize: 16 }}>
+                    <Text style={{ color: '#1890ff', fontSize: 16 }}>
                       {formatPrice(selectedAddOnForPrice.effectivePrice)}
                     </Text>
-                    <Tag color="red">🎉 Đang khuyến mãi</Tag>
                   </>
                 )}
               </Space>

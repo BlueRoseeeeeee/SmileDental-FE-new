@@ -267,7 +267,7 @@ const PublicServiceAddOnDetail = () => {
               <h5 style={{ fontSize: 24, color: COLOR_BRAND_NAME, fontWeight:'bold' }}>
                 {addOn.effectivePrice 
                   ? addOn.effectivePrice.toLocaleString('vi-VN')
-                  : addOn.price?.toLocaleString('vi-VN')} VNĐ
+                  : addOn.basePrice?.toLocaleString('vi-VN')} VNĐ
               </h5>
           </div>
 
@@ -557,7 +557,7 @@ const PublicServiceAddOnDetail = () => {
                       <h5 style={{ fontSize: 18, color: '#1D7646', fontWeight:'bold' }}>
                           {addOn.effectivePrice 
                           ? addOn.effectivePrice.toLocaleString('vi-VN')
-                          : addOn.price?.toLocaleString('vi-VN')} VNĐ
+                          : addOn.basePrice?.toLocaleString('vi-VN')} VNĐ
               </h5>
                     </div>
 

@@ -307,7 +307,7 @@ const PublicServiceAddOns = () => {
                   <h5 style={{ fontSize: 20,color: '#1D7646', fontWeight:'bold' }}>
                     {addOn.effectivePrice 
                         ? addOn.effectivePrice.toLocaleString('vi-VN')
-                          : addOn.price?.toLocaleString('vi-VN')} VNĐ
+                          : addOn.basePrice?.toLocaleString('vi-VN')} VNĐ
                    </h5>
                   </div>
                         
