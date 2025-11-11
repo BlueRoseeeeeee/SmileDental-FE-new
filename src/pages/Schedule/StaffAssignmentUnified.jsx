@@ -345,6 +345,14 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
   const conflicts = [];
   const seenKeys = new Set();
 
+  // ⭐ Tạo Set chứa tất cả slotId đang được chọn để so sánh
+  const selectedSlotIds = new Set(
+    slotDetails
+      .map(detail => detail.slotId || detail._id)
+      .filter(Boolean)
+      .map(id => id.toString())
+  );
+
   const recordConflict = (detail, overrideRoomName, overrideSubRoomName, source, conflictRole) => {
     const key = `${staff._id}-${detail.date}-${detail.shiftName}-${detail.start?.format?.('HH:mm') || detail.startTime || ''}-${overrideRoomName || detail.roomName || ''}-${source}`;
     if (seenKeys.has(key)) return;
@@ -397,11 +405,12 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
         return;
       }
 
-      // ⭐ Check if this is the same slot being re-assigned (not a conflict)
+      // ⭐⭐ FIXED: Check if entry slot is in the selected slots list
+      // Nếu slot của entry nằm trong danh sách slot đang chọn → KHÔNG phải conflict
+      // Vì đó là re-assignment cho chính slot đó
       const entrySlotId = entry.slotId || entry._id;
-      const detailSlotId = detail.slotId || detail._id;
-      if (entrySlotId && detailSlotId && entrySlotId.toString() === detailSlotId.toString()) {
-        return; // Same slot, not a conflict
+      if (entrySlotId && selectedSlotIds.has(entrySlotId.toString())) {
+        return; // Slot đang được chọn, không tính conflict
       }
 
       // ⭐ Check if same room + same subroom + overlapping time (not a conflict if same slot)
@@ -414,6 +423,9 @@ const detectConflictsForStaff = (staff, slotDetails, scheduleEntries) => {
       }
 
       // ⭐ Check time overlap - ACTIVE CONFLICT DETECTION
+      // Chỉ tính conflict nếu:
+      // 1. Slot KHÁC với các slot đang chọn (đã check ở trên)
+      // 2. Cùng thời gian (overlapping)
       if (detail.start.isBefore(entryEnd) && entryStart.isBefore(detail.end)) {
         const entryRole = entry.assignedAs || entry.role;
         recordConflict(
@@ -2122,6 +2134,7 @@ const StaffAssignmentUnified = () => {
       // ⚡ STEP 1: Call optimized conflict check API
       const conflictResponse = await scheduleService.checkConflictsForSlots({
         slots: selectedDetails.map(d => ({
+          slotId: d.slotId,  // 🔥 FIX: Thêm slotId để BE loại trừ slot đang chọn
           date: d.date,
           startTime: d.start.toISOString(),
           endTime: d.end.toISOString(),
@@ -3084,6 +3097,7 @@ const StaffAssignmentUnified = () => {
       
       const conflictResponse = await scheduleService.checkConflictsForSlots({
         slots: selectedDetails.map(d => ({
+          slotId: d.slotId,  // 🔥 FIX: Thêm slotId để BE loại trừ slot đang chọn
           date: d.date,
           startTime: d.start.toISOString(),
           endTime: d.end.toISOString(),

@@ -169,6 +169,9 @@ const PaymentSelection = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Phòng">
                 {reservationData.roomName || 'Sẽ được thông báo'}
+                {reservationData.subroomName && (
+                  <Text type="secondary"> - {reservationData.subroomName}</Text>
+                )}
               </Descriptions.Item>
               <Descriptions.Item label="Tổng tiền">
                 <Text strong style={{ fontSize: 18, color: '#2c5f4f' }}>

@@ -24,6 +24,7 @@ import {
   SaveOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { userService } from '../../services/userService';
 import dayjs from 'dayjs';
 import './PatientProfile.css';
 
@@ -57,21 +58,29 @@ const PatientProfile = () => {
     try {
       setLoading(true);
       
-      const updateData = {
+      // 🔥 Remove email from update data (patient cannot update email)
+      const { email, ...updateData } = {
         ...values,
         dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null
       };
 
-      // TODO: Call API to update profile
-      // const response = await userService.updateProfile(user._id, updateData);
+      console.log('📤 Sending update request:', updateData);
+
+      // 🔥 Call API to update profile
+      const response = await userService.updateProfile(updateData);
       
-      // Temporarily update local user data
-      await updateUser(updateData);
-      
-      message.success('Cập nhật thông tin thành công!');
+      console.log('📥 Update response:', response);
+
+      if (response.success) {
+        // Update local context with fresh data
+        await updateUser(response.user);
+        message.success('Cập nhật thông tin thành công!');
+      } else {
+        throw new Error(response.message || 'Cập nhật thất bại');
+      }
     } catch (error) {
-      console.error('Update profile error:', error);
-      message.error('Cập nhật thông tin thất bại. Vui lòng thử lại.');
+      console.error('❌ Update profile error:', error);
+      message.error(error.response?.data?.message || error.message || 'Cập nhật thông tin thất bại. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -138,20 +147,6 @@ const PatientProfile = () => {
                   Đổi ảnh đại diện
                 </Button>
               </Upload>
-              
-              <div style={{ marginTop: 24, textAlign: 'left' }}>
-                <Text strong>Mã bệnh nhân:</Text>
-                <br />
-                <Text code style={{ fontSize: 16 }}>
-                  {user?.employeeCode || 'Chưa có'}
-                </Text>
-                
-                <Divider style={{ margin: '12px 0' }} />
-                
-                <Text strong>Vai trò:</Text>
-                <br />
-                <Text>{user?.role === 'patient' ? 'Bệnh nhân' : user?.role}</Text>
-              </div>
             </div>
           </Col>
 
@@ -252,19 +247,6 @@ const PatientProfile = () => {
                   </Form.Item>
                 </Col>
 
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    label="Liên hệ khẩn cấp"
-                    name="emergencyContact"
-                  >
-                    <Input 
-                      prefix={<PhoneOutlined />} 
-                      placeholder="0987654321"
-                      size="large"
-                    />
-                  </Form.Item>
-                </Col>
-
                 <Col xs={24}>
                   <Form.Item
                     label="Địa chỉ"
@@ -274,30 +256,6 @@ const PatientProfile = () => {
                       prefix={<HomeOutlined />} 
                       placeholder="Nhập địa chỉ"
                       size="large"
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24}>
-                  <Form.Item
-                    label="Tiền sử bệnh"
-                    name="medicalHistory"
-                  >
-                    <TextArea 
-                      placeholder="Nhập tiền sử bệnh (nếu có)"
-                      rows={3}
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24}>
-                  <Form.Item
-                    label="Dị ứng"
-                    name="allergies"
-                  >
-                    <TextArea 
-                      placeholder="Nhập thông tin về dị ứng (nếu có)"
-                      rows={2}
                     />
                   </Form.Item>
                 </Col>
