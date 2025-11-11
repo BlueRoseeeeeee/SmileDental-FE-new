@@ -272,6 +272,9 @@ function App() {
             {/* Patient About Page */}
             <Route path="about" element={<About />} />
             
+            {/* Patient Dentist Detail */}
+            <Route path="dentist-detail/:id" element={<PublicDentistDetail />} />
+            
             {/* Patient Service Routes */}
             <Route path="services/pl/:serviceName/addons" element={<PublicServiceAddOns />} />
             <Route path="services/pl/:serviceName/addons/:addOnName/detail" element={<PublicServiceAddOnDetail />} />

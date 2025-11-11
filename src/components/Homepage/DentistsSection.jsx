@@ -50,8 +50,15 @@ const DentistsSection = () => {
   };
 
   const handleViewDetail = (dentist) => {
-    // Điều hướng đến trang chi tiết nha sĩ trong trang hiện tại
-    const url = `/dentist-detail/${encodeURIComponent(getDentistId(dentist))}`;
+    // Điều hướng đến trang chi tiết nha sĩ
+    // Kiểm tra xem có đang ở trong patient route không
+    const currentPath = window.location.pathname;
+    const isPatientRoute = currentPath.startsWith('/patient');
+    
+    const dentistId = encodeURIComponent(getDentistId(dentist));
+    const url = isPatientRoute 
+      ? `/patient/dentist-detail/${dentistId}` 
+      : `/dentist-detail/${dentistId}`;
     navigate(url);
   };
 
