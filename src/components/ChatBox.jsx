@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageOutlined, CloseOutlined, SendOutlined, DeleteOutlined, RobotOutlined } from '@ant-design/icons';
 import { Input, Button, Avatar, Spin, message as antMessage } from 'antd';
 import chatbotService from '../services/chatbot.service';
+import robotCuteImg from '../assets/icon/robot_cute.png';
+import robotTuVan from '../assets/icon/robot-tuvan-dethuong.png';
 import './ChatBox.css';
 
 const ChatBox = () => {
@@ -119,8 +121,8 @@ const ChatBox = () => {
           <div className="chatbox-header">
             <div className="chatbox-header-content">
               <Avatar 
-                icon={<RobotOutlined />} 
-                style={{ backgroundColor: '#1890ff' }}
+                src={robotCuteImg}
+                style={{ backgroundColor: 'transparent' }}
               />
               <div className="chatbox-header-text">
                 <div className="chatbox-title">SmileCare AI</div>
@@ -152,8 +154,8 @@ const ChatBox = () => {
               </div>
             ) : messages.length === 0 ? (
               <div className="chatbox-welcome">
-                <RobotOutlined className="welcome-icon" />
-                <h3>Chào bạn! 👋</h3>
+                <img src={robotTuVan} alt="Robot" className="welcome-icon" style={{ width: '300px', height: '150px' , marginTop:'-45px'}} />
+                <h3 style={{marginTop:'-2px'}}>Chào bạn! 👋</h3>
                 <p>Tôi là SmileCare AI, trợ lý ảo của phòng khám nha khoa SmileCare.</p>
                 <p>Bạn có thể hỏi tôi về:</p>
                 <ul>
@@ -172,9 +174,9 @@ const ChatBox = () => {
                   >
                     {msg.role === 'assistant' && (
                       <Avatar 
-                        icon={<RobotOutlined />} 
+                        src={robotCuteImg}
                         size="small"
-                        style={{ backgroundColor: '#1890ff' }}
+                        style={{ backgroundColor: 'transparent' }}
                       />
                     )}
                     <div className="message-bubble">
@@ -200,9 +202,9 @@ const ChatBox = () => {
                 {typing && (
                   <div className="chatbox-message assistant">
                     <Avatar 
-                      icon={<RobotOutlined />} 
+                      src={robotCuteImg}
                       size="small"
-                      style={{ backgroundColor: '#1890ff' }}
+                      style={{ backgroundColor: 'transparent' }}
                     />
                     <div className="message-bubble typing">
                       <div className="typing-indicator">
