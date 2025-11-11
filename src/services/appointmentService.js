@@ -9,7 +9,7 @@ const APPOINTMENT_API_URL = import.meta.env.VITE_APPOINTMENT_API_URL || 'http://
 // Create axios instance for appointment service
 const appointmentApi = axios.create({
   baseURL: APPOINTMENT_API_URL,
-  timeout: 15000,
+  timeout: 30000, // 30s
   headers: {
     'Content-Type': 'application/json',
   },

@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_APPOINTMENT_SERVICE_URL || 'http://loc
 // Create axios instance with interceptor for token
 const queueApi = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // 30s
   headers: {
     'Content-Type': 'application/json'
   }

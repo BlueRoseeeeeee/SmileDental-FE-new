@@ -9,31 +9,31 @@ import { toast } from './toastService.js';
 const MICROSERVICES_CONFIG = {
   auth: {
     baseURL: import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001/api',
-    timeout: 15000, // 15s 
+    timeout: 30000, // 30s
   },
   room: {
     baseURL: import.meta.env.VITE_ROOM_API_URL || 'http://localhost:3002/api',
-    timeout: 8000,  // 8s - CRUD operations nhanh
+    timeout: 30000, // 30s
   },
   service: {
     baseURL: import.meta.env.VITE_SERVICE_API_URL || 'http://localhost:3003/api',
-    timeout: 10000, // 10s - Service data có thể lớn
+    timeout: 30000, // 30s
   },
   user: {
     baseURL: import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api',
-    timeout: 12000, // 12s - User data + file upload
+    timeout: 30000, // 30s
   },
   schedule: {
     baseURL: import.meta.env.VITE_SCHEDULE_API_URL || 'http://localhost:3005/api',
-    timeout: 20000, 
+    timeout: 30000, // 30s
   },
   payment: {
-    baseURL: import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api', // ✅ Fix: Payment service runs on port 3007
-    timeout: 15000, // 15s - Payment processing
+    baseURL: import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api',
+    timeout: 30000, // 30s
   },
   medicine: {
     baseURL: import.meta.env.VITE_MEDICINE_API_URL || 'http://localhost:3009/api',
-    timeout: 10000, // 10s - Medicine catalog management
+    timeout: 30000, // 30s
   }
 };
 
