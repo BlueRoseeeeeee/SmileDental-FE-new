@@ -232,14 +232,6 @@ const CreateAppointment = () => {
                   <Descriptions.Item label="Thời gian">
                       {selectedSlotGroup?.displayTime}
                   </Descriptions.Item>
-                  {/* <Descriptions.Item label="Số slot đặt">
-                    <Tag color="purple">
-                      {selectedSlotGroup?.slots.length} slot × 15 phút = {selectedSlotGroup?.slots.length * 15} phút
-                    </Tag>
-                  </Descriptions.Item> */}
-                  <Descriptions.Item label="Mã phiếu khám">
-                    <Text code>TT01</Text>
-                  </Descriptions.Item>
                 </Descriptions>
               </Card>
 
@@ -252,9 +244,6 @@ const CreateAppointment = () => {
                 <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered>
                   <Descriptions.Item label="Họ và tên">
                     {user?.fullName || 'Chưa cập nhật'}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Mã bệnh nhân">
-                    <Text code>{user?.employeeCode || 'Chưa có'}</Text>
                   </Descriptions.Item>
                   <Descriptions.Item label="Số điện thoại">
                     {user?.phone || 'Chưa cập nhật'}
