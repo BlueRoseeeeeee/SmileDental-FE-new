@@ -26,6 +26,7 @@ import {
 import smileDentalLogo from '../assets/image/smile-dental-logo.png';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService } from '../services';
+import { COLOR_BRAND_NAME } from '../utils/common-colors';
 
 const { Title, Text } = Typography;
 
@@ -302,56 +303,14 @@ const PublicServiceAddOns = () => {
                   </div>
 
                   {/* Price */}
-                  <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    {addOn.isPriceModified && addOn.effectivePrice ? (
-                      <div>
-                        {/* Original Price - Strikethrough */}
-                        <div style={{ marginBottom: '4px' }}>
-                          <span style={{ 
-                            color: '#999',
-                            fontSize: '14px',
-                            textDecoration: 'line-through',
-                            lineHeight: '20px'
-                          }}>
-                            {formatPrice(addOn.basePrice || addOn.price)}
-                          </span>
-                        </div>
-                        
-                        {/* Effective Price - Bold */}
-                        <div style={{ marginBottom: '8px' }}>
-                          <span style={{ 
-                            color: '#ff4d4f',
-                            fontSize: '18px',
-                            fontWeight: 'bold',
-                            lineHeight: '24px'
-                          }}>
-                            {formatPrice(addOn.effectivePrice)}
-                          </span>
-                        </div>
-                        
-                        {/* Promotion Period */}
-                        <div>
-                          <Text style={{ 
-                            fontSize: '10px',
-                            fontStyle: 'italic',
-                            color: '#666',
-                            lineHeight: '14px'
-                          }}>
-                            Giá áp dụng từ {new Date(addOn.priceSchedules?.[0]?.startDate).toLocaleDateString('vi-VN')} đến {new Date(addOn.priceSchedules?.[0]?.endDate).toLocaleDateString('vi-VN')}
-                          </Text>
-                        </div>
-                      </div>
-                    ) : (
-                      <h3 style={{ 
-                        color: '#1D7646', 
-                        fontSize: '18px',
-                        fontWeight: 'bold'
-                      }}>
-                        {formatPrice(addOn.price)}
-                      </h3>
-                    )}
+                  <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>    
+                  <h5 style={{ fontSize: 20,color: '#1D7646', fontWeight:'bold' }}>
+                    {addOn.effectivePrice 
+                        ? addOn.effectivePrice.toLocaleString('vi-VN')
+                          : addOn.price?.toLocaleString('vi-VN')} VNĐ
+                   </h5>
                   </div>
-
+                        
                    {/* View Details Button */}
                    <Button
                      type="primary"

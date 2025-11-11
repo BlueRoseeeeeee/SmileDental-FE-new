@@ -24,6 +24,7 @@ import {
 import smileDentalLogo from '../assets/image/smile-dental-logo.png';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService } from '../services';
+import { COLOR_BRAND_NAME } from '../utils/common-colors';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -242,7 +243,9 @@ const PublicServiceAddOnDetail = () => {
               borderRadius: '12px',
               padding: '10px',
               marginBottom: '24px',
-              position: 'relative'
+              position: 'relative',
+              display:'flex',
+              flexDirection:'column'
             }}>
               {/* Orange Banner */}
               <div style={{
@@ -250,67 +253,23 @@ const PublicServiceAddOnDetail = () => {
                 color: 'white',
                 padding: '8px 16px',
                 borderRadius: '20px',
-                fontSize: '12px',
+                fontSize: '14px',
                 fontWeight: '600',
                 display: 'inline-block',
-                marginBottom: '16px'
+                marginBottom: '16px',
+                width:'120px',
+                textAlign:'center'
               }}>
                 Giá dịch vụ
               </div>
               
               {/* Price */}
-              <div style={{ marginBottom: '8px' }}>
-                {addOn.isPriceModified && addOn.effectivePrice ? (
-                  <div>
-                    {/* Original Price - Strikethrough */}
-                    <div style={{ marginBottom: '4px' }}>
-                      <span style={{ 
-                        color: '#999',
-                        fontSize: '16px',
-                        textDecoration: 'line-through',
-                        lineHeight: '24px'
-                      }}>
-                        {formatPrice(addOn.basePrice || addOn.price)}
-                      </span>
-                    </div>
-                    
-                    {/* Effective Price - Bold */}
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ 
-                        color: '#ff4d4f',
-                        fontSize: '20px',
-                        fontWeight: 600,
-                        lineHeight: '28px'
-                      }}>
-                        {formatPrice(addOn.effectivePrice)}
-                      </span>
-                    </div>
-                    
-                    {/* Promotion Period */}
-                    <div>
-                      <Text style={{ 
-                        fontSize: '12px',
-                        fontStyle: 'italic',
-                        color: '#666',
-                        lineHeight: '16px'
-                      }}>
-                        * Giá áp dụng từ {new Date(addOn.priceSchedules?.[0]?.startDate).toLocaleDateString('vi-VN')} đến {new Date(addOn.priceSchedules?.[0]?.endDate).toLocaleDateString('vi-VN')}
-                      </Text>
-                    </div>
-                  </div>
-                ) : (
-                  <span style={{ 
-                    color: '#313B79',
-                    fontSize: '20px',
-                    fontWeight: 600,
-                    lineHeight: '28px'
-                  }}>
-                    {formatPrice(addOn.price || 0)}
-                  </span>
-                )}
-              </div>
-              
-            </div>
+              <h5 style={{ fontSize: 24, color: COLOR_BRAND_NAME, fontWeight:'bold' }}>
+                {addOn.effectivePrice 
+                  ? addOn.effectivePrice.toLocaleString('vi-VN')
+                  : addOn.price?.toLocaleString('vi-VN')} VNĐ
+              </h5>
+          </div>
 
             {/* Service Details */}
             <div style={{ marginBottom: '24px' }}>
@@ -594,58 +553,14 @@ const PublicServiceAddOnDetail = () => {
                         {translateServiceType(service.type)}
                       </Tag>
                     </div>
-
-                    {/* Phần hiển thị giá - hỗ trợ hiển thị giá khuyến mãi */}
-                    <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      {relatedAddOn.isPriceModified && relatedAddOn.effectivePrice ? (
-                        <div>
-                          {/* Giá gốc bị gạch ngang */}
-                          <div style={{ marginBottom: '4px' }}>
-                            <span style={{ 
-                              color: '#999',
-                              fontSize: '14px',
-                              textDecoration: 'line-through',
-                              lineHeight: '20px'
-                            }}>
-                              {formatPrice(relatedAddOn.basePrice || relatedAddOn.price)}
-                            </span>
-                          </div>
-                          
-                          {/* Giá khuyến mãi hiện tại */}
-                          <div style={{ marginBottom: '8px' }}>
-                            <span style={{ 
-                              color: '#ff4d4f',
-                              fontSize: '18px',
-                              fontWeight: 'bold',
-                              lineHeight: '24px'
-                            }}>
-                              {formatPrice(relatedAddOn.effectivePrice)}
-                            </span>
-                          </div>
-                          
-                          {/* Thời gian áp dụng giá khuyến mãi */}
-                          <div>
-                            <Text style={{ 
-                              fontSize: '10px',
-                              fontStyle: 'italic',
-                              color: '#666',
-                              lineHeight: '14px'
-                            }}>
-                              Giá áp dụng từ {new Date(relatedAddOn.priceSchedules?.[0]?.startDate).toLocaleDateString('vi-VN')} đến {new Date(relatedAddOn.priceSchedules?.[0]?.endDate).toLocaleDateString('vi-VN')}
-                            </Text>
-                          </div>
-                        </div>
-                      ) : (
-                        // Hiển thị giá thường nếu không có khuyến mãi
-                        <h3 style={{ 
-                          color: '#1D7646', 
-                          fontSize: '18px',
-                          fontWeight: 'bold'
-                        }}>
-                          {formatPrice(relatedAddOn.price)}
-                        </h3>
-                      )}
+                    <div style={{marginTop:5, marginBottom:5}}>
+                      <h5 style={{ fontSize: 18, color: '#1D7646', fontWeight:'bold' }}>
+                          {addOn.effectivePrice 
+                          ? addOn.effectivePrice.toLocaleString('vi-VN')
+                          : addOn.price?.toLocaleString('vi-VN')} VNĐ
+              </h5>
                     </div>
+
 
                     {/* Nút xem chi tiết */}
                     <Button
