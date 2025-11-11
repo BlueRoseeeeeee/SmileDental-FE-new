@@ -216,13 +216,6 @@ const BookingSelectAddOn = () => {
                          treatmentIndications[0].serviceAddOnId && 
                          treatmentIndications[0].serviceAddOnId !== addon._id);
                       
-                      // Find active price schedule that is currently valid
-                      const now = new Date();
-                      const currentSchedule = addon.priceSchedules?.find(schedule => 
-                        schedule.isActive && 
-                        new Date(schedule.startDate) <= now && 
-                        new Date(schedule.endDate) >= now
-                      );
                       
                       return (
                         <Col xs={24} key={addon._id}>
@@ -251,40 +244,7 @@ const BookingSelectAddOn = () => {
                               </div>
 
                               <Space direction="vertical" size={8} style={{ width: '100%', marginBottom: 12 }}>
-                                {/* Price Display */}
-                                {currentSchedule ? (
-                                  <div>
-                                    <Space align="center" wrap>
-                                      <DollarOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
-                                      <Text 
-                                        delete 
-                                        type="secondary" 
-                                        style={{ fontSize: 14 }}
-                                      >
-                                        {addon.basePrice?.toLocaleString('vi-VN')} VNĐ
-                                      </Text>
-                                      <Text 
-                                        strong 
-                                        style={{ fontSize: 15, color: '#ff4d4f' }}
-                                      >
-                                        {currentSchedule.price.toLocaleString('vi-VN')} VNĐ
-                                      </Text>
-                                      <Text type="secondary">/ {addon.unit}</Text>
-                                      <Tag color="red" style={{ fontSize: 12 }}>Khuyến mãi</Tag>
-                                    </Space>
-                                    <p
-                                      style={{ 
-                                        fontSize: 12, 
-                                        display: 'block',
-                                        marginTop: 4,
-                                        marginLeft: 24,
-                                        fontStyle:'italic'
-                                      }}
-                                    >
-                                      Áp dụng từ {new Date(currentSchedule.startDate).toLocaleDateString('vi-VN')} đến {new Date(currentSchedule.endDate).toLocaleDateString('vi-VN')}
-                                    </p>
-                                  </div>
-                                ) : (
+                               
                                   <Space>
                                     <DollarOutlined style={{ color: '#d4860f' }} />
                                     <Text strong style={{ fontSize: 15, color: '#d4860f' }}>
@@ -294,7 +254,7 @@ const BookingSelectAddOn = () => {
                                     </Text>
                                     <Text type="secondary">/ {addon.unit}</Text>
                                   </Space>
-                                )}
+                                
 
                                 <Space>
                                   <ClockCircleOutlined style={{ color: '#1890ff' }} />
@@ -303,7 +263,6 @@ const BookingSelectAddOn = () => {
                                   </Text>
                                 </Space>
                               </Space>
-
                               <div style={{ textAlign: 'right', marginTop: 8 }}>
                                 <Link
                                   to={`/patient/services/pl/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(addon.name)}/detail`}
