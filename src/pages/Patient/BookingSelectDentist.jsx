@@ -18,7 +18,8 @@ import {
   SearchOutlined, 
   ArrowRightOutlined,
   UserOutlined,
-  StarFilled
+  StarFilled,
+  ArrowLeftOutlined
 } from '@ant-design/icons';
 import slotService from '../../services/slotService.js';
 import { mockDentists, mockServices } from '../../services/mockData.js';
@@ -135,8 +136,8 @@ const BookingSelectDentist = () => {
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
-            <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
-            <a onClick={() => navigate('/patient/booking/select-addon')}>Chọn gói dịch vụ</a>
+            <a href="/patient/booking/select-service">Chọn dịch vụ</a>
+            <a href="/patient/booking/select-addon">Chọn gói dịch vụ</a>
             <Text>Chọn nha sĩ</Text>
           </Space>
         </div>
@@ -245,8 +246,8 @@ const BookingSelectDentist = () => {
 
             {/* Actions */}
             <div style={{ marginTop: 32, textAlign: 'center' }}>
-              <Button size="large" onClick={handleBack} style={{ borderRadius: 6 }}>
-                Quay lại bước trước
+              <Button size="large" onClick={handleBack} style={{ borderRadius: 6 }} icon={<ArrowLeftOutlined />}>
+                Quay lại
               </Button>
             </div>
             </div>

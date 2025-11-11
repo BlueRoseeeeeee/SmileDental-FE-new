@@ -169,8 +169,9 @@ const BookingSelectDate = () => {
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
-            <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
-            <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn nha sĩ</a>
+            <a href="/patient/booking/select-service">Chọn dịch vụ</a>
+            <a href="/patient/booking/select-addon">Chọn gói dịch vụ</a>
+            <a href="/patient/booking/select-dentist">Chọn nha sĩ</a>
             <Text>Chọn ngày khám</Text>
           </Space>
         </div>

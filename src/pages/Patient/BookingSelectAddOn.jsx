@@ -19,7 +19,8 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   MedicineBoxOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  ArrowRightOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import recordService from '../../services/recordService';
@@ -54,10 +55,12 @@ const BookingSelectAddOn = () => {
     const serviceData = JSON.parse(savedService);
     setService(serviceData);
 
+    // XÓA addon cũ khi vào trang này (user có thể chọn lại hoặc không chọn)
+    localStorage.removeItem('booking_serviceAddOn');
+
     // Nếu service không có addons, skip sang màn chọn bác sĩ
     if (!serviceData.serviceAddOns || serviceData.serviceAddOns.length === 0) {
       message.info('Dịch vụ này không có gói phụ, chuyển sang bước tiếp theo');
-      localStorage.removeItem('booking_serviceAddOn');
       setTimeout(() => {
         navigate('/patient/booking/select-dentist');
       }, 1000);
@@ -348,6 +351,14 @@ const BookingSelectAddOn = () => {
                 style={{ borderRadius: 6 }}
               >
                 Quay lại
+              </Button>
+              <Button
+              size='large'
+              icon={<ArrowRightOutlined />}
+              onClick={()=>navigate('/patient/booking/select-dentist')}
+              style={{marginLeft:10}}
+              >
+                Tiếp theo
               </Button>
             </div>
             </div>

@@ -390,9 +390,10 @@ const BookingSelectTime = () => {
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
-            <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
-            <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn nha sĩ</a>
-            <a onClick={() => navigate('/patient/booking/select-date')}>Chọn ngày khám</a>
+            <a href='/patient/booking/select-service'>Chọn dịch vụ</a>
+            <a href='/patient/booking/select-addon'>Chọn gói dịch vụ</a>
+            <a href='/patient/booking/select-dentist'>Chọn nha sĩ</a>
+            <a href='/patient/booking/select-date'>Chọn ngày khám</a>
             <Text>Chọn giờ khám</Text>
           </Space>
         </div>
@@ -406,27 +407,34 @@ const BookingSelectTime = () => {
                     <Text color="blue" style={{ fontSize: 13 }}>
                       {selectedService?.name}
                     </Text>
-                    {selectedServiceAddOn ? (
-                      <div style={{ marginTop: 4 }}>
+                  </div>
+                  
+                  {selectedServiceAddOn && (
+                    <div>
                       <Text strong style={{ display: 'block', marginBottom: 8 }}>Gói dịch vụ đã chọn:</Text>
-                        <Text style={{ fontSize: 13 }}>
-                          {selectedServiceAddOn.name} &nbsp;
-                        </Text>
-                        <Tag color="cyan" style={{ fontSize: 13 }}>
-                          ⏱️ {selectedServiceAddOn.durationMinutes} phút
-                        </Tag>
-                      </div>
+                      <Text style={{ fontSize: 13 }}>
+                        {selectedServiceAddOn.name}
+                      </Text>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}>Thời gian dự kiến:</Text>
+                    {selectedServiceAddOn ? (
+                      <Tag color="cyan" style={{ fontSize: 13 }}>
+                        ⏱️ {selectedServiceAddOn.durationMinutes} phút
+                      </Tag>
                     ) : selectedService?.serviceAddOns && selectedService.serviceAddOns.length > 0 ? (
-                      <div style={{ marginTop: 4 }}>
+                      <>
                         <Tag color="orange" style={{ fontSize: 12 }}>
-                          ⏱️ Thời gian dự kiến: {getServiceDuration()} phút
+                          ⏱️ {getServiceDuration()} phút
                         </Tag>
                         <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
                           (Gói dài nhất trong dịch vụ)
                         </Text>
-                      </div>
+                      </>
                     ) : selectedService?.durationMinutes ? (
-                      <Tag color="cyan" style={{ fontSize: 12, marginTop: 4 }}>
+                      <Tag color="cyan" style={{ fontSize: 12 }}>
                         ⏱️ {selectedService.durationMinutes} phút
                       </Tag>
                     ) : null}

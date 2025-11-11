@@ -167,10 +167,10 @@ const CreateAppointment = () => {
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
             <a href="/patient/booking">Đặt lịch khám</a>
-            <a onClick={() => navigate('/patient/booking/select-service')}>Chọn dịch vụ</a>
-            <a onClick={() => navigate('/patient/booking/select-dentist')}>Chọn bác sĩ</a>
-            <a onClick={() => navigate('/patient/booking/select-date')}>Chọn ngày khám</a>
-            <a onClick={() => navigate('/patient/booking/select-time')}>Chọn giờ khám</a>
+            <a href='/patient/booking/select-service'>Chọn dịch vụ</a>
+            <a href='/patient/booking/select-dentist'>Chọn bác sĩ</a>
+            <a href='/patient/booking/select-date'>Chọn ngày khám</a>
+            <a href='/patient/booking/select-time'>Chọn giờ khám</a>
             <Text>Tạo phiếu khám</Text>
           </Space>
         </div>

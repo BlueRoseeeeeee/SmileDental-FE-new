@@ -194,6 +194,9 @@ const BookingSelectService = () => {
     // Lưu service vào localStorage
     localStorage.setItem('booking_service', JSON.stringify(service));
     
+    //  XÓA addon cũ (user sẽ chọn lại ở trang tiếp theo nếu service có addon)
+    localStorage.removeItem('booking_serviceAddOn');
+    
     // ⭐ If service requires exam first, save the recordId to update hasBeenUsed later
     if (service.requireExamFirst) {
       const recordId = getRecordIdForService(service._id);
@@ -213,8 +216,6 @@ const BookingSelectService = () => {
     if (service.serviceAddOns && service.serviceAddOns.length > 0) {
       navigate('/patient/booking/select-addon');
     } else {
-      // Clear addon data
-      localStorage.removeItem('booking_serviceAddOn');
       navigate('/patient/booking/select-dentist');
     }
   };

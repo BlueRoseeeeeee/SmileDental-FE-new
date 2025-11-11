@@ -148,13 +148,20 @@ const PaymentSelection = () => {
           {/* Reservation Summary */}
           <Card type="inner" title="Thông tin đặt khám">
             <Descriptions column={1} bordered>
-              <Descriptions.Item label="Dịch vụ">
-                <Text strong>{reservationData.serviceName || 'Đang cập nhật'}</Text>
-                {reservationData.serviceAddOnName && (
-                  <Text type="secondary"> + {reservationData.serviceAddOnName}</Text>
-                )}
+              <Descriptions.Item label="Mã đặt khám">
+                <Text code strong style={{ fontSize: 14 }}>
+                  {reservationData.reservationId || reservationData.orderId || 'Đang cập nhật'}
+                </Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Bác sĩ">
+              <Descriptions.Item label="Dịch vụ">
+                <Text>{reservationData.serviceName || 'Đang cập nhật'}</Text>
+              </Descriptions.Item>
+              {reservationData.serviceAddOnName && (
+                <Descriptions.Item label="Gói dịch vụ">
+                  <Text>{reservationData.serviceAddOnName}</Text>
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Nha sĩ">
                 {reservationData.dentistName || 'Đang cập nhật'}
               </Descriptions.Item>
               <Descriptions.Item label="Ngày khám">
@@ -238,15 +245,7 @@ const PaymentSelection = () => {
           </Card>
 
           {/* Action Buttons */}
-          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Button 
-              icon={<ArrowLeftOutlined />}
-              size="large"
-              onClick={() => navigate(-1)}
-            >
-              Quay lại
-            </Button>
-            
+          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
             <Button 
               type="primary"
               size="large"
@@ -262,15 +261,6 @@ const PaymentSelection = () => {
               Tiến hành thanh toán
             </Button>
           </Space>
-
-          {/* Expiration Timer */}
-          {reservationData.expiresAt && (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <Text type="secondary">
-                Mã đặt khám: <Text code>{reservationData.reservationId}</Text>
-              </Text>
-            </div>
-          )}
         </Space>
       </Card>
     </div>
