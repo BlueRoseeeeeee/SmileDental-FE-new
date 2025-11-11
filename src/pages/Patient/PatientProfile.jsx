@@ -27,6 +27,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { userService } from '../../services/userService';
 import dayjs from 'dayjs';
 import './PatientProfile.css';
+import { toast } from 'react-toastify';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -86,21 +87,8 @@ const PatientProfile = () => {
     }
   };
 
-  const handleAvatarChange = (info) => {
-    if (info.file.status === 'uploading') {
-      setLoading(true);
-      return;
-    }
-    if (info.file.status === 'done') {
-      // Get this url from response in real world
-      const url = URL.createObjectURL(info.file.originFileObj);
-      setAvatarUrl(url);
-      setLoading(false);
-      message.success('Tải ảnh đại diện thành công!');
-    }
-  };
-
-  const beforeUpload = (file) => {
+  const handleAvatarUpload = async (file) => {
+    // Validate file
     const isImage = file.type.startsWith('image/');
     if (!isImage) {
       message.error('Chỉ được tải lên file ảnh!');
@@ -111,7 +99,48 @@ const PatientProfile = () => {
       message.error('Ảnh phải nhỏ hơn 5MB!');
       return false;
     }
-    return true;
+
+    try {
+      setLoading(true);
+      
+      // Create FormData and upload
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const apiUrl = import.meta.env.VITE_USER_SERVICE_URL || 'http://localhost:3001';
+      const response = await fetch(`${apiUrl}/api/user/avatar/${user._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const responseData = await response.json();
+        const userData = responseData.data || responseData.user;
+        
+        // Update avatar URL
+        setAvatarUrl(userData.avatar);
+        
+        // Update user context
+        await updateUser(userData);
+        
+        toast.success('Cập nhật ảnh đại diện thành công!');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || errorData.error || 'Cập nhật ảnh đại diện thất bại!');
+      }
+    } catch (error) {
+      console.error('❌ Avatar upload error:', error);
+      message.error('Lỗi khi cập nhật ảnh đại diện!');
+    } finally {
+      setLoading(false);
+    }
+
+    return false; // Prevent default upload behavior
   };
 
   return (
@@ -136,13 +165,7 @@ const PatientProfile = () => {
                 name="avatar"
                 accept="image/*"
                 showUploadList={false}
-                beforeUpload={beforeUpload}
-                onChange={handleAvatarChange}
-                customRequest={({ onSuccess }) => {
-                  setTimeout(() => {
-                    onSuccess("ok");
-                  }, 0);
-                }}
+                beforeUpload={handleAvatarUpload}
               >
                 <Button icon={<CameraOutlined />} type="dashed" block>
                   Đổi ảnh đại diện
