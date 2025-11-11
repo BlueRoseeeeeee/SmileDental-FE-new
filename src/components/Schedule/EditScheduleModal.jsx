@@ -168,13 +168,17 @@ const EditScheduleModal = ({
         });
         
         // Lọc ngày: Chỉ giữ ngày nếu CÒN ÍT NHẤT 1 CA chưa override ở ÍT NHẤT 1 schedule đã chọn
+        // 🔥 VÀ ngày phải là TƯƠNG LAI (không phải hôm nay hoặc quá khứ)
+        const today = dayjs().startOf('day');
         const validDates = Array.from(dateShiftsStatus.entries())
           .filter(([dateStr, shifts]) => {
             const hasAvailableShift = 
               shifts.morning.size > 0 || 
               shifts.afternoon.size > 0 || 
               shifts.evening.size > 0;
-            return hasAvailableShift;
+            // 🔥 Thêm filter: ngày phải > hôm nay
+            const isFutureDate = dayjs(dateStr).isAfter(today);
+            return hasAvailableShift && isFutureDate;
           })
           .map(([dateStr]) => dateStr)
           .sort();
@@ -282,13 +286,17 @@ const EditScheduleModal = ({
         });
         
         // Lọc ngày: Chỉ giữ ngày nếu CÒN ÍT NHẤT 1 CA chưa override ở ÍT NHẤT 1 schedule đã chọn
+        // 🔥 VÀ ngày phải là TƯƠNG LAI (không phải hôm nay hoặc quá khứ)
+        const today = dayjs().startOf('day');
         const validDates = Array.from(dateShiftsStatus.entries())
           .filter(([dateStr, shifts]) => {
             const hasAvailableShift = 
               shifts.morning.size > 0 || 
               shifts.afternoon.size > 0 || 
               shifts.evening.size > 0;
-            return hasAvailableShift;
+            // 🔥 Thêm filter: ngày phải > hôm nay
+            const isFutureDate = dayjs(dateStr).isAfter(today);
+            return hasAvailableShift && isFutureDate;
           })
           .map(([dateStr]) => dateStr)
           .sort();
