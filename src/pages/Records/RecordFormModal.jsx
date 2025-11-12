@@ -101,6 +101,20 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
+  // 🆕 Debug effect to track state changes that affect total cost
+  useEffect(() => {
+    if (mode === 'edit' && record) {
+      console.log('🔄 [Total Cost Trigger] State changed:', {
+        tempMainServiceQuantity,
+        tempServiceAddOnId,
+        tempAdditionalServicesCount: tempAdditionalServices.length,
+        servicesToDeleteCount: servicesToDelete.length,
+        existingAdditionalServicesCount: record.additionalServices?.length || 0,
+        editingAdditionalServicesCount: Object.keys(editingAdditionalServices).length
+      });
+    }
+  }, [tempMainServiceQuantity, tempServiceAddOnId, tempAdditionalServices, servicesToDelete, editingAdditionalServices, mode, record]);
+
   useEffect(() => {
     if (visible) {
       // ✅ Load data first, then populate form
@@ -325,14 +339,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   // 🆕 Handle modal close (cancel/close button)
   const handleModalClose = () => {
     console.log('🔍 [RecordFormModal] Closing modal, recordModified:', recordModified);
-    
-    // If record was modified during edit, refresh RecordList
-    if (recordModified && mode === 'edit') {
-      console.log('✅ [RecordFormModal] Record was modified, calling onSuccess to refresh RecordList');
-      if (onSuccess && record) {
-        onSuccess(record); // Trigger RecordList refresh
-      }
-    }
     
     // Reset all states
     setRecordModified(false);
@@ -905,9 +911,13 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         
         message.success(successMsg);
         
+        // ✅ Call onSuccess to refresh data and close modal
         if (onSuccess) {
           onSuccess(response.data);
         }
+        
+        // ✅ Close modal after successful update
+        handleModalClose();
       } else {
         throw new Error(response.message || 'Có lỗi xảy ra');
       }
@@ -1245,32 +1255,51 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       );
     }
 
-    // Base cost is from service addon only (not service itself) * quantity
+    // Base cost is from BOTH service price AND service addon price * quantity
     const baseQuantity = tempMainServiceQuantity !== record.quantity ? tempMainServiceQuantity : (record.quantity || 1);
     
     // Get current addon price (from temp selection or record)
-    let basePrice = record.serviceAddOnPrice || 0;
+    let baseAddOnPrice = record.serviceAddOnPrice || 0;
     if (tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId) {
       const tempAddOn = selectedMainServiceAddOns.find(a => a._id === tempServiceAddOnId);
       if (tempAddOn) {
-        basePrice = tempAddOn.price;
+        baseAddOnPrice = tempAddOn.price;
       }
     }
     
-    const baseCost = basePrice * baseQuantity;
+    // 🔥 IMPORTANT: Calculate base cost from BOTH servicePrice AND serviceAddOnPrice
+    const servicePrice = record.servicePrice || 0; // Main service base price
+    const baseCost = ((servicePrice + baseAddOnPrice) || 0) * (baseQuantity || 1);
     
     // Calculate additional services cost (including edited values, excluding deleted)
     const existingAdditionalCost = (record.additionalServices || [])
       .filter(svc => !servicesToDelete.includes(svc._id)) // Exclude deleted services
       .reduce((sum, svc) => {
         const editedValues = editingAdditionalServices[svc._id] || {};
-        const quantity = editedValues.quantity !== undefined ? editedValues.quantity : svc.quantity;
-        return sum + (svc.price * quantity);
+        const quantity = editedValues.quantity !== undefined ? editedValues.quantity : (svc.quantity || 1);
+        const price = svc.price || 0;
+        return sum + (price * quantity);
       }, 0);
     
     const tempAdditionalCost = tempAdditionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
-    const additionalCost = existingAdditionalCost + tempAdditionalCost;
-    const totalCost = baseCost + additionalCost;
+    const additionalCost = (existingAdditionalCost || 0) + (tempAdditionalCost || 0);
+    const totalCost = (baseCost || 0) + (additionalCost || 0);
+
+    // Debug logging for total cost calculation
+    console.log('💰 [AdditionalServices] Cost Calculation:', {
+      servicePrice,
+      baseAddOnPrice,
+      baseQuantity,
+      baseCost,
+      existingAdditionalCost,
+      tempAdditionalCost,
+      additionalCost,
+      totalCost,
+      existingServices: record.additionalServices?.length || 0,
+      tempServices: tempAdditionalServices.length,
+      servicesToDelete: servicesToDelete.length,
+      formula: `((${servicePrice} + ${baseAddOnPrice}) * ${baseQuantity}) + ${additionalCost} = ${totalCost}`
+    });
 
     return (
       <div>
@@ -1784,23 +1813,26 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
             <Col span={12}>
               <div><Text type="secondary">Dịch vụ chính:</Text></div>
               <div>
-                <Text strong>{baseCost.toLocaleString('vi-VN')}đ</Text>
+                <Text strong>{(baseCost || 0).toLocaleString('vi-VN')}đ</Text>
                 {(() => {
                   const currentAddOnId = tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId;
                   const currentAddOn = selectedMainServiceAddOns.find(a => a._id === currentAddOnId);
                   const unit = currentAddOn?.unit || '';
                   const quantity = tempMainServiceQuantity !== record.quantity ? tempMainServiceQuantity : (record.quantity || 1);
                   
-                  // Get price from temp addon or record
-                  let price = record.serviceAddOnPrice || 0;
+                  // Get addon price from temp addon or record
+                  let addonPrice = record.serviceAddOnPrice || 0;
                   if (tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId && currentAddOn) {
-                    price = currentAddOn.price;
+                    addonPrice = currentAddOn.price;
                   }
                   
-                  if (unit && quantity > 0 && price > 0) {
+                  const servicePrice = record.servicePrice || 0;
+                  const totalUnitPrice = servicePrice + addonPrice;
+                  
+                  if (quantity > 0 && totalUnitPrice > 0) {
                     return (
                       <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
-                        ({price.toLocaleString('vi-VN')}đ × {quantity} {unit})
+                        (({servicePrice.toLocaleString('vi-VN')}đ + {addonPrice.toLocaleString('vi-VN')}đ) × {quantity}{unit ? ' ' + unit : ''})
                       </Text>
                     );
                   }
@@ -1810,14 +1842,14 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
             </Col>
             <Col span={12}>
               <div><Text type="secondary">Dịch vụ bổ sung:</Text></div>
-              <div><Text strong>{additionalCost.toLocaleString('vi-VN')}đ</Text></div>
+              <div><Text strong>{(additionalCost || 0).toLocaleString('vi-VN')}đ</Text></div>
             </Col>
             <Col span={24} style={{ marginTop: 8 }}>
               <Divider style={{ margin: '8px 0' }} />
               <div style={{ textAlign: 'right' }}>
                 <Text type="secondary">Tổng cộng: </Text>
                 <Text strong style={{ fontSize: 18, color: '#52c41a' }}>
-                  {totalCost.toLocaleString('vi-VN')}đ
+                  {(totalCost || 0).toLocaleString('vi-VN')}đ
                 </Text>
               </div>
             </Col>
