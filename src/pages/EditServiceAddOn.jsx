@@ -99,20 +99,34 @@ const EditServiceAddOn = () => {
       const addOnResponse = await servicesService.getServiceAddOnById(serviceId, addonId);
       console.log('AddOn response:', addOnResponse);
       const addOnData = addOnResponse.data?.addOn || addOnResponse.addOn;
+      console.log('🔍 addOnData:', addOnData);
+      console.log('🔍 basePrice:', addOnData.basePrice);
+      console.log('🔍 effectivePrice:', addOnData.effectivePrice);
+      console.log('🔍 Final price:', addOnData.effectivePrice || addOnData.basePrice);
       setAddOn(addOnData);
       
-      // Load draft if exists
+      // Always use the latest effectivePrice from API
+      const finalPrice = addOnData.effectivePrice || addOnData.basePrice;
+      console.log('💰 Using price from API:', finalPrice);
+      
+      // Load draft if exists (but always use latest price from API)
       const draft = loadDraft();
+      console.log('📝 Draft from localStorage:', draft);
       if (draft) {
-        form.setFieldsValue(draft.formData);
+        console.log('⚠️ Loading draft data but overriding price with API data');
+        form.setFieldsValue({
+          ...draft.formData,
+          price: finalPrice  // Override with latest price from API
+        });
         setAddOnDescription(draft.description);
         setHasUnsavedChanges(true);
-        message.info('Đã khôi phục bản nháp chưa lưu');
+        message.info('Đã khôi phục bản nháp chưa lưu (giá đã được cập nhật)');
       } else {
         // Load actual data
+        console.log('✅ Loading fresh data from API');
         form.setFieldsValue({
           name: addOnData.name,
-          price: addOnData.effectivePrice || addOnData.basePrice,
+          price: finalPrice,
           durationMinutes: addOnData.durationMinutes,
           unit: addOnData.unit
         });
@@ -312,12 +326,6 @@ const EditServiceAddOn = () => {
           form={form}
           layout="vertical"
           onValuesChange={handleFormChange}
-          initialValues={{
-            name: addOn?.name || '',
-            price: addOn?.effectivePrice || addOn?.basePrice || 0,
-            durationMinutes: addOn?.durationMinutes || 30,
-            unit: addOn?.unit || 'Răng'
-          }}
         >
           <Row gutter={[16, 16]}>
             {/* Row 1: Tên tùy chọn + Giá */}

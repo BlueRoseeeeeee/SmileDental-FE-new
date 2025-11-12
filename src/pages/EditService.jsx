@@ -817,7 +817,7 @@ const EditService = () => {
                 },
               },
               {
-                title: 'Thời gian',
+                title: 'Thời gian dự kiến',
                 dataIndex: 'durationMinutes',
                 key: 'durationMinutes',
                 render: (duration) => (

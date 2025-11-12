@@ -250,7 +250,7 @@ const AddService = () => {
         <Row align="middle" justify="space-between">
           <Col>
               <div>
-                <Title level={2} style={{ margin: 0, color: '#1e293b', fontWeight: '700', fontSize: '16px' }}>
+                <Title level={2} style={{ margin: 0, color: '#1e293b', fontWeight: '700', fontSize: '20px' }}>
                   Thêm dịch vụ mới
                 </Title>
               </div>
