@@ -4095,10 +4095,6 @@ const CreateScheduleForRoom = () => {
               description={
                 <div>
                   <Text>Sẽ tạo lịch cho <Text strong>{selectedShifts.length} ca</Text> làm việc</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Hệ thống sẽ tự động tạo slots {slotDuration} phút cho mỗi ca
-                  </Text>
                 </div>
               }
               type="success"

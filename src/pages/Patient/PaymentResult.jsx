@@ -152,7 +152,7 @@ const PaymentResult = () => {
         )}
         
         <div style={{ marginTop: '30px', textAlign: 'center', color: '#8c8c8c' }}>
-          <p>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ hotline: <strong>1900-xxxx</strong></p>
+          <p>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ hotline: <strong>190000010</strong></p>
         </div>
       </Card>
     </div>
