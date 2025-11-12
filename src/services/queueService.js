@@ -1,19 +1,31 @@
 import axios from 'axios';
 
-// Use record-service URL for queue endpoints (queue operations are handled by record-service)
-const API_BASE_URL = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010';
+// Use record-service URL for queue operations (call, complete, cancel)
+const RECORD_SERVICE_URL = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010';
 
-// Create axios instance with interceptor for token
-const queueApi = axios.create({
-  baseURL: API_BASE_URL,
+// Use appointment-service URL for queue viewing (getQueue, getQueueStats)
+const APPOINTMENT_SERVICE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3006';
+
+// Create axios instance for record-service
+const recordApi = axios.create({
+  baseURL: RECORD_SERVICE_URL,
   timeout: 30000, // 30s
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Request interceptor to add token
-queueApi.interceptors.request.use(
+// Create axios instance for appointment-service
+const appointmentApi = axios.create({
+  baseURL: APPOINTMENT_SERVICE_URL,
+  timeout: 30000, // 30s
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Request interceptor to add token (record-service)
+recordApi.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
     if (token) {
@@ -26,8 +38,36 @@ queueApi.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
-queueApi.interceptors.response.use(
+// Request interceptor to add token (appointment-service)
+appointmentApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling (record-service)
+recordApi.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor for error handling (appointment-service)
+appointmentApi.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
@@ -48,7 +88,7 @@ queueApi.interceptors.response.use(
  */
 export const getNextQueueNumber = async (date, roomId) => {
   try {
-    const response = await queueApi.get('/api/record/queue/next-number', {
+    const response = await recordApi.get('/api/record/queue/next-number', {
       params: { date, roomId }
     });
     return response.data;
@@ -66,7 +106,7 @@ export const getNextQueueNumber = async (date, roomId) => {
  */
 export const getQueueStatus = async (date, roomId) => {
   try {
-    const response = await queueApi.get('/api/record/queue/status', {
+    const response = await recordApi.get('/api/record/queue/status', {
       params: { date, roomId }
     });
     return response.data;
@@ -83,7 +123,7 @@ export const getQueueStatus = async (date, roomId) => {
  */
 export const callRecord = async (recordId) => {
   try {
-    const response = await queueApi.post(`/api/record/${recordId}/call`, {});
+    const response = await recordApi.post(`/api/record/${recordId}/call`, {});
     return response.data;
   } catch (error) {
     console.error('Error calling record:', error);
@@ -98,7 +138,7 @@ export const callRecord = async (recordId) => {
  */
 export const completeRecord = async (recordId) => {
   try {
-    const response = await queueApi.post(`/api/record/${recordId}/complete`, {});
+    const response = await recordApi.post(`/api/record/${recordId}/complete`, {});
     return response.data;
   } catch (error) {
     console.error('Error completing record:', error);
@@ -114,7 +154,7 @@ export const completeRecord = async (recordId) => {
  */
 export const cancelRecord = async (recordId, reason) => {
   try {
-    const response = await queueApi.post(`/api/record/${recordId}/cancel`, { reason });
+    const response = await recordApi.post(`/api/record/${recordId}/cancel`, { reason });
     return response.data;
   } catch (error) {
     console.error('Error cancelling record:', error);
@@ -129,7 +169,7 @@ export const cancelRecord = async (recordId, reason) => {
  */
 export const confirmCashPayment = async (paymentId) => {
   try {
-    const response = await queueApi.post(`/api/payment/${paymentId}/confirm-cash`, {});
+    const response = await recordApi.post(`/api/payment/${paymentId}/confirm-cash`, {});
     return response.data;
   } catch (error) {
     console.error('Error confirming cash payment:', error);
@@ -144,7 +184,7 @@ export const confirmCashPayment = async (paymentId) => {
  */
 export const getVNPayPaymentUrl = async (paymentId) => {
   try {
-    const response = await queueApi.post(`/api/payment/${paymentId}/vnpay`, {});
+    const response = await recordApi.post(`/api/payment/${paymentId}/vnpay`, {});
     return response.data;
   } catch (error) {
     console.error('Error getting VNPay URL:', error);
@@ -153,7 +193,7 @@ export const getVNPayPaymentUrl = async (paymentId) => {
 };
 
 // ============================================
-// 🔥 NEW QUEUE MANAGEMENT METHODS
+// 🔥 APPOINTMENT QUEUE MANAGEMENT METHODS
 // ============================================
 
 /**
@@ -164,7 +204,7 @@ export const getVNPayPaymentUrl = async (paymentId) => {
 export const getQueue = async (roomId = null) => {
   try {
     const params = roomId ? { roomId } : {};
-    const response = await queueApi.get('/api/appointments/queue', { params });
+    const response = await appointmentApi.get('/api/appointments/queue', { params });
     return response.data;
   } catch (error) {
     console.error('Error getting queue:', error);
@@ -178,7 +218,7 @@ export const getQueue = async (roomId = null) => {
  */
 export const getQueueStats = async () => {
   try {
-    const response = await queueApi.get('/api/appointments/queue/stats');
+    const response = await appointmentApi.get('/api/appointments/queue/stats');
     return response.data;
   } catch (error) {
     console.error('Error getting queue stats:', error);
@@ -192,7 +232,7 @@ export const getQueueStats = async () => {
  */
 export const triggerAutoStart = async () => {
   try {
-    const response = await queueApi.post('/api/appointments/queue/auto-start');
+    const response = await appointmentApi.post('/api/appointments/queue/auto-start');
     return response.data;
   } catch (error) {
     console.error('Error triggering auto-start:', error);
