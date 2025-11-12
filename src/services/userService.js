@@ -45,6 +45,16 @@ export const userService = {
     return response.data;
   },
 
+  updateUser: async (userId, userData) => {
+    const response = await userApi.put(`/user/${userId}`, userData, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    return response.data;
+  },
+
   deleteUser: async (userId) => {
     const response = await userApi.delete(`/user/${userId}`);
     return response.data;

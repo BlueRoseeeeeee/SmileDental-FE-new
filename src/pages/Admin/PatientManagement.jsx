@@ -17,7 +17,11 @@ import {
   Divider,
   message,
   Empty,
-  Spin
+  Spin,
+  Modal,
+  Form,
+  DatePicker,
+  Select
 } from 'antd';
 import {
   SearchOutlined,
@@ -29,7 +33,8 @@ import {
   ReloadOutlined,
   ManOutlined,
   WomanOutlined,
-  TeamOutlined
+  TeamOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import userService from '../../services/userService';
@@ -44,6 +49,9 @@ const PatientManagement = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingPatient, setEditingPatient] = useState(null);
+  const [editForm] = Form.useForm();
 
   useEffect(() => {
     fetchPatients();
@@ -97,6 +105,51 @@ const PatientManagement = () => {
   const showPatientDetails = (patient) => {
     setSelectedPatient(patient);
     setDrawerVisible(true);
+  };
+
+  const showEditModal = (patient) => {
+    setEditingPatient(patient);
+    editForm.setFieldsValue({
+      fullName: patient.fullName,
+      email: patient.email,
+      phone: patient.phone,
+      gender: patient.gender,
+      dateOfBirth: patient.dateOfBirth ? dayjs(patient.dateOfBirth) : null,
+      address: patient.address
+    });
+    setEditModalVisible(true);
+  };
+
+  const handleEditSubmit = async () => {
+    try {
+      const values = await editForm.validateFields();
+      setLoading(true);
+
+      const updateData = {
+        ...values,
+        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null
+      };
+
+      const response = await userService.updateUser(editingPatient._id, updateData);
+      
+      if (response.success) {
+        message.success('Cập nhật thông tin bệnh nhân thành công');
+        setEditModalVisible(false);
+        editForm.resetFields();
+        fetchPatients(); // Refresh list
+      }
+    } catch (error) {
+      console.error('Error updating patient:', error);
+      message.error(error.message || 'Không thể cập nhật thông tin bệnh nhân');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditModalVisible(false);
+    editForm.resetFields();
+    setEditingPatient(null);
   };
 
   const getGenderTag = (gender, large = false) => {
@@ -216,16 +269,25 @@ const PatientManagement = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 100,
+      width: 150,
       fixed: 'right',
       render: (_, record) => (
-        <Button
-          type="link"
-          icon={<EyeOutlined />}
-          onClick={() => showPatientDetails(record)}
-        >
-          Chi tiết
-        </Button>
+        <Space>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => showEditModal(record)}
+          >
+            Sửa
+          </Button>
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => showPatientDetails(record)}
+          >
+            Chi tiết
+          </Button>
+        </Space>
       )
     }
   ];
@@ -359,6 +421,106 @@ const PatientManagement = () => {
           </>
         )}
       </Drawer>
+
+      {/* Edit Patient Modal */}
+      <Modal
+        title={
+          <Space>
+            <EditOutlined />
+            <span>Chỉnh sửa thông tin bệnh nhân</span>
+          </Space>
+        }
+        open={editModalVisible}
+        onOk={handleEditSubmit}
+        onCancel={handleCancelEdit}
+        width={700}
+        okText="Lưu thay đổi"
+        cancelText="Hủy"
+        confirmLoading={loading}
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          style={{ marginTop: 24 }}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="fullName"
+                label="Họ và tên"
+                rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+              >
+                <Input placeholder="Nhập họ và tên" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập email' },
+                  { type: 'email', message: 'Email không hợp lệ' }
+                ]}
+              >
+                <Input placeholder="Nhập email" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="phone"
+                label="Số điện thoại"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập số điện thoại' },
+                  { pattern: /^[0-9]{10}$/, message: 'Số điện thoại phải có 10 chữ số' }
+                ]}
+              >
+                <Input placeholder="Nhập số điện thoại" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="gender"
+                label="Giới tính"
+                rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
+              >
+                <Select placeholder="Chọn giới tính">
+                  <Select.Option value="male">Nam</Select.Option>
+                  <Select.Option value="female">Nữ</Select.Option>
+                  <Select.Option value="other">Khác</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item
+                name="dateOfBirth"
+                label="Ngày sinh"
+              >
+                <DatePicker 
+                  placeholder="Chọn ngày sinh" 
+                  format="DD/MM/YYYY"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            name="address"
+            label="Địa chỉ"
+          >
+            <Input.TextArea 
+              placeholder="Nhập địa chỉ" 
+              rows={3}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
