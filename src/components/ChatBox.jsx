@@ -69,6 +69,29 @@ const ChatBox = () => {
           timestamp: new Date()
         };
         setMessages(prev => [...prev, assistantMessage]);
+        
+        // 🔥 Check if response contains booking data for payment redirect
+        if (response.redirectToPayment && response.bookingData) {
+          console.log('💳 Booking confirmed, preparing to redirect to payment page');
+          console.log('Booking data:', response.bookingData);
+          
+          // Store booking data in localStorage (same as normal booking flow)
+          localStorage.setItem('booking_service', JSON.stringify(response.bookingData.service));
+          localStorage.setItem('booking_serviceAddOn', JSON.stringify(response.bookingData.serviceAddOn));
+          localStorage.setItem('booking_dentist', JSON.stringify(response.bookingData.dentist));
+          localStorage.setItem('booking_date', response.bookingData.date);
+          localStorage.setItem('booking_slotGroup', JSON.stringify(response.bookingData.slotGroup));
+          
+          // Show notification and redirect after 2 seconds
+          antMessage.success({
+            content: 'Đang chuyển đến trang thanh toán...',
+            duration: 2
+          });
+          
+          setTimeout(() => {
+            window.location.href = '/patient/booking/create-appointment';
+          }, 2000);
+        }
       } else {
         throw new Error(response.message || 'Failed to get response');
       }
@@ -180,7 +203,26 @@ const ChatBox = () => {
                       />
                     )}
                     <div className="message-bubble">
-                      <div className="message-content">{msg.content}</div>
+                      <div className="message-content">
+                        {/* Parse Markdown links [text](url) into clickable <a> tags */}
+                        {msg.content.split(/(\[.+?\]\(.+?\))/).map((part, i) => {
+                          const linkMatch = part.match(/\[(.+?)\]\((.+?)\)/);
+                          if (linkMatch) {
+                            return (
+                              <a 
+                                key={i} 
+                                href={linkMatch[2]} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{ color: '#1890ff', textDecoration: 'underline', fontWeight: 'bold' }}
+                              >
+                                {linkMatch[1]}
+                              </a>
+                            );
+                          }
+                          return <span key={i}>{part}</span>;
+                        })}
+                      </div>
                       <div className="message-time">
                         {new Date(msg.timestamp).toLocaleTimeString('vi-VN', {
                           hour: '2-digit',
