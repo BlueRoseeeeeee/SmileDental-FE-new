@@ -575,106 +575,71 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           selectedMainServiceAddOnsCount: selectedMainServiceAddOns.length
         });
         
+        // ✅ ALWAYS calculate totalCost from FE and send to BE
+        // Get current service addon (from temp or record)
+        const currentServiceAddOnId = tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId;
+        const currentAddOn = selectedMainServiceAddOns.find(a => a._id === currentServiceAddOnId);
+        const currentQuantity = quantityChanged ? tempMainServiceQuantity : (record.quantity || 1);
+        
+        // ✅ Calculate base cost from serviceAddOn price from API (NOT from record.serviceAddOnPrice in DB)
+        const serviceAddOnPrice = currentAddOn?.price || 0;
+        const baseCost = serviceAddOnPrice * currentQuantity;
+        
+        // Calculate additional services cost (excluding deleted, including edited)
+        const existingAdditionalCost = (record.additionalServices || [])
+          .filter(svc => !servicesToDelete.includes(svc._id)) // Exclude deleted services
+          .reduce((sum, svc) => {
+            const editedValues = editingAdditionalServices[svc._id] || {};
+            const quantity = editedValues.quantity !== undefined ? editedValues.quantity : (svc.quantity || 1);
+            const price = svc.price || 0;
+            return sum + (price * quantity);
+          }, 0);
+        
+        const tempAdditionalCost = tempAdditionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
+        const additionalCost = existingAdditionalCost + tempAdditionalCost;
+        const calculatedTotalCost = baseCost + additionalCost;
+        
+        console.log('💰 [handleSubmit] Final cost calculation:', {
+          serviceAddOnPrice,
+          currentQuantity,
+          baseCost,
+          existingAdditionalCost,
+          tempAdditionalCost,
+          additionalCost,
+          calculatedTotalCost
+        });
+        
         if (serviceAddOnChanged || quantityChanged) {
-          const newAddOn = selectedMainServiceAddOns.find(a => a._id === (tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId));
-          
-          console.log('🔍 [handleSubmit] Finding addon:', {
-            searchId: tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId,
-            found: !!newAddOn,
-            newAddOn: newAddOn ? { id: newAddOn._id, name: newAddOn.name, price: newAddOn.price } : null
-          });
-          
-          if (!newAddOn) {
+          if (!currentAddOn) {
             message.error('Không tìm thấy thông tin dịch vụ con đã chọn');
-            console.error('❌ newAddOn not found. tempServiceAddOnId:', tempServiceAddOnId, 'selectedMainServiceAddOns:', selectedMainServiceAddOns);
+            console.error('❌ currentAddOn not found. tempServiceAddOnId:', tempServiceAddOnId, 'selectedMainServiceAddOns:', selectedMainServiceAddOns);
             setLoading(false);
             return;
           }
           
-          const finalQuantity = quantityChanged ? tempMainServiceQuantity : (record.quantity || 1);
-          
-          console.log('✅ Service addon or quantity changed:', newAddOn.name, newAddOn.price, 'x', finalQuantity);
-          
-          // ⚠️ Recalculate totalCost: Base cost is from service addon price * quantity
-          const baseCost = newAddOn.price * finalQuantity;
-          
-          // Calculate additional cost including edited services and temp services
-          const existingAdditionalCost = (record.additionalServices || []).reduce((sum, svc) => {
-            const editedValues = editingAdditionalServices[svc._id] || {};
-            const quantity = editedValues.quantity !== undefined ? editedValues.quantity : svc.quantity;
-            return sum + (svc.price * quantity);
-          }, 0);
-          
-          const tempAdditionalCost = tempAdditionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
-          const additionalCost = existingAdditionalCost + tempAdditionalCost;
-          const newTotalCost = baseCost + additionalCost;
-          
-          console.log('💰 Recalculated costs - Base:', baseCost, '(', newAddOn.price, 'x', finalQuantity, '), Existing Additional:', existingAdditionalCost, 'Temp Additional:', tempAdditionalCost, 'Total Additional:', additionalCost, 'Grand Total:', newTotalCost);
+          console.log('✅ Service addon or quantity changed:', currentAddOn.name, currentAddOn.price, 'x', currentQuantity);
           
           recordData = {
             diagnosis: values.diagnosis,
             notes: values.notes,
-            serviceAddOnId: newAddOn._id,
-            serviceAddOnName: newAddOn.name,
-            serviceAddOnUnit: newAddOn.unit,
-            serviceAddOnPrice: newAddOn.price,
-            quantity: finalQuantity,
-            totalCost: newTotalCost,
+            serviceAddOnId: currentAddOn._id,
+            serviceAddOnName: currentAddOn.name,
+            serviceAddOnUnit: currentAddOn.unit,
+            serviceAddOnPrice: currentAddOn.price,
+            quantity: currentQuantity,
+            totalCost: calculatedTotalCost, // ✅ Always send totalCost from FE
             treatmentIndications: [], // Will be set below
             lastModifiedBy: currentUser._id || 'unknown'
           };
         } else {
-          // No change in main service, but check if there are changes in additional services
-          const hasAdditionalServiceChanges = 
-            tempAdditionalServices.length > 0 || 
-            servicesToDelete.length > 0 || 
-            Object.keys(editingAdditionalServices).length > 0;
-          
-          console.log('🔍 [handleSubmit] Additional service changes:', {
-            hasAdditionalServiceChanges,
-            tempAdditionalServicesCount: tempAdditionalServices.length,
-            servicesToDeleteCount: servicesToDelete.length,
-            editingAdditionalServicesCount: Object.keys(editingAdditionalServices).length
-          });
-          
-          if (hasAdditionalServiceChanges) {
-            // Recalculate totalCost with additional service changes
-            const baseCost = (record.serviceAddOnPrice || 0) * (record.quantity || 1);
-            
-            const existingAdditionalCost = (record.additionalServices || [])
-              .filter(svc => !servicesToDelete.includes(svc._id)) // Exclude deleted services
-              .reduce((sum, svc) => {
-                const editedValues = editingAdditionalServices[svc._id] || {};
-                const quantity = editedValues.quantity !== undefined ? editedValues.quantity : svc.quantity;
-                return sum + (svc.price * quantity);
-              }, 0);
-            
-            const tempAdditionalCost = tempAdditionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
-            const additionalCost = existingAdditionalCost + tempAdditionalCost;
-            const newTotalCost = baseCost + additionalCost;
-            
-            console.log('💰 Recalculated totalCost with additional service changes:', {
-              baseCost,
-              existingAdditionalCost,
-              tempAdditionalCost,
-              newTotalCost
-            });
-            
-            recordData = {
-              diagnosis: values.diagnosis,
-              notes: values.notes,
-              totalCost: newTotalCost,
-              treatmentIndications: [], // Will be set below
-              lastModifiedBy: currentUser._id || 'unknown'
-            };
-          } else {
-            recordData = {
-              diagnosis: values.diagnosis,
-              notes: values.notes,
-              treatmentIndications: [], // Will be set below
-              lastModifiedBy: currentUser._id || 'unknown'
-            };
-          }
+          // ✅ Even if no service changes, still send totalCost if there are additional service changes
+          recordData = {
+            diagnosis: values.diagnosis,
+            notes: values.notes,
+            totalCost: calculatedTotalCost, // ✅ Always send totalCost from FE
+            treatmentIndications: [], // Will be set below
+            lastModifiedBy: currentUser._id || 'unknown'
+          };
         }
         
         
@@ -1258,18 +1223,25 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     // Base cost is from BOTH service price AND service addon price * quantity
     const baseQuantity = tempMainServiceQuantity !== record.quantity ? tempMainServiceQuantity : (record.quantity || 1);
     
-    // Get current addon price (from temp selection or record)
-    let baseAddOnPrice = record.serviceAddOnPrice || 0;
-    if (tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId) {
-      const tempAddOn = selectedMainServiceAddOns.find(a => a._id === tempServiceAddOnId);
-      if (tempAddOn) {
-        baseAddOnPrice = tempAddOn.price;
-      }
-    }
+    // ✅ Get current addon price from selectedMainServiceAddOns (from API), NOT from record
+    // If user changed addon, use temp selection; otherwise use current record's addon
+    const currentServiceAddOnId = tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId;
+    const currentAddOn = selectedMainServiceAddOns.find(a => a._id === currentServiceAddOnId);
+    const baseAddOnPrice = currentAddOn?.price || 0; // Always get price from API data
     
-    // 🔥 IMPORTANT: Calculate base cost from BOTH servicePrice AND serviceAddOnPrice
-    const servicePrice = record.servicePrice || 0; // Main service base price
-    const baseCost = ((servicePrice + baseAddOnPrice) || 0) * (baseQuantity || 1);
+    // 🔍 DEBUG: Log serviceAddOn information
+    console.log('🔍 [DEBUG] ServiceAddOn Info:', {
+      recordServiceAddOnId: record.serviceAddOnId,
+      recordServiceAddOnPrice: record.serviceAddOnPrice,
+      tempServiceAddOnId,
+      currentServiceAddOnId,
+      currentAddOn,
+      selectedMainServiceAddOns,
+      calculatedBaseAddOnPrice: baseAddOnPrice
+    });
+    
+    // ✅ CORRECT: Calculate base cost from serviceAddOnPrice ONLY (service has no price)
+    const baseCost = (baseAddOnPrice || 0) * (baseQuantity || 1);
     
     // Calculate additional services cost (including edited values, excluding deleted)
     const existingAdditionalCost = (record.additionalServices || [])
@@ -1287,7 +1259,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
 
     // Debug logging for total cost calculation
     console.log('💰 [AdditionalServices] Cost Calculation:', {
-      servicePrice,
       baseAddOnPrice,
       baseQuantity,
       baseCost,
@@ -1298,7 +1269,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       existingServices: record.additionalServices?.length || 0,
       tempServices: tempAdditionalServices.length,
       servicesToDelete: servicesToDelete.length,
-      formula: `((${servicePrice} + ${baseAddOnPrice}) * ${baseQuantity}) + ${additionalCost} = ${totalCost}`
+      formula: `(${baseAddOnPrice} * ${baseQuantity}) + ${additionalCost} = ${totalCost}`
     });
 
     return (
@@ -1826,13 +1797,13 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                     addonPrice = currentAddOn.price;
                   }
                   
-                  const servicePrice = record.servicePrice || 0;
-                  const totalUnitPrice = servicePrice + addonPrice;
+                  // ✅ Only serviceAddOn has price, service itself has no price
+                  const totalUnitPrice = addonPrice;
                   
                   if (quantity > 0 && totalUnitPrice > 0) {
                     return (
                       <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
-                        (({servicePrice.toLocaleString('vi-VN')}đ + {addonPrice.toLocaleString('vi-VN')}đ) × {quantity}{unit ? ' ' + unit : ''})
+                        ({addonPrice.toLocaleString('vi-VN')}đ × {quantity}{unit ? ' ' + unit : ''})
                       </Text>
                     );
                   }

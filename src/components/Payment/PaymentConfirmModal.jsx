@@ -24,6 +24,7 @@ import {
   InfoCircleOutlined
 } from '@ant-design/icons';
 import recordService from '../../services/recordService';
+import { completeRecord as completeRecordQueue } from '../../services/queueService';
 
 const { Title, Text } = Typography;
 
@@ -176,25 +177,43 @@ const PaymentConfirmModal = ({ visible, onCancel, record, onSuccess }) => {
       });
       console.log('='.repeat(80));
       
-      const response = await recordService.completeRecord(record._id);
+      // ✅ Use queueService to complete record synchronously (waits for payment creation)
+      const response = await completeRecordQueue(record._id);
       console.log('✅ [PaymentConfirmModal] API Response:', response);
       
       if (response.success) {
-        console.log('🎉 [PaymentConfirmModal] Record completed successfully, showing success modal...');
-        message.success('Hồ sơ đã được hoàn thành');
+        // ✅ Check if payment was created
+        const paymentCreated = response.data?.payment?._id;
         
-        // Close the payment confirm modal first
+        if (!paymentCreated) {
+          console.warn('⚠️ [PaymentConfirmModal] Payment was not created, but record is completed');
+          message.warning('Hồ sơ đã hoàn thành nhưng chưa tạo được thanh toán. Vui lòng tạo thủ công.');
+        } else {
+          console.log('✅ [PaymentConfirmModal] Payment created:', response.data.payment._id);
+          message.success('Hồ sơ và thanh toán đã được tạo thành công');
+        }
+        
+        // Close the payment confirm modal
         if (onCancel) {
           onCancel();
         }
         
-        // Then show success modal
+        // Reload data immediately (payment is already created)
+        if (onSuccess) {
+          onSuccess(response.data);
+        }
+        
+        // Then show success modal for user information
         Modal.success({
           title: 'Hoàn thành hồ sơ thành công!',
           content: (
             <div>
               <p>Hồ sơ <strong>{record.recordCode}</strong> đã hoàn thành.</p>
-              <p>Bệnh nhân có thể ra quầy lễ tân để thanh toán.</p>
+              {paymentCreated ? (
+                <p>Thanh toán đã được tạo. Bệnh nhân có thể ra quầy lễ tân để thanh toán.</p>
+              ) : (
+                <p style={{ color: '#faad14' }}>⚠️ Vui lòng tạo thanh toán thủ công cho hồ sơ này.</p>
+              )}
               <Divider />
               <Space direction="vertical" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -223,13 +242,7 @@ const PaymentConfirmModal = ({ visible, onCancel, record, onSuccess }) => {
               </Space>
             </div>
           ),
-          okText: 'Đóng',
-          onOk: () => {
-            if (onSuccess) {
-              onSuccess(response.data);
-            }
-            onCancel();
-          }
+          okText: 'Đóng'
         });
       }
     } catch (error) {

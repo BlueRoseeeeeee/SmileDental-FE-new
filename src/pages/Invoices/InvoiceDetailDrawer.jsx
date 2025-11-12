@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Drawer,
   Descriptions,
@@ -12,7 +12,9 @@ import {
   Timeline,
   Row,
   Col,
-  Statistic
+  Statistic,
+  Spin,
+  message
 } from 'antd';
 import {
   EditOutlined,
@@ -24,10 +26,44 @@ import {
   DollarOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import invoiceService from '../../services/invoiceService';
 
 const { Title, Text } = Typography;
 
 const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExportPDF }) => {
+  const [invoiceDetails, setInvoiceDetails] = useState([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  // Fetch invoice details when drawer opens
+  useEffect(() => {
+    if (visible && invoice && invoice._id) {
+      loadInvoiceDetails();
+    }
+  }, [visible, invoice]);
+
+  const loadInvoiceDetails = async () => {
+    // If invoice already has details populated, use them
+    if (invoice.details && invoice.details.length > 0) {
+      setInvoiceDetails(invoice.details);
+      return;
+    }
+
+    // Otherwise, fetch details from API
+    setLoadingDetails(true);
+    try {
+      const result = await invoiceService.getInvoiceDetails(invoice._id);
+      if (result.success) {
+        setInvoiceDetails(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading invoice details:', error);
+      message.error('Không thể tải chi tiết hóa đơn');
+      setInvoiceDetails([]);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   if (!invoice) return null;
 
   const formatCurrency = (amount) => {
@@ -244,66 +280,74 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
 
       {/* Service Items */}
       <Card title="Chi tiết dịch vụ" style={{ marginBottom: 16 }}>
-        <Table
-          dataSource={invoice.details}
-          columns={serviceColumns}
-          rowKey="_id"
-          pagination={false}
-          size="small"
-          summary={() => (
-            <Table.Summary fixed>
-              <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={5} align="right">
-                  <Text strong>Tạm tính:</Text>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={1} align="right">
-                  <Text>{formatCurrency(invoice.subtotal)}</Text>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-              
-              {invoice.discountInfo.type !== 'none' && (
-                <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={5} align="right">
-                    <Text type="danger">
-                      Giảm giá {invoice.discountInfo.type === 'percentage' ? `(${invoice.discountInfo.value}%)` : ''}:
-                    </Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1} align="right">
-                    <Text type="danger">
-                      -{formatCurrency(
-                        invoice.discountInfo.type === 'percentage'
-                          ? (invoice.subtotal * invoice.discountInfo.value) / 100
-                          : invoice.discountInfo.value
-                      )}
-                    </Text>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
+        <Spin spinning={loadingDetails}>
+          {invoiceDetails.length === 0 && !loadingDetails ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+              Không có chi tiết dịch vụ
+            </div>
+          ) : (
+            <Table
+              dataSource={invoiceDetails}
+              columns={serviceColumns}
+              rowKey="_id"
+              pagination={false}
+              size="small"
+              summary={() => (
+                <Table.Summary fixed>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell index={0} colSpan={5} align="right">
+                      <Text strong>Tạm tính:</Text>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1} align="right">
+                      <Text>{formatCurrency(invoice.subtotal)}</Text>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  
+                  {invoice.discountInfo.type !== 'none' && (
+                    <Table.Summary.Row>
+                      <Table.Summary.Cell index={0} colSpan={5} align="right">
+                        <Text type="danger">
+                          Giảm giá {invoice.discountInfo.type === 'percentage' ? `(${invoice.discountInfo.value}%)` : ''}:
+                        </Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={1} align="right">
+                        <Text type="danger">
+                          -{formatCurrency(
+                            invoice.discountInfo.type === 'percentage'
+                              ? (invoice.subtotal * invoice.discountInfo.value) / 100
+                              : invoice.discountInfo.value
+                          )}
+                        </Text>
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                  
+                  {invoice.taxInfo.taxAmount > 0 && !invoice.taxInfo.taxIncluded && (
+                    <Table.Summary.Row>
+                      <Table.Summary.Cell index={0} colSpan={5} align="right">
+                        <Text>Thuế VAT ({invoice.taxInfo.taxRate}%):</Text>
+                      </Table.Summary.Cell>
+                      <Table.Summary.Cell index={1} align="right">
+                        <Text>{formatCurrency(invoice.taxInfo.taxAmount)}</Text>
+                      </Table.Summary.Cell>
+                    </Table.Summary.Row>
+                  )}
+                  
+                  <Table.Summary.Row style={{ background: '#fafafa' }}>
+                    <Table.Summary.Cell index={0} colSpan={5} align="right">
+                      <Text strong style={{ fontSize: '16px' }}>Tổng cộng:</Text>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1} align="right">
+                      <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>
+                        {formatCurrency(invoice.totalAmount)}
+                      </Text>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </Table.Summary>
               )}
-              
-              {invoice.taxInfo.taxAmount > 0 && !invoice.taxInfo.taxIncluded && (
-                <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={5} align="right">
-                    <Text>Thuế VAT ({invoice.taxInfo.taxRate}%):</Text>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1} align="right">
-                    <Text>{formatCurrency(invoice.taxInfo.taxAmount)}</Text>
-                  </Table.Summary.Cell>
-                </Table.Summary.Row>
-              )}
-              
-              <Table.Summary.Row style={{ background: '#fafafa' }}>
-                <Table.Summary.Cell index={0} colSpan={5} align="right">
-                  <Text strong style={{ fontSize: '16px' }}>Tổng cộng:</Text>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={1} align="right">
-                  <Text strong style={{ fontSize: '16px', color: '#52c41a' }}>
-                    {formatCurrency(invoice.totalAmount)}
-                  </Text>
-                </Table.Summary.Cell>
-              </Table.Summary.Row>
-            </Table.Summary>
+            />
           )}
-        />
+        </Spin>
         
         {invoice.discountInfo.reason && (
           <div style={{ marginTop: 8, padding: '8px 12px', background: '#fff7e6', borderRadius: 4 }}>
