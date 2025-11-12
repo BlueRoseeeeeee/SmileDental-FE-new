@@ -377,38 +377,27 @@ const PaymentList = () => {
       title: 'Mã thanh toán',
       dataIndex: 'paymentCode',
       key: 'paymentCode',
-      width: 150,
+      width: 120,
       fixed: 'left',
-      render: (code) => <strong>{code}</strong>
+      render: (code) => <strong style={{ fontSize: '13px' }}>{code}</strong>
     },
     {
       title: 'Bệnh nhân',
       dataIndex: ['patientInfo', 'name'],
       key: 'patientName',
-      width: 180,
+      width: 150,
       render: (name, record) => (
         <div>
-          <div>{name}</div>
-          <small style={{ color: '#888' }}>{record.patientInfo?.phone}</small>
+          <div style={{ fontWeight: 500, marginBottom: 2 }}>{name}</div>
+          <small style={{ color: '#888', fontSize: '11px' }}>{record.patientInfo?.phone}</small>
         </div>
-      )
-    },
-    {
-      title: 'Loại',
-      dataIndex: 'type',
-      key: 'type',
-      width: 120,
-      render: (type) => (
-        <Tag color={getTypeColor(type)}>
-          {getTypeText(type)}
-        </Tag>
       )
     },
     {
       title: 'Phương thức',
       dataIndex: 'method',
       key: 'method',
-      width: 130,
+      width: 100,
       render: (method) => {
         if (!method) {
           return <Tag color="default">Chưa chọn</Tag>;
@@ -424,20 +413,20 @@ const PaymentList = () => {
       title: 'Số tiền',
       dataIndex: 'finalAmount',
       key: 'finalAmount',
-      width: 150,
+      width: 130,
       align: 'right',
       render: (amount, record) => (
         <div>
-          <div style={{ fontWeight: 'bold', color: '#1890ff' }}>
+          <div style={{ fontWeight: 'bold', color: '#1890ff', fontSize: '13px' }}>
             {amount?.toLocaleString('vi-VN')} đ
           </div>
           {record.depositAmount > 0 && (
-            <small style={{ color: '#52c41a' }}>
+            <small style={{ color: '#52c41a', fontSize: '11px' }}>
               (Đã cọc: {record.depositAmount?.toLocaleString('vi-VN')} đ)
             </small>
           )}
           {record.depositAmount === 0 && record.originalAmount && (
-            <small style={{ color: '#999' }}>
+            <small style={{ color: '#999', fontSize: '11px' }}>
               (Chưa cọc)
             </small>
           )}
@@ -445,33 +434,16 @@ const PaymentList = () => {
       )
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 130,
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {getStatusText(status)}
-        </Tag>
-      )
-    },
-    {
       title: 'Ngày thanh toán',
       dataIndex: 'processedAt',
       key: 'processedAt',
-      width: 160,
+      width: 130,
       render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm')
-    },
-    {
-      title: 'Người xử lý',
-      dataIndex: 'processedByName',
-      key: 'processedByName',
-      width: 150
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 150,
+      width: 120,
       fixed: 'right',
       render: (_, record) => (
         <Space>
@@ -634,7 +606,7 @@ const PaymentList = () => {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
-          scroll={{ x: 1400 }}
+          scroll={{ x: 800 }}
           size="small"
         />
       </Card>

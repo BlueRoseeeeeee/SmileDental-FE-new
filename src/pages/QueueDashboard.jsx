@@ -461,32 +461,32 @@ const QueueDashboard = () => {
       ) : (
         <>
           {/* Current Record */}
-          <Row className="mb-4">
+          <Row className="mb-3">
             <Col>
               <Card className="border-primary">
-                <Card.Header className="bg-primary text-white">
-                  <h5 className="mb-0">
-                    <FaClock className="me-2" />
+                <Card.Header className="bg-primary text-white py-1">
+                  <h6 className="mb-0" style={{ fontSize: '12px' }}>
+                    <FaClock className="me-1" style={{ fontSize: '11px' }} />
                     Đang Khám
-                  </h5>
+                  </h6>
                 </Card.Header>
-                <Card.Body>
+                <Card.Body style={{ padding: '8px' }}>
                   {queueStatus.current ? (
                     <div>
                       <Row>
                         <Col md={6}>
-                          <h3 className="text-primary">
+                          <div className="text-primary mb-1" style={{ fontSize: '13px', fontWeight: 'bold' }}>
                             STT: {queueStatus.current.queueNumber}
-                          </h3>
-                          <p className="mb-1">
+                          </div>
+                          <p className="mb-1" style={{ fontSize: '11px' }}>
                             <strong>Bệnh nhân:</strong>{' '}
                             {queueStatus.current.patientInfo?.name}
                           </p>
-                          <p className="mb-1">
+                          <p className="mb-1" style={{ fontSize: '11px' }}>
                             <strong>Điện thoại:</strong>{' '}
                             {queueStatus.current.patientInfo?.phone}
                           </p>
-                          <p className="mb-1">
+                          <p className="mb-0" style={{ fontSize: '11px' }}>
                             <strong>Bắt đầu:</strong>{' '}
                             {formatTime(queueStatus.current.startedAt)}
                           </p>
@@ -494,26 +494,28 @@ const QueueDashboard = () => {
                         <Col md={6} className="text-end">
                           <Button
                             variant="success"
-                            size="lg"
+                            size="sm"
                             onClick={() => handleCompleteRecord(queueStatus.current._id)}
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
                           >
-                            <FaCheckCircle className="me-2" />
+                            <FaCheckCircle className="me-1" style={{ fontSize: '10px' }} />
                             Hoàn Thành
                           </Button>
                           <Button
                             variant="danger"
-                            size="lg"
+                            size="sm"
                             className="ms-2"
                             onClick={() => openCancelModal(queueStatus.current._id)}
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
                           >
-                            <FaTimesCircle className="me-2" />
+                            <FaTimesCircle className="me-1" style={{ fontSize: '10px' }} />
                             Hủy
                           </Button>
                         </Col>
                       </Row>
                     </div>
                   ) : (
-                    <Alert variant="secondary" className="mb-0">
+                    <Alert variant="secondary" className="mb-0" style={{ fontSize: '11px', padding: '6px' }}>
                       Không có bệnh nhân đang khám
                     </Alert>
                   )}
@@ -523,29 +525,29 @@ const QueueDashboard = () => {
           </Row>
 
           {/* Next Record */}
-          <Row className="mb-4">
+          <Row className="mb-3">
             <Col>
               <Card className="border-warning">
-                <Card.Header className="bg-warning">
-                  <h5 className="mb-0">Bệnh Nhân Tiếp Theo</h5>
+                <Card.Header className="bg-warning py-1">
+                  <h6 className="mb-0" style={{ fontSize: '12px' }}>Bệnh Nhân Tiếp Theo</h6>
                 </Card.Header>
-                <Card.Body>
+                <Card.Body style={{ padding: '8px' }}>
                   {queueStatus.next ? (
                     <div>
                       <Row>
                         <Col md={6}>
-                          <h4 className="text-warning">
+                          <div className="text-warning mb-1" style={{ fontSize: '13px', fontWeight: 'bold' }}>
                             STT: {queueStatus.next.queueNumber || 'Chưa gán'}
-                          </h4>
-                          <p className="mb-1">
+                          </div>
+                          <p className="mb-1" style={{ fontSize: '11px' }}>
                             <strong>Bệnh nhân:</strong>{' '}
                             {queueStatus.next.patientInfo?.name}
                           </p>
-                          <p className="mb-1">
+                          <p className="mb-1" style={{ fontSize: '11px' }}>
                             <strong>Điện thoại:</strong>{' '}
                             {queueStatus.next.patientInfo?.phone}
                           </p>
-                          <p className="mb-1">
+                          <p className="mb-0" style={{ fontSize: '11px' }}>
                             <strong>Trạng thái:</strong>{' '}
                             {getStatusBadge(queueStatus.next.status)}
                           </p>
@@ -553,18 +555,20 @@ const QueueDashboard = () => {
                         <Col md={6} className="text-end">
                           <Button
                             variant="primary"
-                            size="lg"
+                            size="sm"
                             onClick={() => handleCallRecord(queueStatus.next._id)}
                             disabled={queueStatus.current !== null}
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
                           >
-                            <FaPhone className="me-2" />
+                            <FaPhone className="me-1" style={{ fontSize: '10px' }} />
                             Gọi Bệnh Nhân
                           </Button>
                           <Button
                             variant="outline-danger"
-                            size="lg"
+                            size="sm"
                             className="ms-2"
                             onClick={() => openCancelModal(queueStatus.next._id)}
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
                           >
                             Hủy
                           </Button>
@@ -572,7 +576,7 @@ const QueueDashboard = () => {
                       </Row>
                     </div>
                   ) : (
-                    <Alert variant="secondary" className="mb-0">
+                    <Alert variant="secondary" className="mb-0" style={{ fontSize: '11px', padding: '6px' }}>
                       Không có bệnh nhân trong hàng đợi
                     </Alert>
                   )}
@@ -585,73 +589,73 @@ const QueueDashboard = () => {
           <Row>
             <Col>
               <Card>
-                <Card.Header>
-                  <h5 className="mb-0">
+                <Card.Header style={{ padding: '8px 12px' }}>
+                  <h6 className="mb-0" style={{ fontSize: '12px' }}>
                     Lịch Khám Trong Ngày 
                     {queueStatus.summary && (
-                      <Badge bg="secondary" className="ms-2">
+                      <Badge bg="secondary" className="ms-2" style={{ fontSize: '10px' }}>
                         {queueStatus.summary.total} lịch
                       </Badge>
                     )}
-                  </h5>
+                  </h6>
                   {queueStatus.summary && (
-                    <div className="mt-2">
+                    <div className="mt-1">
                       <Badge 
                         bg="warning" 
                         text="dark" 
-                        className="me-2"
-                        style={{ cursor: 'pointer' }}
+                        className="me-1"
+                        style={{ cursor: 'pointer', fontSize: '10px', padding: '3px 6px' }}
                         onClick={() => openWaitingListModal('pending')}
                         title="Click để xem danh sách"
                       >
-                        <FaUsers className="me-1" />
+                        <FaUsers className="me-1" style={{ fontSize: '9px' }} />
                         Chờ: {queueStatus.summary.pending}
                       </Badge>
                       <Badge 
                         bg="primary" 
-                        className="me-2"
-                        style={{ cursor: 'pointer' }}
+                        className="me-1"
+                        style={{ cursor: 'pointer', fontSize: '10px', padding: '3px 6px' }}
                         onClick={() => openWaitingListModal('in-progress')}
                         title="Click để xem danh sách"
                       >
-                        <FaClock className="me-1" />
+                        <FaClock className="me-1" style={{ fontSize: '9px' }} />
                         Đang khám: {queueStatus.summary.inProgress}
                       </Badge>
                       <Badge 
                         bg="success" 
-                        className="me-2"
-                        style={{ cursor: 'pointer' }}
+                        className="me-1"
+                        style={{ cursor: 'pointer', fontSize: '10px', padding: '3px 6px' }}
                         onClick={() => openWaitingListModal('completed')}
                         title="Click để xem danh sách"
                       >
-                        <FaCheckCircle className="me-1" />
+                        <FaCheckCircle className="me-1" style={{ fontSize: '9px' }} />
                         Hoàn thành: {queueStatus.summary.completed}
                       </Badge>
                       <Badge 
                         bg="danger"
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'pointer', fontSize: '10px', padding: '3px 6px' }}
                         onClick={() => openWaitingListModal('cancelled')}
                         title="Click để xem danh sách"
                       >
-                        <FaTimesCircle className="me-1" />
+                        <FaTimesCircle className="me-1" style={{ fontSize: '9px' }} />
                         Đã hủy: {queueStatus.summary.cancelled}
                       </Badge>
                     </div>
                   )}
                 </Card.Header>
-                <Card.Body>
+                <Card.Body style={{ padding: '8px' }}>
                   {queueStatus.timeSlots && queueStatus.timeSlots.length > 0 ? (
                     <div 
                       style={{ 
-                        maxHeight: '400px', 
+                        maxHeight: '350px', 
                         overflowY: 'auto',
                         border: '1px solid #dee2e6',
                         borderRadius: '4px',
-                        padding: '10px'
+                        padding: '6px'
                       }}
                     >
                       {queueStatus.timeSlots.map((slot, index) => (
-                        <div key={index} className="mb-2">
+                        <div key={index} className="mb-1">
                           {slot.type === 'appointment' ? (
                             <Card 
                               className={`
@@ -660,23 +664,24 @@ const QueueDashboard = () => {
                                 ${slot.status === 'cancelled' ? 'border-danger text-muted' : ''}
                                 ${slot.status === 'pending' ? 'border-warning' : ''}
                               `}
+                              style={{ marginBottom: '3px' }}
                             >
-                              <Card.Body className="py-2 px-3">
+                              <Card.Body style={{ padding: '5px 8px' }}>
                                 <Row className="align-items-center">
                                   <Col md={2}>
                                     <div className="text-center">
-                                      <h5 className="mb-0">
+                                      <div style={{ fontSize: '11px', marginBottom: 0 }}>
                                         {slot.queueNumber ? (
-                                          <Badge bg="primary">{slot.queueNumber}</Badge>
+                                          <Badge bg="primary" style={{ fontSize: '10px', padding: '2px 6px' }}>{slot.queueNumber}</Badge>
                                         ) : (
-                                          <Badge bg="secondary">-</Badge>
+                                          <Badge bg="secondary" style={{ fontSize: '10px', padding: '2px 6px' }}>-</Badge>
                                         )}
-                                      </h5>
+                                      </div>
                                     </div>
                                   </Col>
                                   <Col md={3}>
-                                    <div>
-                                      <FaClock className="me-1 text-muted" />
+                                    <div style={{ fontSize: '10px' }}>
+                                      <FaClock className="me-1 text-muted" style={{ fontSize: '9px' }} />
                                       <strong>{formatTime(slot.startTime)}</strong>
                                       {' - '}
                                       <strong>{formatTime(slot.endTime)}</strong>
@@ -684,16 +689,18 @@ const QueueDashboard = () => {
                                   </Col>
                                   <Col md={3}>
                                     <div>
-                                      <strong>{slot.patientName}</strong>
+                                      <strong style={{ fontSize: '11px' }}>{slot.patientName}</strong>
                                       {slot.patientPhone && (
-                                        <div className="text-muted small">
+                                        <div className="text-muted" style={{ fontSize: '9px' }}>
                                           {slot.patientPhone}
                                         </div>
                                       )}
                                     </div>
                                   </Col>
                                   <Col md={2}>
-                                    {getStatusBadge(slot.status)}
+                                    <div style={{ fontSize: '9px' }}>
+                                      {getStatusBadge(slot.status)}
+                                    </div>
                                   </Col>
                                   <Col md={2} className="text-end">
                                     {slot.status === 'pending' && (
@@ -701,6 +708,7 @@ const QueueDashboard = () => {
                                         variant="outline-danger"
                                         size="sm"
                                         onClick={() => openCancelModal(slot.recordId)}
+                                        style={{ fontSize: '10px', padding: '2px 6px' }}
                                       >
                                         Hủy
                                       </Button>
@@ -712,18 +720,19 @@ const QueueDashboard = () => {
                           ) : (
                             // Gap slot
                             <div 
-                              className="text-center py-2" 
+                              className="text-center" 
                               style={{ 
                                 backgroundColor: '#f8f9fa',
                                 border: '1px dashed #dee2e6',
-                                borderRadius: '4px'
+                                borderRadius: '3px',
+                                padding: '2px 4px'
                               }}
                             >
-                              <small className="text-muted">
-                                <FaClock className="me-1" />
+                              <small className="text-muted" style={{ fontSize: '9px' }}>
+                                <FaClock className="me-1" style={{ fontSize: '8px' }} />
                                 Trống lịch: {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                                 {' '}
-                                <Badge bg="light" text="dark">
+                                <Badge bg="light" text="dark" style={{ fontSize: '8px', padding: '1px 4px' }}>
                                   {slot.durationMinutes} phút
                                 </Badge>
                               </small>

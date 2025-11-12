@@ -263,10 +263,10 @@ const InvoiceList = () => {
       title: 'Mã HĐ',
       dataIndex: 'invoiceNumber',
       key: 'invoiceNumber',
-      width: 140,
+      width: 110,
       fixed: 'left',
       render: (text, record) => (
-        <Button type="link" onClick={() => handleView(record)}>
+        <Button type="link" onClick={() => handleView(record)} style={{ padding: 0 }}>
           {text}
         </Button>
       )
@@ -275,7 +275,7 @@ const InvoiceList = () => {
       title: 'Loại',
       dataIndex: 'type',
       key: 'type',
-      width: 100,
+      width: 80,
       render: (type) => (
         <Tag color={type === 'treatment' ? 'blue' : 'default'}>
           {getTypeText(type)}
@@ -285,11 +285,11 @@ const InvoiceList = () => {
     {
       title: 'Bệnh nhân',
       key: 'patient',
-      width: 200,
+      width: 160,
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{record.patientInfo.name}</div>
-          <div style={{ fontSize: '12px', color: '#888' }}>
+          <div style={{ fontWeight: 500, marginBottom: 2 }}>{record.patientInfo.name}</div>
+          <div style={{ fontSize: '11px', color: '#888' }}>
             {record.patientInfo.phone}
           </div>
         </div>
@@ -299,34 +299,21 @@ const InvoiceList = () => {
       title: 'Bác sĩ',
       dataIndex: ['dentistInfo', 'name'],
       key: 'dentist',
-      width: 150
+      width: 130,
+      ellipsis: true
     },
     {
       title: 'Ngày tạo',
       dataIndex: 'issueDate',
       key: 'issueDate',
-      width: 110,
+      width: 90,
       render: (date) => dayjs(date).format('DD/MM/YYYY')
-    },
-    {
-      title: 'Hạn thanh toán',
-      dataIndex: 'dueDate',
-      key: 'dueDate',
-      width: 110,
-      render: (date, record) => {
-        const isOverdue = record.status !== 'paid' && dayjs(date).isBefore(dayjs());
-        return (
-          <span style={{ color: isOverdue ? '#ff4d4f' : 'inherit' }}>
-            {dayjs(date).format('DD/MM/YYYY')}
-          </span>
-        );
-      }
     },
     {
       title: 'Tổng tiền',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      width: 130,
+      width: 110,
       align: 'right',
       render: (amount) => (
         <span style={{ fontWeight: 500, color: '#1890ff' }}>
@@ -335,32 +322,10 @@ const InvoiceList = () => {
       )
     },
     {
-      title: 'Đã thanh toán',
-      key: 'paid',
-      width: 130,
-      align: 'right',
-      render: (_, record) => (
-        <span style={{ color: '#52c41a' }}>
-          {formatCurrency(record.paymentSummary.totalPaid)}
-        </span>
-      )
-    },
-    {
-      title: 'Còn nợ',
-      key: 'remaining',
-      width: 130,
-      align: 'right',
-      render: (_, record) => (
-        <span style={{ color: record.paymentSummary.remainingAmount > 0 ? '#ff4d4f' : '#52c41a' }}>
-          {formatCurrency(record.paymentSummary.remainingAmount)}
-        </span>
-      )
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 130,
+      width: 110,
       render: (status) => (
         <Tag color={getStatusColor(status)}>
           {getStatusText(status)}
@@ -370,7 +335,7 @@ const InvoiceList = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
+      width: 80,
       fixed: 'right',
       render: (_, record) => {
         const items = [
@@ -523,7 +488,7 @@ const InvoiceList = () => {
           dataSource={invoices}
           rowKey="_id"
           loading={loading}
-          scroll={{ x: 1600 }}
+          scroll={{ x: 900 }}
           pagination={{
             current: pagination.currentPage,
             pageSize: pagination.pageSize,

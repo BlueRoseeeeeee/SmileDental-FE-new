@@ -269,17 +269,31 @@ const QueueManagement = () => {
         style={{ cursor: 'pointer' }}
       >
         <Space direction="vertical" size={0} style={{ width: '100%' }}>
-          <Space style={{ width: '100%', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Text strong ellipsis style={{ maxWidth: isWaiting ? '100%' : '60%', fontSize: '11px', lineHeight: 1.2 }}>
-              {appointment.patientInfo.name}
-            </Text>
-            {!isWaiting && getStatusTag(appointment.status)}
-          </Space>
+          <Text 
+            strong 
+            ellipsis 
+            style={{ 
+              maxWidth: '100%', 
+              fontSize: '11px', 
+              lineHeight: 1.2,
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {appointment.patientInfo.name}
+          </Text>
           
           {!isWaiting && (
-            <Text type="secondary" style={{ fontSize: '9px', lineHeight: 1.3 }}>
-              🕐 {appointment.startTime} - {appointment.endTime}
-            </Text>
+            <>
+              <Text type="secondary" style={{ fontSize: '9px', lineHeight: 1.3, display: 'block' }}>
+                🕐 {appointment.startTime} - {appointment.endTime}
+              </Text>
+              <div style={{ marginTop: '2px' }}>
+                {getStatusTag(appointment.status)}
+              </div>
+            </>
           )}
         </Space>
       </div>
@@ -302,58 +316,32 @@ const QueueManagement = () => {
           {/* Room Header - Compact */}
           <div className="room-header-compact">
             <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 2 }}>
-              <Space size={3}>
-                <Avatar 
-                  size={22} 
-                  icon={<HomeOutlined />} 
-                  style={{ 
-                    backgroundColor: hasActivePatient ? '#1890ff' : '#d9d9d9',
-                    fontSize: '11px'
-                  }}
-                />
-                <div style={{ lineHeight: 1 }}>
-                  <Title level={5} style={{ margin: 0, fontSize: '13px', lineHeight: 1.2, marginBottom: 2, fontWeight: 600 }}>
-                    {room.roomName || 'Phòng khám'}
-                  </Title>
-                  {room.subroomName && (
-                    <Text type="secondary" style={{ fontSize: '10px', display: 'block', lineHeight: 1.2, marginBottom: 2 }}>
-                      {room.subroomName}
-                    </Text>
-                  )}
+              <div style={{ lineHeight: 1 }}>
+                <Text style={{ fontSize: '11px', lineHeight: 1.2, display: 'block', fontWeight: 600 }}>
+                  {room.roomName || 'Phòng khám'}
+                  {room.subroomName && ` (${room.subroomName})`}
+                </Text>
+                {hasActivePatient && (
                   <Tag 
-                    color={hasActivePatient ? 'blue' : 'default'} 
-                    style={{ fontSize: '9px', padding: '0 4px', lineHeight: '16px', margin: 0 }}
+                    color="blue" 
+                    style={{ fontSize: '9px', padding: '0 4px', lineHeight: '16px', margin: '2px 0 0 0' }}
                   >
-                    {hasActivePatient ? '🟢 Đang khám' : '⚪ Trống'}
+                    🟢 Đang khám
                   </Tag>
-                </div>
-              </Space>
-              
-              {upcomingCount > 0 && (
-                <Badge 
-                  count={upcomingCount} 
-                  style={{ backgroundColor: '#faad14' }}
-                  overflowCount={9}
-                />
-              )}
+                )}
+              </div>
             </Space>
           </div>
 
           <Divider style={{ margin: '2px 0' }} />
 
           {/* Current Patient - Minimal */}
-          {hasActivePatient ? (
+          {hasActivePatient && (
             <div className="current-patient-compact">
               <Text type="secondary" style={{ fontSize: '9px', display: 'block', marginBottom: 1 }}>
                 🔵 ĐANG KHÁM
               </Text>
               {renderPatientInfo(room.currentPatient)}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '6px 0' }}>
-              <Text type="secondary" style={{ fontSize: '10px' }}>
-                Không có bệnh nhân
-              </Text>
             </div>
           )}
 
@@ -363,7 +351,7 @@ const QueueManagement = () => {
               <Divider style={{ margin: '2px 0' }} dashed />
               <div className="next-patient-compact">
                 <Text type="secondary" style={{ fontSize: '9px', display: 'block', marginBottom: 1 }}>
-                  🟡 TIẾP THEO
+                  TIẾP THEO
                 </Text>
                 {renderPatientInfo(nextPatient)}
               </div>
@@ -374,51 +362,8 @@ const QueueManagement = () => {
           {waitingList.length > 0 && (
             <>
               <Divider style={{ margin: '2px 0' }} />
-              <div 
-                className="waiting-count-compact"
-                onClick={() => {
-                  Modal.info({
-                    title: `Danh sách chờ - ${room.roomName}`,
-                    width: 600,
-                    content: (
-                      <Space direction="vertical" style={{ width: '100%' }} size={12}>
-                        {waitingList.map((item, idx) => (
-                          <Card 
-                            key={item._id} 
-                            size="small" 
-                            hoverable
-                            onClick={() => handleViewDetails(item)}
-                          >
-                            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                              <Space>
-                                <Avatar size="small">{idx + 1}</Avatar>
-                                <div>
-                                  <Text strong>{item.patientInfo.name}</Text>
-                                  <br />
-                                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                                    {item.startTime} | {item.serviceAddOnName || item.serviceName}
-                                  </Text>
-                                </div>
-                              </Space>
-                              {getStatusTag(item.status)}
-                            </Space>
-                          </Card>
-                        ))}
-                      </Space>
-                    )
-                  });
-                }}
-                style={{ cursor: 'pointer' }}
-              >
-                <Text 
-                  type="secondary" 
-                  style={{ fontSize: '10px', textAlign: 'center', display: 'block' }}
-                >
-                  ⏳ {waitingList.length} BN đang chờ
-                </Text>
-              </div>
               
-              {/* Clickable badge - NEW */}
+              {/* Clickable badge */}
               <div
                 onClick={(e) => {
                   e.stopPropagation();
@@ -426,14 +371,19 @@ const QueueManagement = () => {
                 }}
                 style={{ 
                   cursor: 'pointer',
-                  marginTop: '4px',
-                  padding: '4px',
+                  padding: '6px',
                   backgroundColor: '#e6f7ff',
                   borderRadius: '4px',
                   textAlign: 'center'
                 }}
                 title="Click để xem danh sách chi tiết"
               >
+                <Text 
+                  type="secondary" 
+                  style={{ fontSize: '10px', display: 'block', marginBottom: '2px' }}
+                >
+                  ⏳ {waitingList.length} BN đang chờ
+                </Text>
                 <Text 
                   style={{ fontSize: '11px', color: '#1890ff', fontWeight: 500 }}
                 >

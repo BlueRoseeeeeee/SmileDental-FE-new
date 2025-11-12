@@ -45,7 +45,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import userService from '../../services/userService';
-import { servicesService } from '../../services/servicesService';
+import { servicesService, recordService } from '../../services'; // ⭐ Import recordService
 import slotService from '../../services/slotService';
 import appointmentService from '../../services/appointmentService';
 import scheduleConfigService from '../../services/scheduleConfigService'; // 🆕 Import for deposit calculation
@@ -72,6 +72,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     email: '',
     birthYear: null
   }); // ⭐ Store new patient info in state
+  const [unusedServices, setUnusedServices] = useState([]); // ⭐ Services from exam records
   
   // Services & Dentists
   const [services, setServices] = useState([]);
@@ -205,6 +206,10 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         dateOfBirth: patient.dateOfBirth,
         extractedBirthYear: birthYear
       });
+      
+      // ⭐ Fetch unused services for selected patient
+      fetchUnusedServicesForPatient(patientId);
+      
       message.success('Đã chọn bệnh nhân: ' + patient.fullName);
     } else {
       console.error('❌ Patient not found in searchResults!');
@@ -216,8 +221,34 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     setIsNewPatient(true);
     setSelectedPatient(null);
     setSearchResults([]);
+    setUnusedServices([]); // ⭐ Clear unused services for new patient
     form.resetFields(['patientName', 'patientPhone', 'patientEmail', 'patientBirthYear']);
+    // ⭐ Reload services to show only non-requireExamFirst services
+    loadServices();
     message.info('Vui lòng nhập thông tin bệnh nhân mới');
+  };
+
+  // ⭐ Fetch unused services from exam records for selected patient
+  const fetchUnusedServicesForPatient = async (patientId) => {
+    try {
+      console.log('🩺 Fetching unused services for patient:', patientId);
+      const response = await recordService.getUnusedServices(patientId);
+      console.log('📋 Unused services response:', response);
+      
+      if (response.success && response.data) {
+        setUnusedServices(response.data);
+        console.log(`✅ Loaded ${response.data.length} unused services`);
+        // ⭐ Reload services to apply new filter
+        loadServices();
+      } else {
+        setUnusedServices([]);
+        loadServices();
+      }
+    } catch (error) {
+      console.error('❌ Error fetching unused services:', error);
+      setUnusedServices([]);
+      loadServices();
+    }
   };
 
   // Load services from API
@@ -232,11 +263,44 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         const serviceData = response.services || [];
         console.log(`📊 Total services: ${serviceData.length}`);
         
-        // ⭐ Walk-in: Show ALL active services (no requireExamFirst filter)
-        // Because walk-in patients may not have accounts/exam records
-        const activeServices = serviceData.filter(s => s.isActive);
-        console.log(`✅ Active services for walk-in: ${activeServices.length}`, activeServices);
+        // ⭐ Filter active services first
+        let activeServices = serviceData.filter(s => s.isActive);
+        
+        // ⭐ Apply requireExamFirst filter based on patient status
+        if (selectedPatient && selectedPatient._id) {
+          // Patient selected - filter like BookingSelectService
+          console.log('👤 Patient selected, applying requireExamFirst filter...');
+          console.log('🩺 Unused services available:', unusedServices.length);
+          
+          activeServices = activeServices.filter(service => {
+            // If service doesn't require exam first, always show it
+            if (!service.requireExamFirst) {
+              return true;
+            }
+            
+            // If service requires exam first, check if patient has unused indication for it
+            const hasUnusedIndication = unusedServices.some(
+              unused => unused.serviceId.toString() === service._id.toString()
+            );
+            
+            if (service.requireExamFirst && !hasUnusedIndication) {
+              console.log(`⚠️ Service "${service.name}" requires exam but no unused indication found`);
+            }
+            
+            return hasUnusedIndication;
+          });
+        } else {
+          // No patient or new patient - only show services that don't require exam first
+          console.log('🆕 New patient or no patient selected, showing only non-requireExamFirst services');
+          activeServices = activeServices.filter(s => !s.requireExamFirst);
+        }
+        
+        console.log(`✅ Filtered services: ${activeServices.length}`, activeServices);
         setServices(activeServices);
+        
+        if (activeServices.length === 0 && selectedPatient) {
+          message.warning('Không có dịch vụ khả dụng cho bệnh nhân này. Vui lòng đặt lịch khám tổng quát trước.');
+        }
       } else {
         console.error('❌ Invalid services response structure:', response);
         setServices([]);
@@ -653,14 +717,6 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
             {currentStep === 0 && (
             <>
-              <Alert
-                message="Hướng dẫn"
-                description="Tìm kiếm bệnh nhân hiện có bằng số điện thoại, email hoặc tên. Nếu bệnh nhân chưa có trong hệ thống, hãy nhập thông tin mới."
-                type="info"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-
               <Card title={<Space><SearchOutlined />Tìm kiếm bệnh nhân</Space>} style={{ marginBottom: 16 }}>
                 <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
                   <Col xs={24} sm={6} md={5}>
@@ -849,37 +905,16 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   >
                     {services.map(service => (
                       <Option key={service._id} value={service._id}>
-                        <Space direction="vertical" size={0}>
-                          <Space>
-                            <Tag color={service.type === 'examination' ? 'blue' : 'green'}>
-                              {service.type === 'examination' ? 'Khám' : 'Điều trị'}
-                            </Tag>
-                            <Text strong>{service.name}</Text>
-                          </Space>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {service.price ? service.price.toLocaleString('vi-VN') : '0'}đ - {service.duration || 0} phút
-                          </Text>
+                        <Space>
+                          <Tag color={service.type === 'examination' ? 'blue' : 'green'}>
+                            {service.type === 'examination' ? 'Khám' : 'Điều trị'}
+                          </Tag>
+                          <Text strong>{service.name}</Text>
                         </Space>
                       </Option>
                     ))}
                   </Select>
                 </Form.Item>
-
-                {selectedService && (
-                  <Alert
-                    message="Thông tin dịch vụ"
-                    description={
-                      <Space direction="vertical" size={4}>
-                        <Text><strong>Tên:</strong> {selectedService.name}</Text>
-                        <Text><strong>Loại:</strong> {selectedService.type === 'examination' ? 'Khám' : 'Điều trị'}</Text>
-                        <Text><strong>Giá:</strong> {selectedService.price ? selectedService.price.toLocaleString('vi-VN') : '0'}đ</Text>
-                        <Text><strong>Thời gian:</strong> {selectedService.duration || 0} phút</Text>
-                      </Space>
-                    }
-                    type="info"
-                    showIcon
-                  />
-                )}
 
                 {/* ⭐ ServiceAddOn Display - Show list instead of Select */}
                 {selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
