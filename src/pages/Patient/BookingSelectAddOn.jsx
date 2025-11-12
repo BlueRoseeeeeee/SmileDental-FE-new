@@ -57,6 +57,7 @@ const BookingSelectAddOn = () => {
 
     // XÓA addon cũ khi vào trang này (user có thể chọn lại hoặc không chọn)
     localStorage.removeItem('booking_serviceAddOn');
+    localStorage.removeItem('booking_recordId');
 
     // Nếu service không có addons, skip sang màn chọn bác sĩ
     if (!serviceData.serviceAddOns || serviceData.serviceAddOns.length === 0) {
@@ -67,7 +68,7 @@ const BookingSelectAddOn = () => {
       return;
     }
 
-    // Check if service requires exam first
+    // Check if service requires exam first and user has indications
     if (serviceData.requireExamFirst && user) {
       setLoading(true);
       try {
@@ -82,16 +83,27 @@ const BookingSelectAddOn = () => {
         // If has indications with serviceAddOnId, can select that specific addon
         if (indications.length > 0 && indications[0].serviceAddOnId) {
           setCanSelectAddOn(true);
-          // Auto-select the indicated addon
+          console.log('✅ Can select addon (from indication):', indications[0].serviceAddOnName);
+        } else {
+          // Không có chỉ định → chỉ cho XEM, không cho chọn
+          setCanSelectAddOn(false);
+          console.log('⚠️ No indication found - can only view addons, cannot select');
         }
       } catch (error) {
         console.error('❌ Error fetching treatment indications:', error);
+        setCanSelectAddOn(false);
       } finally {
         setLoading(false);
       }
+    } else if (serviceData.requireExamFirst && !user) {
+      // User chưa login nhưng service yêu cầu khám trước
+      // Vẫn cho xem addons nhưng không cho chọn
+      setCanSelectAddOn(false);
+      console.log('⚠️ User not logged in - can only view addons');
     } else {
-      // Service doesn't require exam or user not logged in → can select any addon
-      setCanSelectAddOn(true);
+      // Service không yêu cầu khám trước → chỉ cho XEM, không cho chọn
+      setCanSelectAddOn(false);
+      console.log('⚠️ Service does not require exam first - can only view addons');
     }
   };
 
@@ -111,12 +123,45 @@ const BookingSelectAddOn = () => {
     
     // Save selected addon and navigate immediately
     localStorage.setItem('booking_serviceAddOn', JSON.stringify(addon));
+    
+    // 🆕 Save recordId if this addon is from a treatment indication
+    if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId === addon._id) {
+      const indication = treatmentIndications[0];
+      localStorage.setItem('booking_recordId', indication.recordId);
+      console.log('✅ Saved recordId from indication:', indication.recordId);
+    } else {
+      // Clear recordId if not from indication
+      localStorage.removeItem('booking_recordId');
+    }
+    
     message.success(`Đã chọn gói: ${addon.name}`);
     navigate('/patient/booking/select-dentist');
   };
 
   const handleBack = () => {
     navigate('/patient/booking/select-service');
+  };
+
+  // 🆕 Handle skip addon selection
+  const handleSkipAddon = () => {
+    // Nếu có chỉ định addon cụ thể → BẮT BUỘC phải chọn, không được bỏ qua
+    if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId) {
+      message.error('Bạn phải chọn gói dịch vụ đã được chỉ định để tiếp tục');
+      return;
+    }
+    
+    // Clear addon selection (will use max duration from service)
+    localStorage.removeItem('booking_serviceAddOn');
+    localStorage.removeItem('booking_recordId');
+    
+    if (service.requireExamFirst && treatmentIndications.length === 0) {
+      // Service yêu cầu khám nhưng không có chỉ định
+      message.warning('Dịch vụ này yêu cầu khám trước. Vui lòng đặt lịch khám tổng quát trước.');
+      return;
+    }
+    
+    console.log('⏭️ Skipping addon selection - will use max duration');
+    navigate('/patient/booking/select-dentist');
   };
 
   if (!service) {
@@ -311,14 +356,19 @@ const BookingSelectAddOn = () => {
               >
                 Quay lại
               </Button>
-              <Button
-              size='large'
-              icon={<ArrowRightOutlined />}
-              onClick={()=>navigate('/patient/booking/select-dentist')}
-              style={{marginLeft:10}}
-              >
-                Tiếp theo
-              </Button>
+              
+              {/* Chỉ hiển thị button "Bỏ qua/Tiếp theo" nếu KHÔNG có chỉ định addon cụ thể */}
+              {!(treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId) && (
+                <Button
+                  size='large'
+                  type={canSelectAddOn ? 'default' : 'primary'}
+                  icon={<ArrowRightOutlined />}
+                  onClick={handleSkipAddon}
+                  style={{marginLeft:10, borderRadius: 6}}
+                >
+                  {canSelectAddOn ? 'Bỏ qua' : 'Tiếp theo'}
+                </Button>
+              )}
             </div>
             </div>
           </div>

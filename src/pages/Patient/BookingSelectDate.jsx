@@ -82,14 +82,15 @@ const BookingSelectDate = () => {
     
     console.log('🎯 Fetching working dates with duration:', serviceDuration, 'minutes');
     console.log('📦 Service:', serviceData.name, '| AddOn:', serviceAddOnData?.name || 'none');
+    console.log('🏥 Service ID:', serviceData._id);
     
-    // Fetch working dates with service duration
-    fetchWorkingDates(dentistData._id, serviceDuration);
+    // Fetch working dates with service duration and serviceId for room type filtering
+    fetchWorkingDates(dentistData._id, serviceDuration, serviceData._id);
   }, []);
 
-  const fetchWorkingDates = async (dentistId, serviceDuration = 15) => {
+  const fetchWorkingDates = async (dentistId, serviceDuration = 15, serviceId = null) => {
     try {
-      const response = await slotService.getDentistWorkingDates(dentistId, serviceDuration);
+      const response = await slotService.getDentistWorkingDates(dentistId, serviceDuration, serviceId);
       
       if (response.success && response.data.workingDates) {
         setWorkingDates(response.data.workingDates);

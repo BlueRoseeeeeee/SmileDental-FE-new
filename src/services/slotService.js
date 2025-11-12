@@ -181,9 +181,14 @@ const slotService = {
   },
 
   // Lấy danh sách ngày làm việc của nha sỹ trong maxBookingDays
-  getDentistWorkingDates: async (dentistId, serviceDuration = 15) => {
+  getDentistWorkingDates: async (dentistId, serviceDuration = 15, serviceId = null) => {
+    const params = { serviceDuration };
+    if (serviceId) {
+      params.serviceId = serviceId; // 🆕 Add serviceId for room type filtering
+    }
+    
     const response = await scheduleApi.get(`/slot/dentist/${dentistId}/working-dates`, {
-      params: { serviceDuration }
+      params
     });
     return response.data;
   },

@@ -22,6 +22,7 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import slotService from '../../services/slotService.js';
+import recordService from '../../services/recordService.js';
 import { mockDentists, mockServices } from '../../services/mockData.js';
 import './BookingSelectDentist.css';
 
@@ -36,6 +37,7 @@ const BookingSelectDentist = () => {
   const [filteredDentists, setFilteredDentists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [examDentistId, setExamDentistId] = useState(null); // 🆕 Dentist đã thực hiện khám
 
   useEffect(() => {
     // Pre-populate localStorage with mock data if using mocks
@@ -47,6 +49,7 @@ const BookingSelectDentist = () => {
     // Lấy service đã chọn từ bước trước
     const service = localStorage.getItem('booking_service');
     const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
+    const recordId = localStorage.getItem('booking_recordId'); // 🆕 RecordId nếu có chỉ định
     
     if (!service) {
       navigate('/patient/booking/select-service');
@@ -56,17 +59,52 @@ const BookingSelectDentist = () => {
     const serviceData = JSON.parse(service);
     const serviceAddOnData = serviceAddOn ? JSON.parse(serviceAddOn) : null;
     
-    // Calculate service duration (prioritize addon)
-    const serviceDuration = serviceAddOnData?.durationMinutes 
-                         || serviceData?.durationMinutes 
-                         || 15;
+    // 🆕 Load exam dentist info from record if recordId exists
+    if (recordId) {
+      loadExamDentistFromRecord(recordId);
+    }
     
-    console.log('🎯 Fetching dentists with duration:', serviceDuration, 'minutes');
+    // 🆕 Calculate service duration:
+    // - If serviceAddOn is selected (user chose specific addon) → use its duration
+    // - Otherwise → use max duration from all service addons (or service default)
+    let serviceDuration = 15; // Default
+    
+    if (serviceAddOnData?.durationMinutes) {
+      // User đã chọn addon cụ thể → dùng duration của addon đó
+      serviceDuration = serviceAddOnData.durationMinutes;
+      console.log('🎯 Using selected addon duration:', serviceDuration, 'minutes');
+    } else if (serviceData.serviceAddOns && serviceData.serviceAddOns.length > 0) {
+      // Không chọn addon → lấy duration dài nhất
+      const maxDuration = Math.max(...serviceData.serviceAddOns.map(addon => addon.durationMinutes || 15));
+      serviceDuration = maxDuration;
+      console.log('🎯 Using max addon duration:', serviceDuration, 'minutes (from', serviceData.serviceAddOns.length, 'addons)');
+    } else if (serviceData.durationMinutes) {
+      // Fallback to service default duration
+      serviceDuration = serviceData.durationMinutes;
+      console.log('🎯 Using service default duration:', serviceDuration, 'minutes');
+    }
+    
     console.log('📦 Service:', serviceData.name, '| AddOn:', serviceAddOnData?.name || 'none');
     console.log('🏥 Service ID:', serviceData._id, '| Allowed RoomTypes:', serviceData.allowedRoomTypes);
     
     fetchDentists(serviceDuration, serviceData._id);
   }, [navigate]);
+
+  // 🆕 Load dentist who performed the exam from record
+  const loadExamDentistFromRecord = async (recordId) => {
+    try {
+      console.log('🔍 Loading exam dentist from record:', recordId);
+      const response = await recordService.getRecordById(recordId);
+      
+      if (response.success && response.data && response.data.dentistId) {
+        setExamDentistId(response.data.dentistId);
+        console.log('✅ Exam dentist ID:', response.data.dentistId, '| Name:', response.data.dentistName);
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not load exam dentist from record:', error.message);
+      // Not critical, just won't show the badge
+    }
+  };
 
   const fetchDentists = async (serviceDuration = 15, serviceId = null) => {
     try {
@@ -190,9 +228,17 @@ const BookingSelectDentist = () => {
                           </Col>
                           <Col flex="auto">
                             <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                              <h4 style={{ margin: 0, color: '#BE8600', fontWeight: 'bold', fontSize: '18px' }}>
-                                {dentist.title || 'NS.'} {dentist.fullName}
-                              </h4>
+                              <Space align="center">
+                                <h4 style={{ margin: 0, color: '#BE8600', fontWeight: 'bold', fontSize: '18px' }}>
+                                  {dentist.title || 'NS.'} {dentist.fullName}
+                                </h4>
+                                {/* 🆕 Badge for exam dentist */}
+                                {examDentistId && dentist._id === examDentistId && (
+                                  <Tag color="blue" style={{ marginLeft: 8 }}>
+                                    ⭐ Nha sỹ đã khám
+                                  </Tag>
+                                )}
+                              </Space>
                               <Space size={4}>
                                 <Text type="secondary">Giới tính: {dentist.gender === 'male' ? 'Nam' : dentist.gender === 'female' ? 'Nữ' : 'Khác'}</Text>
                               </Space>
