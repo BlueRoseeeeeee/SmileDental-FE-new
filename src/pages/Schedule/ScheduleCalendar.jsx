@@ -2840,13 +2840,6 @@ const ScheduleCalendar = () => {
             }
           />
 
-          <Alert
-            type="info"
-            showIcon
-            message="Lưu ý"
-            description="Chỉ các slot ĐÃ BỊ TẮT (isActive = false) mới được bật lại. Các slot đang hoạt động bình thường sẽ không bị ảnh hưởng."
-          />
-
           {/* Reason Input (Optional) */}
           <div>
             <Text strong style={{ fontSize: 16 }}>

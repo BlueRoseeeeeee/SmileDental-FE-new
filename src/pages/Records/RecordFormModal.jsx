@@ -1147,10 +1147,11 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         rules={[{ required: true, message: 'Vui lòng nhập chẩn đoán' }]}
       >
         <TextArea
-          rows={6}
+          rows={5}
           placeholder="Nhập chẩn đoán chi tiết..."
           maxLength={1000}
           showCount
+          className='custom-textarea'
         />
       </Form.Item>
 
@@ -1163,6 +1164,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           placeholder="Nhập ghi chú về bệnh nhân..."
           maxLength={1000}
           showCount
+          className='custom-textarea'
         />
       </Form.Item>
     </div>
@@ -2007,9 +2009,10 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                           >
                             <TextArea 
                               placeholder="Nhập ghi chú về chỉ định điều trị (vd: răng số 36, 37...)" 
-                              rows={2}
+                              rows={5}
                               maxLength={300}
                               showCount
+                              className='custom-textarea'
                             />
                           </Form.Item>
                         </Col>
