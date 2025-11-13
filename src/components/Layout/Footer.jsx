@@ -1,7 +1,7 @@
 /*
 * @author: HoTram
 */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Row, Col, Typography, Space } from 'antd';
 import { 
   PhoneOutlined,
@@ -10,6 +10,7 @@ import {
   ClockCircleOutlined
 } from '@ant-design/icons';
 import './Footer.css';
+import scheduleConfigService from '../../services/scheduleConfigService';
 
 const { Footer: AntFooter } = Layout;
 const { Text, Title } = Typography;
@@ -73,6 +74,88 @@ const links = [
 ];
 
 const Footer = () => {
+  const [workingHours, setWorkingHours] = useState([]);
+  const [workingDaysText, setWorkingDaysText] = useState('');
+
+  useEffect(() => {
+    const fetchWorkingHours = async () => {
+      try {
+        const response = await scheduleConfigService.getConfig();
+        if (response.success && response.data) {
+          const config = response.data;
+          const activeShifts = [];
+
+          // Kiểm tra từng ca và thêm vào mảng nếu isActive = true
+          if (config.morningShift?.isActive) {
+            activeShifts.push({
+              name: config.morningShift.name,
+              time: `${config.morningShift.startTime} - ${config.morningShift.endTime}`
+            });
+          }
+          if (config.afternoonShift?.isActive) {
+            activeShifts.push({
+              name: config.afternoonShift.name,
+              time: `${config.afternoonShift.startTime} - ${config.afternoonShift.endTime}`
+            });
+          }
+          if (config.eveningShift?.isActive) {
+            activeShifts.push({
+              name: config.eveningShift.name,
+              time: `${config.eveningShift.startTime} - ${config.eveningShift.endTime}`
+            });
+          }
+
+          setWorkingHours(activeShifts);
+        }
+      } catch (error) {
+        setWorkingHours([]);
+      }
+    };
+
+    const fetchWorkingDays = async () => {
+      try {
+        const response = await scheduleConfigService.getHolidays();
+        if (response.success && response.data) {
+          const holidays = response.data.holidays || [];
+          
+          // Lấy các ngày làm việc cố định: isRecurring = true VÀ isActive = false
+          // isActive = false có nghĩa là ngày đó KHÔNG nghỉ, tức là ĐANG HOẠT ĐỘNG
+          const workingDays = holidays
+            .filter(h => h.isRecurring === true && h.isActive === false)
+            .map(h => h.dayOfWeek)
+            .sort((a, b) => a - b);
+
+          // Map dayOfWeek (1-7) sang tên thứ
+          const dayNames = {
+            1: 'Chủ Nhật',
+            2: 'Thứ Hai', 
+            3: 'Thứ Ba',
+            4: 'Thứ Tư',
+            5: 'Thứ Năm',
+            6: 'Thứ Sáu',
+            7: 'Thứ Bảy'
+          };
+
+          if (workingDays.length === 0) {
+            setWorkingDaysText('Phòng khám đang trong trạng thái đóng cửa...');
+          } else if (workingDays.length === 7) {
+            setWorkingDaysText('Làm việc tất cả các ngày trong tuần');
+          } else {
+            // Hiển thị danh sách ngày làm việc
+            const workingDayNames = workingDays.map(d => dayNames[d]);
+            setWorkingDaysText(`Làm việc vào các ngày: ${workingDayNames.join(', ')}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching working days:', error);
+        setWorkingDaysText('');
+      }
+    };
+
+    fetchWorkingHours();
+    fetchWorkingDays();
+  }, []);
+
   return (
     <AntFooter style={footerStyles.container} className="custom-footer">
       <div style={footerStyles.content}>
@@ -97,15 +180,54 @@ const Footer = () => {
               </div>
               <div style={{ marginTop: '16px' }}>
                 <Text style={{ color: 'white', fontSize: '16px', fontWeight: '600' }}>
-                  GIỜ LÀM VIỆC
+                  LỊCH LÀM VIỆC
                 </Text>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <ClockCircleOutlined style={footerStyles.icon} />
-                <Text style={footerStyles.text}>
-                  {companyInfo.workingHours}
-                </Text>
-              </div>
+              
+
+              {/* Giờ làm việc */}
+              {workingHours.length > 0 ? (
+                <ul style={{ 
+                  listStyle: 'none', 
+                  padding: 0, 
+                  margin: 0 
+                }}>
+                  {workingHours.map((shift, index) => (
+                    <li key={index} style={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      marginBottom: '5px'
+                    }}>
+                      <ClockCircleOutlined style={footerStyles.icon} />
+                      <Text style={footerStyles.text}>
+                        {shift.name}: {shift.time}
+                      </Text>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <ClockCircleOutlined style={footerStyles.icon} />
+                  <Text style={footerStyles.text}>
+                    Phòng khám đang trong trạng thái đóng cửa...
+                  </Text>
+                </div>
+              )}
+
+             {/* Ngày làm việc */}
+              {workingDaysText && (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'flex-start',
+                  marginBottom: '12px',
+                  lineHeight:'1.5'
+                }}>
+                  <ClockCircleOutlined style={footerStyles.iconTop} />
+                  <Text style={footerStyles.text}>
+                    {workingDaysText}
+                  </Text>
+                </div>
+              )}
             </Space>
           </Col>
 
