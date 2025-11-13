@@ -552,10 +552,11 @@ const MedicineList = () => {
                 label="Mô tả"
               >
                 <TextArea
-                  rows={2}
+                  rows={5}
                   placeholder="Mô tả ngắn gọn về thuốc"
                   maxLength={1000}
                   showCount
+                  className='custom-textarea'
                 />
               </Form.Item>
             </Col>
@@ -566,10 +567,11 @@ const MedicineList = () => {
                 label="Hướng dẫn sử dụng"
               >
                 <TextArea
-                  rows={3}
+                  rows={5}
                   placeholder="Hướng dẫn cách sử dụng thuốc"
                   maxLength={1000}
                   showCount
+                  className='custom-textarea'
                 />
               </Form.Item>
             </Col>
@@ -580,10 +582,11 @@ const MedicineList = () => {
                 label="Chống chỉ định"
               >
                 <TextArea
-                  rows={2}
+                  rows={5}
                   placeholder="Các trường hợp không nên sử dụng thuốc này"
                   maxLength={1000}
                   showCount
+                  className='custom-textarea'
                 />
               </Form.Item>
             </Col>
@@ -594,10 +597,11 @@ const MedicineList = () => {
                 label="Tác dụng phụ"
               >
                 <TextArea
-                  rows={2}
+                  rows={5}
                   placeholder="Các tác dụng phụ có thể xảy ra"
                   maxLength={1000}
                   showCount
+                  className='custom-textarea'
                 />
               </Form.Item>
             </Col>
