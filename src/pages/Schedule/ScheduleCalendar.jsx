@@ -2856,11 +2856,12 @@ const ScheduleCalendar = () => {
               value={emergencyEnableReason}
               onChange={(e) => setEmergencyEnableReason(e.target.value)}
               placeholder="Ví dụ: Sự cố đã được khắc phục, phòng khám hoạt động trở lại bình thường..."
-              rows={3}
               maxLength={500}
               showCount
               style={{ marginTop: 8 }}
               disabled={emergencyEnabling}
+              className='custom-textarea'
+              rows={5}
             />
           </div>
 
