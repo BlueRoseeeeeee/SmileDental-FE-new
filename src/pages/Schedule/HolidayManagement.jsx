@@ -231,9 +231,7 @@ const HolidayManagement = () => {
   const handleToggleActive = async (holidayId, checked) => {
     try {
       await scheduleConfigService.updateHoliday(holidayId, { isActive: checked });
-      setHolidays(holidays.map(h => 
-        h._id === holidayId ? { ...h, isActive: checked } : h
-      ));
+      await loadHolidays();
       toast.success(`${checked ? 'Bật' : 'Tắt'} ngày nghỉ thành công!`);
     } catch (error) {
       toast.error('Không thể thay đổi trạng thái ngày nghỉ');
