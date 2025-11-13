@@ -27,7 +27,8 @@ import {
   Steps,
   Alert,
   InputNumber,
-  Badge
+  Badge,
+  Radio
 } from 'antd';
 
 const { Step } = Steps;
@@ -75,9 +76,11 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   }); // ⭐ Store new patient info in state
   const [unusedServices, setUnusedServices] = useState([]); // ⭐ Services from exam records
   const [treatmentIndications, setTreatmentIndications] = useState([]); // 🆕 Treatment indications cho service
+  const [serviceSource, setServiceSource] = useState('all'); // 🆕 'all' or 'recommended' - filter by indication
   
   // Services & Dentists
-  const [services, setServices] = useState([]);
+  const [allServices, setAllServices] = useState([]); // 🆕 ALL services loaded from API (cached)
+  const [services, setServices] = useState([]); // Filtered services to display
   const [dentists, setDentists] = useState([]);
   const [selectedService, setSelectedService] = useState(null);
   const [selectedServiceAddOn, setSelectedServiceAddOn] = useState(null); // ⭐ Add serviceAddOn state
@@ -101,8 +104,31 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
+  // 🆕 Load ALL services on mount (one time only)
   useEffect(() => {
-    loadServices();
+    const loadAllServices = async () => {
+      try {
+        console.log('🔧 [Initial Load] Loading ALL services...');
+        const response = await servicesService.getAllServices();
+        
+        if (response && response.services) {
+          const serviceData = response.services || [];
+          const activeServices = serviceData.filter(s => s.isActive);
+          console.log(`✅ [Initial Load] Loaded ${activeServices.length} active services`);
+          setAllServices(activeServices);
+          
+          // Initially show only services that don't require exam
+          const nonExamServices = activeServices.filter(s => !s.requireExamFirst);
+          console.log(`📋 [Initial Load] Showing ${nonExamServices.length} non-exam services initially`);
+          setServices(nonExamServices);
+        }
+      } catch (error) {
+        console.error('❌ [Initial Load] Error loading services:', error);
+        message.error('Không thể tải danh sách dịch vụ');
+      }
+    };
+    
+    loadAllServices();
     loadScheduleConfig(); // 🆕 Load deposit config
     // ⭐ Don't load dentists here - they will be loaded after selecting a service
   }, []);
@@ -227,36 +253,54 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     setIsNewPatient(true);
     setSelectedPatient(null);
     setSearchResults([]);
-    setUnusedServices([]); // ⭐ Clear unused services for new patient
+    setUnusedServices([]);
     form.resetFields(['patientName', 'patientPhone', 'patientEmail', 'patientBirthYear']);
-    // ⭐ Reload services to show only non-requireExamFirst services
-    loadServices();
+    // ⭐ Filter to show only non-exam services for new patient
+    filterServicesByPatient([], serviceSource);
     message.info('Vui lòng nhập thông tin bệnh nhân mới');
   };
 
   // ⭐ Fetch unused services from exam records for selected patient
   const fetchUnusedServicesForPatient = async (patientId) => {
     try {
-      console.log('🩺 Fetching unused services for patient:', patientId);
-      const response = await recordService.getUnusedServices(patientId);
-      console.log('📋 Unused services response:', response);
+      console.log('🩺 [fetchUnusedServices] Starting for patient:', patientId);
+      console.log('🩺 [fetchUnusedServices] API URL:', `${import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010'}/api/record/patient/${patientId}/unused-services`);
       
-      if (response.success && response.data) {
+      const response = await recordService.getUnusedServices(patientId);
+      console.log('📋 [fetchUnusedServices] RAW Response:', response);
+      console.log('📋 [fetchUnusedServices] Response Type:', typeof response);
+      console.log('📋 [fetchUnusedServices] Response Keys:', Object.keys(response || {}));
+      
+      if (response && response.success && response.data) {
         const unusedData = response.data;
-        setUnusedServices(unusedData);
-        console.log(`✅ Loaded ${unusedData.length} unused services:`, unusedData);
+        console.log('✅ [fetchUnusedServices] Success! Data:', unusedData);
+        console.log('✅ [fetchUnusedServices] Data length:', unusedData.length);
+        console.log('✅ [fetchUnusedServices] First item:', unusedData[0]);
         
-        // ⭐ Pass unused services directly to loadServices to avoid closure issue
-        loadServices(unusedData);
+        // ⭐ Set state and filter services with current serviceSource
+        setUnusedServices(unusedData);
+        filterServicesByPatient(unusedData, serviceSource);
       } else {
-        console.log('⚠️ No unused services found for patient');
+        console.warn('⚠️ [fetchUnusedServices] No data or unsuccessful response');
+        console.warn('⚠️ [fetchUnusedServices] response.success:', response?.success);
+        console.warn('⚠️ [fetchUnusedServices] response.data:', response?.data);
         setUnusedServices([]);
-        loadServices([]);
+        filterServicesByPatient([], serviceSource);
+        
+        if (response && !response.success) {
+          message.warning('Không tìm thấy dịch vụ chỉ định cho bệnh nhân này');
+        }
       }
     } catch (error) {
-      console.error('❌ Error fetching unused services:', error);
+      console.error('❌ [fetchUnusedServices] Error:', error);
+      console.error('❌ [fetchUnusedServices] Error message:', error.message);
+      console.error('❌ [fetchUnusedServices] Error response:', error.response?.data);
+      console.error('❌ [fetchUnusedServices] Error status:', error.response?.status);
+      
       setUnusedServices([]);
-      loadServices([]);
+      filterServicesByPatient([]);
+      
+      message.error(`Lỗi tải dịch vụ chỉ định: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -284,6 +328,14 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   const getRecordIdForService = (serviceId) => {
     const indication = unusedServices.find(unused => unused.serviceId.toString() === serviceId.toString());
     return indication?.recordId || null;
+  };
+
+  // 🆕 Handle service source change (all vs recommended)
+  const handleServiceSourceChange = (e) => {
+    const source = e.target.value;
+    console.log('🔄 Service source changed to:', source);
+    setServiceSource(source);
+    filterServicesByPatient(unusedServices, source);
   };
 
   // 🆕 Fetch working dates for selected dentist
@@ -332,69 +384,53 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   };
 
   // Load services from API
-  const loadServices = async (unusedServicesParam = null) => {
-    try {
-      console.log('🔧 Loading services...');
-      const response = await servicesService.getAllServices();
-      console.log('📋 Services API Response:', response);
-      
-      // API trả về trực tiếp { services: [...], total, page, limit }
-      if (response && response.services) {
-        const serviceData = response.services || [];
-        console.log(`📊 Total services: ${serviceData.length}`);
-        
-        // ⭐ Filter active services first
-        let activeServices = serviceData.filter(s => s.isActive);
-        
-        // ⭐ Use parameter if provided, otherwise use state
-        const unusedSvcs = unusedServicesParam !== null ? unusedServicesParam : unusedServices;
-        
-        // ⭐ Apply requireExamFirst filter based on patient status
-        if (selectedPatient && selectedPatient._id) {
-          // Patient selected - filter like BookingSelectService
-          console.log('👤 Patient selected, applying requireExamFirst filter...');
-          console.log('🩺 Unused services available:', unusedSvcs.length, unusedSvcs);
-          
-          activeServices = activeServices.filter(service => {
-            // If service doesn't require exam first, always show it
-            if (!service.requireExamFirst) {
-              console.log(`✅ Service "${service.name}" does NOT require exam - showing`);
-              return true;
-            }
-            
-            // If service requires exam first, check if patient has unused indication for it
-            const hasUnusedIndication = unusedSvcs.some(
-              unused => unused.serviceId.toString() === service._id.toString()
-            );
-            
-            if (service.requireExamFirst && hasUnusedIndication) {
-              console.log(`✅ Service "${service.name}" requires exam AND has unused indication - showing`);
-            } else if (service.requireExamFirst && !hasUnusedIndication) {
-              console.log(`❌ Service "${service.name}" requires exam but NO unused indication - hiding`);
-            }
-            
-            return hasUnusedIndication;
-          });
-        } else {
-          // No patient or new patient - only show services that don't require exam first
-          console.log('🆕 New patient or no patient selected, showing only non-requireExamFirst services');
-          activeServices = activeServices.filter(s => !s.requireExamFirst);
+  // 🆕 Filter services based on patient's unused services (no API call)
+  const filterServicesByPatient = (unusedSvcs, source = serviceSource) => {
+    console.log('🔧 [filterServices] Starting filter...');
+    console.log('🔧 [filterServices] allServices count:', allServices.length);
+    console.log('🔧 [filterServices] unusedSvcs:', unusedSvcs);
+    console.log('🔧 [filterServices] selectedPatient:', selectedPatient);
+    console.log('🔧 [filterServices] serviceSource:', source);
+    
+    if (allServices.length === 0) {
+      console.warn('⚠️ [filterServices] No services loaded yet');
+      return;
+    }
+    
+    let filtered = [...allServices];
+    
+    // 🆕 Filter by source (normal or recommended)
+    if (source === 'recommended' && unusedSvcs.length > 0) {
+      // Chỉ hiển thị dịch vụ được chỉ định
+      const recommendedIds = new Set(unusedSvcs.map(s => s.serviceId.toString()));
+      filtered = allServices.filter(service => recommendedIds.has(service._id.toString()));
+      console.log(`🌟 [filterServices] Showing ONLY recommended services: ${filtered.length}`);
+    } else {
+      // 🆕 Dịch vụ thường: CHỈ hiển thị dịch vụ KHÔNG yêu cầu khám trước
+      // KHÔNG bao gồm dịch vụ được chỉ định
+      const recommendedIds = new Set(unusedSvcs.map(s => s.serviceId.toString()));
+      filtered = allServices.filter(service => {
+        // Loại bỏ dịch vụ chỉ định
+        if (recommendedIds.has(service._id.toString())) {
+          console.log(`❌ [filterServices] "${service.name}" - is recommended, excluded from normal`);
+          return false;
         }
-        
-        console.log(`✅ Filtered services: ${activeServices.length}`, activeServices.map(s => s.name));
-        setServices(activeServices);
-        
-        if (activeServices.length === 0 && selectedPatient) {
-          message.warning('Không có dịch vụ khả dụng cho bệnh nhân này. Vui lòng đặt lịch khám tổng quát trước.');
+        // Chỉ lấy dịch vụ không yêu cầu khám trước
+        if (!service.requireExamFirst) {
+          console.log(`✅ [filterServices] "${service.name}" - no exam required`);
+          return true;
         }
-      } else {
-        console.error('❌ Invalid services response structure:', response);
-        setServices([]);
-      }
-    } catch (error) {
-      console.error('❌ Error loading services:', error);
-      message.error('Không thể tải danh sách dịch vụ');
-      setServices([]);
+        console.log(`❌ [filterServices] "${service.name}" - requires exam, excluded`);
+        return false;
+      });
+      console.log(`📊 [filterServices] Showing normal services (non-exam, excluding recommended): ${filtered.length}`);
+    }
+    
+    console.log(`✅ [filterServices] Result: ${filtered.length} services`, filtered.map(s => s.name));
+    setServices(filtered);
+    
+    if (filtered.length === 0 && selectedPatient && source === 'all') {
+      message.warning('Không có dịch vụ thường khả dụng. Vui lòng kiểm tra tab "Dịch vụ chỉ định".');
     }
   };
 
@@ -1086,6 +1122,26 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           {currentStep === 1 && (
             <>
               <Card title={<Space><MedicineBoxOutlined />Chọn dịch vụ</Space>} style={{ marginBottom: 16 }}>
+                {/* 🆕 Service Source Filter - chỉ hiện khi có dịch vụ được chỉ định */}
+                {unusedServices.length > 0 && selectedPatient && (
+                  <div style={{ marginBottom: 16 }}>
+                    <Radio.Group 
+                      value={serviceSource} 
+                      onChange={handleServiceSourceChange}
+                      buttonStyle="solid"
+                      size="large"
+                      style={{ width: '100%', display: 'flex', gap: '8px' }}
+                    >
+                      <Radio.Button value="all" style={{ flex: 1, textAlign: 'center' }}>
+                        Dịch vụ thường
+                      </Radio.Button>
+                      <Radio.Button value="recommended" style={{ flex: 1, textAlign: 'center' }}>
+                        <StarFilled style={{ color: '#faad14' }} /> Dịch vụ chỉ định ({unusedServices.length})
+                      </Radio.Button>
+                    </Radio.Group>
+                  </div>
+                )}
+
                 <Form.Item
                   label="Dịch vụ"
                   rules={[{ required: true, message: 'Vui lòng chọn dịch vụ' }]}
@@ -1107,16 +1163,19 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   >
                     {services.map(service => {
                       const isFromIndication = isServiceFromIndication(service._id);
+                      // Map service type to Vietnamese
+                      const serviceTypeVN = service.type === 'exam' ? 'Khám' : service.type === 'treatment' ? 'Điều trị' : service.type;
+                      
                       return (
                         <Option key={service._id} value={service._id}>
                           <Space>
-                            <Tag color={service.type === 'examination' ? 'blue' : 'green'}>
-                              {service.type === 'examination' ? 'Khám' : 'Điều trị'}
+                            <Tag color={service.type === 'exam' ? 'blue' : 'green'}>
+                              {serviceTypeVN}
                             </Tag>
                             <Text strong>{service.name}</Text>
                             {isFromIndication && (
                               <Tag color="gold" icon={<StarFilled />}>
-                                Chỉ định
+                                Chỉ định nha sĩ
                               </Tag>
                             )}
                           </Space>

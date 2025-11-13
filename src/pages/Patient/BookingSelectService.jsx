@@ -81,7 +81,13 @@ const BookingSelectService = () => {
       console.log('🩺 Unused services from exam records:', response);
       
       if (response.success && response.data) {
-        setUnusedServices(response.data);
+        const unusedData = response.data;
+        setUnusedServices(unusedData);
+        
+        // ⭐ Re-apply filters with new unused services data
+        if (services.length > 0) {
+          applyFilters(searchValue, selectedType, serviceSource, services, unusedData);
+        }
         
         // Also fetch full records to get recordId for each service
         const recordsResponse = await recordService.getRecordsByPatient(user._id, 100);
@@ -125,30 +131,25 @@ const BookingSelectService = () => {
   const applyFilters = (search, type, source, allServices, recommendedServices) => {
     let filtered = allServices;
 
-    // Filter by source (all or recommended only)
+    // 🆕 Filter by source (normal or recommended only)
     if (source === 'recommended' && recommendedServices.length > 0) {
+      // Chỉ hiển thị dịch vụ được chỉ định
       const recommendedIds = new Set(recommendedServices.map(s => s.serviceId.toString()));
       filtered = filtered.filter(service => recommendedIds.has(service._id.toString()));
-    }
-
-    // ⭐ Filter services based on requireExamFirst
-    if (isAuthenticated && user?._id) {
+      console.log(`🌟 Showing ONLY recommended services: ${filtered.length}`);
+    } else if (source === 'all') {
+      // 🆕 Dịch vụ thường: CHỈ hiển thị dịch vụ KHÔNG yêu cầu khám trước
+      // KHÔNG bao gồm dịch vụ được chễ định
+      const recommendedIds = new Set(recommendedServices.map(s => s.serviceId.toString()));
       filtered = filtered.filter(service => {
-        // If service doesn't require exam first, always show it
-        if (!service.requireExamFirst) {
-          return true;
+        // Loại bỏ dịch vụ chỉ định
+        if (recommendedIds.has(service._id.toString())) {
+          return false;
         }
-        
-        // If service requires exam first, check if patient has unused indication for it
-        const hasUnusedIndication = unusedServices.some(
-          unused => unused.serviceId.toString() === service._id.toString()
-        );
-        
-        return hasUnusedIndication;
+        // Chỉ lấy dịch vụ không yêu cầu khám trước
+        return !service.requireExamFirst;
       });
-    } else {
-      // If not authenticated, only show services that don't require exam first
-      filtered = filtered.filter(service => !service.requireExamFirst);
+      console.log(`📊 Showing normal services (non-exam, excluding recommended): ${filtered.length}`);
     }
 
     // Filter by type
@@ -258,10 +259,10 @@ const BookingSelectService = () => {
                   size="large"
                 >
                   <Radio.Button value="all">
-                    Tất cả dịch vụ
+                    Dịch vụ thường
                   </Radio.Button>
                   <Radio.Button value="recommended">
-                    <StarFilled style={{ color: '#faad14' }} /> Theo chỉ định nha sĩ ({unusedServices.length})
+                    <StarFilled style={{ color: '#faad14' }} /> Dịch vụ chỉ định ({unusedServices.length})
                   </Radio.Button>
                 </Radio.Group>
               </Row>
