@@ -323,7 +323,7 @@ const DashboardLayout = () => {
   const menuItems = getMenuItems();
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
       {/* Mobile Drawer */}
       <Drawer
         title="Menu"
@@ -443,7 +443,10 @@ const DashboardLayout = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           height: '64px',
-          borderBottom: '1px solid #f0f0f0'
+          borderBottom: '1px solid #f0f0f0',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100
         }}>
           {/* Left Section - Menu Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -585,9 +588,8 @@ const DashboardLayout = () => {
         <Content style={{ 
           margin: '24px', 
           padding: '24px', 
-          background: '#fff', 
+          background: 'transparent', 
           borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
           minHeight: 'calc(100vh - 112px)'
         }}>
           <Outlet />
