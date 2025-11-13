@@ -33,6 +33,7 @@ import {
 import medicineService from '../services/medicineService';
 import { searchAndFilter, debounce } from '../utils/searchUtils';
 import { useAuth } from '../contexts/AuthContext';
+import { calc } from 'antd/es/theme/internal';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -488,6 +489,12 @@ const MedicineList = () => {
         width={800}
         okText={editingMedicine ? 'Cập nhật' : 'Tạo mới'}
         cancelText="Hủy"
+        centered
+        bodyStyle={{ 
+          maxHeight: 'calc(100vh - 250px)', 
+          overflowY: 'auto',
+          paddingRight: '8px'
+        }}
       >
         <Form
           form={form}
