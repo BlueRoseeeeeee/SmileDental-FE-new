@@ -10,7 +10,8 @@ import {
 import { 
   CalendarOutlined, UserOutlined,
   LeftOutlined, RightOutlined, MedicineBoxOutlined,
-  CloseCircleOutlined, ExclamationCircleOutlined
+  CloseCircleOutlined, ExclamationCircleOutlined,
+  UpOutlined, DownOutlined
 } from '@ant-design/icons';
 import smileCareTheme from '../../theme/smileCareTheme';
 import dayjs from 'dayjs';
@@ -93,6 +94,9 @@ const ScheduleCalendar = () => {
   const [emergencyEnableDate, setEmergencyEnableDate] = useState(null);
   const [emergencyEnableReason, setEmergencyEnableReason] = useState('');
   const [emergencyEnabling, setEmergencyEnabling] = useState(false);
+  
+  // 🆕 Toggle Slots Panel visibility state
+  const [showToggleSlotsPanel, setShowToggleSlotsPanel] = useState(false);
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(0); // page=0 là tuần hiện tại
@@ -439,7 +443,7 @@ const ScheduleCalendar = () => {
   const RoomSelector = () => (
     <Space wrap>
       <Select
-        style={{ width: 300 }}
+        style={{ width: 280, minWidth: 280 }}
         placeholder={rooms.length > 0 ? "Chọn phòng" : "Đang tải phòng..."}
         value={selectedRoom?.id}
         loading={rooms.length === 0}
@@ -481,8 +485,8 @@ const ScheduleCalendar = () => {
 
       {selectedRoom && selectedRoom.hasSubRooms && selectedRoom.subRooms?.length > 0 && (
         <Select
-          style={{ width: 250 }}
-          placeholder="Chọn phòng con (tuỳ chọn)"
+          style={{ width: 160, minWidth: 160 }}
+          placeholder="Chọn phòng con"
           value={selectedSubRoom?.id}
           allowClear
           showSearch
@@ -517,7 +521,7 @@ const ScheduleCalendar = () => {
       
       {selectedRoom && !selectedRoom.hasSubRooms && (
         <Text type="secondary" style={{ fontSize: '12px' }}>
-          Phòng không buồng   
+          Phòng không có phòng con
         </Text>
       )}
     </Space>
@@ -1660,45 +1664,13 @@ const ScheduleCalendar = () => {
 
   return (
     <div className="schedule-calendar" style={{
-      minHeight: 'calc(100vh - 64px)',
+      minHeight: 'calc(100vh)',
       background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
       padding: '32px 24px'
     }}>
-      {/* Header Card */}
-      <Card
-        style={{
-          marginBottom: 24,
-          borderRadius: 16,
-          border: '2px solid #dbeafe',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          boxShadow: smileCareTheme.shadows.lg
-        }}
-        bodyStyle={{ padding: '20px 28px' }}
-      >
-        <Space size={16} align="center">
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: 'rgba(255, 255, 255, 0.2)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px solid rgba(255, 255, 255, 0.3)'
-          }}>
-            <CalendarOutlined style={{ fontSize: 24, color: '#fff' }} />
-          </div>
-          <div>
-            <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 700 }}>
-              Lịch Làm Việc
-            </Title>
-            <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
-              Xem lịch làm việc theo phòng, nha sĩ hoặc y tá
-            </Text>
-          </div>
-        </Space>
-      </Card>
+      <div>
+        <p style={{fontWeight:'bold'}}>(*) Xem lịch làm việc theo phòng, nha sĩ hoặc y tá</p>
+      </div>
 
       <Row gutter={16}>
         {/* Main Calendar */}
@@ -1829,7 +1801,7 @@ const ScheduleCalendar = () => {
                       format="DD/MM/YYYY"
                       value={currentWeek} // 🔧 ADD: Hiển thị ngày bắt đầu tuần hiện tại
                       onChange={goToDateWeek}
-                      style={{ width: 180 }}
+                      style={{ width: 150 }}
                       allowClear={false} // 🔧 FIX: Không cho phép xóa
                     />
                     
@@ -1895,93 +1867,104 @@ const ScheduleCalendar = () => {
                   >
                     Bật Lại Lịch Cả Ngày
                   </Button>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    (Tắt/Bật tất cả slots của mọi phòng trong 1 ngày)
-                  </Text>
                 </Space>
               </Card>
             )}
 
             {/* 🆕 Toggle Slots Controls - Only for admin/manager in room view */}
             {(hasRole('admin') || hasRole('manager')) && viewMode === 'room' && selectedRoom && (
-              <Card size="small" style={{ marginTop: 16, background: '#f0f5ff' }}>
+              <Card size="small" style={{ marginTop: 16, background: '#f0f5ff', marginBottom:10 }}>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
                   <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
                     <Text strong style={{ color: '#1890ff' }}>
-                      Bật/Tắt Slots: {Object.keys(selectedSlotsForToggle).length} slot đã chọn
+                      Bật/Tắt theo Slots: {Object.keys(selectedSlotsForToggle).length} slot đã chọn
                     </Text>
-                    {Object.keys(selectedSlotsForToggle).length > 0 && (
-                      <Button size="small" onClick={handleClearAllSelections}>
-                        Xóa tất cả
-                      </Button>
-                    )}
-                  </Space>
-                  
-                  {/* 🆕 Warning about past/today dates */}
-                  <Alert
-                    type="info"
-                    message="💡 Chỉ có thể bật/tắt lịch từ ngày mai trở đi"
-                    showIcon
-                    style={{ fontSize: '12px' }}
-                  />
-                  
-                  <Space wrap>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      Chọn nhanh theo ca:
-                    </Text>
-                    {shiftOverview && Object.values(shiftOverview).map(shift => (
-                          shift.isActive && (
-                        <Button
-                          key={shift.name}
-                          size="small"
-                          onClick={() => handleSelectAllSlotsInWeek(shift.name)}
-                        >
-                          {shift.name}
-                          {(() => {
-                            const summary = shiftActivitySummary[shift.name];
-                            if (!summary || summary.total === 0) return null;
-                            
-                            if (summary.inactive === 0) {
-                              return (
-                                <Tag color="green" style={{ marginLeft: 8 }}>
-                                  Hoạt động
-                                </Tag>
-                              );
-                            } else {
-                              return (
-                                <Tag color="orange" style={{ marginLeft: 8 }}>
-                                  {summary.inactive} slot tắt
-                                </Tag>
-                              );
-                            }
-                          })()}
+                    <Space>
+                      {Object.keys(selectedSlotsForToggle).length > 0 && (
+                        <Button size="small" onClick={handleClearAllSelections}>
+                          Xóa tất cả lựa chọn đã chọn
                         </Button>
-                      )
-                    ))}
+                      )}
+                      <Button 
+                        size="small" 
+                        type="text"
+                        icon={showToggleSlotsPanel ? <UpOutlined /> : <DownOutlined />}
+                        onClick={() => setShowToggleSlotsPanel(!showToggleSlotsPanel)}
+                      >
+                        {showToggleSlotsPanel ? 'Thu gọn' : 'Mở rộng'}
+                      </Button>
+                    </Space>
                   </Space>
+                  
+                  {showToggleSlotsPanel && (
+                    <>
+                      {/* 🆕 Warning about past/today dates */}
+                      <Alert
+                        type="info"
+                        message="💡 Chỉ có thể bật/tắt lịch từ ngày mai trở đi"
+                        showIcon
+                        style={{ fontSize: '12px' }}
+                      />
+                      
+                      <Space wrap>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Chọn nhanh theo ca:
+                        </Text>
+                        {shiftOverview && Object.values(shiftOverview).map(shift => (
+                              shift.isActive && (
+                            <Button
+                              key={shift.name}
+                              size="small"
+                              onClick={() => handleSelectAllSlotsInWeek(shift.name)}
+                            >
+                              {shift.name}
+                              {(() => {
+                                const summary = shiftActivitySummary[shift.name];
+                                if (!summary || summary.total === 0) return null;
+                                
+                                if (summary.inactive === 0) {
+                                  return (
+                                    <Tag color="green" style={{ marginLeft: 8 }}>
+                                      Hoạt động
+                                    </Tag>
+                                  );
+                                } else {
+                                  return (
+                                    <Tag color="orange" style={{ marginLeft: 8 }}>
+                                      {summary.inactive} slot tắt
+                                    </Tag>
+                                  );
+                                }
+                              })()}
+                            </Button>
+                          )
+                        ))}
+                      </Space>
 
-                  <Space wrap>
-                    <Button
-                      type="primary"
-                      disabled={Object.keys(selectedSlotsForToggle).length === 0}
-                      onClick={() => handleToggleSlotsDirectly('enable')}
-                      style={{ background: '#52c41a', borderColor: '#52c41a' }}
-                      loading={togglingSlots}
-                    >
-                      Bật ({Object.keys(selectedSlotsForToggle).length} slot{Object.keys(selectedSlotsForToggle).length > 1 ? 's' : ''})
-                    </Button>
-                    <Button
-                      danger
-                      disabled={Object.keys(selectedSlotsForToggle).length === 0}
-                      onClick={() => handleToggleSlotsDirectly('disable')}
-                      loading={togglingSlots}
-                    >
-                      Tắt ({Object.keys(selectedSlotsForToggle).length} slot{Object.keys(selectedSlotsForToggle).length > 1 ? 's' : ''})
-                    </Button>
-                    <Text type="secondary" style={{ fontSize: 11 }}>
-                      💡 Click vào ô lịch để chọn slots cụ thể
-                    </Text>
-                  </Space>
+                      <Space wrap>
+                        <Button
+                          type="primary"
+                          disabled={Object.keys(selectedSlotsForToggle).length === 0}
+                          onClick={() => handleToggleSlotsDirectly('enable')}
+                          style={{ background: '#52c41a', borderColor: '#52c41a' }}
+                          loading={togglingSlots}
+                        >
+                          Bật ({Object.keys(selectedSlotsForToggle).length} slot{Object.keys(selectedSlotsForToggle).length > 1 ? 's' : ''})
+                        </Button>
+                        <Button
+                          danger
+                          disabled={Object.keys(selectedSlotsForToggle).length === 0}
+                          onClick={() => handleToggleSlotsDirectly('disable')}
+                          loading={togglingSlots}
+                        >
+                          Tắt ({Object.keys(selectedSlotsForToggle).length} slot{Object.keys(selectedSlotsForToggle).length > 1 ? 's' : ''})
+                        </Button>
+                        <Text type="secondary" style={{ fontSize: 11 }}>
+                          💡 Click vào ô lịch để chọn slots cụ thể
+                        </Text>
+                      </Space>
+                    </>
+                  )}
                 </Space>
               </Card>
             )}
@@ -2079,10 +2062,6 @@ const ScheduleCalendar = () => {
                       ) : (selectedRoom || selectedDentist || selectedNurse) ? (
                         <div>
                           <Text type="warning">Không thể tải dữ liệu lịch</Text>
-                          <br />
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            Kiểm tra kết nối backend hoặc thử lại
-                          </Text>
                           <br />
                           <Button 
                             size="small" 
