@@ -61,7 +61,7 @@
 /* Chat Window */
 .chatbox-window {
   width: 380px;
-  height: 600px;
+  height: 700px; /* Increased from 600px to 700px for more messages */
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -484,7 +484,7 @@
   .chatbox-window {
     width: calc(100vw - 40px);
     height: calc(100vh - 40px);
-    max-height: 600px;
+    max-height: 700px; /* Increased from 600px */
   }
   
   .image-preview {

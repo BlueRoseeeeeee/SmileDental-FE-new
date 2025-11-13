@@ -6,14 +6,20 @@ const chatbotService = {
   /**
    * Send message to chatbot
    * @param {string} message - User message
-   * @param {string} userId - User ID (optional)
+   * @param {File} imageFile - Optional image file
    * @returns {Promise} Response from chatbot
    */
-  async sendMessage(message, userId = null) {
+  async sendMessage(message, imageFile = null) {
     try {
+      // If image is provided, use analyzeImage endpoint
+      if (imageFile) {
+        return await this.analyzeImage(imageFile, message);
+      }
+      
+      // Otherwise, use regular chat endpoint
       const response = await api.post(`${CHATBOT_API_URL}/chat`, {
         message,
-        userId: userId || localStorage.getItem('userId') || 'anonymous'
+        userId: localStorage.getItem('userId') || 'anonymous'
       });
       return response.data;
     } catch (error) {

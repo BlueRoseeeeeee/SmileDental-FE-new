@@ -15,17 +15,33 @@ const ChatBox = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true); // Control auto-scroll
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Auto scroll to bottom when new message arrives
+  // Auto scroll to bottom when new message arrives (only if user is near bottom)
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Check if user is near bottom of messages
+  const isUserNearBottom = () => {
+    if (!messagesContainerRef.current) return true;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    
+    // Consider "near bottom" if within 100px
+    return distanceFromBottom < 100;
+  };
+
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, typing]);
+    // Only auto-scroll if user is near bottom or if shouldAutoScroll is true
+    if (shouldAutoScroll || isUserNearBottom()) {
+      scrollToBottom();
+    }
+  }, [messages, typing, shouldAutoScroll]);
 
   // Load chat history when opening chatbox
   useEffect(() => {
@@ -37,7 +53,8 @@ const ChatBox = () => {
   const loadHistory = async () => {
     try {
       setLoading(true);
-      const response = await chatbotService.getHistory(20);
+      setShouldAutoScroll(false); // Disable auto-scroll when loading history
+      const response = await chatbotService.getHistory(100); // Increased from 20 to 100
       if (response.success && response.data) {
         setMessages(response.data);
       }
@@ -45,6 +62,8 @@ const ChatBox = () => {
       console.error('Failed to load history:', error);
     } finally {
       setLoading(false);
+      // Re-enable auto-scroll after a short delay
+      setTimeout(() => setShouldAutoScroll(true), 500);
     }
   };
 
@@ -60,6 +79,7 @@ const ChatBox = () => {
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setTyping(true);
+    setShouldAutoScroll(true); // Enable auto-scroll for new messages
 
     try {
       const response = await chatbotService.sendMessage(inputMessage);
@@ -73,6 +93,7 @@ const ChatBox = () => {
           timestamp: new Date()
         };
         setMessages(prev => [...prev, assistantMessage]);
+        setShouldAutoScroll(true); // Ensure scroll to bottom for new assistant message
       } else {
         throw new Error(response.message || 'Failed to get response');
       }
@@ -147,6 +168,7 @@ const ChatBox = () => {
   const handleSendImage = async (file) => {
     setUploadingImage(true);
     setTyping(true);
+    setShouldAutoScroll(true); // Enable auto-scroll for image analysis
 
     try {
       const response = await chatbotService.analyzeImage(file, inputMessage);
@@ -162,6 +184,7 @@ const ChatBox = () => {
           timestamp: new Date()
         };
         setMessages(prev => [...prev, assistantMessage]);
+        setShouldAutoScroll(true); // Ensure scroll to bottom
 
         // Show suggestions if any
         if (response.suggestions && response.suggestions.length > 0) {
@@ -296,7 +319,7 @@ const ChatBox = () => {
           </div>
 
           {/* Messages Container */}
-          <div className="chatbox-messages">
+          <div className="chatbox-messages" ref={messagesContainerRef}>
             {loading ? (
               <div className="chatbox-loading">
                 <Spin tip="Đang tải lịch sử..." size="large">
