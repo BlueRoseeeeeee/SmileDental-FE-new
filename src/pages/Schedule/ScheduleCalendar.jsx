@@ -2745,6 +2745,7 @@ const ScheduleCalendar = () => {
               * Lý do tắt toàn bộ lịch (bắt buộc, tối thiểu 10 ký tự):
             </Text>
             <Input.TextArea
+              className='custom-textarea'
               value={emergencyClosureReason}
               onChange={(e) => setEmergencyClosureReason(e.target.value)}
               placeholder="Ví dụ: Sự cố mất điện toàn bộ phòng khám, cần tạm ngừng hoạt động cả ngày để khắc phục..."
