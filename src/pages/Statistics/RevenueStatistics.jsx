@@ -237,7 +237,7 @@ const RevenueStatistics = () => {
   if (loading || !data) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-        <Spin size="large" tip="Đang tải dữ liệu..." />
+        <Spin size="large" />
       </div>
     );
   }
@@ -252,79 +252,95 @@ const RevenueStatistics = () => {
       ),
       children: (
         <div>
-          <Card title={
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span><BarChartOutlined /> Biểu đồ doanh thu theo nha sỹ</span>
-              {selectedDentist && (
-                <Text type="secondary" style={{ fontSize: '12px', fontWeight: 'normal' }}>
-                  Lọc: {MOCK_DENTISTS.find(d => d.id === selectedDentist)?.name}
-                </Text>
-              )}
-            </div>
-          } style={{ marginBottom: 24 }}>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={data.revenueByDentist}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="dentistName" 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={120}
-                  interval={0}
-                  style={{ fontSize: '11px' }}
+          {data.revenueByDentist && data.revenueByDentist.length > 0 ? (
+            <>
+              <Card title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span><BarChartOutlined /> Biểu đồ doanh thu theo nha sỹ</span>
+                  {selectedDentist && (
+                    <Text type="secondary" style={{ fontSize: '12px', fontWeight: 'normal' }}>
+                      Lọc: {MOCK_DENTISTS.find(d => d.id === selectedDentist)?.name}
+                    </Text>
+                  )}
+                </div>
+              } style={{ marginBottom: 24 }}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={data.revenueByDentist}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="dentistName" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={120}
+                      interval={0}
+                      style={{ fontSize: '11px' }}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
+                      label={{ value: 'Doanh thu (VNĐ)', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      formatter={(value) => formatCurrency(value)}
+                      labelStyle={{ color: '#333' }}
+                    />
+                    <Legend />
+                    <Bar dataKey="totalRevenue" fill="#1890ff" name="Doanh thu" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+              
+              <Card 
+                title={
+                  <span>
+                    <TableOutlined /> Bảng chi tiết doanh thu theo nha sỹ
+                  </span>
+                }
+              >
+                <Table 
+                  columns={dentistColumns}
+                  dataSource={data.revenueByDentist}
+                  rowKey="dentistId"
+                  pagination={{ 
+                    pageSize: 10,
+                    showTotal: (total) => `Tổng ${total} nha sỹ`,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['10', '20', '50']
+                  }}
+                  summary={(pageData) => {
+                    const totalRevenue = pageData.reduce((sum, item) => sum + item.totalRevenue, 0);
+                    const totalAppointments = pageData.reduce((sum, item) => sum + item.appointmentCount, 0);
+                    const totalServices = pageData.reduce((sum, item) => sum + item.serviceCount, 0);
+                    
+                    return (
+                      <Table.Summary.Row style={{ background: '#fafafa', fontWeight: 'bold' }}>
+                        <Table.Summary.Cell>Tổng cộng ({pageData.length} nha sỹ)</Table.Summary.Cell>
+                        <Table.Summary.Cell align="right">{formatNumber(totalAppointments)}</Table.Summary.Cell>
+                        <Table.Summary.Cell align="right">{formatNumber(totalServices)}</Table.Summary.Cell>
+                        <Table.Summary.Cell align="right">
+                          <span style={{ color: '#52c41a' }}>{formatCurrency(totalRevenue)}</span>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell align="right">
+                          {formatCurrency(totalAppointments > 0 ? totalRevenue / totalAppointments : 0)}
+                        </Table.Summary.Cell>
+                      </Table.Summary.Row>
+                    );
+                  }}
                 />
-                <YAxis 
-                  tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
-                  label={{ value: 'Doanh thu (VNĐ)', angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip 
-                  formatter={(value) => formatCurrency(value)}
-                  labelStyle={{ color: '#333' }}
-                />
-                <Legend />
-                <Bar dataKey="totalRevenue" fill="#1890ff" name="Doanh thu" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-          
-          <Card 
-            title={
-              <span>
-                <TableOutlined /> Bảng chi tiết doanh thu theo nha sỹ
-              </span>
-            }
-          >
-            <Table 
-              columns={dentistColumns}
-              dataSource={data.revenueByDentist}
-              rowKey="dentistId"
-              pagination={{ 
-                pageSize: 10,
-                showTotal: (total) => `Tổng ${total} nha sỹ`,
-                showSizeChanger: true,
-                pageSizeOptions: ['10', '20', '50']
-              }}
-              summary={(pageData) => {
-                const totalRevenue = pageData.reduce((sum, item) => sum + item.totalRevenue, 0);
-                const totalAppointments = pageData.reduce((sum, item) => sum + item.appointmentCount, 0);
-                const totalServices = pageData.reduce((sum, item) => sum + item.serviceCount, 0);
-                
-                return (
-                  <Table.Summary.Row style={{ background: '#fafafa', fontWeight: 'bold' }}>
-                    <Table.Summary.Cell>Tổng cộng ({pageData.length} nha sỹ)</Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">{formatNumber(totalAppointments)}</Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">{formatNumber(totalServices)}</Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">
-                      <span style={{ color: '#52c41a' }}>{formatCurrency(totalRevenue)}</span>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">
-                      {formatCurrency(totalAppointments > 0 ? totalRevenue / totalAppointments : 0)}
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                );
-              }}
-            />
-          </Card>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <TeamOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
+                <div style={{ fontSize: '16px', color: '#999' }}>
+                  Dữ liệu doanh thu theo nha sỹ chưa khả dụng
+                </div>
+                <div style={{ fontSize: '14px', color: '#bbb', marginTop: '8px' }}>
+                  Tính năng này đang được phát triển
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
       )
     },

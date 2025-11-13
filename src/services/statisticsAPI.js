@@ -8,6 +8,8 @@
  * 3. Patient Retention Statistics (Bệnh nhân quay lại)
  */
 
+import api from './api';
+
 // ==================== HELPER FUNCTIONS ====================
 
 const generateDateRange = (days, startDate = null) => {
@@ -238,89 +240,78 @@ const generateServiceRevenue = (serviceId, days = 30) => {
  * @param {Object} params - { startDate, endDate, groupBy, dentistId, serviceId }
  */
 export const getRevenueStatistics = async (params = {}) => {
-  const { 
-    startDate, 
-    endDate, 
-    groupBy = 'day',
-    dentistId = null,
-    serviceId = null 
-  } = params;
-  
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Calculate date range
-      let dates;
-      if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-        dates = generateDateRange(diffDays, startDate);
-      } else {
-        dates = generateDateRange(30); // Default last 30 days
+  try {
+    const { 
+      startDate, 
+      endDate, 
+      groupBy = 'day',
+      dentistId = null,
+      serviceId = null 
+    } = params;
+    
+    // Build query params
+    const queryParams = new URLSearchParams({
+      groupBy
+    });
+    
+    if (startDate) queryParams.append('startDate', startDate);
+    if (endDate) queryParams.append('endDate', endDate);
+    if (dentistId) queryParams.append('dentistId', dentistId);
+    if (serviceId) queryParams.append('serviceId', serviceId);
+    
+    // Call real backend API
+    const response = await api.get(`/api/statistics/revenue?${queryParams.toString()}`);
+    
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Không thể lấy thống kê doanh thu');
+    }
+    
+    // Transform backend data to match frontend expectations
+    const backendData = response.data.data;
+    
+    // Map backend structure to frontend structure
+    return {
+      success: true,
+      data: {
+        summary: {
+          totalRevenue: backendData.summary?.totalRevenue || 0,
+          totalAppointments: backendData.summary?.totalInvoices || 0, // Backend uses totalInvoices
+          totalServices: backendData.byService?.length || 0,
+          avgRevenuePerAppointment: backendData.summary?.averageInvoiceValue || 0,
+          period: backendData.period || {}
+        },
+        // Backend doesn't provide dentist data yet, use empty array
+        revenueByDentist: [],
+        // Map byService to revenueByService
+        revenueByService: (backendData.byService || []).map(service => ({
+          serviceId: service._id || service.serviceId,
+          serviceName: service.name || service.serviceName,
+          serviceType: service.type || service.serviceType,
+          totalRevenue: service.revenue || 0,
+          totalCount: service.count || 0,
+          avgRevenuePerService: service.revenue && service.count 
+            ? Math.floor(service.revenue / service.count) 
+            : 0
+        })),
+        // Map trends to revenueByTime
+        revenueByTime: (backendData.trends || []).map(trend => ({
+          date: trend.date || trend._id,
+          revenue: trend.revenue || trend.totalAmount || 0
+        })),
+        // Comparison data
+        comparison: (backendData.byService || []).map(s => ({
+          name: s.name || s.serviceName,
+          type: s.type || s.serviceType,
+          count: s.count || 0,
+          revenue: s.revenue || 0,
+          avgRevenue: s.revenue && s.count ? Math.floor(s.revenue / s.count) : 0
+        }))
       }
-      
-      // Generate revenue by dentist
-      const revenueByDentist = MOCK_DENTISTS.map(dentist => 
-        generateDentistRevenue(dentist.id, dates.length)
-      ).filter(d => !dentistId || d.dentistId === dentistId)
-        .sort((a, b) => b.totalRevenue - a.totalRevenue);
-      
-      // Generate revenue by service
-      const revenueByService = MOCK_SERVICES.map(service => 
-        generateServiceRevenue(service.id, dates.length)
-      ).filter(s => !serviceId || s.serviceId === serviceId)
-        .sort((a, b) => b.totalRevenue - a.totalRevenue);
-      
-      // Calculate totals
-      const totalRevenue = revenueByDentist.reduce((sum, d) => sum + d.totalRevenue, 0);
-      const totalAppointments = revenueByDentist.reduce((sum, d) => sum + d.appointmentCount, 0);
-      
-      // Revenue by time
-      const revenueByTime = dates.map((date, i) => {
-        const dailyTotal = revenueByDentist.reduce((sum, d) => sum + d.dailyData[i], 0);
-        return { date, revenue: dailyTotal };
-      });
-      
-      // Group by period if needed
-      const groupedRevenue = groupBy === 'day' 
-        ? revenueByTime 
-        : groupByPeriod(
-            dates, 
-            revenueByTime.map(r => r.revenue), 
-            groupBy
-          ).map(item => ({ date: item.date, revenue: item.value }));
-      
-      resolve({
-        success: true,
-        data: {
-          summary: {
-            totalRevenue,
-            totalAppointments,
-            totalServices: revenueByService.reduce((sum, s) => sum + s.totalCount, 0),
-            avgRevenuePerAppointment: totalAppointments > 0 
-              ? Math.floor(totalRevenue / totalAppointments) 
-              : 0,
-            period: {
-              startDate: dates[0],
-              endDate: dates[dates.length - 1],
-              days: dates.length
-            }
-          },
-          revenueByDentist: revenueByDentist.slice(0, 10), // Top 10
-          revenueByService: revenueByService.slice(0, 10), // Top 10
-          revenueByTime: groupedRevenue,
-          // Comparison data (count vs revenue)
-          comparison: revenueByService.map(s => ({
-            name: s.serviceName,
-            type: s.serviceType,
-            count: s.totalCount,
-            revenue: s.totalRevenue,
-            avgRevenue: s.avgRevenuePerService
-          }))
-        }
-      });
-    }, 800);
-  });
+    };
+  } catch (error) {
+    console.error('Error fetching revenue statistics:', error);
+    throw error;
+  }
 };
 
 // ==================== API 2: BOOKING CHANNEL STATISTICS ====================
@@ -900,3 +891,27 @@ export const getDentistPerformanceStatistics = async (params = {}) => {
 
 // Export mock data (functions are already exported with 'export const' above)
 export { MOCK_DENTISTS, MOCK_SERVICES };
+
+// ==================== API 7: CLINIC UTILIZATION STATISTICS ====================
+
+/**
+ * Lấy thống kê hiệu suất phòng khám (slot-based)
+ * @param {Object} params - { startDate, endDate, roomIds, timeRange, shiftName }
+ */
+export const getClinicUtilizationStatistics = async (params = {}) => {
+  const { 
+    startDate, 
+    endDate, 
+    roomIds = [],
+    timeRange = 'month',
+    shiftName = null
+  } = params;
+  
+  try {
+    const response = await api.get('/api/statistics/clinic-utilization', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching clinic utilization:', error);
+    throw error;
+  }
+};

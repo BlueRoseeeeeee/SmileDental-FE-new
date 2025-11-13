@@ -79,7 +79,7 @@ import PaymentList from './pages/Payment/PaymentList.jsx';
 // Statistics Dashboard (New - 3 pages based on model analysis)
 import RevenueStatistics from './pages/Statistics/RevenueStatistics.jsx';
 import BookingChannelStatistics from './pages/Statistics/BookingChannelStatistics.jsx';
-import PatientRetentionStatistics from './pages/Statistics/PatientRetentionStatistics.jsx';
+import ClinicUtilizationStatistics from './pages/Statistics/ClinicUtilizationStatistics.jsx';
 
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
@@ -489,9 +489,9 @@ function App() {
                   <BookingChannelStatistics />
                 </ProtectedRoute>
               } />
-              <Route path="patient-retention" element={
+              <Route path="clinic-utilization" element={
                 <ProtectedRoute roles={['admin', 'manager']}>
-                  <PatientRetentionStatistics />
+                  <ClinicUtilizationStatistics />
                 </ProtectedRoute>
               } />
             </Route>

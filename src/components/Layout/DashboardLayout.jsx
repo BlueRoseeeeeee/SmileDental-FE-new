@@ -28,6 +28,7 @@ import {
   BarChartOutlined,
   CloseCircleOutlined,
   SettingOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
@@ -173,7 +174,7 @@ const DashboardLayout = () => {
         children: [
           { key: '/dashboard/statistics/revenue', label: '💰 Thống kê Doanh thu', icon: <DollarOutlined /> },
           { key: '/dashboard/statistics/booking-channels', label: '📱 Thống kê Online/Offline', icon: <CalendarOutlined /> },
-          { key: '/dashboard/statistics/patient-retention', label: '👥 Thống kê BN Quay lại', icon: <HeartOutlined /> },
+          { key: '/dashboard/statistics/clinic-utilization', label: '📊 Hiệu suất Phòng khám', icon: <LineChartOutlined /> },
         ]
       });
     }
