@@ -41,7 +41,8 @@ import {
   CheckCircleOutlined,
   UserOutlined,
   FileTextOutlined,
-  DollarOutlined
+  DollarOutlined,
+  StarFilled
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import userService from '../../services/userService';
@@ -73,6 +74,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     birthYear: null
   }); // ⭐ Store new patient info in state
   const [unusedServices, setUnusedServices] = useState([]); // ⭐ Services from exam records
+  const [treatmentIndications, setTreatmentIndications] = useState([]); // 🆕 Treatment indications cho service
   
   // Services & Dentists
   const [services, setServices] = useState([]);
@@ -80,9 +82,13 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   const [selectedService, setSelectedService] = useState(null);
   const [selectedServiceAddOn, setSelectedServiceAddOn] = useState(null); // ⭐ Add serviceAddOn state
   const [selectedDentist, setSelectedDentist] = useState(null);
+  const [examDentistId, setExamDentistId] = useState(null); // 🆕 Dentist đã thực hiện khám
+  const [examRecordId, setExamRecordId] = useState(null); // 🆕 Record ID từ chỉ định
+  const [requiresAddonSelection, setRequiresAddonSelection] = useState(false); // 🆕 Có bắt buộc chọn addon không
   
   // Slots - ⭐ Use slot groups like patient/booking
   const [selectedDate, setSelectedDate] = useState(null);
+  const [workingDates, setWorkingDates] = useState([]); // 🆕 Working dates của dentist
   const [availableSlotGroups, setAvailableSlotGroups] = useState({
     morning: [],
     afternoon: [],
@@ -180,7 +186,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     }
   };
 
-  const handleSelectPatient = (patientId) => {
+  const handleSelectPatient = async (patientId) => {
     console.log('👆 handleSelectPatient called with ID:', patientId);
     console.log('📋 searchResults available:', searchResults.length, searchResults);
     
@@ -207,8 +213,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         extractedBirthYear: birthYear
       });
       
-      // ⭐ Fetch unused services for selected patient
-      fetchUnusedServicesForPatient(patientId);
+      // ⭐ Fetch unused services for selected patient FIRST, then reload services
+      await fetchUnusedServicesForPatient(patientId);
       
       message.success('Đã chọn bệnh nhân: ' + patient.fullName);
     } else {
@@ -236,23 +242,97 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       console.log('📋 Unused services response:', response);
       
       if (response.success && response.data) {
-        setUnusedServices(response.data);
-        console.log(`✅ Loaded ${response.data.length} unused services`);
-        // ⭐ Reload services to apply new filter
-        loadServices();
+        const unusedData = response.data;
+        setUnusedServices(unusedData);
+        console.log(`✅ Loaded ${unusedData.length} unused services:`, unusedData);
+        
+        // ⭐ Pass unused services directly to loadServices to avoid closure issue
+        loadServices(unusedData);
       } else {
+        console.log('⚠️ No unused services found for patient');
         setUnusedServices([]);
-        loadServices();
+        loadServices([]);
       }
     } catch (error) {
       console.error('❌ Error fetching unused services:', error);
       setUnusedServices([]);
-      loadServices();
+      loadServices([]);
+    }
+  };
+
+  // 🆕 Load exam dentist from record ID
+  const loadExamDentistFromRecord = async (recordId) => {
+    try {
+      console.log('🔍 Loading exam dentist from record:', recordId);
+      const response = await recordService.getRecordById(recordId);
+      
+      if (response.success && response.data && response.data.dentistId) {
+        setExamDentistId(response.data.dentistId);
+        console.log('✅ Exam dentist ID:', response.data.dentistId, '| Name:', response.data.dentistName);
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not load exam dentist from record:', error.message);
+    }
+  };
+
+  // 🆕 Helper: Check if service is from indication
+  const isServiceFromIndication = (serviceId) => {
+    return unusedServices.some(unused => unused.serviceId.toString() === serviceId.toString());
+  };
+
+  // 🆕 Helper: Get record ID for service indication
+  const getRecordIdForService = (serviceId) => {
+    const indication = unusedServices.find(unused => unused.serviceId.toString() === serviceId.toString());
+    return indication?.recordId || null;
+  };
+
+  // 🆕 Fetch working dates for selected dentist
+  const fetchWorkingDates = async (dentistId, serviceDuration = 15, serviceId = null) => {
+    try {
+      console.log('📅 Fetching working dates for dentist:', dentistId, 'duration:', serviceDuration);
+      const response = await slotService.getDentistWorkingDates(dentistId, serviceDuration, serviceId);
+      
+      if (response.success && response.data.workingDates) {
+        setWorkingDates(response.data.workingDates);
+        console.log('✅ Working dates loaded:', response.data.workingDates.length);
+        
+        if (response.data.workingDates.length === 0) {
+          message.warning('Nha sĩ này hiện chưa có lịch làm việc trong thời gian tới');
+        }
+      } else {
+        console.error('Invalid API response format:', response);
+        setWorkingDates([]);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching working dates:', error);
+      setWorkingDates([]);
+    }
+  };
+
+  // 🆕 Load treatment indications for selected service and patient
+  const loadTreatmentIndications = async (patientId, serviceId) => {
+    try {
+      console.log('🔍 Checking treatment indications for patient:', patientId, 'service:', serviceId);
+      const response = await recordService.getTreatmentIndications(patientId, serviceId);
+      const indications = response.data || [];
+      
+      console.log('✅ Treatment indications found:', indications);
+      setTreatmentIndications(indications);
+      
+      // Check if has specific addon indication
+      // Chỉ return true nếu có ADDON được chỉ định cụ thể
+      const hasAddonIndication = indications.length > 0 && indications.some(ind => ind.serviceAddOnId);
+      console.log('🔍 Has addon indication:', hasAddonIndication, indications);
+      return hasAddonIndication;
+    } catch (error) {
+      console.error('❌ Error fetching treatment indications:', error);
+      setTreatmentIndications([]);
+      return false;
     }
   };
 
   // Load services from API
-  const loadServices = async () => {
+  const loadServices = async (unusedServicesParam = null) => {
     try {
       console.log('🔧 Loading services...');
       const response = await servicesService.getAllServices();
@@ -266,25 +346,31 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         // ⭐ Filter active services first
         let activeServices = serviceData.filter(s => s.isActive);
         
+        // ⭐ Use parameter if provided, otherwise use state
+        const unusedSvcs = unusedServicesParam !== null ? unusedServicesParam : unusedServices;
+        
         // ⭐ Apply requireExamFirst filter based on patient status
         if (selectedPatient && selectedPatient._id) {
           // Patient selected - filter like BookingSelectService
           console.log('👤 Patient selected, applying requireExamFirst filter...');
-          console.log('🩺 Unused services available:', unusedServices.length);
+          console.log('🩺 Unused services available:', unusedSvcs.length, unusedSvcs);
           
           activeServices = activeServices.filter(service => {
             // If service doesn't require exam first, always show it
             if (!service.requireExamFirst) {
+              console.log(`✅ Service "${service.name}" does NOT require exam - showing`);
               return true;
             }
             
             // If service requires exam first, check if patient has unused indication for it
-            const hasUnusedIndication = unusedServices.some(
+            const hasUnusedIndication = unusedSvcs.some(
               unused => unused.serviceId.toString() === service._id.toString()
             );
             
-            if (service.requireExamFirst && !hasUnusedIndication) {
-              console.log(`⚠️ Service "${service.name}" requires exam but no unused indication found`);
+            if (service.requireExamFirst && hasUnusedIndication) {
+              console.log(`✅ Service "${service.name}" requires exam AND has unused indication - showing`);
+            } else if (service.requireExamFirst && !hasUnusedIndication) {
+              console.log(`❌ Service "${service.name}" requires exam but NO unused indication - hiding`);
             }
             
             return hasUnusedIndication;
@@ -295,7 +381,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           activeServices = activeServices.filter(s => !s.requireExamFirst);
         }
         
-        console.log(`✅ Filtered services: ${activeServices.length}`, activeServices);
+        console.log(`✅ Filtered services: ${activeServices.length}`, activeServices.map(s => s.name));
         setServices(activeServices);
         
         if (activeServices.length === 0 && selectedPatient) {
@@ -361,19 +447,23 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       const dateStr = selectedDate.format('YYYY-MM-DD');
       
       // 🆕 Get service duration - SAME LOGIC AS ONLINE BOOKING
-      // Use LONGEST addon duration if service has addons, otherwise use service duration
+      // Priority: selectedServiceAddOn > longest addon > service duration
       let serviceDuration = 15; // default
       
-      if (selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0) {
-        // Case: Service has addons → use LONGEST addon duration
+      if (selectedServiceAddOn) {
+        // Case 1: User selected a specific addon → USE THAT ADDON's duration
+        serviceDuration = selectedServiceAddOn.durationMinutes;
+        console.log('🎯 Using selected addon duration:', serviceDuration, 'minutes from', selectedServiceAddOn.name);
+      } else if (selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0) {
+        // Case 2: Service has addons but none selected → use LONGEST addon duration
         const longestAddon = selectedService.serviceAddOns.reduce((longest, addon) => {
           return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
         }, selectedService.serviceAddOns[0]);
         
         serviceDuration = longestAddon.durationMinutes;
-        console.log('🎯 Using LONGEST addon duration:', serviceDuration, 'minutes from', longestAddon.name);
+        console.log('🎯 No addon selected → Using LONGEST addon duration:', serviceDuration, 'minutes from', longestAddon.name);
       } else if (selectedService.durationMinutes) {
-        // Case: No addons → use service duration
+        // Case 3: No addons → use service duration
         serviceDuration = selectedService.durationMinutes;
         console.log('🎯 Using service duration:', serviceDuration, 'minutes');
       }
@@ -480,11 +570,81 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     }
   };
 
-  // Handle service change - ⭐ Luôn load dentists ngay sau khi chọn service
-  const handleServiceChange = (serviceId) => {
+  // Handle service change
+  const handleServiceChange = async (serviceId) => {
     const service = services.find(s => s._id === serviceId);
     setSelectedService(service);
     setSelectedServiceAddOn(null);
+    setSelectedDentist(null);
+    setSelectedDate(null);
+    setAvailableSlotGroups({ morning: [], afternoon: [], evening: [] });
+    setSelectedSlotGroup(null);
+    setExamDentistId(null);
+    setExamRecordId(null);
+    setTreatmentIndications([]);
+    setRequiresAddonSelection(false);
+    form.setFieldsValue({ 
+      dentistId: undefined, 
+      date: undefined, 
+      slotGroup: undefined
+    });
+    
+    if (!service) return;
+    
+    // 🆕 Load exam dentist if service is from indication
+    if (isServiceFromIndication(service._id)) {
+      const recordId = getRecordIdForService(service._id);
+      if (recordId) {
+        setExamRecordId(recordId);
+        loadExamDentistFromRecord(recordId);
+      }
+    }
+    
+    // 🆕 Logic mới: Check xem có BẮT BUỘC phải chọn addon không
+    // BẮT BUỘC chọn addon KHI:
+    // 1. Service có requireExamFirst = true
+    // 2. Service có addons
+    // 3. Patient đã chọn và có addon được chỉ định
+    
+    if (service.serviceAddOns && service.serviceAddOns.length > 0) {
+      // Service có addons
+      if (service.requireExamFirst && selectedPatient && selectedPatient._id) {
+        // Service yêu cầu khám trước + có patient → check indications
+        const hasAddonIndication = await loadTreatmentIndications(selectedPatient._id, service._id);
+        
+        if (hasAddonIndication) {
+          // Có addon được chỉ định → BẮT BUỘC phải chọn
+          console.log('⚠️ Service requires exam AND has addon indication - MUST select addon');
+          setRequiresAddonSelection(true);
+          setDentists([]); // Clear dentist list
+        } else {
+          // Không có addon chỉ định → Cho phép skip, load dentists ngay
+          console.log('✅ Service has addons but no indication - can skip addon');
+          setRequiresAddonSelection(false);
+          const serviceDuration = service.durationMinutes || 15;
+          loadDentists(serviceDuration, service._id);
+        }
+      } else {
+        // Service không yêu cầu khám hoặc chưa chọn patient → Cho phép skip
+        console.log('✅ Service has addons but does not require exam - can skip addon');
+        setRequiresAddonSelection(false);
+        const serviceDuration = service.durationMinutes || 15;
+        loadDentists(serviceDuration, service._id);
+      }
+    } else {
+      // Service không có addons → Load dentists ngay
+      console.log('🔄 Service has NO addons - loading dentists immediately');
+      const serviceDuration = service.durationMinutes || service.duration || 15;
+      loadDentists(serviceDuration, service._id);
+    }
+  };
+
+  // 🆕 Handle addon selection for walk-in
+  const handleServiceAddOnChange = (addonId) => {
+    if (!selectedService) return;
+    
+    const addon = selectedService.serviceAddOns.find(a => a._id === addonId);
+    setSelectedServiceAddOn(addon);
     setSelectedDentist(null);
     setSelectedDate(null);
     setAvailableSlotGroups({ morning: [], afternoon: [], evening: [] });
@@ -495,11 +655,11 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       slotGroup: undefined
     });
     
-    // ⭐ Luôn load dentists ngay (không cần chọn serviceAddOn)
-    if (service) {
-      const serviceDuration = service.durationMinutes || service.duration || 15;
-      console.log('🔄 Service selected:', service.name, '| Loading dentists immediately with duration:', serviceDuration);
-      loadDentists(serviceDuration, service._id);
+    // 🆕 Load dentists after selecting addon
+    if (addon) {
+      const addonDuration = addon.durationMinutes || 15;
+      console.log('🔄 Addon selected:', addon.name, '| Loading dentists with duration:', addonDuration);
+      loadDentists(addonDuration, selectedService._id);
     }
   };
 
@@ -508,12 +668,41 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     const dentist = dentists.find(d => d._id === dentistId);
     setSelectedDentist(dentist);
     setSelectedDate(null);
+    setWorkingDates([]); // 🆕 Reset working dates
     setAvailableSlotGroups({ morning: [], afternoon: [], evening: [] }); // ⭐ Reset slot groups
     setSelectedSlotGroup(null); // ⭐ Reset selected slot group
     form.setFieldsValue({ 
       date: undefined, 
       slotGroup: undefined // ⭐ Reset slot group field
     });
+    
+    // 🆕 Load working dates for selected dentist (async, no await needed)
+    if (dentist && selectedService) {
+      const serviceDuration = selectedServiceAddOn?.durationMinutes 
+                           || selectedService?.durationMinutes 
+                           || 15;
+      console.log('🎯 Loading working dates with duration:', serviceDuration);
+      // Call async function without blocking
+      fetchWorkingDates(dentist._id, serviceDuration, selectedService._id).catch(err => {
+        console.error('Error loading working dates:', err);
+      });
+    }
+  };
+
+  // 🆕 Disable date function - giống BookingSelectDate
+  const disabledDate = (current) => {
+    // Không cho chọn ngày trong quá khứ
+    if (current && current < dayjs().startOf('day')) {
+      return true;
+    }
+    
+    // Nếu có workingDates từ API, chỉ cho chọn ngày có trong danh sách
+    if (workingDates && workingDates.length > 0) {
+      const currentDateStr = current.format('YYYY-MM-DD');
+      return !workingDates.some(d => d.date === currentDateStr);
+    }
+    
+    return false;
   };
 
   // Handle date change
@@ -595,9 +784,14 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         date: selectedDate.format('YYYY-MM-DD'),
         slotIds: selectedSlotGroup?.slotIds || [], // ⭐ Use slot group's slotIds
         notes: values.notes || '',
+        examRecordId: examRecordId || null, // 🆕 Include recordId if service is from indication
         isWalkIn: true,
         createdBy: currentUser._id
       };
+      
+      if (examRecordId) {
+        console.log('🩺 Exam record ID for hasBeenUsed update:', examRecordId);
+      }
       
       console.log('🔍 [DEBUG] Selected patient ID:', selectedPatient?._id);
       console.log('🔍 [DEBUG] Current user ID:', currentUser._id);
@@ -667,12 +861,20 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     setSearchResults([]);
     setSelectedPatient(null);
     setIsNewPatient(false);
+    setUnusedServices([]); // 🆕 Clear unused services cache
+    setServices([]); // 🆕 Clear services list
+    setTreatmentIndications([]); // 🆕 Clear treatment indications
     setSelectedService(null);
     setSelectedServiceAddOn(null); // ⭐ Reset addOn
     setSelectedDentist(null);
+    setDentists([]); // 🆕 Clear dentists list
+    setWorkingDates([]); // 🆕 Clear working dates
     setSelectedDate(null);
     setAvailableSlotGroups({ morning: [], afternoon: [], evening: [] }); // ⭐ Reset slot groups
     setSelectedSlotGroup(null); // ⭐ Reset selected slot group
+    setExamDentistId(null); // 🆕 Clear exam dentist
+    setExamRecordId(null); // 🆕 Clear exam record
+    setRequiresAddonSelection(false); // 🆕 Reset addon requirement
     setCurrentStep(0);
   };
 
@@ -903,24 +1105,94 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                     }}
                     optionFilterProp="children"
                   >
-                    {services.map(service => (
-                      <Option key={service._id} value={service._id}>
-                        <Space>
-                          <Tag color={service.type === 'examination' ? 'blue' : 'green'}>
-                            {service.type === 'examination' ? 'Khám' : 'Điều trị'}
-                          </Tag>
-                          <Text strong>{service.name}</Text>
-                        </Space>
-                      </Option>
-                    ))}
+                    {services.map(service => {
+                      const isFromIndication = isServiceFromIndication(service._id);
+                      return (
+                        <Option key={service._id} value={service._id}>
+                          <Space>
+                            <Tag color={service.type === 'examination' ? 'blue' : 'green'}>
+                              {service.type === 'examination' ? 'Khám' : 'Điều trị'}
+                            </Tag>
+                            <Text strong>{service.name}</Text>
+                            {isFromIndication && (
+                              <Tag color="gold" icon={<StarFilled />}>
+                                Chỉ định
+                              </Tag>
+                            )}
+                          </Space>
+                        </Option>
+                      );
+                    })}
                   </Select>
                 </Form.Item>
 
-                {/* ⭐ ServiceAddOn Display - Show list instead of Select */}
-                {selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
+                {/* ⭐ ServiceAddOn Selection - CHỈ hiển thị khi BẮT BUỘC phải chọn */}
+                {requiresAddonSelection && selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
                   <div style={{ marginTop: 16 }}>
                     <Divider orientation="left" style={{ fontSize: 14, fontWeight: 500 }}>
-                      📋 Các gói dịch vụ có sẵn
+                      📋 Chọn gói dịch vụ
+                    </Divider>
+                    {treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId && (
+                      <Alert
+                        message="Dịch vụ được chỉ định"
+                        description={
+                          <span>
+                            Bệnh nhân đã được chỉ định gói: <strong>{treatmentIndications[0].serviceAddOnName}</strong>
+                          </span>
+                        }
+                        type="success"
+                        showIcon
+                        style={{ marginBottom: 16 }}
+                      />
+                    )}
+                    <Form.Item
+                      label="Gói dịch vụ"
+                      rules={[{ required: true, message: 'Vui lòng chọn gói dịch vụ đã được chỉ định' }]}
+                    >
+                      <Select
+                        placeholder="Chọn gói dịch vụ đã được chỉ định"
+                        onChange={handleServiceAddOnChange}
+                        value={selectedServiceAddOn?._id}
+                      >
+                        {selectedService.serviceAddOns
+                          .filter(addon => {
+                            // CHỈ hiển thị addon đã được chỉ định
+                            if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId) {
+                              return addon._id === treatmentIndications[0].serviceAddOnId;
+                            }
+                            return true; // Fallback: hiển thị tất cả
+                          })
+                          .map((addon) => (
+                            <Option key={addon._id} value={addon._id}>
+                              <Space direction="vertical" size={0}>
+                                <Space>
+                                  <Text strong>{addon.name}</Text>
+                                  <Tag color="success" icon={<CheckCircleOutlined />}>
+                                    Đã chỉ định
+                                  </Tag>
+                                </Space>
+                                <Space size="large">
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                    <DollarOutlined /> {addon.price?.toLocaleString('vi-VN')}đ/{addon.unit}
+                                  </Text>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                    <ClockCircleOutlined /> {addon.durationMinutes}p
+                                  </Text>
+                                </Space>
+                              </Space>
+                            </Option>
+                          ))
+                        }
+                      </Select>
+                    </Form.Item>
+                  </div>
+                )}
+
+                {/* 🆕 Hiển thị danh sách addon để tham khảo (nếu có addon nhưng KHÔNG bắt buộc chọn) */}
+                {!requiresAddonSelection && selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <Divider orientation="left" style={{ fontSize: 14, fontWeight: 500 }}>
+                      📋 Các gói dịch vụ có sẵn (tham khảo)
                     </Divider>
                     <Alert
                       message="Thông tin gói dịch vụ"
@@ -970,29 +1242,61 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                     style={{ marginBottom: 16 }}
                   />
                 )}
+                {requiresAddonSelection && !selectedServiceAddOn && (
+                  <Alert
+                    message="Vui lòng chọn gói dịch vụ đã được chỉ định trước"
+                    description="Dịch vụ này có gói đã được chỉ định, vui lòng chọn gói trước khi chọn nha sĩ"
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
+                {examRecordId && examDentistId && (
+                  <Alert
+                    message="Nha sĩ đã khám"
+                    description="Bệnh nhân đã được khám bởi nha sĩ được đánh dấu bên dưới"
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
                 <Form.Item
                   label="Nha sĩ"
                   rules={[{ required: true, message: 'Vui lòng chọn nha sĩ' }]}
                 >
                   <Select
-                    placeholder={!selectedService ? "Vui lòng chọn dịch vụ trước" : "Chọn nha sĩ"}
+                    placeholder={
+                      !selectedService ? "Vui lòng chọn dịch vụ trước" :
+                      (requiresAddonSelection && !selectedServiceAddOn) ? "Vui lòng chọn gói dịch vụ trước" :
+                      "Chọn nha sĩ"
+                    }
                     onChange={handleDentistChange}
                     value={selectedDentist?._id}
-                    disabled={!selectedService}
+                    disabled={!selectedService || (requiresAddonSelection && !selectedServiceAddOn)}
                     showSearch
                     optionFilterProp="children"
                     loading={loading}
                   >
-                    {dentists.map(dentist => (
-                      <Option key={dentist._id} value={dentist._id}>
-                        BS. {dentist.fullName}
-                        {dentist.nearestAvailableSlot && (
-                          <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
-                            - Slot gần nhất: {dayjs(dentist.nearestAvailableSlot.date).format('DD/MM/YYYY')} {dentist.nearestAvailableSlot.startTime}
-                          </Text>
-                        )}
-                      </Option>
-                    ))}
+                    {dentists.map(dentist => {
+                      const isExamDentist = examDentistId && dentist._id === examDentistId;
+                      return (
+                        <Option key={dentist._id} value={dentist._id}>
+                          <Space>
+                            <Text>BS. {dentist.fullName}</Text>
+                            {isExamDentist && (
+                              <Tag color="green" icon={<CheckCircleOutlined />}>
+                                Đã khám
+                              </Tag>
+                            )}
+                            {dentist.nearestAvailableSlot && (
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                - Slot: {dayjs(dentist.nearestAvailableSlot.date).format('DD/MM/YYYY')} {dentist.nearestAvailableSlot.startTime}
+                              </Text>
+                            )}
+                          </Space>
+                        </Option>
+                      );
+                    })}
                   </Select>
                 </Form.Item>
               </Card>
@@ -1005,6 +1309,22 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           {currentStep === 2 && (
             <>
               <Card title={<Space><CalendarOutlined />Chọn ngày khám</Space>} style={{ marginBottom: 16 }}>
+                {!selectedDentist && (
+                  <Alert
+                    message="Vui lòng chọn nha sĩ trước"
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
+                {selectedDentist && workingDates.length === 0 && (
+                  <Alert
+                    message="Đang tải lịch làm việc của nha sĩ..."
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
                 <Form.Item
                   label="Ngày khám"
                   rules={[{ required: true, message: 'Vui lòng chọn ngày' }]}
@@ -1012,12 +1332,11 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   <DatePicker
                     style={{ width: '100%' }}
                     format="DD/MM/YYYY"
-                    placeholder="Chọn ngày"
+                    placeholder="Chọn ngày nha sĩ làm việc"
                     onChange={handleDateChange}
                     value={selectedDate}
-                    disabledDate={(current) => {
-                      return current && current < dayjs().startOf('day');
-                    }}
+                    disabledDate={disabledDate}
+                    disabled={!selectedDentist || workingDates.length === 0}
                   />
                 </Form.Item>
 
