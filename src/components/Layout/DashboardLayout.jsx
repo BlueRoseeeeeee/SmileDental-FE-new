@@ -52,6 +52,7 @@ const DashboardLayout = () => {
 
   const handleRoleSwitch = (role) => {
     localStorage.setItem('selectedRole', role);
+    navigate('/dashboard');
     window.location.reload(); // Reload to apply new role
   };
 
