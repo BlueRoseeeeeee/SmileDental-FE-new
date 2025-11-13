@@ -381,6 +381,21 @@ class RecordService {
       throw error;
     }
   }
+
+  /**
+   * 🆕 Get patients with unused indications for a dentist (for walk-in)
+   * @param {String} dentistId - Dentist ID
+   * @returns {Promise<Object>} { success, message, data: [...] }
+   */
+  async getPatientsWithUnusedIndications(dentistId) {
+    try {
+      const response = await api.get(`/dentist/${dentistId}/patients-with-unused-indications`);
+      return response.data;
+    } catch (error) {
+      console.error('getPatientsWithUnusedIndications error:', error);
+      throw error;
+    }
+  }
 }
 
 export default new RecordService();

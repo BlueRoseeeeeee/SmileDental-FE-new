@@ -425,7 +425,7 @@ function App() {
             
             {/* Walk-in Appointments */}
             <Route path="walk-in-appointments" element={
-              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist', 'dentist']}>
                 <WalkInAppointmentForm />
               </ProtectedRoute>
             } />

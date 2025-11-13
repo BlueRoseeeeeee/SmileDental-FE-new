@@ -103,6 +103,10 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   const [scheduleConfig, setScheduleConfig] = useState(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  // ⭐ Fix: Check selectedRole from localStorage (role chosen during login)
+  const selectedRole = localStorage.getItem('selectedRole');
+  const isDentist = selectedRole === 'dentist';
+  const [dentistPatients, setDentistPatients] = useState([]); // 🆕 Bệnh nhân của dentist
 
   // 🆕 Load ALL services on mount (one time only)
   useEffect(() => {
@@ -130,6 +134,11 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     
     loadAllServices();
     loadScheduleConfig(); // 🆕 Load deposit config
+    
+    // 🆕 Nếu là dentist, load danh sách bệnh nhân của dentist
+    if (isDentist && currentUser._id) {
+      loadDentistPatients();
+    }
     // ⭐ Don't load dentists here - they will be loaded after selecting a service
   }, []);
 
@@ -150,6 +159,25 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     }
   };
 
+  // 🆕 Load patients with unused indications for dentist
+  const loadDentistPatients = async () => {
+    try {
+      console.log('👨‍⚕️ [Dentist Mode] Loading patients with unused indications...');
+      const response = await recordService.getPatientsWithUnusedIndications(currentUser._id);
+      
+      if (response.success && response.data) {
+        console.log(`✅ [Dentist Mode] Loaded ${response.data.length} patients with unused indications`);
+        setDentistPatients(response.data);
+      } else {
+        console.warn('⚠️ [Dentist Mode] No patients found');
+        setDentistPatients([]);
+      }
+    } catch (error) {
+      console.error('❌ [Dentist Mode] Error loading patients:', error);
+      setDentistPatients([]);
+    }
+  };
+
   // Search patient
   const handleSearchPatient = async () => {
     const searchValue = form.getFieldValue('searchValue');
@@ -160,49 +188,108 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
 
     setSearchLoading(true);
     try {
-      console.log('🔍 Searching patients with:', { searchType, searchValue });
-      const response = await userService.getAllPatients(1, 100);
-      console.log('📋 API Response:', response);
+      // 🐛 DEBUG: Check current user role
+      console.log('========== DEBUG LOGIN ROLE ==========');
+      console.log('📋 currentUser:', currentUser);
+      console.log('🎭 currentUser.role:', currentUser.role);
+      console.log('🎭 currentUser.activeRole:', currentUser.activeRole);
+      console.log('🎭 currentUser.roles:', currentUser.roles);
+      console.log('⭐ selectedRole (from localStorage):', selectedRole);
+      console.log('✅ isDentist:', isDentist);
+      console.log('🔍 searchType:', searchType);
+      console.log('🔍 searchValue:', searchValue);
+      console.log('👥 dentistPatients.length:', dentistPatients.length);
+      console.log('======================================');
       
-      // API trả về { success: true, users: [...], total, page }
-      if (response && response.users) {
-        const allPatients = response.users || [];
-        console.log(`📊 Total patients from API: ${allPatients.length}`);
+      console.log('🔍 Searching patients with:', { searchType, searchValue, isDentist });
+      
+      // 🆕 Nếu là dentist, chỉ tìm trong danh sách bệnh nhân của dentist
+      if (isDentist) {
+        console.log('👨‍⚕️ [Dentist Mode] Searching in dentist patients only');
         
-        const results = allPatients.filter(patient => {
-          const value = searchValue.toLowerCase().trim();
-          let match = false;
-          switch (searchType) {
-            case 'phone':
-              match = patient.phone?.includes(value) || patient.phoneNumber?.includes(value);
-              break;
-            case 'email':
-              match = patient.email?.toLowerCase().includes(value);
-              break;
-            case 'name':
-              match = patient.fullName?.toLowerCase().includes(value);
-              break;
-            default:
-              match = false;
-          }
-          if (match) {
-            console.log('✅ Match found:', patient);
-          }
-          return match;
-        });
-
-        console.log(`🎯 Filtered results: ${results.length}`, results);
+        if (dentistPatients.length === 0) {
+          message.info('Không có bệnh nhân nào có chỉ định chưa sử dụng.');
+          setSearchResults([]);
+          setSearchLoading(false);
+          return;
+        }
+        
+        // 🔍 Tìm kiếm theo searchValue trong dentistPatients (đã có sẵn patientName)
+        const value = searchValue.toLowerCase().trim();
+        
+        // ⚠️ Dentist chỉ có thể tìm theo tên (vì API không trả phone/email)
+        if (searchType !== 'name') {
+          message.warning('Chế độ nha sĩ: Chỉ có thể tìm kiếm theo tên bệnh nhân.');
+          setSearchLoading(false);
+          return;
+        }
+        
+        const results = dentistPatients.filter(patient => 
+          patient.fullName?.toLowerCase().includes(value) || 
+          patient.patientName?.toLowerCase().includes(value)
+        );
+        
+        console.log(`🌟 [Dentist Mode] Filtered results: ${results.length}`, results);
         setSearchResults(results);
         
         if (results.length === 0) {
-          message.info('Không tìm thấy bệnh nhân. Vui lòng nhập thông tin mới.');
-          setIsNewPatient(true);
+          message.info('Không tìm thấy bệnh nhân trong danh sách chỉ định của bạn.');
         } else {
           message.success(`Tìm thấy ${results.length} bệnh nhân`);
         }
       } else {
-        console.error('❌ API response not successful:', response);
-        message.error('Lỗi khi tải dữ liệu bệnh nhân');
+        // Không phải dentist - tìm kiếm bình thường
+        // 🐛 DEBUG: Log trước khi gọi API
+        console.log('========== BEFORE API CALL ==========');
+        console.log('📋 currentUser:', currentUser);
+        console.log('🎭 currentUser.role:', currentUser.role);
+        console.log('🎭 currentUser.activeRole:', currentUser.activeRole);
+        console.log('✅ isDentist:', isDentist);
+        console.log('🔍 About to call: userService.getAllPatients(1, 100)');
+        console.log('======================================');
+        
+        const response = await userService.getAllPatients(1, 100);
+        console.log('📋 API Response:', response);
+        
+        if (response && response.users) {
+          const allPatients = response.users || [];
+          console.log(`📊 Total patients from API: ${allPatients.length}`);
+          
+          const results = allPatients.filter(patient => {
+            const value = searchValue.toLowerCase().trim();
+            let match = false;
+            switch (searchType) {
+              case 'phone':
+                match = patient.phone?.includes(value) || patient.phoneNumber?.includes(value);
+                break;
+              case 'email':
+                match = patient.email?.toLowerCase().includes(value);
+                break;
+              case 'name':
+                match = patient.fullName?.toLowerCase().includes(value);
+                break;
+              default:
+                match = false;
+            }
+            if (match) {
+              console.log('✅ Match found:', patient);
+            }
+            return match;
+          });
+
+          console.log(`🎯 Filtered results: ${results.length}`, results);
+          setSearchResults(results);
+          
+          if (results.length === 0) {
+            message.info('Không tìm thấy bệnh nhân. Vui lòng nhập thông tin mới.');
+            setIsNewPatient(true);
+          } else {
+            message.success(`Tìm thấy ${results.length} bệnh nhân`);
+          }
+        } else {
+          console.error('❌ API response not successful:', response);
+          message.error('Lỗi khi tải dữ liệu bệnh nhân');
+        }
       }
     } catch (error) {
       console.error('❌ Error searching patient:', error);
@@ -214,38 +301,121 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
 
   const handleSelectPatient = async (patientId) => {
     console.log('👆 handleSelectPatient called with ID:', patientId);
+    console.log('🔍 isDentist:', isDentist);
     console.log('📋 searchResults available:', searchResults.length, searchResults);
+    console.log('📋 dentistPatients available:', dentistPatients.length, dentistPatients);
     
-    const patient = searchResults.find(p => p._id === patientId);
-    console.log('🔍 Found patient:', patient);
-    
-    if (patient) {
-      setSelectedPatient(patient);
-      setIsNewPatient(false);
-      // Extract year from dateOfBirth since patient model has dateOfBirth (Date), not birthYear (Number)
-      const birthYear = patient.dateOfBirth ? new Date(patient.dateOfBirth).getFullYear() : null;
-      // Patient data có thể dùng 'phone' hoặc 'phoneNumber' tùy API
-      form.setFieldsValue({
-        patientName: patient.fullName,
-        patientPhone: patient.phone || patient.phoneNumber,
-        patientEmail: patient.email,
-        patientBirthYear: birthYear
-      });
-      console.log('✅ Form fields set:', {
-        name: patient.fullName,
-        phone: patient.phone || patient.phoneNumber,
-        email: patient.email,
-        dateOfBirth: patient.dateOfBirth,
-        extractedBirthYear: birthYear
-      });
+    try {
+      // 🆕 Tìm patient từ đúng nguồn dữ liệu
+      let patient;
+      if (isDentist) {
+        // Dentist mode: tìm trong dentistPatients
+        patient = dentistPatients.find(p => (p._id || p.patientId) === patientId);
+        console.log('🔍 Found patient in dentistPatients:', patient);
+        
+        // 🆕 Fetch full patient info from auth-service
+        if (patient) {
+          try {
+            const fullPatientResponse = await userService.getUserById(patientId);
+            console.log('📞 [DEBUG] Full patient response:', fullPatientResponse);
+            
+            // 🔧 API returns {success, user} not {success, data}
+            const userData = fullPatientResponse.user || fullPatientResponse.data;
+            
+            if (fullPatientResponse.success && userData) {
+              console.log('📞 [DEBUG] Full patient data:', userData);
+              console.log('📞 [DEBUG] phoneNumber:', userData.phoneNumber);
+              console.log('📞 [DEBUG] phone:', userData.phone);
+              console.log('📞 [DEBUG] email:', userData.email);
+              console.log('📞 [DEBUG] dateOfBirth:', userData.dateOfBirth);
+              
+              // Merge with full patient data
+              // 🔧 API returns 'phone' not 'phoneNumber'
+              patient = {
+                ...patient,
+                phone: userData.phone || userData.phoneNumber,
+                phoneNumber: userData.phone || userData.phoneNumber,
+                email: userData.email,
+                dateOfBirth: userData.dateOfBirth
+              };
+              console.log('✅ Merged with full patient data:', patient);
+            } else {
+              console.warn('⚠️ Could not get user data from response');
+            }
+          } catch (error) {
+            console.warn('⚠️ Could not fetch full patient info:', error);
+          }
+        }
+      } else {
+        // Other roles: tìm trong searchResults
+        patient = searchResults.find(p => p._id === patientId || p.patientId === patientId);
+        console.log('🔍 Found patient in searchResults:', patient);
+      }
       
-      // ⭐ Fetch unused services for selected patient FIRST, then reload services
-      await fetchUnusedServicesForPatient(patientId);
-      
-      message.success('Đã chọn bệnh nhân: ' + patient.fullName);
-    } else {
-      console.error('❌ Patient not found in searchResults!');
-      message.error('Không tìm thấy thông tin bệnh nhân');
+      if (patient) {
+        // ⭐ Xử lý cả 2 format: dentistPatients và normal searchResults
+        const phoneValue = patient.phone || patient.phoneNumber;
+        console.log('📞 [DEBUG] phoneValue extracted:', phoneValue);
+        
+        if (!phoneValue) {
+          console.error('❌ Patient phone is missing!');
+          message.error('Không tìm thấy số điện thoại của bệnh nhân');
+          return;
+        }
+        
+        const patientData = {
+          _id: patient._id || patient.patientId,
+          fullName: patient.fullName || patient.patientName,
+          phone: phoneValue,
+          phoneNumber: phoneValue,
+          email: patient.email || '',
+          dateOfBirth: patient.dateOfBirth
+        };
+        
+        console.log('📝 Final patientData:', patientData);
+        
+        setSelectedPatient(patientData);
+        setIsNewPatient(false);
+        
+        // Extract year from dateOfBirth
+        const birthYear = patientData.dateOfBirth ? new Date(patientData.dateOfBirth).getFullYear() : null;
+        
+        form.setFieldsValue({
+          patientName: patientData.fullName,
+          patientPhone: patientData.phone,
+          patientEmail: patientData.email,
+          patientBirthYear: birthYear
+        });
+        
+        console.log('✅ Form fields set:', {
+          name: patientData.fullName,
+          phone: patientData.phone,
+          email: patientData.email,
+          dateOfBirth: patientData.dateOfBirth,
+          extractedBirthYear: birthYear
+        });
+        
+        // ⭐ Fetch unused services for selected patient FIRST, then reload services
+        await fetchUnusedServicesForPatient(patientData._id);
+        
+        // 🆕 For dentist role: auto-select dentist's own ID
+        if (isDentist && currentUser._id) {
+          const dentistInfo = {
+            _id: currentUser._id,
+            fullName: currentUser.fullName || currentUser.username
+          };
+          setSelectedDentist(dentistInfo);
+          console.log('✅ Auto-selected dentist:', dentistInfo.fullName);
+        }
+        
+        message.success('Đã chọn bệnh nhân: ' + patientData.fullName);
+      } else {
+        console.error('❌ Patient not found!');
+        message.error('Không tìm thấy thông tin bệnh nhân');
+      }
+    } catch (error) {
+      console.error('❌ Error in handleSelectPatient:', error);
+      message.error('Lỗi khi tải thông tin bệnh nhân');
     }
   };
 
@@ -276,6 +446,17 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         console.log('✅ [fetchUnusedServices] Success! Data:', unusedData);
         console.log('✅ [fetchUnusedServices] Data length:', unusedData.length);
         console.log('✅ [fetchUnusedServices] First item:', unusedData[0]);
+        
+        // 🆕 Debug: Log serviceAddOn info
+        unusedData.forEach((item, idx) => {
+          console.log(`📋 Service ${idx + 1}:`, {
+            serviceName: item.serviceName,
+            serviceAddOnName: item.serviceAddOnName,
+            serviceAddOnPrice: item.serviceAddOnPrice,
+            serviceAddOnUnit: item.serviceAddOnUnit,
+            serviceAddOnDuration: item.serviceAddOnDuration
+          });
+        });
         
         // ⭐ Set state and filter services with current serviceSource
         setUnusedServices(unusedData);
@@ -869,7 +1050,13 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         console.log('✅ Walk-in appointment checked-in successfully');
         console.log('📋 Record will be auto-created by record-service');
         
+        // 🆕 Reset form and reload data
         handleReset();
+        
+        // 🆕 Reload dentist patients list if dentist role
+        if (isDentist && currentUser._id) {
+          await loadDentistPatients();
+        }
         
         if (onSuccess) {
           onSuccess(appointment);
@@ -879,6 +1066,12 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           content: `Lịch hẹn đã tạo (${appointment.appointmentCode}) nhưng check-in thất bại. Vui lòng check-in thủ công.`,
           duration: 5
         });
+        
+        // 🆕 Still reset and reload even if check-in failed
+        handleReset();
+        if (isDentist && currentUser._id) {
+          await loadDentistPatients();
+        }
       }
 
     } catch (error) {
@@ -918,8 +1111,55 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   const handleNext = async () => {
     if (currentStep === 0) {
       try {
-        await form.validateFields(['patientName', 'patientPhone', 'patientBirthYear']);
-        setCurrentStep(1);
+        // 🆕 Dentist chỉ cần chọn bệnh nhân, không cần điền form
+        if (isDentist) {
+          if (!selectedPatient) {
+            message.warning('Vui lòng chọn bệnh nhân từ danh sách');
+            return;
+          }
+          
+          // Auto-select first service indication
+          if (unusedServices.length > 0) {
+            const firstService = unusedServices[0];
+            
+            // Find full service object from allServices
+            const fullService = allServices.find(s => s._id === firstService.serviceId);
+            if (fullService) {
+              setSelectedService(fullService);
+              setExamRecordId(firstService.recordId);
+              console.log('✅ Auto-selected service:', fullService.name);
+              
+              // If has addon indication, auto-select it
+              if (firstService.serviceAddOnId && fullService.serviceAddOns) {
+                const addon = fullService.serviceAddOns.find(a => a._id === firstService.serviceAddOnId);
+                if (addon) {
+                  setSelectedServiceAddOn(addon);
+                  console.log('✅ Auto-selected addon:', addon.name);
+                }
+              }
+              
+              // Load working dates for dentist
+              const serviceDuration = firstService.serviceAddOnDuration || fullService.durationMinutes || 15;
+              fetchWorkingDates(currentUser._id, serviceDuration, fullService._id).catch(err => {
+                console.error('Error loading working dates:', err);
+              });
+            }
+          }
+          
+          setCurrentStep(1); // Skip to date/time selection
+        } else {
+          // Non-dentist: validate form fields
+          await form.validateFields(['patientName', 'patientPhone', 'patientBirthYear']);
+          
+          // 🆕 Nếu là bệnh nhân mới (không có selectedPatient), filter để chỉ hiển thị dịch vụ không yêu cầu khám trước
+          if (!selectedPatient) {
+            console.log('🆕 [handleNext] New patient - filtering to show only non-exam services');
+            filterServicesByPatient([], 'all'); // Empty unusedServices, source = 'all' (normal services)
+          }
+          // Nếu có selectedPatient, thì đã gọi fetchUnusedServicesForPatient rồi
+          
+          setCurrentStep(1);
+        }
       } catch (error) {
         message.warning('Vui lòng điền đầy đủ thông tin bệnh nhân');
       }
@@ -945,9 +1185,18 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     <>
       <Card title="Tạo lịch hẹn cho bệnh nhân Walk-in" style={{ maxWidth: 1200, margin: '0 auto' }}>
         <Steps current={currentStep} style={{ marginBottom: 24 }}>
-          <Step title="Bệnh nhân" icon={<UserOutlined />} />
-          <Step title="Dịch vụ & Nha sĩ" icon={<MedicineBoxOutlined />} />
-          <Step title="Ngày & Giờ" icon={<CalendarOutlined />} />
+          {isDentist ? (
+            <>
+              <Step title="Bệnh nhân & Dịch vụ" icon={<UserOutlined />} />
+              <Step title="Ngày & Giờ" icon={<CalendarOutlined />} />
+            </>
+          ) : (
+            <>
+              <Step title="Bệnh nhân" icon={<UserOutlined />} />
+              <Step title="Dịch vụ & Nha sĩ" icon={<MedicineBoxOutlined />} />
+              <Step title="Ngày & Giờ" icon={<CalendarOutlined />} />
+            </>
+          )}
         </Steps>
 
         <Form form={form} layout="vertical" onFinish={handleSubmit} preserve={true}>
@@ -955,74 +1204,252 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
             {currentStep === 0 && (
             <>
-              <Card title={<Space><SearchOutlined />Tìm kiếm bệnh nhân</Space>} style={{ marginBottom: 16 }}>
-                <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-                  <Col xs={24} sm={6} md={5}>
-                    <Select
-                      value={searchType}
-                      onChange={setSearchType}
-                      style={{ width: '100%' }}
-                    >
-                      <Option value="phone">Số điện thoại</Option>
-                      <Option value="email">Email</Option>
-                      <Option value="name">Tên</Option>
-                    </Select>
-                  </Col>
-                  <Col xs={24} sm={14} md={16}>
-                    <Form.Item name="searchValue" noStyle>
-                      <Input
-                        placeholder={
-                          searchType === 'phone' ? 'Nhập số điện thoại' :
-                          searchType === 'email' ? 'Nhập email' :
-                          'Nhập tên bệnh nhân'
+              <Card title={<Space><SearchOutlined />{isDentist ? 'Chọn bệnh nhân có chỉ định' : 'Tìm kiếm bệnh nhân'}</Space>} style={{ marginBottom: 16 }}>
+                {/* 🆕 Dentist mode: Hiển thị danh sách bệnh nhân có chỉ định */}
+                {isDentist ? (
+                  <>
+                    <Alert
+                      message="Chế độ nha sĩ"
+                      description={`Hiển thị ${dentistPatients.length} bệnh nhân có chỉ định chưa sử dụng từ hồ sơ khám của bạn.`}
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 16 }}
+                    />
+                    
+                    {dentistPatients.length > 0 ? (
+                      <Form.Item 
+                        label={
+                          <Space>
+                            <span>Chọn bệnh nhân</span>
+                            <Badge 
+                              count={dentistPatients.length} 
+                              showZero 
+                              size="small"
+                              style={{ backgroundColor: '#52c41a' }} 
+                            />
+                          </Space>
                         }
-                        style={{ width: '100%' }}
+                        rules={[{ required: true, message: 'Vui lòng chọn bệnh nhân' }]}
+                      >
+                        <Select
+                          placeholder="Chọn bệnh nhân từ danh sách chỉ định"
+                          onChange={handleSelectPatient}
+                          value={selectedPatient?._id}
+                          showSearch
+                          listHeight={400}
+                          optionLabelProp="label"
+                          filterOption={(input, option) => {
+                            const patient = dentistPatients.find(p => (p._id || p.patientId) === option.value);
+                            const name = patient?.fullName || patient?.patientName || '';
+                            return name.toLowerCase().includes(input.toLowerCase());
+                          }}
+                        >
+                          {dentistPatients.map(patient => {
+                            const id = patient._id || patient.patientId;
+                            const name = patient.fullName || patient.patientName;
+                            
+                            return (
+                              <Option 
+                                key={id} 
+                                value={id}
+                                label={name}
+                                style={{ height: 'auto', padding: '8px 12px' }}
+                              >
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  <Text strong style={{ fontSize: 14 }}>{name}</Text>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Mã BA: {patient.recordCode} • {patient.unusedIndicationsCount} chỉ định chưa sử dụng
+                                  </Text>
+                                </div>
+                              </Option>
+                            );
+                          })}
+                        </Select>
+                      </Form.Item>
+                    ) : (
+                      <Alert
+                        message="Không có bệnh nhân"
+                        description="Hiện tại không có bệnh nhân nào có chỉ định chưa sử dụng từ hồ sơ khám của bạn."
+                        type="warning"
+                        showIcon
                       />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} sm={4} md={3}>
-                    <button style={{ width: '100%', height: '100%', borderRadius: '5px', background:'#2596be', border: 'none', color: 'white', fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} type="primary" icon={<SearchOutlined />} onClick={handleSearchPatient}>
-                      <SearchOutlined /> Tìm kiếm
-                    </button>
-                  </Col>
-                </Row>
-
-                {searchResults.length > 0 && (
-                  <Form.Item 
-                    label={
-                      <Space>
-                        <span>Kết quả tìm kiếm</span>
-                        <Badge 
-                          count={searchResults.length} 
-                          showZero 
-                          size="small"
-                          style={{ backgroundColor: '#ff4d4f' }} 
+                    )}
+                    
+                    {/* 🆕 Hiển thị thông tin dịch vụ chỉ định sau khi chọn bệnh nhân */}
+                    {selectedPatient && unusedServices.length > 0 && (
+                      <Card 
+                        title={
+                          <Space>
+                            <MedicineBoxOutlined style={{ color: '#52c41a' }} />
+                            <span>Dịch vụ được chỉ định ({unusedServices.length})</span>
+                          </Space>
+                        }
+                        style={{ marginTop: 16, borderColor: '#52c41a' }}
+                        headStyle={{ backgroundColor: '#f6ffed' }}
+                      >
+                        <Alert
+                          message="Thông tin dịch vụ chỉ định"
+                          description="Danh sách các dịch vụ và gói dịch vụ được chỉ định từ hồ sơ khám trước"
+                          type="success"
+                          showIcon
+                          style={{ marginBottom: 16 }}
                         />
-                      </Space>
-                    }
-                  >
-                    <Select
-                      placeholder="Chọn bệnh nhân"
-                      onChange={handleSelectPatient}
-                      value={selectedPatient?._id}
-                    >
-                      {searchResults.map(patient => (
-                        <Option key={patient._id} value={patient._id}>
-                          {patient.fullName} - {patient.phone || patient.phoneNumber} - {patient.email}
-                        </Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                )}
+                        
+                        {unusedServices.map((service, index) => (
+                          <Card
+                            key={index}
+                            size="small"
+                            style={{ 
+                              marginBottom: index < unusedServices.length - 1 ? 12 : 0,
+                              backgroundColor: '#fafafa',
+                              border: '1px solid #d9d9d9'
+                            }}
+                          >
+                            <Row gutter={[16, 8]}>
+                              <Col span={24}>
+                                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                  {/* Tên dịch vụ */}
+                                  <div>
+                                    <Tag color="blue" style={{ marginBottom: 4 }}>STT {index + 1}</Tag>
+                                    <Text strong style={{ fontSize: 15, color: '#1890ff' }}>
+                                      {service.serviceName}
+                                    </Text>
+                                  </div>
+                                  
+                                  {/* Gói dịch vụ con */}
+                                  {service.serviceAddOnName && (
+                                    <div style={{ 
+                                      padding: '8px 12px', 
+                                      backgroundColor: '#e6f7ff', 
+                                      borderLeft: '3px solid #1890ff',
+                                      borderRadius: '4px'
+                                    }}>
+                                      <Space direction="vertical" size={4}>
+                                        <Text strong style={{ fontSize: 13 }}>
+                                          📦 Gói dịch vụ: {service.serviceAddOnName}
+                                        </Text>
+                                        {service.serviceAddOnPrice && (
+                                          <Text type="secondary">
+                                            💰 Giá: <strong style={{ color: '#52c41a' }}>
+                                              {service.serviceAddOnPrice.toLocaleString('vi-VN')}đ
+                                            </strong>
+                                            {service.serviceAddOnUnit && ` / ${service.serviceAddOnUnit}`}
+                                          </Text>
+                                        )}
+                                        {service.serviceAddOnDuration && (
+                                          <Text type="secondary">
+                                            ⏱️ Thời gian: <strong>{service.serviceAddOnDuration} phút</strong>
+                                          </Text>
+                                        )}
+                                      </Space>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Thông tin record */}
+                                  <div style={{ paddingTop: 4 }}>
+                                    <Space split={<Divider type="vertical" />} wrap>
+                                      <Text type="secondary" style={{ fontSize: 12 }}>
+                                        <FileTextOutlined /> Hồ sơ: <strong>{service.recordCode || 'N/A'}</strong>
+                                      </Text>
+                                      {service.dentistName && (
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          <UserOutlined /> BS: {service.dentistName}
+                                        </Text>
+                                      )}
+                                      {service.createdDate && (
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          📅 {dayjs(service.createdDate).format('DD/MM/YYYY')}
+                                        </Text>
+                                      )}
+                                    </Space>
+                                  </div>
+                                </Space>
+                              </Col>
+                            </Row>
+                          </Card>
+                        ))}
+                      </Card>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Admin/Manager/Receptionist mode: Form tìm kiếm */}
+                    <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                      <Col xs={24} sm={6} md={5}>
+                        <Select
+                          value={searchType}
+                          onChange={setSearchType}
+                          style={{ width: '100%' }}
+                        >
+                          <Option value="phone">Số điện thoại</Option>
+                          <Option value="email">Email</Option>
+                          <Option value="name">Tên</Option>
+                        </Select>
+                      </Col>
+                      <Col xs={24} sm={14} md={16}>
+                        <Form.Item name="searchValue" noStyle>
+                          <Input
+                            placeholder={
+                              searchType === 'phone' ? 'Nhập số điện thoại' :
+                              searchType === 'email' ? 'Nhập email' :
+                              'Nhập tên bệnh nhân'
+                            }
+                            style={{ width: '100%' }}
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={4} md={3}>
+                        <button style={{ width: '100%', height: '100%', borderRadius: '5px', background:'#2596be', border: 'none', color: 'white', fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} type="primary" icon={<SearchOutlined />} onClick={handleSearchPatient}>
+                          <SearchOutlined /> Tìm kiếm
+                        </button>
+                      </Col>
+                    </Row>
 
-                <Button 
-                  type="dashed" 
-                  block 
-                  icon={<UserAddOutlined />}
-                  onClick={handleCreateNewPatient}
-                >
-                  Tạo bệnh nhân mới
-                </Button>
+                    {searchResults.length > 0 && (
+                      <Form.Item 
+                        label={
+                          <Space>
+                            <span>Kết quả tìm kiếm</span>
+                            <Badge 
+                              count={searchResults.length} 
+                              showZero 
+                              size="small"
+                              style={{ backgroundColor: '#ff4d4f' }} 
+                            />
+                          </Space>
+                        }
+                      >
+                        <Select
+                          placeholder="Chọn bệnh nhân"
+                          onChange={handleSelectPatient}
+                          value={selectedPatient?._id}
+                        >
+                          {searchResults.map(patient => {
+                            const id = patient._id || patient.patientId;
+                            const name = patient.fullName || patient.patientName;
+                            const phone = patient.phone || patient.phoneNumber || 'N/A';
+                            const email = patient.email || 'N/A';
+                            
+                            return (
+                              <Option key={id} value={id}>
+                                {name} - {phone} - {email}
+                              </Option>
+                            );
+                          })}
+                        </Select>
+                      </Form.Item>
+                    )}
+
+                    <Button 
+                      type="dashed" 
+                      block 
+                      icon={<UserAddOutlined />}
+                      onClick={handleCreateNewPatient}
+                    >
+                      Tạo bệnh nhân mới
+                    </Button>
+                  </>
+                )}
               </Card>
 
               {selectedPatient && (
@@ -1037,89 +1464,93 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                 />
               )}
 
-              <Card title={<Space><UserOutlined />Thông tin bệnh nhân</Space>}>
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="patientName"
-                      label="Họ và tên"
-                      rules={[
-                        { required: true, message: 'Vui lòng nhập họ tên' },
-                        { max: 100, message: 'Tên không quá 100 ký tự' }
-                      ]}
-                    >
-                      <Input 
-                        placeholder="Nguyễn Văn A" 
-                        disabled={!!selectedPatient}
-                        onChange={(e) => setNewPatientInfo({...newPatientInfo, name: e.target.value})}
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="patientPhone"
-                      label="Số điện thoại"
-                      rules={[
-                        { required: true, message: 'Vui lòng nhập số điện thoại' },
-                        { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại phải là 10-11 chữ số' }
-                      ]}
-                    >
-                      <Input 
-                        placeholder="0912345678" 
-                        disabled={!!selectedPatient}
-                        onChange={(e) => setNewPatientInfo({...newPatientInfo, phone: e.target.value})}
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
+              {/* ⭐ Chỉ hiển thị form thông tin bệnh nhân cho non-dentist hoặc khi chưa chọn bệnh nhân */}
+              {!isDentist && (
+                <Card title={<Space><UserOutlined />Thông tin bệnh nhân</Space>}>
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="patientName"
+                        label="Họ và tên"
+                        rules={[
+                          { required: true, message: 'Vui lòng nhập họ tên' },
+                          { max: 100, message: 'Tên không quá 100 ký tự' }
+                        ]}
+                      >
+                        <Input 
+                          placeholder="Nguyễn Văn A" 
+                          disabled={!!selectedPatient}
+                          onChange={(e) => setNewPatientInfo({...newPatientInfo, name: e.target.value})}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="patientPhone"
+                        label="Số điện thoại"
+                        rules={[
+                          { required: true, message: 'Vui lòng nhập số điện thoại' },
+                          { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại phải là 10-11 chữ số' }
+                        ]}
+                      >
+                        <Input 
+                          placeholder="0912345678" 
+                          disabled={!!selectedPatient}
+                          onChange={(e) => setNewPatientInfo({...newPatientInfo, phone: e.target.value})}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
 
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Form.Item
-                      name="patientEmail"
-                      label="Email (tùy chọn)"
-                      rules={[
-                        { type: 'email', message: 'Email không hợp lệ' }
-                      ]}
-                    >
-                      <Input 
-                        placeholder="example@email.com" 
-                        disabled={!!selectedPatient}
-                        onChange={(e) => setNewPatientInfo({...newPatientInfo, email: e.target.value})}
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item
-                      name="patientBirthYear"
-                      label="Năm sinh"
-                      rules={[
-                        { required: true, message: 'Vui lòng nhập năm sinh' },
-                        { 
-                          type: 'number', 
-                          min: 1900, 
-                          max: new Date().getFullYear(),
-                          message: `Năm sinh phải từ 1900 đến ${new Date().getFullYear()}`
-                        }
-                      ]}
-                    >
-                      <InputNumber 
-                        placeholder="1990" 
-                        style={{ width: '100%' }}
-                        disabled={!!selectedPatient}
-                        onChange={(value) => setNewPatientInfo({...newPatientInfo, birthYear: value})}
-                      />
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </Card>
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="patientEmail"
+                        label="Email (tùy chọn)"
+                        rules={[
+                          { type: 'email', message: 'Email không hợp lệ' }
+                        ]}
+                      >
+                        <Input 
+                          placeholder="example@email.com" 
+                          disabled={!!selectedPatient}
+                          onChange={(e) => setNewPatientInfo({...newPatientInfo, email: e.target.value})}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        name="patientBirthYear"
+                        label="Năm sinh"
+                        rules={[
+                          { required: true, message: 'Vui lòng nhập năm sinh' },
+                          { 
+                            type: 'number', 
+                            min: 1900, 
+                            max: new Date().getFullYear(),
+                            message: `Năm sinh phải từ 1900 đến ${new Date().getFullYear()}`
+                          }
+                        ]}
+                      >
+                        <InputNumber 
+                          placeholder="1990" 
+                          style={{ width: '100%' }}
+                          disabled={!!selectedPatient}
+                          onChange={(value) => setNewPatientInfo({...newPatientInfo, birthYear: value})}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </Card>
+              )}
             </>
           )}
           </div>
 
           {/* Step 1: Service and Dentist Selection */}
-          <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
-          {currentStep === 1 && (
+          {!isDentist && (
+            <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+            {currentStep === 1 && (
             <>
               <Card title={<Space><MedicineBoxOutlined />Chọn dịch vụ</Space>} style={{ marginBottom: 16 }}>
                 {/* 🆕 Service Source Filter - chỉ hiện khi có dịch vụ được chỉ định */}
@@ -1360,12 +1791,13 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                 </Form.Item>
               </Card>
             </>
+            )}
+            </div>
           )}
-          </div>
 
-          {/* Step 2: Date and Time Slot Selection */}
-          <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
-          {currentStep === 2 && (
+          {/* Step 2: Date and Time Slot Selection (Step 1 for dentist) */}
+          <div style={{ display: (isDentist ? currentStep === 1 : currentStep === 2) ? 'block' : 'none' }}>
+          {(isDentist ? currentStep === 1 : currentStep === 2) && (
             <>
               <Card title={<Space><CalendarOutlined />Chọn ngày khám</Space>} style={{ marginBottom: 16 }}>
                 {!selectedDentist && (
@@ -1598,7 +2030,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                 </Button>
               )}
               
-              {currentStep < 2 ? (
+              {/* Dentist has 2 steps (0,1), others have 3 steps (0,1,2) */}
+              {(isDentist ? currentStep < 1 : currentStep < 2) ? (
                 <Button type="primary" onClick={handleNext}>
                   Tiếp tục
                 </Button>

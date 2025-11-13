@@ -50,6 +50,11 @@ const DashboardLayout = () => {
     navigate('/login');
   };
 
+  const handleRoleSwitch = (role) => {
+    localStorage.setItem('selectedRole', role);
+    window.location.reload(); // Reload to apply new role
+  };
+
   const getRoleDisplayName = (role) => {
     const roleNames = {
       admin: 'Quản trị viên',
@@ -188,6 +193,13 @@ const DashboardLayout = () => {
         label: 'Lịch làm việc',
       });
       
+      // 🩺 Lịch Walk-in
+      addMenuItem({
+        key: '/dashboard/walk-in-appointments',
+        icon: <UserAddOutlined />,
+        label: 'Lịch Walk-in',
+      });
+      
       // 🩺 Hồ sơ bệnh án
       addMenuItem({
         key: '/dashboard/records',
@@ -279,6 +291,23 @@ const DashboardLayout = () => {
       label: 'Đổi mật khẩu',
       onClick: () => navigate('/dashboard/change-password'),
     },
+    // Show role switcher only if user has multiple roles
+    ...(user?.roles && user.roles.length > 1 ? [{
+      type: 'divider',
+    }, {
+      key: 'role-switcher',
+      icon: <UserSwitchOutlined />,
+      label: 'Chuyển vai trò',
+      children: user.roles.map(role => ({
+        key: `role-${role}`,
+        label: getRoleDisplayName(role),
+        onClick: () => handleRoleSwitch(role),
+        style: {
+          fontWeight: localStorage.getItem('selectedRole') === role ? 'bold' : 'normal',
+          backgroundColor: localStorage.getItem('selectedRole') === role ? '#e6f7ff' : 'transparent',
+        }
+      }))
+    }] : []),
     {
       type: 'divider',
     },
