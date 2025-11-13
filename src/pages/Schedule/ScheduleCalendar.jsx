@@ -2667,6 +2667,7 @@ const ScheduleCalendar = () => {
         width={700}
         closable={!emergencyClosing}
         maskClosable={false}
+        centered
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           {/* Warning Header */}
@@ -2695,28 +2696,7 @@ const ScheduleCalendar = () => {
               }}
             />
           </div>
-
-          {/* Warning Messages */}
-          <Alert
-            type="error"
-            showIcon
-            message="Hành động này sẽ:"
-            description={
-              <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
-                <li><strong>Tắt TẤT CẢ slots của TẤT CẢ phòng khám</strong> trong ngày đã chọn</li>
-                <li>Tự động gửi email hủy lịch cho bệnh nhân đã đặt</li>
-                <li>Gửi thông báo cho nha sĩ và y tá được phân công</li>
-                <li>Thao tác này KHÔNG THỂ hoàn tác tự động</li>
-              </ul>
-            }
-          />
-
-          <Alert
-            type="warning"
-            showIcon
-            message="Chỉ sử dụng trong trường hợp khẩn cấp"
-            description="Ví dụ: Sự cố kỹ thuật, thiên tai, hoặc toàn bộ phòng khám buộc phải đóng cửa đột xuất"
-          />
+          
 
           {/* Reason Input */}
           <div>
@@ -2740,13 +2720,19 @@ const ScheduleCalendar = () => {
               </Text>
             )}
           </div>
-
-          {/* Confirmation Checkbox */}
+          {/* cuối modal */}
           <Alert
-            type="info"
-            message="Lưu ý"
-            description="Hệ thống sẽ tự động gửi email thông báo hủy lịch cho tất cả bệnh nhân, nha sĩ và y tá liên quan."
+            type="error"
+            showIcon
+            message="Hành động này sẽ:"
+            description={
+              <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+                <li><strong>Tắt TẤT CẢ slots của TẤT CẢ phòng khám</strong> trong ngày đã chọn</li>
+                <li>Hệ thống sẽ tự động gửi email thông báo hủy lịch cho tất cả bệnh nhân, nha sĩ và y tá liên quan.</li>
+              </ul>
+            }
           />
+          
         </Space>
       </Modal>
 
@@ -2767,6 +2753,7 @@ const ScheduleCalendar = () => {
           }
         }}
         onOk={handleConfirmEmergencyEnable}
+        centered
         confirmLoading={emergencyEnabling}
         okText="Xác Nhận Bật Lại Lịch"
         okButtonProps={{ 
@@ -2785,7 +2772,7 @@ const ScheduleCalendar = () => {
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
             <ExclamationCircleOutlined style={{ fontSize: 48, color: '#52c41a' }} />
             <Title level={4} style={{ color: '#52c41a', marginTop: 16, marginBottom: 8 }}>
-              ✅ BẬT LẠI Toàn Bộ Lịch Đã Tắt Của TẤT CẢ Phòng
+              BẬT LẠI Toàn Bộ Lịch Đã Tắt Của TẤT CẢ Phòng
             </Title>
           </div>
 
@@ -2803,21 +2790,6 @@ const ScheduleCalendar = () => {
               disabled={emergencyEnabling}
             />
           </div>
-
-          {/* Success Messages */}
-          <Alert
-            type="success"
-            showIcon
-            message="Hành động này sẽ:"
-            description={
-              <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
-                <li><strong>Bật lại TẤT CẢ slots đã bị tắt</strong> của TẤT CẢ phòng khám trong ngày đã chọn</li>
-                <li>Tự động gửi email thông báo kích hoạt lại cho bệnh nhân đã đặt</li>
-                <li>Gửi thông báo cho nha sĩ và y tá được phân công</li>
-                <li>Lịch có thể sử dụng ngay lập tức sau khi bật</li>
-              </ul>
-            }
-          />
 
           {/* Reason Input (Optional) */}
           <div>
@@ -2837,12 +2809,21 @@ const ScheduleCalendar = () => {
             />
           </div>
 
-          {/* Confirmation Info */}
+          {/* cuối modal */}
+          {/* Success Messages */}
           <Alert
-            type="warning"
-            message="Thông báo email"
-            description="Hệ thống sẽ tự động gửi email thông báo kích hoạt lại lịch cho tất cả bệnh nhân, nha sĩ và y tá liên quan."
+            type="success"
+            showIcon
+            message="Hành động này sẽ:"
+            description={
+              <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+                <li><strong>Bật lại TẤT CẢ slots đã bị tắt</strong> của TẤT CẢ phòng khám trong ngày đã chọn</li>
+                <li>Hệ thống sẽ tự động gửi email thông báo kích hoạt lại lịch cho tất cả bệnh nhân, nha sĩ và y tá liên quan.</li>
+                <li>Lịch có thể sử dụng ngay lập tức sau khi bật</li>
+              </ul>
+            }
           />
+
         </Space>
       </Modal>
     </div>
