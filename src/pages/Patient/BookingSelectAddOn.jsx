@@ -11,7 +11,8 @@ import {
   Tag,
   message,
   Empty,
-  Spin
+  Spin,
+  Tooltip
 } from 'antd';
 import { 
   ArrowLeftOutlined,
@@ -20,15 +21,119 @@ import {
   CheckCircleOutlined,
   MedicineBoxOutlined,
   FileTextOutlined,
-  ArrowRightOutlined
+  ArrowRightOutlined,
+  CalendarOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import recordService from '../../services/recordService';
+import { getPriceScheduleInfo, formatDateRange, formatPrice } from '../../utils/priceScheduleUtils';
 import './BookingSelectAddOn.css';
 import { COLOR_BRAND_NAME } from '../../utils/common-colors';
 import ToothIcon from "../../assets/icon/tooth-icon.png"
 
 const { Title, Text, Paragraph } = Typography;
+
+// Component to display price with schedule information
+const PriceDisplay = ({ addon }) => {
+  const priceInfo = getPriceScheduleInfo(addon.priceSchedules, addon.price);
+  const { activeSchedule, upcomingSchedules, effectivePrice, hasActiveSchedule, hasUpcomingSchedules } = priceInfo;
+
+  return (
+    <div className="price-display-container">
+      {/* Active schedule with discounted price */}
+      {hasActiveSchedule && (
+        <div className="price-active-schedule">
+          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+            <Space align="center">
+              <DollarOutlined style={{ color: '#ff4d4f' }} />
+              <Text delete type="secondary" style={{ fontSize: 14 }}>
+                {formatPrice(addon.price)}
+              </Text>
+            </Space>
+            <Space align="center">
+              <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
+                {formatPrice(activeSchedule.price)}
+              </Text>
+              <Tag color="red" style={{ margin: 0 }}>
+                Đang giảm giá
+              </Tag>
+            </Space>
+            <Space align="center" size={4}>
+              <CalendarOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {formatDateRange(activeSchedule.startDate, activeSchedule.endDate)}
+              </Text>
+            </Space>
+            {activeSchedule.reason && (
+              <Text type="secondary" italic style={{ fontSize: 12 }}>
+                {activeSchedule.reason}
+              </Text>
+            )}
+          </Space>
+        </div>
+      )}
+
+      {/* Normal price (no active schedule) */}
+      {!hasActiveSchedule && (
+        <Space align="center">
+          <DollarOutlined style={{ color: '#d4860f' }} />
+          <Text strong style={{ fontSize: 16, color: '#d4860f' }}>
+            {formatPrice(addon.price)}
+          </Text>
+          <Text type="secondary">/ {addon.unit}</Text>
+        </Space>
+      )}
+
+      {/* Upcoming schedules */}
+      {hasUpcomingSchedules && (
+        <div className="upcoming-schedules" style={{ marginTop: 8 }}>
+          <div style={{ 
+            background: '#e6f7ff', 
+            border: '1px solid #91d5ff',
+            borderRadius: 6,
+            padding: '6px 10px',
+            display: 'inline-block',
+            maxWidth: '100%'
+          }}>
+            <Space size={4} wrap align="start" style={{ width: '100%' }}>
+              <Space align="center" size={4} style={{ flexShrink: 0 }}>
+                <InfoCircleOutlined style={{ color: '#1890ff', fontSize: 12 }} />
+                <Text strong style={{ fontSize: 12, color: '#1890ff', whiteSpace: 'nowrap' }}>
+                  Lịch giá sắp tới:
+                </Text>
+              </Space>
+              
+              {upcomingSchedules.slice(0, 2).map((schedule, idx) => (
+                <React.Fragment key={schedule._id || idx}>
+                  <Space size={4} style={{ flexShrink: 0 }}>
+                    <Text style={{ fontSize: 12, color: '#1890ff', fontWeight: 600 }}>
+                      {formatPrice(schedule.price)}
+                    </Text>
+                    <Text type="secondary" style={{ fontSize: 11, whiteSpace: 'nowrap' }}>
+                      ({formatDateRange(schedule.startDate, schedule.endDate)})
+                    </Text>
+                  </Space>
+                  {schedule.reason && (
+                    <Text type="secondary" italic style={{ fontSize: 11, width: '100%' }}>
+                      {schedule.reason}
+                    </Text>
+                  )}
+                </React.Fragment>
+              ))}
+              
+              {upcomingSchedules.length > 2 && (
+                <Text type="secondary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+                  +{upcomingSchedules.length - 2} lịch giá khác...
+                </Text>
+              )}
+            </Space>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const BookingSelectAddOn = () => {
   const navigate = useNavigate();
@@ -123,6 +228,7 @@ const BookingSelectAddOn = () => {
     
     // Save selected addon and navigate immediately
     localStorage.setItem('booking_serviceAddOn', JSON.stringify(addon));
+    localStorage.setItem('booking_serviceAddOn_userSelected', 'true'); // 🆕 Flag: user explicitly selected this addon
     
     // 🆕 Save recordId if this addon is from a treatment indication
     if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId === addon._id) {
@@ -150,17 +256,29 @@ const BookingSelectAddOn = () => {
       return;
     }
     
-    // Clear addon selection (will use max duration from service)
-    localStorage.removeItem('booking_serviceAddOn');
-    localStorage.removeItem('booking_recordId');
-    
     if (service.requireExamFirst && treatmentIndications.length === 0) {
       // Service yêu cầu khám nhưng không có chỉ định
       message.warning('Dịch vụ này yêu cầu khám trước. Vui lòng đặt lịch khám tổng quát trước.');
       return;
     }
     
-    console.log('⏭️ Skipping addon selection - will use max duration');
+    // 🆕 If service has addons, save the longest one for slot grouping
+    if (service.serviceAddOns && service.serviceAddOns.length > 0) {
+      const longestAddon = service.serviceAddOns.reduce((longest, addon) => {
+        return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+      }, service.serviceAddOns[0]);
+      
+      localStorage.setItem('booking_serviceAddOn', JSON.stringify(longestAddon));
+      localStorage.setItem('booking_serviceAddOn_userSelected', 'false'); // 🆕 Flag: auto-selected for slot grouping only
+      console.log('⏭️ No addon selected → Using longest addon for slot grouping:', longestAddon.name, longestAddon.durationMinutes, 'min');
+    } else {
+      // Clear addon selection if no addons exist
+      localStorage.removeItem('booking_serviceAddOn');
+      localStorage.removeItem('booking_serviceAddOn_userSelected');
+    }
+    
+    localStorage.removeItem('booking_recordId');
+    
     navigate('/patient/booking/select-dentist');
   };
 
@@ -289,17 +407,8 @@ const BookingSelectAddOn = () => {
                               </div>
 
                               <Space direction="vertical" size={8} style={{ width: '100%', marginBottom: 12 }}>
-                               
-                                  <Space>
-                                    <DollarOutlined style={{ color: '#d4860f' }} />
-                                    <Text strong style={{ fontSize: 15, color: '#d4860f' }}>
-                                      {addon.effectivePrice 
-                                        ? addon.effectivePrice.toLocaleString('vi-VN')
-                                        : addon.price?.toLocaleString('vi-VN')} VNĐ
-                                    </Text>
-                                    <Text type="secondary">/ {addon.unit}</Text>
-                                  </Space>
-                                
+                                {/* Price display with schedule information */}
+                                <PriceDisplay addon={addon} />
 
                                 <Space>
                                   <ClockCircleOutlined style={{ color: '#1890ff' }} />

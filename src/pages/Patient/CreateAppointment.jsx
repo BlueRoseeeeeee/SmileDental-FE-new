@@ -9,7 +9,8 @@ import {
   Descriptions,
   Input,
   Form,
-  message
+  message,
+  Tag
 } from 'antd';
 import { 
   ArrowLeftOutlined,
@@ -17,11 +18,19 @@ import {
   FileTextOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import appointmentService from '../../services/appointmentService.js';
 import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { getPriceScheduleInfo } from '../../utils/priceScheduleUtils';
 import './CreateAppointment.css';
 import { toast } from 'react-toastify';
+
+dayjs.extend(isBetween);
+dayjs.extend(timezone);
+dayjs.extend(utc);
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -37,6 +46,84 @@ const CreateAppointment = () => {
   const [selectedSlotGroup, setSelectedSlotGroup] = useState(null);
   const [loading, setLoading] = useState(false);
   const [scheduleConfig, setScheduleConfig] = useState({ depositAmount: 100000 });
+
+  // Get price schedule info for displaying price with schedule details
+  const getPriceScheduleForDate = (item, appointmentDate) => {
+    if (!item || !appointmentDate) {
+      return { basePrice: item?.price || 0, activeSchedule: null };
+    }
+
+    const priceSchedules = item.priceSchedules || [];
+    if (priceSchedules.length === 0) {
+      return { basePrice: item.price || 0, activeSchedule: null };
+    }
+
+    const appointmentDay = dayjs(appointmentDate).tz('Asia/Ho_Chi_Minh').startOf('day');
+
+    const activeSchedule = priceSchedules.find(schedule => {
+      if (!schedule.isActive) return false;
+
+      const startDate = dayjs(schedule.startDate).tz('Asia/Ho_Chi_Minh').startOf('day');
+      const endDate = dayjs(schedule.endDate).tz('Asia/Ho_Chi_Minh').endOf('day');
+
+      return appointmentDay.isBetween(startDate, endDate, null, '[]');
+    });
+
+    return {
+      basePrice: item.price || 0,
+      activeSchedule: activeSchedule || null
+    };
+  };
+
+  // Calculate effective price based on appointment date and price schedules
+  // Works for both service and serviceAddOn
+  const getEffectivePriceForDate = (item, appointmentDate) => {
+    console.log('💰 getEffectivePriceForDate called with:', {
+      itemName: item?.name,
+      basePrice: item?.price,
+      appointmentDate: appointmentDate?.format('YYYY-MM-DD'),
+      hasPriceSchedules: item?.priceSchedules?.length > 0
+    });
+
+    if (!item || !appointmentDate) {
+      console.log('⚠️ Missing item or date, returning:', item?.price || 0);
+      return item?.price || 0;
+    }
+
+    const priceSchedules = item.priceSchedules || [];
+    if (priceSchedules.length === 0) {
+      console.log('📋 No price schedules, returning base price:', item.price || 0);
+      return item.price || 0; // Return base price if no schedules
+    }
+
+    // Convert appointment date to start of day in Vietnam timezone
+    const appointmentDay = dayjs(appointmentDate).tz('Asia/Ho_Chi_Minh').startOf('day');
+    console.log('📅 Appointment day (VN):', appointmentDay.format('YYYY-MM-DD'));
+
+    // Find active price schedule that covers the appointment date
+    const activeSchedule = priceSchedules.find(schedule => {
+      if (!schedule.isActive) {
+        console.log('⏭️ Skipping inactive schedule:', schedule);
+        return false;
+      }
+
+      const startDate = dayjs(schedule.startDate).tz('Asia/Ho_Chi_Minh').startOf('day');
+      const endDate = dayjs(schedule.endDate).tz('Asia/Ho_Chi_Minh').endOf('day');
+      
+      console.log('🔍 Checking schedule:', {
+        price: schedule.price,
+        startDate: startDate.format('YYYY-MM-DD'),
+        endDate: endDate.format('YYYY-MM-DD'),
+        isInRange: appointmentDay.isBetween(startDate, endDate, null, '[]')
+      });
+
+      return appointmentDay.isBetween(startDate, endDate, null, '[]'); // inclusive
+    });
+
+    const finalPrice = activeSchedule ? activeSchedule.price : (item.price || 0);
+    console.log('✅ Final price:', finalPrice, activeSchedule ? '(from schedule)' : '(base price)');
+    return finalPrice;
+  };
 
   // 🆕 Fetch schedule config on mount
   useEffect(() => {
@@ -70,6 +157,7 @@ const CreateAppointment = () => {
     setSelectedService(JSON.parse(service));
     if (serviceAddOn) {
       setSelectedServiceAddOn(JSON.parse(serviceAddOn));
+      console.log('📦 Loaded serviceAddOn:', JSON.parse(serviceAddOn));
     }
     setSelectedDentist(JSON.parse(dentist));
     setSelectedDate(dayjs(date));
@@ -196,23 +284,52 @@ const CreateAppointment = () => {
               >
                 <Descriptions column={{ xs: 1, sm: 1, md: 2 }} bordered>
                   <Descriptions.Item label="Dịch vụ">
-                   {selectedService?.name}
+                    {selectedService?.name}
+                    {selectedServiceAddOn && (
+                      <span style={{ color: '#1890ff', fontWeight: 500 }}>
+                        {' '}({selectedServiceAddOn.name})
+                      </span>
+                    )}
                   </Descriptions.Item>
-                  {selectedServiceAddOn ? (
-                    <>
-                      <Descriptions.Item label="Gói dịch vụ">
-                        {selectedServiceAddOn.name}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Giá gói">
-                          {selectedServiceAddOn.price?.toLocaleString('vi-VN')} VNĐ / {selectedServiceAddOn.unit}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Thời gian dự kiến">
-                        <Text>~{selectedServiceAddOn.durationMinutes} phút</Text>
-                      </Descriptions.Item>
-                    </>
-                  ) : (
-                    <Descriptions.Item label="Giá dịch vụ">
-                        {selectedService?.price?.toLocaleString('vi-VN')} VNĐ
+                  <Descriptions.Item label="Giá dịch vụ">
+                    {(() => {
+                      const item = selectedServiceAddOn || selectedService;
+                      const priceInfo = getPriceScheduleForDate(item, selectedDate);
+                      const { basePrice, activeSchedule } = priceInfo;
+
+                      if (activeSchedule) {
+                        // Has active schedule - show both base price (strikethrough) and schedule price
+                        return (
+                          <Space direction="vertical" size={4}>
+                            <Space size={8}>
+                              <Text delete type="secondary" style={{ fontSize: 14 }}>
+                                {basePrice.toLocaleString('vi-VN')} VNĐ
+                              </Text>
+                              <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
+                                {activeSchedule.price.toLocaleString('vi-VN')} VNĐ
+                              </Text>
+                              {selectedServiceAddOn && <Text type="secondary">/ {selectedServiceAddOn.unit}</Text>}
+                              <Tag color="red" style={{ margin: 0 }}>Giảm giá</Tag>
+                            </Space>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              ({dayjs(activeSchedule.startDate).format('DD/MM/YYYY')} - {dayjs(activeSchedule.endDate).format('DD/MM/YYYY')})
+                            </Text>
+                          </Space>
+                        );
+                      } else {
+                        // No active schedule - show base price only
+                        return (
+                          <Text strong style={{ fontSize: 15 }}>
+                            {basePrice.toLocaleString('vi-VN')} VNĐ
+                            {selectedServiceAddOn && <Text type="secondary"> / {selectedServiceAddOn.unit}</Text>}
+                          </Text>
+                        );
+                      }
+                    })()}
+                  </Descriptions.Item>
+                  {selectedServiceAddOn && (
+                    <Descriptions.Item label="Thời gian dự kiến">
+                      <Text>~{selectedServiceAddOn.durationMinutes} phút</Text>
                     </Descriptions.Item>
                   )}
                   <Descriptions.Item label="Nha sĩ">
@@ -283,8 +400,8 @@ const CreateAppointment = () => {
                     {/* <br /> */}
                     <Text type="secondary" style={{ fontSize: 13 }}>
                       (Giá dịch vụ: {selectedServiceAddOn 
-                        ? selectedServiceAddOn.price?.toLocaleString('vi-VN') 
-                        : selectedService?.price?.toLocaleString('vi-VN')} VNĐ - thanh toán sau khi khám)
+                        ? getEffectivePriceForDate(selectedServiceAddOn, selectedDate)?.toLocaleString('vi-VN')
+                        : getEffectivePriceForDate(selectedService, selectedDate)?.toLocaleString('vi-VN')} VNĐ - thanh toán sau khi khám)
                     </Text>
                   </div>
                 }

@@ -197,6 +197,7 @@ const BookingSelectService = () => {
     
     //  XÓA addon cũ (user sẽ chọn lại ở trang tiếp theo nếu service có addon)
     localStorage.removeItem('booking_serviceAddOn');
+    localStorage.removeItem('booking_serviceAddOn_userSelected'); // 🆕 Clear user selection flag
     
     // ⭐ If service requires exam first, save the recordId to update hasBeenUsed later
     if (service.requireExamFirst) {

@@ -45,12 +45,20 @@ import {
   CloseOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
+import isBetween from 'dayjs/plugin/isBetween';
 import recordService from '../../services/recordService';
 import { servicesService } from '../../services/servicesService';
 import userService from '../../services/userService';
 import roomService from '../../services/roomService';
 import medicineService from '../../services/medicineService';
+import { getPriceScheduleInfo } from '../../utils/priceScheduleUtils';
 import PrescriptionForm from './PrescriptionForm';
+
+dayjs.extend(timezone);
+dayjs.extend(utc);
+dayjs.extend(isBetween);
 
 const { Option } = Select;
 
@@ -60,6 +68,56 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   const [loadingData, setLoadingData] = useState(false); // For loading initial data
   const [activeTab, setActiveTab] = useState('1');
   const [recordType, setRecordType] = useState('exam');
+  
+  // 🆕 Helper function to get price schedule info for addon
+  const getPriceScheduleForAddon = (addon) => {
+    if (!addon) return { basePrice: 0, schedulePrice: null };
+    
+    const basePrice = addon.price || 0;
+    
+    // Get exam date from state or form (use current date as fallback)
+    const dateToCheck = examDate || form.getFieldValue('date') || dayjs();
+    
+    console.log('💰 Checking price schedule for:', addon.name, 'on date:', dayjs(dateToCheck).format('YYYY-MM-DD'));
+    
+    // Check if exam date falls within any active price schedule
+    if (addon.priceSchedules && addon.priceSchedules.length > 0) {
+      const activeSchedule = addon.priceSchedules.find(schedule => {
+        if (!schedule.isActive) return false;
+        
+        const startDate = dayjs(schedule.startDate).tz('Asia/Ho_Chi_Minh').startOf('day');
+        const endDate = dayjs(schedule.endDate).tz('Asia/Ho_Chi_Minh').endOf('day');
+        const checkDate = dayjs(dateToCheck).tz('Asia/Ho_Chi_Minh').startOf('day');
+        
+        const isInRange = checkDate.isBetween(startDate, endDate, null, '[]');
+        
+        console.log('📅 Schedule check:', {
+          schedulePri: schedule.price,
+          startDate: startDate.format('YYYY-MM-DD'),
+          endDate: endDate.format('YYYY-MM-DD'),
+          checkDate: checkDate.format('YYYY-MM-DD'),
+          isActive: schedule.isActive,
+          isInRange
+        });
+        
+        return isInRange;
+      });
+      
+      if (activeSchedule) {
+        console.log('✅ Found active schedule price:', activeSchedule.price);
+        return { basePrice, schedulePrice: activeSchedule.price };
+      }
+    }
+    
+    console.log('📋 No active schedule, using base price only');
+    return { basePrice, schedulePrice: null };
+  };
+  
+  // 🆕 Helper function to calculate effective price based on exam date and price schedules
+  const getEffectivePrice = (addon) => {
+    const { basePrice, schedulePrice } = getPriceScheduleForAddon(addon);
+    return schedulePrice !== null ? schedulePrice : basePrice;
+  };
   
   // 🆕 Track if record was modified (to call onSuccess when closing)
   const [recordModified, setRecordModified] = useState(false);
@@ -98,6 +156,9 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   
   // 🆕 Inline form state
   const [showAddServiceForm, setShowAddServiceForm] = useState(false);
+  
+  // 🆕 Track exam date for price calculation
+  const [examDate, setExamDate] = useState(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
@@ -124,13 +185,15 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         
         if (mode === 'edit' && record) {
           // Populate form with record data AFTER data is loaded
+          const recordDate = record.date ? dayjs(record.date) : dayjs();
           form.setFieldsValue({
             ...record,
-            date: record.date ? dayjs(record.date) : dayjs(),
+            date: recordDate,
             indications: record.indications || [],
             treatmentIndications: record.treatmentIndications || []
           });
           setRecordType(record.type || 'exam');
+          setExamDate(recordDate); // 🆕 Set exam date for price calculation
           
           // 🆕 Initialize temp service addon ID from record
           setTempServiceAddOnId(record.serviceAddOnId || null);
@@ -169,15 +232,17 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           }
         } else {
           // Reset form for create mode
+          const today = dayjs();
           form.resetFields();
           form.setFieldsValue({
-            date: dayjs(),
+            date: today,
             type: 'exam',
             status: 'pending',
             priority: 'normal',
             paymentStatus: 'unpaid'
           });
           setRecordType('exam');
+          setExamDate(today); // 🆕 Set default exam date for price calculation
           setServiceAddOnsMap({});
           setSelectedMainServiceAddOns([]);
           setMainServiceDetails(null);
@@ -400,6 +465,9 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         return;
       }
       
+      // Calculate effective price based on price schedules
+      const effectivePrice = getEffectivePrice(addOn);
+      
       // 🆕 Create temporary service item (not saved to DB yet)
       const newServiceItem = {
         _id: `temp_${Date.now()}`, // Temporary ID
@@ -409,9 +477,9 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         serviceAddOnId: addOn._id,
         serviceAddOnName: addOn.name,
         serviceAddOnUnit: addOn.unit,
-        price: addOn.price,
+        price: effectivePrice, // Use effective price instead of base price
         quantity: values.quantity || 1,
-        totalPrice: addOn.price * (values.quantity || 1),
+        totalPrice: effectivePrice * (values.quantity || 1),
         notes: values.notes || '',
         isTemporary: true // Flag to identify temp items
       };
@@ -617,7 +685,8 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
             return;
           }
           
-          console.log('✅ Service addon or quantity changed:', currentAddOn.name, currentAddOn.price, 'x', currentQuantity);
+          const effectiveMainPrice = getEffectivePrice(currentAddOn);
+          console.log('✅ Service addon or quantity changed:', currentAddOn.name, effectiveMainPrice, 'x', currentQuantity);
           
           recordData = {
             diagnosis: values.diagnosis,
@@ -625,7 +694,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
             serviceAddOnId: currentAddOn._id,
             serviceAddOnName: currentAddOn.name,
             serviceAddOnUnit: currentAddOn.unit,
-            serviceAddOnPrice: currentAddOn.price,
+            serviceAddOnPrice: effectiveMainPrice,
             quantity: currentQuantity,
             totalCost: calculatedTotalCost, // ✅ Always send totalCost from FE
             treatmentIndications: [], // Will be set below
@@ -988,6 +1057,10 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                     style={{ width: '100%' }}
                     format="DD/MM/YYYY"
                     placeholder="Chọn ngày khám"
+                    onChange={(date) => {
+                      setExamDate(date);
+                      console.log('📅 Exam date changed:', date?.format('YYYY-MM-DD'));
+                    }}
                   />
                 </Form.Item>
               </Col>
@@ -1229,7 +1302,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     // If user changed addon, use temp selection; otherwise use current record's addon
     const currentServiceAddOnId = tempServiceAddOnId !== null ? tempServiceAddOnId : record.serviceAddOnId;
     const currentAddOn = selectedMainServiceAddOns.find(a => a._id === currentServiceAddOnId);
-    const baseAddOnPrice = currentAddOn?.price || 0; // Always get price from API data
+    const baseAddOnPrice = currentAddOn ? getEffectivePrice(currentAddOn) : 0; // Use effective price (with priceSchedules)
     
     // 🔍 DEBUG: Log serviceAddOn information
     console.log('🔍 [DEBUG] ServiceAddOn Info:', {
@@ -1310,18 +1383,30 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                   showSearch
                   optionFilterProp="children"
                 >
-                  {selectedMainServiceAddOns.map(addon => (
-                    <Option key={addon._id} value={addon._id}>
-                      <Space>
-                        <span>{addon.name}</span>
-                        <Text type="secondary">-</Text>
-                        <Text strong style={{ color: '#1890ff' }}>
-                          {addon.price.toLocaleString('vi-VN')}đ
-                        </Text>
-                        <Tag color="blue">{addon.unit}</Tag>
-                      </Space>
-                    </Option>
-                  ))}
+                  {selectedMainServiceAddOns.map(addon => {
+                    const { basePrice, schedulePrice } = getPriceScheduleForAddon(addon);
+                    const hasSchedulePrice = schedulePrice !== null && schedulePrice !== basePrice;
+                    return (
+                      <Option key={addon._id} value={addon._id}>
+                        <Space>
+                          <span>{addon.name}</span>
+                          <Text type="secondary">-</Text>
+                          <Text 
+                            strong={!hasSchedulePrice}
+                            delete={hasSchedulePrice}
+                            type={hasSchedulePrice ? "secondary" : undefined}
+                            style={{ color: hasSchedulePrice ? undefined : '#1890ff' }}
+                          >
+                            {basePrice.toLocaleString('vi-VN')}đ
+                          </Text>
+                          {hasSchedulePrice && (
+                            <Tag color="red" style={{ fontWeight: 'bold' }}>{schedulePrice.toLocaleString('vi-VN')}đ</Tag>
+                          )}
+                          <Tag color="blue">{addon.unit}</Tag>
+                        </Space>
+                      </Option>
+                    );
+                  })}
                 </Select>
               ) : (
                 <Alert
@@ -1703,15 +1788,28 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                             !usedServiceAddOnIds.has(addon._id)
                           );
                           
-                          return availableAddOns.map(addon => (
-                            <Option key={addon._id} value={addon._id}>
-                              <Space>
-                                <span>{addon.name}</span>
-                                <Text type="secondary">- {addon.price.toLocaleString('vi-VN')}đ</Text>
-                                <Tag color="blue">{addon.unit}</Tag>
-                              </Space>
-                            </Option>
-                          ));
+                          return availableAddOns.map(addon => {
+                            const { basePrice, schedulePrice } = getPriceScheduleForAddon(addon);
+                            const hasSchedulePrice = schedulePrice !== null && schedulePrice !== basePrice;
+                            return (
+                              <Option key={addon._id} value={addon._id}>
+                                <Space>
+                                  <span>{addon.name}</span>
+                                  <Text type="secondary">-</Text>
+                                  <Text 
+                                    delete={hasSchedulePrice}
+                                    type="secondary"
+                                  >
+                                    {basePrice.toLocaleString('vi-VN')}đ
+                                  </Text>
+                                  {hasSchedulePrice && (
+                                    <Tag color="red" style={{ fontWeight: 'bold' }}>{schedulePrice.toLocaleString('vi-VN')}đ</Tag>
+                                  )}
+                                  <Tag color="blue">{addon.unit}</Tag>
+                                </Space>
+                              </Option>
+                            );
+                          });
                         })()}
                       </Select>
                     </Form.Item>
@@ -1796,7 +1894,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                   // Get addon price from temp addon or record
                   let addonPrice = record.serviceAddOnPrice || 0;
                   if (tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId && currentAddOn) {
-                    addonPrice = currentAddOn.price;
+                    addonPrice = getEffectivePrice(currentAddOn);
                   }
                   
                   // ✅ Only serviceAddOn has price, service itself has no price
@@ -1992,7 +2090,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                                     <Space>
                                       <span>{addOn.name}</span>
                                       <Tag color="blue">{addOn.unit}</Tag>
-                                      <Text type="secondary">- {addOn.price.toLocaleString('vi-VN')}đ</Text>
+                                      <Text type="secondary">- {getEffectivePrice(addOn).toLocaleString('vi-VN')}đ</Text>
                                     </Space>
                                   </Option>
                                 ));

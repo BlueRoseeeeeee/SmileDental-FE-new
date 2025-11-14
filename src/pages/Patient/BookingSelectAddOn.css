@@ -103,3 +103,52 @@
     padding: 16px;
   }
 }
+
+/* Price Display Styles */
+.price-display-container {
+  width: 100%;
+}
+
+.price-active-schedule {
+  padding: 8px 0;
+}
+
+.upcoming-schedules {
+  margin-top: 8px;
+}
+
+.upcoming-schedules > div {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.upcoming-schedules .ant-space {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+}
+
+.upcoming-schedules .ant-space-item {
+  display: inline-flex;
+}
+
+/* Strikethrough price animation */
+.price-display-container .ant-typography del {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.addon-card:hover .price-display-container .ant-typography del {
+  opacity: 0.8;
+}
+
+/* Active price highlight */
+.price-active-schedule .ant-typography-secondary {
+  color: #595959;
+}
+
+/* Upcoming price box hover effect */
+.upcoming-schedules > div:hover {
+  background: #d9f0ff !important;
+  border-color: #69c0ff !important;
+  transition: all 0.3s ease;
+}
