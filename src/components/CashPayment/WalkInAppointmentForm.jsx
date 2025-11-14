@@ -43,15 +43,25 @@ import {
   UserOutlined,
   FileTextOutlined,
   DollarOutlined,
-  StarFilled
+  StarFilled,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
+import isBetween from 'dayjs/plugin/isBetween';
+
+dayjs.extend(timezone);
+dayjs.extend(utc);
+dayjs.extend(isBetween);
+
 import userService from '../../services/userService';
 import { servicesService, recordService } from '../../services'; // ⭐ Import recordService
 import slotService from '../../services/slotService';
 import appointmentService from '../../services/appointmentService';
 import scheduleConfigService from '../../services/scheduleConfigService'; // 🆕 Import for deposit calculation
 import { groupConsecutiveSlots } from '../../utils/slotGrouping'; // ⭐ Import slot grouping utility
+import { getPriceScheduleInfo, formatPrice } from '../../utils/priceScheduleUtils'; // 🆕 Import price schedule utils
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -1652,26 +1662,56 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                             }
                             return true; // Fallback: hiển thị tất cả
                           })
-                          .map((addon) => (
-                            <Option key={addon._id} value={addon._id}>
-                              <Space direction="vertical" size={0}>
-                                <Space>
-                                  <Text strong>{addon.name}</Text>
-                                  <Tag color="success" icon={<CheckCircleOutlined />}>
-                                    Đã chỉ định
-                                  </Tag>
+                          .map((addon) => {
+                            const priceInfo = getPriceScheduleInfo(addon.priceSchedules, addon.price);
+                            const { activeSchedule, effectivePrice, hasActiveSchedule } = priceInfo;
+                            
+                            return (
+                              <Option key={addon._id} value={addon._id}>
+                                <Space direction="vertical" size={0}>
+                                  <Space>
+                                    <Text strong>{addon.name}</Text>
+                                    <Tag color="success" icon={<CheckCircleOutlined />}>
+                                      Đã chỉ định
+                                    </Tag>
+                                  </Space>
+                                  <Space size="large">
+                                    <Space size={4} direction="vertical" align="start">
+                                      {hasActiveSchedule ? (
+                                        <>
+                                          <Space size={4}>
+                                            <DollarOutlined style={{ color: '#ff4d4f' }} />
+                                            <Text delete type="secondary" style={{ fontSize: 12 }}>
+                                              {formatPrice(addon.price)}
+                                            </Text>
+                                          </Space>
+                                          <Space size={4}>
+                                            <Text strong style={{ fontSize: 14, color: '#ff4d4f' }}>
+                                              {formatPrice(activeSchedule.price)}
+                                            </Text>
+                                            <Tag color="red" style={{ fontSize: 10, margin: 0 }}>
+                                              Giảm giá
+                                            </Tag>
+                                          </Space>
+                                        </>
+                                      ) : (
+                                        <Space size={4}>
+                                          <DollarOutlined style={{ color: '#d4860f' }} />
+                                          <Text strong style={{ fontSize: 14, color: '#d4860f' }}>
+                                            {formatPrice(addon.price)}
+                                          </Text>
+                                          <Text type="secondary" style={{ fontSize: 12 }}>/ {addon.unit}</Text>
+                                        </Space>
+                                      )}
+                                    </Space>
+                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                      <ClockCircleOutlined /> {addon.durationMinutes}p
+                                    </Text>
+                                  </Space>
                                 </Space>
-                                <Space size="large">
-                                  <Text type="secondary" style={{ fontSize: 12 }}>
-                                    <DollarOutlined /> {addon.price?.toLocaleString('vi-VN')}đ/{addon.unit}
-                                  </Text>
-                                  <Text type="secondary" style={{ fontSize: 12 }}>
-                                    <ClockCircleOutlined /> {addon.durationMinutes}p
-                                  </Text>
-                                </Space>
-                              </Space>
-                            </Option>
-                          ))
+                              </Option>
+                            );
+                          })
                         }
                       </Select>
                     </Form.Item>
@@ -1688,31 +1728,87 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       message="Thông tin gói dịch vụ"
                       description={
                         <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                          {selectedService.serviceAddOns.map((addOn, index) => (
-                            <Card 
-                              key={index}
-                              size="small" 
-                              style={{ 
-                                backgroundColor: '#f9f9f9',
-                                border: '1px solid #e8e8e8'
-                              }}
-                            >
-                              <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                <Text strong style={{ fontSize: 14, color: '#1890ff' }}>
-                                  {index + 1}. {addOn.name}
-                                </Text>
-                                <Space size="large" wrap>
-                                  <Text type="secondary">
-                                    <DollarOutlined style={{ color: '#52c41a' }} /> 
-                                    <strong> {addOn.price?.toLocaleString('vi-VN') || '0'}đ</strong>/{addOn.unit}
+                          {selectedService.serviceAddOns.map((addOn, index) => {
+                            const priceInfo = getPriceScheduleInfo(addOn.priceSchedules, addOn.price);
+                            const { activeSchedule, upcomingSchedules, effectivePrice, hasActiveSchedule, hasUpcomingSchedules } = priceInfo;
+                            
+                            return (
+                              <Card 
+                                key={index}
+                                size="small" 
+                                style={{ 
+                                  backgroundColor: '#f9f9f9',
+                                  border: '1px solid #e8e8e8'
+                                }}
+                              >
+                                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                                  <Text strong style={{ fontSize: 14, color: '#1890ff' }}>
+                                    {index + 1}. {addOn.name}
                                   </Text>
-                                  <Text type="secondary">
-                                    <ClockCircleOutlined style={{ color: '#faad14' }} /> ~{addOn.durationMinutes || 0} phút
-                                  </Text>
+                                  
+                                  {/* Price Display */}
+                                  <Space size="large" wrap>
+                                    <Space size={4} direction="vertical" align="start">
+                                      {hasActiveSchedule ? (
+                                        <>
+                                          <Space size={4}>
+                                            <DollarOutlined style={{ color: '#ff4d4f' }} />
+                                            <Text delete type="secondary">
+                                              {formatPrice(addOn.price)}
+                                            </Text>
+                                          </Space>
+                                          <Space size={4}>
+                                            <Text strong style={{ color: '#ff4d4f' }}>
+                                              {formatPrice(activeSchedule.price)}
+                                            </Text>
+                                            <Tag color="red" style={{ fontSize: 10 }}>
+                                              Giảm giá
+                                            </Tag>
+                                          </Space>
+                                        </>
+                                      ) : (
+                                        <Space size={4}>
+                                          <DollarOutlined style={{ color: '#52c41a' }} />
+                                          <Text strong>
+                                            {formatPrice(addOn.price)}
+                                          </Text>
+                                          <Text type="secondary">/ {addOn.unit}</Text>
+                                        </Space>
+                                      )}
+                                    </Space>
+                                    <Text type="secondary">
+                                      <ClockCircleOutlined style={{ color: '#faad14' }} /> ~{addOn.durationMinutes || 0} phút
+                                    </Text>
+                                  </Space>
+                                  
+                                  {/* Upcoming Price Schedules */}
+                                  {hasUpcomingSchedules && (
+                                    <div style={{ 
+                                      background: '#e6f7ff', 
+                                      border: '1px solid #91d5ff',
+                                      borderRadius: 4,
+                                      padding: '6px 10px'
+                                    }}>
+                                      <Space size={4} wrap style={{ width: '100%' }}>
+                                        <Space align="center" size={4}>
+                                          <InfoCircleOutlined style={{ color: '#1890ff', fontSize: 12 }} />
+                                          <Text strong style={{ fontSize: 12, color: '#1890ff' }}>
+                                            Lịch giá sắp tới:
+                                          </Text>
+                                        </Space>
+                                        <Text style={{ fontSize: 12, color: '#1890ff', fontWeight: 600 }}>
+                                          {formatPrice(upcomingSchedules[0].price)}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 11 }}>
+                                          ({new Date(upcomingSchedules[0].startDate).toLocaleDateString('vi-VN')} - {new Date(upcomingSchedules[0].endDate).toLocaleDateString('vi-VN')})
+                                        </Text>
+                                      </Space>
+                                    </div>
+                                  )}
                                 </Space>
-                              </Space>
-                            </Card>
-                          ))}
+                              </Card>
+                            );
+                          })}
                         </Space>
                       }
                       type="info"
