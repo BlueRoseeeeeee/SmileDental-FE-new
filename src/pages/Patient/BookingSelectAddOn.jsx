@@ -328,16 +328,6 @@ const BookingSelectAddOn = () => {
                     })}
                   </Row>
                 </div>
-
-                {!canSelectAddOn && (
-                  <Alert
-                    type="warning"
-                    showIcon
-                    message="Lưu ý"
-                    description="Dịch vụ này yêu cầu khám trước. Vui lòng đặt lịch khám để được nha sỹ tư vấn và chỉ định gói điều trị phù hợp."
-                    style={{ marginTop: 24 }}
-                  />
-                )}
               </div>
             ) : (
               <Empty 
