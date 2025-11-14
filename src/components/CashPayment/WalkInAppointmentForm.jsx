@@ -1632,13 +1632,19 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                     <Divider orientation="left" style={{ fontSize: 14, fontWeight: 500 }}>
                       📋 Chọn gói dịch vụ
                     </Divider>
-                    {treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId && (
+                    {treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId) && (
                       <Alert
                         message="Dịch vụ được chỉ định"
                         description={
-                          <span>
-                            Bệnh nhân đã được chỉ định gói: <strong>{treatmentIndications[0].serviceAddOnName}</strong>
-                          </span>
+                          treatmentIndications.length === 1 ? (
+                            <span>
+                              Bệnh nhân đã được chỉ định gói: <strong>{treatmentIndications[0].serviceAddOnName}</strong>
+                            </span>
+                          ) : (
+                            <span>
+                              Bệnh nhân đã được chỉ định <strong>{treatmentIndications.length} gói</strong>: {treatmentIndications.map(ind => ind.serviceAddOnName).join(', ')}
+                            </span>
+                          )
                         }
                         type="success"
                         showIcon
@@ -1656,9 +1662,9 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       >
                         {selectedService.serviceAddOns
                           .filter(addon => {
-                            // CHỈ hiển thị addon đã được chỉ định
-                            if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId) {
-                              return addon._id === treatmentIndications[0].serviceAddOnId;
+                            // CHỈ hiển thị các addon đã được chỉ định
+                            if (treatmentIndications.length > 0) {
+                              return treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
                             }
                             return true; // Fallback: hiển thị tất cả
                           })

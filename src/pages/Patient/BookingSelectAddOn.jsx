@@ -219,9 +219,12 @@ const BookingSelectAddOn = () => {
     }
     
     // Only allow selecting the indicated addon if there's an indication
-    if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId) {
-      if (addon._id !== treatmentIndications[0].serviceAddOnId) {
-        message.warning('Bạn chỉ được chọn gói điều trị đã được chỉ định');
+    if (treatmentIndications.length > 0) {
+      // Check if this addon is in the list of indicated addons
+      const isIndicatedAddon = treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
+      
+      if (!isIndicatedAddon) {
+        message.warning('Bạn chỉ được chọn các gói điều trị đã được chỉ định');
         return;
       }
     }
@@ -231,8 +234,8 @@ const BookingSelectAddOn = () => {
     localStorage.setItem('booking_serviceAddOn_userSelected', 'true'); // 🆕 Flag: user explicitly selected this addon
     
     // 🆕 Save recordId if this addon is from a treatment indication
-    if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId === addon._id) {
-      const indication = treatmentIndications[0];
+    const indication = treatmentIndications.find(ind => ind.serviceAddOnId === addon._id);
+    if (indication) {
       localStorage.setItem('booking_recordId', indication.recordId);
       console.log('✅ Saved recordId from indication:', indication.recordId);
     } else {
@@ -251,8 +254,8 @@ const BookingSelectAddOn = () => {
   // 🆕 Handle skip addon selection
   const handleSkipAddon = () => {
     // Nếu có chỉ định addon cụ thể → BẮT BUỘC phải chọn, không được bỏ qua
-    if (treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId) {
-      message.error('Bạn phải chọn gói dịch vụ đã được chỉ định để tiếp tục');
+    if (treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId)) {
+      message.error('Bạn phải chọn một trong các gói dịch vụ đã được chỉ định để tiếp tục');
       return;
     }
     
@@ -326,15 +329,21 @@ const BookingSelectAddOn = () => {
               />
             )}
             
-            {treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId && (
+            {treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId) && (
               <Alert
                 type="success"
                 showIcon
                 icon={<FileTextOutlined />}
                 message={
-                  <span>
-                    Bạn đã được chỉ định gói: <strong>{treatmentIndications[0].serviceAddOnName}</strong>
-                  </span>
+                  treatmentIndications.length === 1 ? (
+                    <span>
+                      Bạn đã được chỉ định gói: <strong>{treatmentIndications[0].serviceAddOnName}</strong>
+                    </span>
+                  ) : (
+                    <span>
+                      Bạn đã được chỉ định <strong>{treatmentIndications.length} gói</strong>: {treatmentIndications.map(ind => ind.serviceAddOnName).join(', ')}
+                    </span>
+                  )
                 }
                 style={{ marginBottom: 16 }}
               />
@@ -374,10 +383,9 @@ const BookingSelectAddOn = () => {
                   <Row gutter={[16, 16]}>
                     {service.serviceAddOns.filter(addon => addon.isActive).map((addon) => {
                       const isIndicated = treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
+                      // Disable if: user can't select OR (has indications AND this addon is NOT indicated)
                       const isDisabled = !canSelectAddOn || 
-                        (treatmentIndications.length > 0 && 
-                         treatmentIndications[0].serviceAddOnId && 
-                         treatmentIndications[0].serviceAddOnId !== addon._id);
+                        (treatmentIndications.length > 0 && !isIndicated);
                       
                       
                       return (
@@ -457,7 +465,7 @@ const BookingSelectAddOn = () => {
               </Button>
               
               {/* Chỉ hiển thị button "Bỏ qua/Tiếp theo" nếu KHÔNG có chỉ định addon cụ thể */}
-              {!(treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId) && (
+              {!(treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId)) && (
                 <Button
                   size='large'
                   type={canSelectAddOn ? 'default' : 'primary'}
