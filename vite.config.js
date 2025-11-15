@@ -9,7 +9,20 @@ export default defineConfig({
       '/api/statistics': {
         target: 'http://localhost:3011',
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/statistics/, '/api/statistics')
+      },
+      '/api/user': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/user/, '/api/user')
+      },
+      '/api/service': {
+        target: 'http://localhost:3003',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/service/, '/api/service')
       },
       '/api': {
         target: 'http://localhost:3000',

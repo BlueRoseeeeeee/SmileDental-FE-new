@@ -16,7 +16,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 import dayjs from 'dayjs';
-import { getRevenueStatistics, MOCK_DENTISTS, MOCK_SERVICES } from '../../services/statisticsAPI';
+import { getRevenueStatistics } from '../../services/statisticsAPI';
+import api from '../../services/api';
 
 const { RangePicker, MonthPicker, YearPicker } = DatePicker;
 const { Text } = Typography;
@@ -25,36 +26,246 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'
 
 const RevenueStatistics = () => {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(null);
+  const [rawData, setRawData] = useState(null); // ✅ Lưu data gốc
+  const [data, setData] = useState(null); // ✅ Data sau khi filter
   const [groupBy, setGroupBy] = useState('day');
   const [dateRange, setDateRange] = useState([dayjs().subtract(30, 'days'), dayjs()]);
   const [selectedDentist, setSelectedDentist] = useState(null);
   const [selectedService, setSelectedService] = useState(null);
+  const [dentists, setDentists] = useState([]);
+  const [services, setServices] = useState([]);
 
+  // Fetch dentists list
+  useEffect(() => {
+    const fetchDentists = async () => {
+      try {
+        const response = await api.get('/api/user/all-staff', { 
+          params: { 
+            role: 'dentist',
+            limit: 1000 // Lấy tất cả nha sỹ
+          } 
+        });
+        console.log('Dentists API response:', response.data);
+        if (response.data.success) {
+          const dentistList = response.data.users || [];
+          console.log('Dentists list:', dentistList);
+          setDentists(dentistList);
+        }
+      } catch (error) {
+        console.error('Error fetching dentists:', error);
+        message.error('Không thể tải danh sách nha sỹ');
+      }
+    };
+    fetchDentists();
+  }, []);
+
+  // Fetch services list
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await api.get('/api/service', { 
+          params: { 
+            limit: 1000 // Lấy tất cả dịch vụ
+          } 
+        });
+        console.log('Services API response:', response.data);
+        if (response.data.success) {
+          const serviceList = response.data.data || [];
+          console.log('Services list:', serviceList);
+          setServices(serviceList);
+        }
+      } catch (error) {
+        console.error('Error fetching services:', error);
+        message.error('Không thể tải danh sách dịch vụ');
+      }
+    };
+    fetchServices();
+  }, []);
+
+  // ✅ Load data 1 lần khi thay đổi groupBy hoặc dateRange
   useEffect(() => {
     fetchData();
-  }, [groupBy, dateRange, selectedDentist, selectedService]);
+  }, [groupBy, dateRange, dentists, services]);
+
+  // ✅ Filter data ở frontend khi thay đổi dentist/service filter
+  useEffect(() => {
+    if (rawData) {
+      applyFilters();
+    }
+  }, [selectedDentist, selectedService, rawData]);
 
   const fetchData = async () => {
+    if (dentists.length === 0 || services.length === 0) {
+      // Chờ load xong dentists và services
+      return;
+    }
+
     setLoading(true);
     try {
       const params = {
         startDate: dateRange[0].format('YYYY-MM-DD'),
         endDate: dateRange[1].format('YYYY-MM-DD'),
         groupBy,
-        dentistId: selectedDentist,
-        serviceId: selectedService
+        // ❌ KHÔNG GỬI dentistId và serviceId - load toàn bộ
+        dentistId: null,
+        serviceId: null,
+        // ✅ Truyền dentists và services để enrich
+        dentists,
+        services
       };
       
       const response = await getRevenueStatistics(params);
       if (response.success) {
-        setData(response.data);
+        setRawData(response.data); // Lưu raw data
+        applyFilters(response.data); // Apply filter ngay
       }
     } catch (error) {
       message.error('Không thể tải dữ liệu thống kê');
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ Filter data ở frontend
+  const applyFilters = (dataToFilter = rawData) => {
+    if (!dataToFilter) return;
+
+    let filtered = { ...dataToFilter };
+
+    // Lấy danh sách serviceIds cần filter
+    let filterServiceIds = null;
+    if (selectedService) {
+      const selectedServiceData = services.find(s => s._id === selectedService);
+      if (selectedServiceData?.serviceAddOns?.length > 0) {
+        // Nếu là parent service, lấy tất cả addon IDs
+        filterServiceIds = selectedServiceData.serviceAddOns.map(addon => addon._id);
+      } else {
+        // Nếu là addon hoặc service không có addon
+        filterServiceIds = [selectedService];
+      }
+    }
+
+    console.log('🔍 applyFilters:', { 
+      selectedDentist, 
+      selectedService, 
+      filterServiceIds,
+      hasRawDetails: !!dataToFilter.rawDetails,
+      rawDetailsLength: dataToFilter.rawDetails?.length
+    });
+
+    // ✅ LOGIC THỐNG NHẤT: Luôn dùng rawDetails khi có filter
+    if ((selectedDentist || filterServiceIds) && dataToFilter.rawDetails && dataToFilter.rawDetails.length > 0) {
+      // 1. Filter rawDetails theo điều kiện
+      let filteredRaw = dataToFilter.rawDetails;
+      
+      if (selectedDentist && filterServiceIds) {
+        // Chọn CẢ nha sỹ VÀ dịch vụ
+        filteredRaw = filteredRaw.filter(
+          item => item.dentistId === selectedDentist && filterServiceIds.includes(item.serviceId)
+        );
+      } else if (selectedDentist) {
+        // Chỉ chọn nha sỹ → lọc theo dentistId
+        filteredRaw = filteredRaw.filter(item => item.dentistId === selectedDentist);
+      } else if (filterServiceIds) {
+        // Chỉ chọn dịch vụ → lọc theo serviceId (addons)
+        filteredRaw = filteredRaw.filter(item => filterServiceIds.includes(item.serviceId));
+      }
+
+      console.log('📊 Filtered rawDetails:', filteredRaw.length, 'items');
+
+      // 2. Build serviceInfoMap cho enrichment
+      const serviceInfoMap = new Map();
+      services.forEach(service => {
+        serviceInfoMap.set(service._id, service);
+        if (service.serviceAddOns && Array.isArray(service.serviceAddOns)) {
+          service.serviceAddOns.forEach(addon => {
+            serviceInfoMap.set(addon._id, { ...addon, parentName: service.name });
+          });
+        }
+      });
+
+      // 3. Tính lại byDentist từ filteredRaw (group by dentistId)
+      const dentistMap = new Map();
+      filteredRaw.forEach(item => {
+        if (!dentistMap.has(item.dentistId)) {
+          dentistMap.set(item.dentistId, {
+            dentistId: item.dentistId,
+            totalRevenue: 0,
+            appointmentCount: 0,
+            serviceCount: 0
+          });
+        }
+        const dentist = dentistMap.get(item.dentistId);
+        dentist.totalRevenue += item.revenue || 0;
+        dentist.appointmentCount += item.invoiceCount || 0;
+        dentist.serviceCount += 1;
+      });
+
+      // Enrich dentist data
+      filtered.revenueByDentist = Array.from(dentistMap.values()).map(d => {
+        const dentistInfo = dentists.find(dt => dt._id === d.dentistId);
+        return {
+          ...d,
+          dentistName: dentistInfo 
+            ? `${dentistInfo.fullName} (${dentistInfo.employeeCode})` 
+            : `Nha sỹ ${d.dentistId.slice(-4)}`,
+          dentistFullName: dentistInfo?.fullName || 'N/A',
+          dentistEmployeeCode: dentistInfo?.employeeCode || null,
+          avgRevenuePerAppointment: d.appointmentCount > 0 ? Math.floor(d.totalRevenue / d.appointmentCount) : 0
+        };
+      });
+
+      // 4. Tính lại byService từ filteredRaw (group by serviceId)
+      const serviceMap = new Map();
+      filteredRaw.forEach(item => {
+        if (!serviceMap.has(item.serviceId)) {
+          serviceMap.set(item.serviceId, {
+            serviceId: item.serviceId,
+            totalRevenue: 0,
+            totalCount: 0
+          });
+        }
+        const service = serviceMap.get(item.serviceId);
+        service.totalRevenue += item.revenue || 0;
+        service.totalCount += item.count || 0;
+      });
+
+      // Enrich service data và filter ra services có revenue = 0
+      filtered.revenueByService = Array.from(serviceMap.values())
+        .filter(s => s.totalRevenue > 0) // ✅ Chỉ hiển thị services có doanh thu
+        .map(s => {
+          const serviceInfo = serviceInfoMap.get(s.serviceId);
+          return {
+            ...s,
+            serviceName: serviceInfo?.name || 'Dịch vụ không xác định',
+            serviceType: serviceInfo?.type || 'unknown',
+            avgRevenuePerService: s.totalCount > 0 ? Math.floor(s.totalRevenue / s.totalCount) : 0
+          };
+        });
+
+      // 5. Recalculate summary
+      const totalRevenue = filteredRaw.reduce((sum, item) => sum + (item.revenue || 0), 0);
+      const totalAppointments = filteredRaw.reduce((sum, item) => sum + (item.invoiceCount || 0), 0);
+
+      filtered.summary = {
+        ...dataToFilter.summary,
+        totalRevenue,
+        totalAppointments,
+        avgRevenuePerAppointment: totalAppointments > 0 ? Math.floor(totalRevenue / totalAppointments) : 0
+      };
+
+      // 6. ✅ Rebuild comparison từ filtered revenueByService
+      filtered.comparison = filtered.revenueByService.map(s => ({
+        name: s.serviceName,
+        type: s.serviceType,
+        count: s.totalCount || 0,
+        revenue: s.totalRevenue || 0,
+        avgRevenue: s.avgRevenuePerService || 0
+      }));
+    }
+    // ✅ Không có filter → giữ nguyên data gốc
+
+    setData(filtered);
   };
 
   const formatCurrency = (value) => {
@@ -259,7 +470,7 @@ const RevenueStatistics = () => {
                   <span><BarChartOutlined /> Biểu đồ doanh thu theo nha sỹ</span>
                   {selectedDentist && (
                     <Text type="secondary" style={{ fontSize: '12px', fontWeight: 'normal' }}>
-                      Lọc: {MOCK_DENTISTS.find(d => d.id === selectedDentist)?.name}
+                      Lọc: {dentists.find(d => d._id === selectedDentist)?.fullName || dentists.find(d => d._id === selectedDentist)?.name || 'N/A'}
                     </Text>
                   )}
                 </div>
@@ -414,7 +625,7 @@ const RevenueStatistics = () => {
                 <span><TableOutlined /> Bảng chi tiết doanh thu theo dịch vụ</span>
                 {selectedService && (
                   <Text type="secondary" style={{ fontSize: '12px', fontWeight: 'normal' }}>
-                    Lọc: {MOCK_SERVICES.find(s => s.id === selectedService)?.name}
+                    Lọc: {services.find(s => s._id === selectedService)?.name || 'N/A'}
                   </Text>
                 )}
               </div>
@@ -741,9 +952,9 @@ const RevenueStatistics = () => {
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
                 >
-                  {MOCK_DENTISTS.map(d => (
-                    <Select.Option key={d.id} value={d.id}>
-                      {d.name} - {d.specialization}
+                  {dentists.map(d => (
+                    <Select.Option key={d._id} value={d._id}>
+                      {d.fullName || d.name}
                     </Select.Option>
                   ))}
                 </Select>
@@ -762,11 +973,14 @@ const RevenueStatistics = () => {
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
                 >
-                  {MOCK_SERVICES.map(s => (
-                    <Select.Option key={s.id} value={s.id}>
-                      {s.name} ({s.category})
-                    </Select.Option>
-                  ))}
+                  {services
+                    .filter(s => s.serviceAddOns && s.serviceAddOns.length > 0) // Chỉ hiển thị parent services
+                    .map(s => (
+                      <Select.Option key={s._id} value={s._id}>
+                        {s.name} ({s.serviceAddOns.length} dịch vụ con)
+                      </Select.Option>
+                    ))
+                  }
                 </Select>
               </Col>
             </Row>
@@ -776,11 +990,11 @@ const RevenueStatistics = () => {
                 <Text type="secondary" style={{ fontSize: '12px' }}>
                   <FilterOutlined /> Đang lọc: 
                   {selectedDentist && <span style={{ marginLeft: 8, fontWeight: 500 }}>
-                    Nha sỹ: {MOCK_DENTISTS.find(d => d.id === selectedDentist)?.name}
+                    Nha sỹ: {dentists.find(d => d._id === selectedDentist)?.fullName || dentists.find(d => d._id === selectedDentist)?.name || 'N/A'}
                   </span>}
                   {selectedDentist && selectedService && <span> + </span>}
                   {selectedService && <span style={{ marginLeft: 8, fontWeight: 500 }}>
-                    Dịch vụ: {MOCK_SERVICES.find(s => s.id === selectedService)?.name}
+                    Dịch vụ: {services.find(s => s._id === selectedService)?.name || 'N/A'}
                   </span>}
                 </Text>
               </div>

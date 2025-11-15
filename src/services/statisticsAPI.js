@@ -237,7 +237,7 @@ const generateServiceRevenue = (serviceId, days = 30) => {
 
 /**
  * Lấy thống kê doanh thu
- * @param {Object} params - { startDate, endDate, groupBy, dentistId, serviceId }
+ * @param {Object} params - { startDate, endDate, groupBy, dentistId, serviceId, dentists, services }
  */
 export const getRevenueStatistics = async (params = {}) => {
   try {
@@ -246,7 +246,9 @@ export const getRevenueStatistics = async (params = {}) => {
       endDate, 
       groupBy = 'day',
       dentistId = null,
-      serviceId = null 
+      serviceId = null,
+      dentists = [], // Truyền vào từ component (đã load sẵn)
+      services = []  // Truyền vào từ component (đã load sẵn)
     } = params;
     
     // Build query params
@@ -269,43 +271,93 @@ export const getRevenueStatistics = async (params = {}) => {
     // Transform backend data to match frontend expectations
     const backendData = response.data.data;
     
+    // Create lookup maps for fast access
+    const dentistMap = new Map(dentists.map(d => [d._id, d]));
+    const serviceMap = new Map();
+    services.forEach(service => {
+      // Add parent service
+      serviceMap.set(service._id, service);
+      // Add all service addons
+      if (service.serviceAddOns && Array.isArray(service.serviceAddOns)) {
+        service.serviceAddOns.forEach(addon => {
+          serviceMap.set(addon._id, { ...addon, parentName: service.name });
+        });
+      }
+    });
+    
     // Map backend structure to frontend structure
     return {
       success: true,
       data: {
         summary: {
           totalRevenue: backendData.summary?.totalRevenue || 0,
-          totalAppointments: backendData.summary?.totalInvoices || 0, // Backend uses totalInvoices
+          totalAppointments: backendData.summary?.totalInvoices || 0,
           totalServices: backendData.byService?.length || 0,
-          avgRevenuePerAppointment: backendData.summary?.averageInvoiceValue || 0,
+          avgRevenuePerAppointment: backendData.summary?.averageValue || 0,
           period: backendData.period || {}
         },
-        // Backend doesn't provide dentist data yet, use empty array
-        revenueByDentist: [],
-        // Map byService to revenueByService
-        revenueByService: (backendData.byService || []).map(service => ({
-          serviceId: service._id || service.serviceId,
-          serviceName: service.name || service.serviceName,
-          serviceType: service.type || service.serviceType,
-          totalRevenue: service.revenue || 0,
-          totalCount: service.count || 0,
-          avgRevenuePerService: service.revenue && service.count 
-            ? Math.floor(service.revenue / service.count) 
-            : 0
-        })),
+        // Enrich byDentist với thông tin từ API /api/user/all-staff
+        revenueByDentist: (backendData.byDentist || []).map(dentist => {
+          const dentistInfo = dentistMap.get(dentist.dentistId);
+          return {
+            dentistId: dentist.dentistId,
+            dentistName: dentistInfo 
+              ? `${dentistInfo.fullName} (${dentistInfo.employeeCode})` 
+              : `Nha sỹ ${dentist.dentistId.slice(-4)}`,
+            specialization: dentistInfo?.specialization || 'Tổng quát',
+            totalRevenue: dentist.totalRevenue || 0,
+            appointmentCount: dentist.appointmentCount || 0,
+            serviceCount: dentist.serviceCount || 0,
+            avgRevenuePerAppointment: dentist.avgRevenuePerAppointment || 0,
+            // Thêm thông tin từ API
+            dentistFullName: dentistInfo?.fullName || 'N/A',
+            dentistEmployeeCode: dentistInfo?.employeeCode || null,
+            dentistEmail: dentistInfo?.email || null,
+            dentistPhone: dentistInfo?.phone || null
+          };
+        }),
+        // Enrich byService với thông tin từ API /api/service
+        revenueByService: (backendData.byService || [])
+          .filter(service => service.totalRevenue > 0 && service.serviceId) // ✅ Chỉ hiển thị services có revenue > 0 VÀ có serviceId
+          .map(service => {
+            const serviceInfo = serviceMap.get(service.serviceId);
+            return {
+              serviceId: service.serviceId,
+              serviceName: service.serviceName || (serviceInfo?.name || 'Dịch vụ không xác định'),
+              serviceType: service.serviceType || (serviceInfo?.type || 'unknown'),
+              totalRevenue: service.totalRevenue || 0,
+              totalCount: service.totalCount || 0,
+              avgRevenuePerService: service.avgRevenuePerService || 0,
+              // Thêm thông tin từ API
+              servicePrice: serviceInfo?.price || serviceInfo?.basePrice || 0,
+              serviceDuration: serviceInfo?.durationMinutes || 0,
+              serviceParent: serviceInfo?.parentName || null
+            };
+          }),
         // Map trends to revenueByTime
         revenueByTime: (backendData.trends || []).map(trend => ({
-          date: trend.date || trend._id,
-          revenue: trend.revenue || trend.totalAmount || 0
+          date: trend.date,
+          revenue: trend.revenue || 0,
+          count: trend.count || 0
         })),
-        // Comparison data
-        comparison: (backendData.byService || []).map(s => ({
-          name: s.name || s.serviceName,
-          type: s.type || s.serviceType,
-          count: s.count || 0,
-          revenue: s.revenue || 0,
-          avgRevenue: s.revenue && s.count ? Math.floor(s.revenue / s.count) : 0
-        }))
+        // ✅ Map rawDetails for cross-filtering
+        rawDetails: (backendData.rawDetails || []).map(detail => ({
+          dentistId: detail.dentistId,
+          serviceId: detail.serviceId,
+          revenue: detail.revenue || 0,
+          count: detail.count || 0,
+          invoiceCount: detail.invoiceCount || 0
+        })),
+        // Comparison data - ✅ Filter giống revenueByService
+        comparison: (backendData.byService || [])
+          .filter(s => s.totalRevenue > 0 && s.serviceId) // ✅ Chỉ hiển thị services có revenue > 0 VÀ có serviceId
+          .map(s => ({
+            name: s.serviceName,
+            type: s.serviceType,
+            count: s.totalCount || 0,
+            revenue: s.totalRevenue || 0,
+            avgRevenue: s.avgRevenuePerService || 0
+          }))
       }
     };
   } catch (error) {
