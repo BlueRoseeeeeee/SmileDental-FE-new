@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, DatePicker, Statistic, Table, Spin, message, Progress, Tag } from 'antd';
+import { Card, Row, Col, Select, DatePicker, Statistic, Table, Spin, message, Progress, Tag, Space, Typography, Button } from 'antd';
 import { 
   MobileOutlined, 
   DesktopOutlined,
   CalendarOutlined,
   TeamOutlined,
   CheckCircleOutlined,
-  PercentageOutlined
+  PercentageOutlined,
+  FilterOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import { 
   LineChart, Line, PieChart, Pie, Cell, BarChart, Bar,
@@ -16,6 +18,7 @@ import dayjs from 'dayjs';
 import { getBookingChannelStatistics } from '../../services/statisticsAPI';
 
 const { RangePicker } = DatePicker;
+const { Text } = Typography;
 
 const COLORS = {
   online: '#52c41a',
@@ -57,6 +60,50 @@ const BookingChannelStatistics = () => {
 
   const formatNumber = (value) => {
     return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  const handleClearFilters = () => {
+    setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
+    setGroupBy('day');
+  };
+
+  const getDatePickerByGroupBy = () => {
+    if (groupBy === 'month') {
+      return (
+        <RangePicker
+          value={dateRange}
+          onChange={setDateRange}
+          picker="month"
+          format="MM/YYYY"
+          placeholder={['Từ tháng', 'Đến tháng']}
+          style={{ width: '100%' }}
+          allowClear={false}
+        />
+      );
+    } else if (groupBy === 'year') {
+      return (
+        <RangePicker
+          value={dateRange}
+          onChange={setDateRange}
+          picker="year"
+          format="YYYY"
+          placeholder={['Từ năm', 'Đến năm']}
+          style={{ width: '100%' }}
+          allowClear={false}
+        />
+      );
+    }
+    // Default: day
+    return (
+      <RangePicker
+        value={dateRange}
+        onChange={setDateRange}
+        format="DD/MM/YYYY"
+        placeholder={['Từ ngày', 'Đến ngày']}
+        style={{ width: '100%' }}
+        allowClear={false}
+      />
+    );
   };
 
   // Columns for staff table
@@ -148,29 +195,49 @@ const BookingChannelStatistics = () => {
         </h2>
         
         <Card style={{ marginBottom: 16 }}>
-          <Row gutter={16}>
-            <Col xs={24} sm={12} md={8}>
-              <RangePicker
-                value={dateRange}
-                onChange={setDateRange}
-                format="DD/MM/YYYY"
-                style={{ width: '100%' }}
-                allowClear={false}
-              />
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <Select
-                value={groupBy}
-                onChange={setGroupBy}
-                style={{ width: '100%' }}
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text strong>
+                <FilterOutlined /> Bộ lọc thống kê
+              </Text>
+              <Button 
+                icon={<ClearOutlined />} 
+                onClick={handleClearFilters}
+                size="small"
               >
-                <Select.Option value="day">Theo ngày</Select.Option>
-                <Select.Option value="month">Theo tháng</Select.Option>
-                <Select.Option value="quarter">Theo quý</Select.Option>
-                <Select.Option value="year">Theo năm</Select.Option>
-              </Select>
-            </Col>
-          </Row>
+                Xóa bộ lọc
+              </Button>
+            </div>
+            
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <Text type="secondary" style={{ fontSize: '12px' }}>Chọn khoảng thời gian:</Text>
+                {getDatePickerByGroupBy()}
+              </Col>
+              <Col xs={24} md={12}>
+                <Text type="secondary" style={{ fontSize: '12px' }}>Nhóm dữ liệu theo:</Text>
+                <Select
+                  value={groupBy}
+                  onChange={(value) => {
+                    setGroupBy(value);
+                    // Reset date range khi thay đổi groupBy
+                    if (value === 'month') {
+                      setDateRange([dayjs().subtract(6, 'months'), dayjs()]);
+                    } else if (value === 'year') {
+                      setDateRange([dayjs().subtract(3, 'years'), dayjs()]);
+                    } else {
+                      setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
+                    }
+                  }}
+                  style={{ width: '100%' }}
+                >
+                <Select.Option value="day">📅 Theo ngày</Select.Option>
+                <Select.Option value="month">📆 Theo tháng</Select.Option>
+                <Select.Option value="year">🗓️ Theo năm</Select.Option>
+                </Select>
+              </Col>
+            </Row>
+          </Space>
         </Card>
 
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

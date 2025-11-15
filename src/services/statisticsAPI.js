@@ -398,23 +398,6 @@ export const getBookingChannelStatistics = async (params = {}) => {
 
     const backendData = response.data.data;
 
-    // Enrich topStaff with user information
-    const staffIds = backendData.topStaff?.map(s => s.staffId) || [];
-    let staffMap = new Map();
-    
-    if (staffIds.length > 0) {
-      try {
-        const staffResponse = await api.post('/api/user/by-ids', { userIds: staffIds });
-        if (staffResponse.data.success) {
-          staffResponse.data.users.forEach(user => {
-            staffMap.set(user._id, user);
-          });
-        }
-      } catch (error) {
-        console.warn('Could not fetch staff info:', error);
-      }
-    }
-
     // Role name mapping
     const roleNames = {
       receptionist: 'Lễ tân',
@@ -433,17 +416,14 @@ export const getBookingChannelStatistics = async (params = {}) => {
           count: item.count || 0,
           percentage: parseFloat(item.percentage) || 0
         })),
-        topStaff: (backendData.topStaff || []).map(item => {
-          const staffInfo = staffMap.get(item.staffId);
-          return {
-            staffId: item.staffId,
-            name: staffInfo?.fullName || staffInfo?.name || `Staff ${item.staffId.slice(-4)}`,
-            role: item.role,
-            roleName: roleNames[item.role] || item.role,
-            count: item.count || 0,
-            completionRate: parseFloat(item.completionRate) || 0
-          };
-        })
+        topStaff: (backendData.topStaff || []).map(item => ({
+          staffId: item.staffId,
+          name: `Staff ${item.staffId.slice(-6)}`, // Show last 6 chars of ID
+          role: item.role,
+          roleName: roleNames[item.role] || item.role,
+          count: item.count || 0,
+          completionRate: parseFloat(item.completionRate) || 0
+        }))
       }
     };
   } catch (error) {

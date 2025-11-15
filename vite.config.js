@@ -24,6 +24,12 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => path.replace(/^\/api\/schedule/, '/api/schedule')
       },
+      '/api/room': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/room/, '/api/room')
+      },
       '/api/user': {
         target: 'http://localhost:3001',
         changeOrigin: true,
