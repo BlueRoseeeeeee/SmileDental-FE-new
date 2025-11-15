@@ -39,7 +39,7 @@ const RevenueStatistics = () => {
   useEffect(() => {
     const fetchDentists = async () => {
       try {
-        const response = await api.get('/api/user/all-staff', { 
+        const response = await api.get('/user/all-staff', { 
           params: { 
             role: 'dentist',
             limit: 1000 // Lấy tất cả nha sỹ
@@ -63,7 +63,7 @@ const RevenueStatistics = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await api.get('/api/service', { 
+        const response = await api.get('/service', { 
           params: { 
             limit: 1000 // Lấy tất cả dịch vụ
           } 

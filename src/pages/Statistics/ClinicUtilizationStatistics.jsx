@@ -91,7 +91,7 @@ const ClinicUtilizationStatistics = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await api.get('/api/room');
+        const response = await api.get('/room');
         if (response.data && response.data.rooms) {
           setRoomsList(response.data.rooms || []);
         }
