@@ -176,11 +176,11 @@ const PatientInvoices = () => {
   const columns = [
     {
       title: 'Mã hóa đơn',
-      dataIndex: 'invoiceCode',
-      key: 'invoiceCode',
-      width: 120,
+      dataIndex: 'invoiceNumber',
+      key: 'invoiceNumber',
+      width: 170,
       fixed: 'left',
-      render: (code) => <Text strong>{code}</Text>
+      render: (code) => <Text strong>{code || 'N/A'}</Text>
     },
     {
       title: 'Ngày tạo',
@@ -209,46 +209,19 @@ const PatientInvoices = () => {
       title: 'Tổng tiền',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      width: 130,
+      width: 120,
       align: 'right',
       render: (amount) => (
         <Text strong style={{ color: '#1890ff' }}>
-          {amount?.toLocaleString('vi-VN')}đ
-        </Text>
-      )
-    },
-    {
-      title: 'Đã thanh toán',
-      dataIndex: 'paidAmount',
-      key: 'paidAmount',
-      width: 130,
-      align: 'right',
-      render: (amount) => (
-        <Text style={{ color: '#52c41a' }}>
           {(amount || 0).toLocaleString('vi-VN')}đ
         </Text>
       )
     },
     {
-      title: 'Còn lại',
-      key: 'remainingAmount',
-      width: 130,
-      align: 'right',
-      render: (_, record) => {
-        const remaining = (record.totalAmount || 0) - (record.paidAmount || 0);
-        return (
-          <Text style={{ color: remaining > 0 ? '#ff4d4f' : '#52c41a' }}>
-            {remaining.toLocaleString('vi-VN')}đ
-          </Text>
-        );
-      }
-    },
-    {
       title: 'Phương thức',
-      dataIndex: 'paymentMethod',
       key: 'paymentMethod',
       width: 130,
-      render: (method) => getPaymentMethodTag(method)
+      render: (_, record) => getPaymentMethodTag(record.paymentSummary?.paymentMethod)
     },
     {
       title: 'Trạng thái',
@@ -399,7 +372,7 @@ const PatientInvoices = () => {
           <>
             <Descriptions bordered column={2}>
               <Descriptions.Item label="Mã hóa đơn" span={2}>
-                <Text strong>{selectedInvoice.invoiceCode}</Text>
+                <Text strong>{selectedInvoice.invoiceNumber || 'N/A'}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Ngày tạo">
                 {dayjs(selectedInvoice.createdAt).format('DD/MM/YYYY HH:mm')}
@@ -424,7 +397,7 @@ const PatientInvoices = () => {
             </Descriptions>
 
             {/* Invoice Items */}
-            {selectedInvoice.items && selectedInvoice.items.length > 0 && (
+            {selectedInvoice.details && selectedInvoice.details.length > 0 && (
               <>
                 <Title level={5} style={{ marginTop: 24, marginBottom: 16 }}>
                   Chi tiết dịch vụ
@@ -434,8 +407,18 @@ const PatientInvoices = () => {
                   columns={[
                     {
                       title: 'Dịch vụ',
-                      dataIndex: 'description',
-                      key: 'description'
+                      dataIndex: ['serviceInfo', 'name'],
+                      key: 'service',
+                      render: (name, record) => (
+                        <div>
+                          <div>{name || record.description || 'N/A'}</div>
+                          {record.notes && (
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {record.notes}
+                            </Text>
+                          )}
+                        </div>
+                      )
                     },
                     {
                       title: 'SL',
@@ -450,7 +433,15 @@ const PatientInvoices = () => {
                       key: 'unitPrice',
                       width: 120,
                       align: 'right',
-                      render: (price) => `${price.toLocaleString('vi-VN')}đ`
+                      render: (price) => `${(price || 0).toLocaleString('vi-VN')}đ`
+                    },
+                    {
+                      title: 'Giảm giá',
+                      dataIndex: 'discountAmount',
+                      key: 'discountAmount',
+                      width: 100,
+                      align: 'right',
+                      render: (amount) => amount > 0 ? `${amount.toLocaleString('vi-VN')}đ` : '-'
                     },
                     {
                       title: 'Thành tiền',
@@ -459,12 +450,12 @@ const PatientInvoices = () => {
                       width: 130,
                       align: 'right',
                       render: (price) => (
-                        <Text strong>{price.toLocaleString('vi-VN')}đ</Text>
+                        <Text strong>{(price || 0).toLocaleString('vi-VN')}đ</Text>
                       )
                     }
                   ]}
-                  dataSource={selectedInvoice.items}
-                  rowKey={(item, index) => index}
+                  dataSource={selectedInvoice.details}
+                  rowKey={(item) => item._id}
                   pagination={false}
                 />
               </>
@@ -473,38 +464,69 @@ const PatientInvoices = () => {
             {/* Payment Summary */}
             <Descriptions bordered column={1} style={{ marginTop: 24 }}>
               <Descriptions.Item label="Tạm tính">
-                {selectedInvoice.subtotal?.toLocaleString('vi-VN')}đ
+                {(selectedInvoice.subtotal || 0).toLocaleString('vi-VN')}đ
               </Descriptions.Item>
-              {selectedInvoice.discount && selectedInvoice.discount.amount > 0 && (
-                <Descriptions.Item label="Giảm giá">
-                  -{selectedInvoice.discount.amount.toLocaleString('vi-VN')}đ
-                </Descriptions.Item>
+              {selectedInvoice.discountInfo && selectedInvoice.discountInfo.value > 0 && (
+                <>
+                  <Descriptions.Item label="Giảm giá">
+                    -{selectedInvoice.discountInfo.type === 'percentage' 
+                      ? `${selectedInvoice.discountInfo.value}%` 
+                      : `${selectedInvoice.discountInfo.value.toLocaleString('vi-VN')}đ`}
+                  </Descriptions.Item>
+                  {selectedInvoice.discountInfo.reason && (
+                    <Descriptions.Item label="Lý do giảm giá">
+                      {selectedInvoice.discountInfo.reason}
+                    </Descriptions.Item>
+                  )}
+                </>
               )}
-              {selectedInvoice.tax && selectedInvoice.tax.taxAmount > 0 && (
-                <Descriptions.Item label={`Thuế (${selectedInvoice.tax.taxRate}%)`}>
-                  {selectedInvoice.tax.taxAmount.toLocaleString('vi-VN')}đ
+              {selectedInvoice.taxInfo && selectedInvoice.taxInfo.taxAmount > 0 && (
+                <Descriptions.Item label={`Thuế (${selectedInvoice.taxInfo.taxRate}%)`}>
+                  {selectedInvoice.taxInfo.taxAmount.toLocaleString('vi-VN')}đ
                 </Descriptions.Item>
               )}
               <Descriptions.Item label="Tổng cộng">
                 <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                  {selectedInvoice.totalAmount?.toLocaleString('vi-VN')}đ
+                  {(selectedInvoice.totalAmount || 0).toLocaleString('vi-VN')}đ
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item label="Đã thanh toán">
                 <Text style={{ color: '#52c41a' }}>
-                  {selectedInvoice.paidAmount?.toLocaleString('vi-VN')}đ
+                  {(selectedInvoice.paymentSummary?.totalPaid || 0).toLocaleString('vi-VN')}đ
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item label="Còn lại">
                 <Text strong style={{ 
                   fontSize: 16, 
-                  color: (selectedInvoice.totalAmount - selectedInvoice.paidAmount) > 0 ? '#ff4d4f' : '#52c41a' 
+                  color: (selectedInvoice.paymentSummary?.remainingAmount || 0) > 0 ? '#ff4d4f' : '#52c41a' 
                 }}>
-                  {((selectedInvoice.totalAmount || 0) - (selectedInvoice.paidAmount || 0)).toLocaleString('vi-VN')}đ
+                  {(selectedInvoice.paymentSummary?.remainingAmount || 0).toLocaleString('vi-VN')}đ
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item label="Phương thức thanh toán">
-                {getPaymentMethodTag(selectedInvoice.paymentMethod)}
+                {getPaymentMethodTag(selectedInvoice.paymentSummary?.paymentMethod)}
+              </Descriptions.Item>
+              {selectedInvoice.paymentSummary?.lastPaymentDate && (
+                <Descriptions.Item label="Ngày thanh toán cuối">
+                  {dayjs(selectedInvoice.paymentSummary.lastPaymentDate).format('DD/MM/YYYY HH:mm')}
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Ngày xuất hóa đơn">
+                {selectedInvoice.issueDate 
+                  ? dayjs(selectedInvoice.issueDate).format('DD/MM/YYYY HH:mm')
+                  : 'N/A'}
+              </Descriptions.Item>
+              {selectedInvoice.paidDate && (
+                <Descriptions.Item label="Ngày thanh toán">
+                  {dayjs(selectedInvoice.paidDate).format('DD/MM/YYYY HH:mm')}
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Loại hóa đơn">
+                <Tag color="blue">
+                  {selectedInvoice.type === 'appointment' ? 'Cuộc hẹn' : 
+                   selectedInvoice.type === 'treatment' ? 'Điều trị' : 
+                   selectedInvoice.type}
+                </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Trạng thái">
                 {getInvoiceStatusTag(selectedInvoice.status)}
