@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 import dayjs from 'dayjs';
 import { getRevenueStatistics } from '../../services/statisticsAPI';
-import api from '../../services/api';
+import { userApi, serviceApi } from '../../services/apiFactory';
 
 const { RangePicker, MonthPicker, YearPicker } = DatePicker;
 const { Text } = Typography;
@@ -39,7 +39,7 @@ const RevenueStatistics = () => {
   useEffect(() => {
     const fetchDentists = async () => {
       try {
-        const response = await api.get('/user/all-staff', { 
+        const response = await userApi.get('/user/all-staff', { 
           params: { 
             role: 'dentist',
             limit: 1000 // Lấy tất cả nha sỹ
@@ -63,7 +63,7 @@ const RevenueStatistics = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await api.get('/service', { 
+        const response = await serviceApi.get('/service', { 
           params: { 
             limit: 1000 // Lấy tất cả dịch vụ
           } 
