@@ -8,31 +8,51 @@ import { toast } from './toastService.js';
 // Configuration cho các microservices
 const MICROSERVICES_CONFIG = {
   auth: {
-    baseURL: import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001/api',
+    baseURL: import.meta.env.VITE_AUTH_API_URL || 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   room: {
-    baseURL: import.meta.env.VITE_ROOM_API_URL || 'http://localhost:3002/api',
+    baseURL: import.meta.env.VITE_ROOM_API_URL || 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   service: {
-    baseURL: import.meta.env.VITE_SERVICE_API_URL || 'http://localhost:3003/api',
+    baseURL: import.meta.env.VITE_SERVICE_API_URL || 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   user: {
-    baseURL: import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api',
+    baseURL: import.meta.env.VITE_USER_API_URL || 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   schedule: {
-    baseURL: import.meta.env.VITE_SCHEDULE_API_URL || 'http://localhost:3005/api',
+    baseURL: import.meta.env.VITE_SCHEDULE_API_URL || 'https://be.smilecare.io.vn/api',
+    timeout: 30000, // 30s
+  },
+  appointment: {
+    baseURL: import.meta.env.VITE_APPOINTMENT_API_URL || 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   payment: {
-    baseURL: import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api',
+    baseURL: import.meta.env.VITE_PAYMENT_API_URL || 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   medicine: {
-    baseURL: import.meta.env.VITE_MEDICINE_API_URL || 'http://localhost:3009/api',
+    baseURL: import.meta.env.VITE_MEDICINE_API_URL || 'https://be.smilecare.io.vn/api',
+    timeout: 30000, // 30s
+  },
+  record: {
+    baseURL: import.meta.env.VITE_RECORD_SERVICE_URL || 'https://be.smilecare.io.vn',
+    timeout: 30000, // 30s
+  },
+  invoice: {
+    baseURL: import.meta.env.VITE_INVOICE_SERVICE_URL || 'https://be.smilecare.io.vn/api/invoice',
+    timeout: 30000, // 30s
+  },
+  statistic: {
+    baseURL: import.meta.env.VITE_STATISTIC_API_URL || 'https://be.smilecare.io.vn/api',
+    timeout: 30000, // 30s
+  },
+  chatbot: {
+    baseURL: import.meta.env.VITE_CHATBOT_API_URL || 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   }
 };
@@ -196,8 +216,13 @@ export const roomApi = getApiInstance('room');
 export const serviceApi = getApiInstance('service');
 export const userApi = getApiInstance('user');
 export const scheduleApi = getApiInstance('schedule');
+export const appointmentApi = getApiInstance('appointment');
 export const paymentApi = getApiInstance('payment');
 export const medicineApi = getApiInstance('medicine');
+export const recordApi = getApiInstance('record');
+export const invoiceApi = getApiInstance('invoice');
+export const statisticApi = getApiInstance('statistic');
+export const chatbotApi = getApiInstance('chatbot');
 
 export default {
   getApiInstance,
@@ -206,5 +231,11 @@ export default {
   serviceApi,
   userApi,
   scheduleApi,
+  appointmentApi,
+  paymentApi,
   medicineApi,
+  recordApi,
+  invoiceApi,
+  statisticApi,
+  chatbotApi,
 };
