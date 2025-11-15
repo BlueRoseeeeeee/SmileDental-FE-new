@@ -1,11 +1,11 @@
 /*
  * Compatibility API wrapper
  * Many legacy services import './api' — create a small default axios instance
- * that uses a relative base URL (so CHATBOT_API_URL = '/api/ai' works)
+ * Uses VITE_STATISTIC_API_URL for statistics endpoints
  */
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_STATISTIC_API_URL || import.meta.env.VITE_API_URL || 'https://be.smilecare.io.vn/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
