@@ -22,7 +22,9 @@ import {
   PercentageOutlined,
   ReloadOutlined,
   DownloadOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  FilterOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import {
   BarChart,
@@ -42,6 +44,7 @@ import {
 import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { getClinicUtilizationStatistics } from '../../services/statisticsAPI';
+import api from '../../services/api';
 
 dayjs.extend(quarterOfYear);
 
@@ -77,119 +80,28 @@ const formatTimelineDate = (dateStr, format = 'DD/MM') => {
 
 const ClinicUtilizationStatistics = () => {
   const [loading, setLoading] = useState(false);
-  const [timeRange, setTimeRange] = useState('month');
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [groupBy, setGroupBy] = useState('day');
+  const [dateRange, setDateRange] = useState([dayjs().subtract(30, 'days'), dayjs()]);
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [selectedShift, setSelectedShift] = useState(null);
   const [data, setData] = useState(null);
   const [roomsList, setRoomsList] = useState([]);
 
-  // Mock data cho rooms
-  const mockRooms = [
-    { _id: '1', name: 'Phòng 1', roomType: 'CONSULTATION', isActive: true },
-    { _id: '2', name: 'Phòng 2', roomType: 'GENERAL_TREATMENT', isActive: true },
-    { _id: '3', name: 'Phòng 3', roomType: 'SURGERY', isActive: true },
-    { _id: '4', name: 'Phòng 4', roomType: 'ORTHODONTIC', isActive: true },
-    { _id: '5', name: 'Phòng 5', roomType: 'COSMETIC', isActive: true },
-    { _id: '6', name: 'Phòng 6', roomType: 'PEDIATRIC', isActive: true },
-    { _id: '7', name: 'Phòng X-Quang', roomType: 'X_RAY', isActive: true },
-    { _id: '8', name: 'Phòng Tiệt trùng', roomType: 'STERILIZATION', isActive: true }
-  ];
-
-  // Mock data cho statistics
-  const mockStatistics = {
-    summary: {
-      totalSlots: 1200,
-      bookedSlots: 850,
-      emptySlots: 350,
-      utilizationRate: 70.8
-    },
-    byRoom: [
-      {
-        roomId: '1',
-        roomName: 'Phòng 1',
-        roomType: 'CONSULTATION',
-        totalSlots: 400,
-        bookedSlots: 320,
-        emptySlots: 80,
-        utilizationRate: 80,
-        avgSlotsPerDay: 13.3
-      },
-      {
-        roomId: '2',
-        roomName: 'Phòng 2',
-        roomType: 'GENERAL_TREATMENT',
-        totalSlots: 300,
-        bookedSlots: 210,
-        emptySlots: 90,
-        utilizationRate: 70,
-        avgSlotsPerDay: 10
-      },
-      {
-        roomId: '3',
-        roomName: 'Phòng 3',
-        roomType: 'SURGERY',
-        totalSlots: 250,
-        bookedSlots: 200,
-        emptySlots: 50,
-        utilizationRate: 80,
-        avgSlotsPerDay: 8.3
-      },
-      {
-        roomId: '4',
-        roomName: 'Phòng 4',
-        roomType: 'ORTHODONTIC',
-        totalSlots: 150,
-        bookedSlots: 90,
-        emptySlots: 60,
-        utilizationRate: 60,
-        avgSlotsPerDay: 5
-      },
-      {
-        roomId: '5',
-        roomName: 'Phòng 5',
-        roomType: 'COSMETIC',
-        totalSlots: 100,
-        bookedSlots: 30,
-        emptySlots: 70,
-        utilizationRate: 30,
-        avgSlotsPerDay: 3.3
-      }
-    ],
-    byShift: {
-      'Ca Sáng': { total: 600, booked: 450, rate: 75 },
-      'Ca Chiều': { total: 400, booked: 300, rate: 75 },
-      'Ca Tối': { total: 200, booked: 100, rate: 50 }
-    },
-    timeline: [
-      { date: '2025-11-01', totalSlots: 40, bookedSlots: 32, utilizationRate: 80 },
-      { date: '2025-11-02', totalSlots: 40, bookedSlots: 30, utilizationRate: 75 },
-      { date: '2025-11-03', totalSlots: 40, bookedSlots: 28, utilizationRate: 70 },
-      { date: '2025-11-04', totalSlots: 40, bookedSlots: 35, utilizationRate: 87.5 },
-      { date: '2025-11-05', totalSlots: 40, bookedSlots: 33, utilizationRate: 82.5 },
-      { date: '2025-11-06', totalSlots: 40, bookedSlots: 30, utilizationRate: 75 },
-      { date: '2025-11-07', totalSlots: 40, bookedSlots: 28, utilizationRate: 70 }
-    ]
-  };
-
   // Load rooms khi component mount
   useEffect(() => {
-    let timeoutId;
-    const loadRoomsAsync = () => {
-      // Mock API call - In production, fetch from room-service
-      timeoutId = setTimeout(() => {
-        setRoomsList(mockRooms);
-      }, 300);
-    };
-    
-    loadRoomsAsync();
-    
-    // Cleanup timeout on unmount
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+    const fetchRooms = async () => {
+      try {
+        const response = await api.get('/api/room');
+        if (response.data && response.data.rooms) {
+          setRoomsList(response.data.rooms || []);
+        }
+      } catch (error) {
+        console.error('Error fetching rooms:', error);
+        message.error('Không thể tải danh sách phòng');
       }
     };
+    
+    fetchRooms();
   }, []);
 
   // Auto-select bookable rooms
@@ -203,16 +115,23 @@ const ClinicUtilizationStatistics = () => {
     }
   }, [roomsList]);
 
+  // Auto-fetch when filters change
+  useEffect(() => {
+    if (roomsList.length > 0 && selectedRooms.length > 0) {
+      fetchStatistics();
+    }
+  }, [groupBy, dateRange, selectedShift, selectedRooms]);
+
   const fetchStatistics = async (rooms = selectedRooms) => {
     if (loading) return; // Prevent concurrent requests
     setLoading(true);
     
     try {
       const params = {
-        startDate: selectedDate.startOf(timeRange).format('YYYY-MM-DD'),
-        endDate: selectedDate.endOf(timeRange).format('YYYY-MM-DD'),
+        startDate: dateRange[0].format('YYYY-MM-DD'),
+        endDate: dateRange[1].format('YYYY-MM-DD'),
         roomIds: rooms,
-        timeRange,
+        timeRange: groupBy,
         shiftName: selectedShift
       };
       
@@ -247,16 +166,54 @@ const ClinicUtilizationStatistics = () => {
     }
   };
 
-  const handleSearch = () => {
-    if (selectedRooms.length === 0) {
-      message.warning('Vui lòng chọn ít nhất 1 phòng');
-      return;
-    }
-    fetchStatistics();
-  };
-
   const handleExport = () => {
     message.info('Tính năng xuất báo cáo đang được phát triển');
+  };
+
+  const handleClearFilters = () => {
+    setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
+    setGroupBy('day');
+    setSelectedRooms([]);
+    setSelectedShift(null);
+  };
+
+  const getDatePickerByGroupBy = () => {
+    if (groupBy === 'month') {
+      return (
+        <RangePicker
+          value={dateRange}
+          onChange={setDateRange}
+          picker="month"
+          format="MM/YYYY"
+          placeholder={['Từ tháng', 'Đến tháng']}
+          style={{ width: '100%' }}
+          allowClear={false}
+        />
+      );
+    } else if (groupBy === 'year') {
+      return (
+        <RangePicker
+          value={dateRange}
+          onChange={setDateRange}
+          picker="year"
+          format="YYYY"
+          placeholder={['Từ năm', 'Đến năm']}
+          style={{ width: '100%' }}
+          allowClear={false}
+        />
+      );
+    }
+    // Default: day
+    return (
+      <RangePicker
+        value={dateRange}
+        onChange={setDateRange}
+        format="DD/MM/YYYY"
+        placeholder={['Từ ngày', 'Đến ngày']}
+        style={{ width: '100%' }}
+        allowClear={false}
+      />
+    );
   };
 
   const getRoomTypeName = (type) => {
@@ -409,112 +366,90 @@ const ClinicUtilizationStatistics = () => {
 
       {/* Filters */}
       <Card style={{ marginBottom: 24 }}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={6}>
-            <Text strong>Khoảng thời gian</Text>
-            <Select
-              style={{ width: '100%', marginTop: 8 }}
-              value={timeRange}
-              onChange={setTimeRange}
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text strong>
+              <FilterOutlined /> Bộ lọc thống kê
+            </Text>
+            <Button 
+              icon={<ClearOutlined />} 
+              onClick={handleClearFilters}
+              size="small"
             >
-              <Option value="day">Theo ngày</Option>
-              <Option value="month">Theo tháng</Option>
-              <Option value="quarter">Theo quý</Option>
-              <Option value="year">Theo năm</Option>
-            </Select>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Text strong>Chọn thời gian</Text>
-            {timeRange === 'day' && (
-              <DatePicker
-                style={{ width: '100%', marginTop: 8 }}
-                value={selectedDate}
-                onChange={setSelectedDate}
-                format="DD/MM/YYYY"
-              />
-            )}
-            {timeRange === 'month' && (
-              <DatePicker
-                style={{ width: '100%', marginTop: 8 }}
-                value={selectedDate}
-                onChange={setSelectedDate}
-                picker="month"
-                format="MM/YYYY"
-              />
-            )}
-            {timeRange === 'quarter' && (
-              <DatePicker
-                style={{ width: '100%', marginTop: 8 }}
-                value={selectedDate}
-                onChange={setSelectedDate}
-                picker="quarter"
-                format="[Q]Q YYYY"
-              />
-            )}
-            {timeRange === 'year' && (
-              <DatePicker
-                style={{ width: '100%', marginTop: 8 }}
-                value={selectedDate}
-                onChange={setSelectedDate}
-                picker="year"
-                format="YYYY"
-              />
-            )}
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Text strong>Chọn phòng</Text>
-            <Select
-              mode="multiple"
-              style={{ width: '100%', marginTop: 8 }}
-              placeholder="Chọn phòng khám"
-              value={selectedRooms}
-              onChange={setSelectedRooms}
-              maxTagCount="responsive"
-            >
-              {roomsList
-                .filter(r => !['X_RAY', 'STERILIZATION', 'LAB', 'SUPPORT'].includes(r.roomType))
-                .map(room => (
-                  <Option key={room._id} value={room._id}>
-                    <Tag color={getRoomTypeColor(room.roomType)} style={{ marginRight: 8 }}>
-                      {getRoomTypeName(room.roomType)}
-                    </Tag>
-                    {room.name}
-                  </Option>
-                ))}
-            </Select>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Text strong>Chọn ca làm việc</Text>
-            <Select
-              style={{ width: '100%', marginTop: 8 }}
-              placeholder="Tất cả ca"
-              value={selectedShift}
-              onChange={setSelectedShift}
-              allowClear
-            >
-              <Option value="Ca Sáng">Ca Sáng</Option>
-              <Option value="Ca Chiều">Ca Chiều</Option>
-              <Option value="Ca Tối">Ca Tối</Option>
-            </Select>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Text strong style={{ opacity: 0 }}>Actions</Text>
-            <Space style={{ display: 'block', marginTop: 8 }}>
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={handleSearch}
-                loading={loading}
+              Xóa bộ lọc
+            </Button>
+          </div>
+          
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>Chọn khoảng thời gian:</Text>
+              {getDatePickerByGroupBy()}
+            </Col>
+            <Col xs={24} md={12}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>Nhóm dữ liệu theo:</Text>
+              <Select
+                value={groupBy}
+                onChange={(value) => {
+                  setGroupBy(value);
+                  // Reset date range khi thay đổi groupBy
+                  if (value === 'month') {
+                    setDateRange([dayjs().subtract(6, 'months'), dayjs()]);
+                  } else if (value === 'year') {
+                    setDateRange([dayjs().subtract(3, 'years'), dayjs()]);
+                  } else {
+                    setDateRange([dayjs().subtract(30, 'days'), dayjs()]);
+                  }
+                }}
+                style={{ width: '100%' }}
               >
-                Tìm kiếm
-              </Button>
-            </Space>
+                <Select.Option value="day">📅 Theo ngày</Select.Option>
+                <Select.Option value="month">📆 Theo tháng</Select.Option>
+                <Select.Option value="year">🗓️ Theo năm</Select.Option>
+              </Select>
+            </Col>
+          </Row>
+
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>Chọn phòng (tùy chọn):</Text>
+              <Select
+                mode="multiple"
+                style={{ width: '100%' }}
+                placeholder="Tất cả phòng"
+                value={selectedRooms}
+                onChange={setSelectedRooms}
+                maxTagCount="responsive"
+                allowClear
+              >
+                {roomsList
+                  .filter(r => !['X_RAY', 'STERILIZATION', 'LAB', 'SUPPORT'].includes(r.roomType))
+                  .map(room => (
+                    <Option key={room._id} value={room._id}>
+                      <Tag color={getRoomTypeColor(room.roomType)} style={{ marginRight: 8 }}>
+                        {getRoomTypeName(room.roomType)}
+                      </Tag>
+                      {room.name}
+                    </Option>
+                  ))}
+              </Select>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Text type="secondary" style={{ fontSize: '12px' }}>Chọn ca làm việc (tùy chọn):</Text>
+              <Select
+                style={{ width: '100%' }}
+                placeholder="Tất cả ca"
+                value={selectedShift}
+                onChange={setSelectedShift}
+                allowClear
+              >
+                <Option value="Ca Sáng">Ca Sáng</Option>
+                <Option value="Ca Chiều">Ca Chiều</Option>
+                <Option value="Ca Tối">Ca Tối</Option>
+            </Select>
           </Col>
         </Row>
+        </Space>
       </Card>
 
       {loading ? (
