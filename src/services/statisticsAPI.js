@@ -373,139 +373,83 @@ export const getRevenueStatistics = async (params = {}) => {
  * @param {Object} params - { startDate, endDate, groupBy }
  */
 export const getBookingChannelStatistics = async (params = {}) => {
-  const { 
-    startDate, 
-    endDate, 
-    groupBy = 'day'
-  } = params;
-  
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Calculate date range
-      let dates;
-      if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-        dates = generateDateRange(diffDays, startDate);
-      } else {
-        dates = generateDateRange(30);
-      }
-      
-      // Generate daily online/offline counts
-      const dailyData = dates.map(date => {
-        const d = new Date(date);
-        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-        
-        // Weekend: fewer bookings
-        const multiplier = isWeekend ? 0.5 : 1.0;
-        
-        // Online: 65-75% of total
-        const online = Math.floor(getRandomNumber(8, 15) * multiplier);
-        // Offline: 25-35% of total
-        const offline = Math.floor(getRandomNumber(3, 7) * multiplier);
-        
-        return { date, online, offline };
-      });
-      
-      const totalOnline = dailyData.reduce((sum, d) => sum + d.online, 0);
-      const totalOffline = dailyData.reduce((sum, d) => sum + d.offline, 0);
-      const total = totalOnline + totalOffline;
-      
-      // Offline by staff role
-      const offlineByRole = [
-        { role: 'receptionist', name: 'Lễ tân', count: Math.floor(totalOffline * 0.68), percentage: 68.0 },
-        { role: 'admin', name: 'Quản trị viên', count: Math.floor(totalOffline * 0.21), percentage: 21.0 },
-        { role: 'manager', name: 'Quản lý', count: Math.floor(totalOffline * 0.11), percentage: 11.0 }
-      ];
-      
-      // Top staff who book offline - EXPANDED TO 30 STAFF
-      const topStaff = [
-        { staffId: 'ST001', name: 'Nguyễn Thị Xuân', role: 'receptionist', count: Math.floor(totalOffline * 0.18), efficiency: 95.2, avgTime: 4.2, successRate: 98.5 },
-        { staffId: 'ST002', name: 'Trần Văn Yên', role: 'receptionist', count: Math.floor(totalOffline * 0.16), efficiency: 93.8, avgTime: 4.5, successRate: 97.8 },
-        { staffId: 'ST003', name: 'Lê Thị Zoe', role: 'receptionist', count: Math.floor(totalOffline * 0.15), efficiency: 92.5, avgTime: 4.8, successRate: 97.2 },
-        { staffId: 'ST004', name: 'Phạm Văn An', role: 'receptionist', count: Math.floor(totalOffline * 0.12), efficiency: 91.0, avgTime: 5.0, successRate: 96.5 },
-        { staffId: 'ST005', name: 'Hoàng Thị Bình', role: 'receptionist', count: Math.floor(totalOffline * 0.07), efficiency: 89.2, avgTime: 5.3, successRate: 95.8 },
-        { staffId: 'ST006', name: 'Ngô Văn Cường', role: 'admin', count: Math.floor(totalOffline * 0.12), efficiency: 94.5, avgTime: 4.0, successRate: 98.0 },
-        { staffId: 'ST007', name: 'Đỗ Thị Diệu', role: 'admin', count: Math.floor(totalOffline * 0.09), efficiency: 93.0, avgTime: 4.3, successRate: 97.5 },
-        { staffId: 'ST008', name: 'Vũ Văn Em', role: 'manager', count: Math.floor(totalOffline * 0.07), efficiency: 96.8, avgTime: 3.8, successRate: 99.0 },
-        { staffId: 'ST009', name: 'Bùi Thị Phương', role: 'manager', count: Math.floor(totalOffline * 0.04), efficiency: 95.5, avgTime: 3.9, successRate: 98.8 },
-        { staffId: 'ST010', name: 'Đặng Văn Giang', role: 'receptionist', count: Math.floor(totalOffline * 0.05), efficiency: 88.3, avgTime: 5.5, successRate: 95.0 },
-        { staffId: 'ST011', name: 'Võ Thị Hương', role: 'receptionist', count: Math.floor(totalOffline * 0.04), efficiency: 87.5, avgTime: 5.7, successRate: 94.5 },
-        { staffId: 'ST012', name: 'Phan Văn Khôi', role: 'receptionist', count: Math.floor(totalOffline * 0.04), efficiency: 86.8, avgTime: 5.9, successRate: 94.0 },
-        { staffId: 'ST013', name: 'Lý Thị Lan', role: 'receptionist', count: Math.floor(totalOffline * 0.03), efficiency: 85.2, avgTime: 6.1, successRate: 93.2 },
-        { staffId: 'ST014', name: 'Trương Văn Minh', role: 'admin', count: Math.floor(totalOffline * 0.03), efficiency: 90.5, avgTime: 4.8, successRate: 96.8 },
-        { staffId: 'ST015', name: 'Nguyễn Thị Ngọc', role: 'receptionist', count: Math.floor(totalOffline * 0.02), efficiency: 84.0, avgTime: 6.3, successRate: 92.5 },
-        { staffId: 'ST016', name: 'Trần Văn Ông', role: 'receptionist', count: Math.floor(totalOffline * 0.02), efficiency: 83.5, avgTime: 6.5, successRate: 92.0 },
-        { staffId: 'ST017', name: 'Lê Thị Phượng', role: 'receptionist', count: Math.floor(totalOffline * 0.02), efficiency: 82.8, avgTime: 6.7, successRate: 91.5 },
-        { staffId: 'ST018', name: 'Phạm Văn Quân', role: 'receptionist', count: Math.floor(totalOffline * 0.02), efficiency: 82.0, avgTime: 6.9, successRate: 91.0 },
-        { staffId: 'ST019', name: 'Hoàng Thị Rồng', role: 'admin', count: Math.floor(totalOffline * 0.01), efficiency: 89.0, avgTime: 5.0, successRate: 96.0 },
-        { staffId: 'ST020', name: 'Ngô Văn Sơn', role: 'receptionist', count: Math.floor(totalOffline * 0.01), efficiency: 81.2, avgTime: 7.0, successRate: 90.5 },
-        { staffId: 'ST021', name: 'Đỗ Thị Tâm', role: 'receptionist', count: Math.floor(totalOffline * 0.015), efficiency: 85.8, avgTime: 5.8, successRate: 93.8 },
-        { staffId: 'ST022', name: 'Vũ Văn Út', role: 'receptionist', count: Math.floor(totalOffline * 0.014), efficiency: 84.5, avgTime: 6.0, successRate: 93.0 },
-        { staffId: 'ST023', name: 'Bùi Thị Vân', role: 'receptionist', count: Math.floor(totalOffline * 0.013), efficiency: 83.2, avgTime: 6.2, successRate: 92.2 },
-        { staffId: 'ST024', name: 'Đặng Văn Xuân', role: 'receptionist', count: Math.floor(totalOffline * 0.012), efficiency: 82.0, avgTime: 6.4, successRate: 91.8 },
-        { staffId: 'ST025', name: 'Võ Thị Yến', role: 'receptionist', count: Math.floor(totalOffline * 0.011), efficiency: 81.5, avgTime: 6.6, successRate: 91.2 },
-        { staffId: 'ST026', name: 'Phan Văn An', role: 'receptionist', count: Math.floor(totalOffline * 0.010), efficiency: 80.8, avgTime: 6.8, successRate: 90.8 },
-        { staffId: 'ST027', name: 'Lý Thị Bình', role: 'receptionist', count: Math.floor(totalOffline * 0.009), efficiency: 80.0, avgTime: 7.1, successRate: 90.0 },
-        { staffId: 'ST028', name: 'Trương Văn Chiến', role: 'receptionist', count: Math.floor(totalOffline * 0.008), efficiency: 79.5, avgTime: 7.3, successRate: 89.5 },
-        { staffId: 'ST029', name: 'Nguyễn Thị Dung', role: 'receptionist', count: Math.floor(totalOffline * 0.007), efficiency: 79.0, avgTime: 7.5, successRate: 89.0 },
-        { staffId: 'ST030', name: 'Trần Văn Đức', role: 'receptionist', count: Math.floor(totalOffline * 0.006), efficiency: 78.5, avgTime: 7.7, successRate: 88.5 }
-      ];
-      
-      // Completion rate
-      const onlineCompleted = Math.floor(totalOnline * 0.87); // 87%
-      const offlineCompleted = Math.floor(totalOffline * 0.93); // 93%
-      
-      // Group by period
-      const groupedData = groupBy === 'day' 
-        ? dailyData 
-        : groupByPeriod(
-            dates,
-            dailyData.map(d => d.online + d.offline),
-            groupBy
-          ).map((item, i) => {
-            // Recalculate online/offline ratio for grouped data
-            const onlineRatio = totalOnline / total;
-            return {
-              date: item.date,
-              online: Math.floor(item.value * onlineRatio),
-              offline: item.value - Math.floor(item.value * onlineRatio)
-            };
+  try {
+    const { 
+      startDate, 
+      endDate, 
+      groupBy = 'day'
+    } = params;
+
+    if (!startDate || !endDate) {
+      throw new Error('startDate và endDate là bắt buộc');
+    }
+
+    const queryParams = new URLSearchParams({
+      startDate,
+      endDate,
+      groupBy
+    });
+
+    const response = await api.get(`/api/appointments/booking-channel-stats?${queryParams.toString()}`);
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Không thể lấy thống kê kênh đặt hẹn');
+    }
+
+    const backendData = response.data.data;
+
+    // Enrich topStaff with user information
+    const staffIds = backendData.topStaff?.map(s => s.staffId) || [];
+    let staffMap = new Map();
+    
+    if (staffIds.length > 0) {
+      try {
+        const staffResponse = await api.post('/api/user/by-ids', { userIds: staffIds });
+        if (staffResponse.data.success) {
+          staffResponse.data.users.forEach(user => {
+            staffMap.set(user._id, user);
           });
-      
-      resolve({
-        success: true,
-        data: {
-          summary: {
-            total,
-            online: {
-              count: totalOnline,
-              percentage: ((totalOnline / total) * 100).toFixed(1),
-              avgPerDay: (totalOnline / dates.length).toFixed(1),
-              completionRate: ((onlineCompleted / totalOnline) * 100).toFixed(1),
-              completed: onlineCompleted
-            },
-            offline: {
-              count: totalOffline,
-              percentage: ((totalOffline / total) * 100).toFixed(1),
-              avgPerDay: (totalOffline / dates.length).toFixed(1),
-              completionRate: ((offlineCompleted / totalOffline) * 100).toFixed(1),
-              completed: offlineCompleted
-            },
-            period: {
-              startDate: dates[0],
-              endDate: dates[dates.length - 1],
-              days: dates.length
-            }
-          },
-          trend: groupedData,
-          offlineByRole,
-          topStaff
         }
-      });
-    }, 800);
-  });
+      } catch (error) {
+        console.warn('Could not fetch staff info:', error);
+      }
+    }
+
+    // Role name mapping
+    const roleNames = {
+      receptionist: 'Lễ tân',
+      admin: 'Quản trị viên',
+      manager: 'Quản lý'
+    };
+
+    return {
+      success: true,
+      data: {
+        summary: backendData.summary || {},
+        trend: backendData.trends || [],
+        offlineByRole: (backendData.offlineByRole || []).map(item => ({
+          role: item.role,
+          name: roleNames[item.role] || item.role,
+          count: item.count || 0,
+          percentage: parseFloat(item.percentage) || 0
+        })),
+        topStaff: (backendData.topStaff || []).map(item => {
+          const staffInfo = staffMap.get(item.staffId);
+          return {
+            staffId: item.staffId,
+            name: staffInfo?.fullName || staffInfo?.name || `Staff ${item.staffId.slice(-4)}`,
+            role: item.role,
+            roleName: roleNames[item.role] || item.role,
+            count: item.count || 0,
+            completionRate: parseFloat(item.completionRate) || 0
+          };
+        })
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching booking channel statistics:', error);
+    throw error;
+  }
 };
 
 // ==================== API 3: PATIENT RETENTION STATISTICS ====================
