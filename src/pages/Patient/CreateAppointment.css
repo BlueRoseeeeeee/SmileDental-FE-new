@@ -1,0 +1,98 @@
+.create-appointment-page {
+  min-height: 100vh;
+}
+
+.breadcrumb-section {
+  background-color: white;
+  padding: 16px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.breadcrumb-section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.breadcrumb-section a {
+  color: #1890ff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-section a:hover {
+  text-decoration: underline;
+}
+
+.main-content {
+  padding: 40px 0;
+}
+
+.booking-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.booking-card .ant-descriptions-bordered .ant-descriptions-item-label {
+  background-color: #fafafa;
+  font-weight: 500;
+  width: 150px;
+  min-width: 110px;
+  max-width: 120px;
+}
+
+.booking-card .ant-descriptions-bordered .ant-descriptions-item-content {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+}
+
+.ant-radio-wrapper {
+  padding: 12px;
+  border-radius: 8px;
+  /* Transition removed for better performance */
+}
+
+.ant-radio-wrapper:hover {
+  background-color: #f0f8ff;
+}
+
+.ant-radio-wrapper .ant-radio-checked + span {
+  color: #2c5f4f;
+}
+
+/* css thêm padding cho cái ghi chú để không bị sát lề */
+.create-appointment-page textarea.ant-input {
+  padding: 16px 20px !important;
+  line-height: 1.8 !important;
+  font-size: 14px !important;
+}
+
+.create-appointment-page .ant-input-textarea-show-count::after {
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
+
+/* css cho breadcrumb */
+.breadcrumb-container-booking-appoiment {
+  margin-top: -50px;
+  margin-bottom: 25px;
+}
+
+.breadcrumb-container-booking-appoiment a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-container-booking-appoiment a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  .ant-descriptions-bordered .ant-descriptions-item-label,
+  .ant-descriptions-bordered .ant-descriptions-item-content {
+    padding: 8px;
+  }
+}

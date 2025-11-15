@@ -12,7 +12,8 @@ import {
   Tag, 
   Breadcrumb,
   Spin,
-  Empty
+  Empty,
+  Tooltip
 } from 'antd';
 import { 
   ArrowLeftOutlined,
@@ -25,6 +26,7 @@ import {
 import smileDentalLogo from '../assets/image/smile-dental-logo.png';
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService } from '../services';
+import { COLOR_BRAND_NAME } from '../utils/common-colors';
 
 const { Title, Text } = Typography;
 
@@ -33,12 +35,9 @@ const PublicServiceAddOns = () => {
   const { serviceName } = useParams();
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (serviceName) {
-      fetchServiceDetails();
-    }
-  }, [serviceName]);
+  
+  // Detect xem đang ở patient layout hay homepage layout
+  const isPatientLayout = window.location.pathname.startsWith('/patient');
 
   const fetchServiceDetails = async () => {
     setLoading(true);
@@ -50,15 +49,22 @@ const PublicServiceAddOns = () => {
       if (foundService) {
         setService(foundService);
       } else {
-        navigate('/');
+        navigate(isPatientLayout ? '/patient' : '/');
       }
     } catch (error) {
       console.error('Error fetching service details:', error);
-      navigate('/');
+      navigate(isPatientLayout ? '/patient' : '/');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (serviceName) {
+      fetchServiceDetails();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceName]);
 
   // Dịch loại dịch vụ sang tiếng Việt
   const translateServiceType = (type) => {
@@ -76,22 +82,23 @@ const PublicServiceAddOns = () => {
 
   // Xử lý click vào serviceAddOn
   const handleAddOnClick = (addOn) => {
-    // Chuyển đến trang chi tiết dịch vụ
-    navigate(`/services/pl/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(addOn.name)}/detail`);
+    // Chuyển đến trang chi tiết dịch vụ với đúng layout path
+    const basePath = isPatientLayout ? '/patient/services/pl' : '/services/pl';
+    navigate(`${basePath}/${encodeURIComponent(service.name)}/addons/${encodeURIComponent(addOn.name)}/detail`);
   };
 
   // Breadcrumb items
   const breadcrumbItems = [
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate(isPatientLayout ? '/patient' : '/')}>
           Trang chủ
         </span>
       ),
     },
     {
       title: (
-        <span style={{ color: '#1890ff', cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <span>
           Dịch vụ
         </span>
       ),
@@ -124,7 +131,7 @@ const PublicServiceAddOns = () => {
       }}>
         <Text type="secondary">Không tìm thấy dịch vụ</Text>
         <br />
-        <Button onClick={() => navigate('/')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate(isPatientLayout ? '/patient' : '/')} style={{ marginTop: 16 }}>
           Về trang chủ
         </Button>
       </div>
@@ -230,26 +237,51 @@ const PublicServiceAddOns = () => {
                   textAlign: 'center',
                   display: 'flex',
                   flexDirection: 'column',
-                  height: '100%'
+                  height: '100%',
+                  justifyContent: 'space-between'
                 }}>
                   {/* AddOn Name */}
-                  <h3 
-                    style={{ 
-                      fontSize: '1.2rem',
-                      color: '#313b79',
-                      fontWeight: '600',
-                      lineHeight: '1.3',
-                      textAlign: 'center',
-                      margin: '0 0 4px 0',
-                      minHeight: '48px',
-                      overflow: 'hidden',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical'
+                  <Tooltip 
+                    title={addOn.name} 
+                    placement="top"
+                    overlayInnerStyle={{
+                      fontSize: '12px',
+                      padding: '4px 8px',
+                      maxWidth: '300px',
+                      lineHeight: '1.4'
                     }}
                   >
-                    {addOn.name}
-                  </h3>
+                    <div style={{ 
+                      marginTop: '-22px',
+                      marginBottom: '10px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'center',
+                      // height: '70px',
+                      // maxHeight: '70px',
+                      overflow: 'hidden'
+                    }}>
+                      <h3 
+                        style={{ 
+                          fontSize: '1rem',
+                          color: '#313b79',
+                          fontWeight: '600',
+                          lineHeight: '2rem',
+                          textAlign: 'center',
+                          margin: 0,
+                          wordWrap: 'break-word',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word',
+                          width: '100%',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical'
+                        }}
+                      >
+                        {addOn.name}
+                      </h3>
+                    </div>
+                  </Tooltip>
 
                   {/* Category Tag */}
                   <div style={{ marginBottom: '8px' }}>
@@ -271,17 +303,14 @@ const PublicServiceAddOns = () => {
                   </div>
 
                   {/* Price */}
-                  <div style={{ marginBottom: '16px', flex: 1 }}>
-                    <h3 style={{ 
-                      color: '#1D7646', 
-                      fontSize: '18px',
-                      fontWeight: 'bold'
-
-                    }}>
-                      {formatPrice(addOn.price)}
-                    </h3>
+                  <div style={{ marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>    
+                  <h5 style={{ fontSize: 20,color: '#1D7646', fontWeight:'bold' }}>
+                    {addOn.effectivePrice 
+                        ? addOn.effectivePrice.toLocaleString('vi-VN')
+                          : addOn.basePrice?.toLocaleString('vi-VN')} VNĐ
+                   </h5>
                   </div>
-
+                        
                    {/* View Details Button */}
                    <Button
                      type="primary"
@@ -293,7 +322,8 @@ const PublicServiceAddOns = () => {
                        borderColor: '#1890ff',
                        fontSize: '13px',
                        fontWeight: '500',
-                       boxShadow: 'none'
+                       boxShadow: 'none',
+                       marginTop: 'auto'
                      }}
                    >
                      Xem chi tiết

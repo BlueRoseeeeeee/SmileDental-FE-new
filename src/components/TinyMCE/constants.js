@@ -6,8 +6,7 @@ export const TINYMCE_CONFIG_NEW = {
   plugins: [
     'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
     'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-    'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons',
-    'paste', 'imagetools'
+    'insertdatetime', 'media', 'table', 'help', 'wordcount', 'emoticons'
   ],
   toolbar: [
     'undo redo | blocks fontsize fontfamily | bold italic underline strikethrough | forecolor backcolor | removeformat',
@@ -35,14 +34,10 @@ export const TINYMCE_CONFIG_NEW = {
   promotion: false,
   promotion_url: false,
   width: '100%',
-  max_width: '100%',
   height: '100%',
   min_height: 400,
   fontsize_formats: '8pt 9pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 22pt 24pt 26pt 28pt 36pt 48pt 72pt',
   block_formats: 'Paragraph=p; Heading 1=h1; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6',
-  
-  // Disable default image upload handler
-  images_upload_handler: false,
   
   // Enable paste images
   paste_data_images: true,

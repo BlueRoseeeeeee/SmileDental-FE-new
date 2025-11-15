@@ -1,0 +1,91 @@
+.booking-select-date-page {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  margin-top: -46px;
+}
+
+.breadcrumb-container-booking-select-date {
+  margin-top: -5px;
+  margin-bottom: 25px;
+  display: flex;
+}
+
+.breadcrumb-container-booking-select-date a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.main-content {
+  padding: 40px 0;
+}
+
+.booking-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.summary-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 24px;
+}
+
+.booking-calendar {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.booking-calendar .ant-picker-calendar-header {
+  padding: 10px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Reverse order: Month before Year */
+.booking-calendar .ant-picker-calendar-header .ant-picker-calendar-year-select {
+  order: 2;
+}
+
+.booking-calendar .ant-picker-calendar-header .ant-picker-calendar-month-select {
+  order: 1;
+  margin-right: 5px;
+}
+
+/* Hide Tháng | Năm buttons */
+.booking-calendar .ant-picker-calendar-mode-switch {
+  display: none !important;
+}
+
+.booking-calendar .ant-picker-cell-disabled {
+  pointer-events: none;
+}
+
+.booking-calendar .ant-picker-cell-disabled .ant-picker-cell-inner {
+  background: #f5f5f5;
+  color: #d9d9d9;
+}
+
+.booking-calendar .ant-picker-cell:hover .ant-picker-cell-inner {
+  background: #e6f4f1;
+}
+
+.booking-calendar .ant-picker-cell-selected .ant-picker-cell-inner {
+  background: #2c5f4f;
+  color: white;
+}
+
+.selected-date-cell {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+@media (max-width: 768px) {
+  .summary-card {
+    position: static;
+  }
+}

@@ -12,7 +12,7 @@ import {
   Empty
 } from 'antd';
 import { 
-  UserOutlined, 
+  UserOutlined
 } from '@ant-design/icons';
 import { userService } from '../services';
 
@@ -178,33 +178,33 @@ const PublicDentistDetail = () => {
               </div>
             </Col>
           </Row>
-          {/* Bằng cấp & Chứng chỉ */}
-          <Row style={{marginTop:'20px'}}>
-            <Col xs={24}>
-                <div style={{ marginBottom: '32px' }}>
-                  <div style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px'
-                  }}>
-                    <div style={{
-                      width: '4px',
-                      height: '24px',
-                      backgroundColor: '#1890ff',
-                      borderRadius: '2px'
-                    }}></div>
-                    <h3 style={{ 
-                      margin: 0,
-                      fontSize: '24px',
-                      fontWeight: '600',
-                      color: 'rgb(24, 84, 119)'
+          {/* Bằng cấp & Chứng chỉ - Chỉ hiển thị khi có dữ liệu */}
+          {dentist.certificates && dentist.certificates.length > 0 && (
+            <Row style={{marginTop:'20px'}}>
+              <Col xs={24}>
+                  <div style={{ marginBottom: '32px' }}>
+                    <div style={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px'
                     }}>
-                      Bằng cấp và Chứng chỉ :
-                    </h3>
+                      <div style={{
+                        width: '4px',
+                        height: '24px',
+                        backgroundColor: '#1890ff',
+                        borderRadius: '2px'
+                      }}></div>
+                      <h3 style={{ 
+                        margin: 0,
+                        fontSize: '24px',
+                        fontWeight: '600',
+                        color: 'rgb(24, 84, 119)'
+                      }}>
+                        Bằng cấp và Chứng chỉ :
+                      </h3>
+                    </div>
                   </div>
-                </div>
-              
-              {dentist.certificates && dentist.certificates.length > 0 ? (
+                
                 <ul style={{ 
                   listStyle: 'none', 
                   padding: 0, 
@@ -283,25 +283,9 @@ const PublicDentistDetail = () => {
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '60px 20px',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '12px'
-                }}>
-                  <SafetyCertificateOutlined style={{ 
-                    fontSize: '48px', 
-                    color: '#d9d9d9',
-                    marginBottom: '16px'
-                  }} />
-                  <Text style={{ color: '#999', fontSize: '16px' }}>
-                    Chưa có bằng cấp hoặc chứng chỉ nào được tải lên
-                  </Text>
-                </div>
-              )}
-            </Col>
-          </Row>
+              </Col>
+            </Row>
+          )}
         </div>
       </div>
     </div>

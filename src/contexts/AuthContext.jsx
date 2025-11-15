@@ -14,16 +14,29 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const checkAuth = () => {
-      // Get token and user from localStorage
+      console.log('🔍 [AuthContext] Checking authentication on mount...');
+      
+      // Get token and user from localStorage only
       const token = localStorage.getItem('accessToken');
       const userData = localStorage.getItem('user');
+      
+      console.log('🔍 [AuthContext] Storage check:', {
+        hasToken: !!token,
+        hasUser: !!userData
+      });
       
       if (token && userData) {
         try {
           const parsedUser = JSON.parse(userData);
+          console.log('✅ [AuthContext] Found valid auth data:', {
+            userId: parsedUser._id,
+            roles: parsedUser.roles,
+            legacyRole: parsedUser.role
+          });
           setIsAuthenticated(true);
           setUser(parsedUser);
-        } catch {
+        } catch (error) {
+          console.error('❌ [AuthContext] Failed to parse user data:', error);
           // Clear invalid data
           localStorage.removeItem('accessToken');
           localStorage.removeItem('user');
@@ -32,6 +45,7 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
         }
       } else {
+        console.log('⚠️ [AuthContext] No auth data found in localStorage');
         setIsAuthenticated(false);
         setUser(null);
       }
@@ -50,7 +64,33 @@ export const AuthProvider = ({ children }) => {
       
       // Call your existing authService (đã tự lưu localStorage)
       const { authService } = await import('../services/authService.js');
+      
+      console.log('🔵 [AuthContext] Calling authService.login with:', { 
+        login: credentials.login, 
+        hasPassword: !!credentials.password,
+        remember: credentials.remember 
+      });
+      
       const response = await authService.login(credentials);
+      
+      console.log('✅ [AuthContext] Login response:', {
+        hasUser: !!response.user,
+        hasAccessToken: !!response.accessToken,
+        hasPendingData: !!response.pendingData,
+        userRole: response.user?.role,
+        userRoles: response.user?.roles
+      });
+      console.log('✅ [AuthContext] Full response:', response);
+      console.log('📋 [AuthContext] response.pendingData:', response.pendingData);
+      
+      // 🆕 Nhiệm vụ 3.2: Nếu có pendingData, không cập nhật state (chưa hoàn tất login)
+      if (response.pendingData) {
+        console.log('🎯 [AuthContext] HAS PENDING DATA - returning to Login.jsx');
+        setLoading(false);
+        return response; // Return pendingData to Login.jsx
+      }
+      
+      console.log('🎯 [AuthContext] NO PENDING DATA - completing login');
       
       // Update state (không cần lưu localStorage nữa vì authService đã lưu)
       setIsAuthenticated(true);
@@ -59,6 +99,13 @@ export const AuthProvider = ({ children }) => {
       
       return response;
     } catch (error) {
+      console.error('❌ [AuthContext] Login error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        isAccountDisabled: error.isAccountDisabled
+      });
+      
       // Không hiển thị Alert nếu là lỗi tài khoản bị khóa (đã có toast)
       if (!error.isAccountDisabled) {
         setError(error.response?.data?.message || error.message || 'Đăng nhập thất bại');
@@ -168,6 +215,60 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Change password (requires current password)
+  const changePassword = async (passwordData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const { authService } = await import('../services/authService.js');
+      const response = await authService.changePassword(passwordData);
+      setLoading(false);
+      return response;
+    } catch (error) {
+      setError(error.response?.data?.message || 'Đổi mật khẩu thất bại');
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  // Update user info
+  const updateUser = async (userData) => {
+    try {
+      // Update user in localStorage and state
+      const updatedUser = { ...user, ...userData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      return updatedUser;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // ✅ Refetch user from server to get latest data
+  const refetchUser = async () => {
+    try {
+      const { userService } = await import('../services/userService.js');
+      const response = await userService.getProfile();
+      const freshUser = response.user || response;
+      
+      // Update both localStorage and state
+      localStorage.setItem('user', JSON.stringify(freshUser));
+      setUser(freshUser);
+      
+      return freshUser;
+    } catch (error) {
+      console.error('Refetch user error:', error);
+      // Don't throw - just return current user to avoid logout
+      return user;
+    }
+  };
+
+  // 🆕 Nhiệm vụ 3.2: Complete login after password change or specialty selection
+  const completeLogin = (userData) => {
+    setIsAuthenticated(true);
+    setUser(userData);
+  };
+
   const value = {
     isAuthenticated,
     user,
@@ -180,7 +281,11 @@ export const AuthProvider = ({ children }) => {
     verifyOtp,
     register,
     sendOtpResetPassword,
-    resetPassword
+    resetPassword,
+    changePassword,
+    updateUser,
+    refetchUser, // ✅ Export refetchUser
+    completeLogin // 🆕 Export completeLogin
   };
 
   return (
@@ -193,7 +298,26 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Instead of throwing error immediately, log warning and return safe defaults
+    console.warn('⚠️ useAuth called outside AuthProvider - returning safe defaults');
+    return {
+      isAuthenticated: false,
+      user: null,
+      loading: false,
+      error: null,
+      login: async () => { throw new Error('AuthProvider not available'); },
+      logout: async () => {},
+      clearError: () => {},
+      sendOtpRegister: async () => { throw new Error('AuthProvider not available'); },
+      verifyOtp: async () => { throw new Error('AuthProvider not available'); },
+      register: async () => { throw new Error('AuthProvider not available'); },
+      sendOtpResetPassword: async () => { throw new Error('AuthProvider not available'); },
+      resetPassword: async () => { throw new Error('AuthProvider not available'); },
+      changePassword: async () => { throw new Error('AuthProvider not available'); },
+      updateUser: async () => { throw new Error('AuthProvider not available'); },
+      refetchUser: async () => { throw new Error('AuthProvider not available'); },
+      completeLogin: () => {}
+    };
   }
   return context;
 };

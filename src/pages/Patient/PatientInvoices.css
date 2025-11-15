@@ -1,0 +1,11 @@
+.patient-invoices-page {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .patient-invoices-page {
+    padding: 16px;
+  }
+}

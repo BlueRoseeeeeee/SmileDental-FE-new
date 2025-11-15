@@ -1,0 +1,154 @@
+.booking-select-addon-page {
+  min-height: 100vh;
+  padding: 24px 0;
+}
+
+.booking-select-addon-page .breadcrumb-section {
+  background: white;
+  padding: 16px 0;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.booking-select-addon-page .container {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+.breadcrumb-container-booking-select-service-addon {
+  margin-top: -80px;
+  margin-bottom: 20px;
+  display: flex;
+}
+
+.breadcrumb-container-booking-select-service-addon a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-container-booking-select-service a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+}
+
+.booking-select-addon-page .booking-card-custom {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 0;
+  overflow: hidden;
+  background-color: #E8F2F7;
+}
+
+.booking-select-addon-page .booking-card-header {
+  background: linear-gradient(135deg, #2596BE 0%, #1a7a9e 100%);
+  padding: 24px;
+  margin: 0;
+  width: 100%;
+}
+
+.booking-select-addon-page .booking-card-header h5 {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+}
+
+.booking-select-addon-page .addon-card {
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.booking-select-addon-page .addon-card:hover:not(.disabled) {
+  box-shadow: 0 6px 16px rgba(44, 95, 79, 0.15);
+}
+
+.booking-select-addon-page .addon-card:hover:not(.disabled) h5 {
+  color: #1da1f2 !important;
+}
+
+.booking-select-addon-page .addon-card.selected {
+  background: #f6ffed !important;
+  border-color: #2c5f4f !important;
+  box-shadow: 0 6px 16px rgba(44, 95, 79, 0.25);
+}
+
+.booking-select-addon-page .addon-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Custom scrollbar for addon list */
+.booking-select-addon-page ::-webkit-scrollbar {
+  width: 6px;
+  height: 10px;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.booking-select-addon-page ::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+@media (max-width: 768px) {
+  .booking-select-addon-page .addon-card .ant-card-body {
+    padding: 16px;
+  }
+}
+
+/* Price Display Styles */
+.price-display-container {
+  width: 100%;
+}
+
+.price-active-schedule {
+  padding: 8px 0;
+}
+
+.upcoming-schedules {
+  margin-top: 8px;
+}
+
+.upcoming-schedules > div {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.upcoming-schedules .ant-space {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+}
+
+.upcoming-schedules .ant-space-item {
+  display: inline-flex;
+}
+
+/* Strikethrough price animation */
+.price-display-container .ant-typography del {
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.addon-card:hover .price-display-container .ant-typography del {
+  opacity: 0.8;
+}
+
+/* Active price highlight */
+.price-active-schedule .ant-typography-secondary {
+  color: #595959;
+}
+
+/* Upcoming price box hover effect */
+.upcoming-schedules > div:hover {
+  background: #d9f0ff !important;
+  border-color: #69c0ff !important;
+  transition: all 0.3s ease;
+}

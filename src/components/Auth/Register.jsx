@@ -17,10 +17,12 @@ import {
   validatePatientAge,
   isValidEmail,
   handleFullNameFormat,
-  getReactHookFormRules
+  getReactHookFormRules,
+  preventNonNumericInput
 } from '../../utils/validationUtils';
 import registerImage from '../../assets/image/hinh-anh-dang-nhap-dang-ki.png';
 import './Register.css';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 
 const { Title, Text } = Typography;
 
@@ -30,6 +32,7 @@ const RegisterRHF = () => {
   const [email, setEmail] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpMessage, setOtpMessage] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
 
   const { sendOtpRegister, register: registerUser, verifyOtp, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
@@ -85,6 +88,8 @@ const RegisterRHF = () => {
       setValue('email', data.email);
       // Xóa OTP cũ khi gửi OTP mới
       setValue('otp', '');
+      // Reset trạng thái verify nếu đổi email
+      setOtpVerified(false);
       const response = await sendOtpRegister(data.email);
       setOtpMessage(response.message || 'OTP đăng ký đã được gửi đến email');
       setOtpSent(true);
@@ -102,10 +107,20 @@ const RegisterRHF = () => {
       // Verify OTP
       await verifyOtp(data.otp, email);
       
+      // Đánh dấu đã verify thành công
+      setOtpVerified(true);
+      
       // Chuyển sang bước tiếp theo
       setStep(2);
     } catch (err) {
       // Error is handled by AuthContext
+    }
+  };
+
+  // Handle skip OTP verification nếu đã verify rồi
+  const handleSkipOTP = () => {
+    if (otpVerified) {
+      setStep(2);
     }
   };
 
@@ -248,41 +263,43 @@ const RegisterRHF = () => {
               position: 'relative'
             }}>
             {/* Nội dung bổ sung */}
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-              <h2 style={{ 
+            <div style={{ textAlign: 'center', marginBottom: '10px' }}>
+              <h4 style={{ 
                 color: '#2596be', 
-                fontSize: '2rem', 
                 fontWeight: 'bold',
                 marginBottom: '16px',
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                textAlign:'left'
               }}>
                 Chào mừng đến với
-              </h2>
-              <h1 style={{ 
-                color: '#2596be', 
+              </h4>
+              <h2 style={{ 
+                color: COLOR_BRAND_NAME, 
                 fontSize: '2.5rem', 
                 fontWeight: 'bold',
                 marginBottom: '20px',
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                textAlign:'left',
+                marginLeft:'30px'
               }}>
-                SmileDental
-              </h1>
+                SmileCare Dental
+              </h2>
               <p style={{ 
                 color: '#666', 
                 fontSize: '1.1rem', 
                 lineHeight: '1.6',
-                margin: '0 auto'
+               marginLeft:'40px'
               }}>
-                Nụ cười khỏe mạnh là nụ cười đẹp nhất. 
+                Nụ cười rạng rỡ khởi nguồn từ sức khỏe răng miệng toàn diện
               </p>
               <p
               style={{ 
                 color: '#666', 
                 fontSize: '1.1rem', 
                 lineHeight: '1.6',
-                margin: '0 auto'
+                marginLeft:'60px'
               }}
-              >Hãy để chúng tôi chăm sóc răng miệng của bạn.</p>
+              >Hãy để chúng tôi đồng hành cùng bạn trong hành trình ấy.</p>
             </div>
             
             {/* Hình ảnh */}
@@ -293,7 +310,7 @@ const RegisterRHF = () => {
           style={{ 
                   maxWidth: '85%', 
                   maxHeight: '85%', 
-                  objectFit: 'contain',
+                  objectFit: 'cover',
                   filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.1))'
                 }} 
               />
@@ -327,8 +344,8 @@ const RegisterRHF = () => {
               style={{ marginBottom: '40px' }}
             />
 
-            {/* Success Messages - Sử dụng toast thay vì Alert */}
-          {otpSent && step === 1 && (
+            {/* Success Messages - Chỉ hiển thị khi vừa gửi OTP, không hiển thị khi đã verify */}
+          {otpSent && step === 1 && !otpVerified && (
             <div style={{ 
               marginBottom: '24px',
               padding: '12px 16px',
@@ -400,41 +417,75 @@ const RegisterRHF = () => {
             {/* Step 2: OTP Verification Form */}
             {step === 1 && (
               <form onSubmit={handleSubmit(handleVerifyOTP)}>
-                <div className="form-group">
-                  <label className="form-label">
-                    Mã OTP <span style={{ color: 'red' }}>*</span>
-                  </label>
-                  <input
-                    {...register('otp', getReactHookFormRules.otp())}
-                    maxLength={6}
-                    className="form-input"
-                    placeholder="Nhập 6 chữ số OTP (VD: 123456)"
-                    style={{ 
-                      textAlign: 'center', 
-                      fontSize: '18px', 
-                      letterSpacing: '4px'
-                    }}
-                  />
-                  {errors.otp && (
-                    <div className="form-error">{errors.otp.message}</div>
-                  )}
-                </div>
+                {otpVerified ? (
+                  <div style={{ 
+                    marginBottom: '24px',
+                    padding: '12px 16px',
+                    background: '#f6ffed',
+                    border: '1px solid #b7eb8f',
+                    borderRadius: '6px',
+                    color: '#52c41a',
+                    fontSize: '14px'
+                  }}>
+                    <CheckCircleOutlined style={{ marginRight: '8px' }} />
+                    OTP đã được xác thực thành công!
+                  </div>
+                ) : (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">
+                        Mã OTP <span style={{ color: 'red' }}>*</span>
+                      </label>
+                      <input
+                        {...register('otp', getReactHookFormRules.otp())}
+                        maxLength={6}
+                        className="form-input"
+                        placeholder="Nhập 6 chữ số OTP (VD: 123456)"
+                        onKeyPress={preventNonNumericInput}
+                        style={{ 
+                          textAlign: 'center', 
+                          fontSize: '18px', 
+                          letterSpacing: '4px'
+                        }}
+                      />
+                      {errors.otp && (
+                        <div className="form-error">{errors.otp.message}</div>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  block
-                  style={{
-                      background: '#2596be',
-                    border: 'none',
-                    borderRadius: '8px',
-                    height: '48px'
-                  }}
-                >
-                    {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
-                  </Button>
+                  {otpVerified ? (
+                    <Button
+                      type="primary"
+                      onClick={handleSkipOTP}
+                      block
+                      style={{
+                        background: '#2596be',
+                        border: 'none',
+                        borderRadius: '8px',
+                        height: '48px'
+                      }}
+                    >
+                      Tiếp theo
+                    </Button>
+                  ) : (
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={loading}
+                      block
+                      style={{
+                        background: '#2596be',
+                        border: 'none',
+                        borderRadius: '8px',
+                        height: '48px'
+                      }}
+                    >
+                      {loading ? 'Đang xác thực...' : 'Xác thực OTP'}
+                    </Button>
+                  )}
 
                   <Button
                     type="default"
@@ -442,8 +493,10 @@ const RegisterRHF = () => {
                     onClick={() => {
                       setStep(0);
                       clearError();
-                      // Xóa OTP khi quay lại
-                      setValue('otp', '');
+                      // Chỉ xóa OTP nếu chưa verify, để giữ lại trạng thái nếu đã verify
+                      if (!otpVerified) {
+                        setValue('otp', '');
+                      }
                     }}
                     block
                     style={{
@@ -452,7 +505,7 @@ const RegisterRHF = () => {
                     }}
                   >
                     Quay lại
-                </Button>
+                  </Button>
                 </Space>
               </form>
             )}
@@ -484,7 +537,6 @@ const RegisterRHF = () => {
                   <input
                     {...register('phone', getReactHookFormRules.phone())}
                     className="form-input"
-                    placeholder="Nhập số điện thoại (VD: 0123456789)"
                     tabIndex={2}
                     autoComplete="tel"
                   />

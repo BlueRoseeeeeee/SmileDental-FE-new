@@ -59,7 +59,13 @@ export const filterData = (data, filters) => {
         return true;
       }
 
-      const itemValue = getNestedValue(item, key);
+      let itemValue = getNestedValue(item, key);
+      
+      // 🆕 Xử lý đặc biệt cho roles: fallback sang role nếu roles không tồn tại
+      if (key === 'roles' && !itemValue) {
+        const singleRole = getNestedValue(item, 'role');
+        itemValue = singleRole ? [singleRole] : null;
+      }
       
       // Xử lý boolean values
       if (typeof value === 'boolean') {
@@ -71,8 +77,21 @@ export const filterData = (data, filters) => {
         return String(itemValue).toLowerCase().includes(value.toLowerCase());
       }
       
-      // Xử lý array values (multiple selection)
+      // Xử lý array values (multiple selection cho filter)
       if (Array.isArray(value)) {
+        // Nếu array rỗng, bỏ qua filter này
+        if (value.length === 0) {
+          return true;
+        }
+        
+        // 🆕 Nếu itemValue cũng là array (ví dụ: user.roles = ['manager', 'dentist'])
+        // Kiểm tra xem có bất kỳ role nào trong itemValue match với filter value không
+        if (Array.isArray(itemValue)) {
+          return value.some(filterVal => itemValue.includes(filterVal));
+        }
+        
+        // Nếu itemValue là single value (ví dụ: user.role = 'dentist')
+        // Kiểm tra xem itemValue có nằm trong filter value không
         return value.includes(itemValue);
       }
       
@@ -127,18 +146,21 @@ export const createFilterConfig = (key, label, options, placeholder = 'Chọn...
  * @returns {Object} - Cấu hình filter role
  */
 export const createRoleFilter = () => {
-  return createFilterConfig(
-    'role',
-    'Lọc theo vai trò',
-    [
-      { value: 'admin', label: 'Quản trị viên' },
-      { value: 'manager', label: 'Quản lý' },
-      { value: 'dentist', label: 'Nha sĩ' },
-      { value: 'nurse', label: 'Y tá' },
-      { value: 'receptionist', label: 'Lễ tân' },
-    ],
-    'Chọn vai trò'
-  );
+  return {
+    ...createFilterConfig(
+      'roles',
+      'Lọc theo vai trò',
+      [
+        { value: 'admin', label: 'Quản trị viên' },
+        { value: 'manager', label: 'Quản lý' },
+        { value: 'dentist', label: 'Nha sĩ' },
+        { value: 'nurse', label: 'Y tá' },
+        { value: 'receptionist', label: 'Lễ tân' },
+      ],
+      ''
+    ),
+    multiple: true
+  };
 };
 
 /**

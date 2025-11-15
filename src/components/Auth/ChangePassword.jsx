@@ -2,7 +2,7 @@
 * @author: HoTram
 */
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Alert, Space, Divider } from 'antd';
+import { Form, Input, Button, Card, Typography, Space, Divider } from 'antd';
 import { toast } from '../../services/toastService';
 import { 
   LockOutlined, 
@@ -19,17 +19,25 @@ const { Title, Text } = Typography;
 
 const ChangePassword = () => {
   const [success, setSuccess] = useState(false);
-  const { changePassword, loading, error, clearError } = useAuth();
+  const { changePassword, loading, user } = useAuth();
   const navigate = useNavigate();
   const [form] = Form.useForm();
 
+  // Detect user role to determine navigation path
+  const isPatient = user?.role === 'patient';
+  const backPath = isPatient ? '/patient/profile' : '/dashboard';
+
   const handleChangePassword = async (values) => {
     try {
-      clearError();
       await changePassword(values);
       setSuccess(true);
-    } catch (err) {
-      // Error handled by context
+      toast.success('Đổi mật khẩu thành công!');
+      setTimeout(() => {
+        navigate(backPath);
+      }, 1500);
+    } catch (error) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Đổi mật khẩu thất bại!';
+      toast.error(errorMessage);
     }
   };
 
@@ -37,7 +45,6 @@ const ChangePassword = () => {
     return (
       <div style={{ 
         minHeight: '100vh', 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center', 
@@ -96,12 +103,11 @@ const ChangePassword = () => {
 
   return (
     <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center', 
-      padding: '16px' 
+      padding: '16px', 
+      background:'#E8F2F7'
     }}>
       <div style={{ width: '100%', maxWidth: '500px' }}>
         <Card 
@@ -109,56 +115,16 @@ const ChangePassword = () => {
             borderRadius: '16px',
             background: 'rgba(255,255,255,0.95)',
             backdropFilter: 'blur(10px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+            marginTop:20
           }}
         >
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <Button
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/dashboard')}
-              style={{ 
-                marginBottom: '16px',
-                color: '#1890ff'
-              }}
-            >
-              Quay lại
-            </Button>
-            
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <div style={{ 
-                width: '80px', 
-                height: '80px', 
-                borderRadius: '50%', 
-                background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(24, 144, 255, 0.3)'
-              }}>
-                <span style={{ fontSize: '32px' }}>🔒</span>
-              </div>
-            </div>
             <Title level={2} style={{ marginBottom: '8px' }}>
               Đổi mật khẩu
             </Title>
-            <Text type="secondary">
-              Nhập mật khẩu hiện tại và mật khẩu mới để thay đổi
-            </Text>
           </div>
-
-          {/* Error Alert */}
-          {error && (
-            <Alert
-              message={error}
-              type="error"
-              showIcon
-              style={{ marginBottom: '24px' }}
-              closable
-              onClose={clearError}
-            />
-          )}
 
           {/* Change Password Form */}
           <Form
@@ -239,18 +205,6 @@ const ChangePassword = () => {
               </Button>
             </Form.Item>
           </Form>
-
-          <Divider style={{ margin: '24px 0' }}>
-            <Text type="secondary">Lưu ý</Text>
-          </Divider>
-
-          <div style={{ textAlign: 'left' }}>
-            <Text type="secondary" style={{ fontSize: '14px' }}>
-              • Mật khẩu phải có độ dài từ 8-16 ký tự<br/>
-              • Nên sử dụng kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt<br/>
-              • Không sử dụng thông tin cá nhân dễ đoán
-            </Text>
-          </div>
         </Card>
       </div>
     </div>

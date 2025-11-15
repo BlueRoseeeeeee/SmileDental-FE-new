@@ -16,7 +16,8 @@ import {
   Switch,
   Input,
   Select,
-  Modal
+  Modal,
+  Tabs
 } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../services/toastService';
@@ -27,11 +28,10 @@ import {
   EyeOutlined,
   SearchOutlined,
   EnvironmentOutlined,
-  HomeOutlined,
-  SettingOutlined,
 } from '@ant-design/icons';
 import roomService from '../services/roomService';
 import RoomFormModal from '../components/Room/RoomFormModal';
+import RoomDetailsModal from '../components/Room/RoomDetailsModal';
 import { searchAndFilter, debounce } from '../utils/searchUtils';
 import dayjs from 'dayjs';
 const { Title, Text } = Typography;
@@ -51,8 +51,9 @@ const RoomList = () => {
 
   // Search & Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
+  const [activeTab, setActiveTab] = useState('active'); // 'active' hoặc 'inactive'
+  const [structureFilter, setStructureFilter] = useState('');
+  const [roomTypeFilter, setRoomTypeFilter] = useState('');
 
   // Toggle confirmation modal states
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -63,21 +64,32 @@ const RoomList = () => {
   const [selectedRoomForDelete, setSelectedRoomForDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Room details modal states
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedRoomForDetails, setSelectedRoomForDetails] = useState(null);
+
   // Filtered data using searchUtils
   const filteredRooms = useMemo(() => {
     const searchFields = ['name', 'description'];
     const filters = {};
 
-    if (statusFilter !== '') {
-      filters.isActive = statusFilter === 'true';
+    // Lọc theo tab (thay vì statusFilter)
+    if (activeTab === 'active') {
+      filters.isActive = true;
+    } else if (activeTab === 'inactive') {
+      filters.isActive = false;
     }
 
-    if (typeFilter !== '') {
-      filters.hasSubRooms = typeFilter === 'true';
+    if (structureFilter !== '') {
+      filters.hasSubRooms = structureFilter === 'true';
+    }
+
+    if (roomTypeFilter !== '') {
+      filters.roomType = roomTypeFilter;
     }
 
     return searchAndFilter(rooms, searchTerm, searchFields, filters);
-  }, [rooms, searchTerm, statusFilter, typeFilter]);
+  }, [rooms, searchTerm, activeTab, structureFilter, roomTypeFilter]);
 
   // Debounced search function
   const debouncedSearch = useMemo(
@@ -94,13 +106,19 @@ const RoomList = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [pagination.current, pagination.pageSize]); // Chỉ chạy khi trang hoặc kích thước trang thay đổi
+  }, [pagination.current, pagination.pageSize, searchTerm, activeTab, structureFilter, roomTypeFilter]); // 🔥 Add all filter dependencies
 
 
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      const response = await roomService.getRooms(pagination.current, pagination.pageSize);
+      // 🔥 When searching or filtering, fetch ALL rooms to enable search across all pages
+      const shouldFetchAll = searchTerm.trim() !== '' || activeTab !== 'active' || structureFilter !== '' || roomTypeFilter !== '';
+      
+      const response = await roomService.getRooms(
+        shouldFetchAll ? 1 : pagination.current, 
+        shouldFetchAll ? 9999 : pagination.pageSize
+      );
       
       setRooms(response.rooms || []);
       setPagination(prev => ({
@@ -128,7 +146,8 @@ const RoomList = () => {
   };
 
   const handleViewSubRooms = (room) => {
-    navigate(`/rooms/${room._id}`);
+    setSelectedRoomForDetails(room);
+    setShowDetailsModal(true);
   };
 
   // Handle show delete confirmation modal
@@ -216,32 +235,39 @@ const RoomList = () => {
     handleModalClose();
   };
 
+  const handleDetailsModalClose = () => {
+    setShowDetailsModal(false);
+    setSelectedRoomForDetails(null);
+  };
+
   const columns = [
     {
       title: 'STT',
       dataIndex: 'index',
       key: 'index',
       render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
-      width: 60
+      width: 60,
+      sorter: false
     },
     {
       title: 'Tên phòng',
       dataIndex: 'name',
       key: 'name',
+      sorter: (a, b) => a.name.localeCompare(b.name),
       render: (text, record) => (
         <div>
           <Text strong>{text}</Text>
           {record.hasSubRooms && (
             <div>
-              <Tag color="blue" size="small">
-                <HomeOutlined /> {record.subRooms?.length || 0} buồng
+              <Tag color="default" size="small">
+                {record.subRooms?.length || 0} buồng
               </Tag>
             </div>
           )}
           {!record.hasSubRooms && (
             <div>
-              <Tag color="green" size="small">
-                <SettingOutlined /> {record.maxDoctors} bác sĩ, {record.maxNurses} y tá
+              <Tag color="default" size="small">
+                {record.maxDoctors} nha sĩ, {record.maxNurses} y tá
               </Tag>
             </div>
           )}
@@ -250,39 +276,74 @@ const RoomList = () => {
     },
     {
       title: 'Loại phòng',
-      dataIndex: 'hasSubRooms',
-      key: 'hasSubRooms',
-      render: (hasSubRooms) => (
-        <Tag color={hasSubRooms ? 'blue' : 'green'}>
-          {hasSubRooms ? 'Có buồng con' : 'Phòng đơn'}
-        </Tag>
-      )
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      render: (isActive, record) => (
-        <Space>
-          <Tag color={isActive ? 'green' : 'red'}>
-            {isActive ? 'Hoạt động' : 'Không hoạt động'}
+      dataIndex: 'roomType',
+      key: 'roomType',
+      sorter: (a, b) => a.roomType.localeCompare(b.roomType),
+      render: (roomType) => {
+        const getRoomTypeLabel = (roomType) => {
+          const labels = {
+            CONSULTATION: 'Phòng tư vấn/khám',
+            GENERAL_TREATMENT: 'Phòng điều trị TQ',
+            SURGERY: 'Phòng phẫu thuật',
+            ORTHODONTIC: 'Phòng chỉnh nha',
+            COSMETIC: 'Phòng thẩm mỹ',
+            PEDIATRIC: 'Phòng nha nhi',
+            X_RAY: 'Phòng X-quang',
+            STERILIZATION: 'Phòng tiệt trùng',
+            LAB: 'Phòng labo',
+            RECOVERY: 'Phòng hồi sức',
+            SUPPORT: 'Phòng phụ trợ'
+          };
+          return labels[roomType] || roomType;
+        };
+
+             const getRoomTypeColor = (roomType) => {
+               const colors = {
+                 CONSULTATION: 'blue',
+                 GENERAL_TREATMENT: 'green',
+                 SURGERY: 'red',
+                 ORTHODONTIC: 'blue',
+                 COSMETIC: 'green',
+                 PEDIATRIC: 'blue',
+                 X_RAY: 'green',
+                 STERILIZATION: 'red',
+                 LAB: 'blue',
+                 RECOVERY: 'green',
+                 SUPPORT: 'default'
+               };
+               return colors[roomType] || 'default';
+             };
+
+        return (
+          <Tag color={getRoomTypeColor(roomType)}>
+            {getRoomTypeLabel(roomType)}
           </Tag>
-          {record.hasBeenUsed && (
-            <Tag color="orange">Đã sử dụng</Tag>
-          )}
-        </Space>
-      )
+        );
+      }
     },
+         {
+           title: 'Cấu trúc phòng',
+           dataIndex: 'hasSubRooms',
+           key: 'hasSubRooms',
+           sorter: (a, b) => a.hasSubRooms - b.hasSubRooms,
+           render: (hasSubRooms) => (
+             <Tag color={hasSubRooms ? 'blue' : 'default'}>
+               {hasSubRooms ? 'Có buồng' : 'Không buồng'}
+             </Tag>
+           )
+         },
     {
       title: 'Ngày cập nhật',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
+      sorter: (a, b) => new Date(a.updatedAt) - new Date(b.updatedAt),
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       title: 'Thao tác',
       key: 'actions',
       width: 200,
+      sorter: false,
       render: (_, record) => (
         <Space>
           <Tooltip title="Xem chi tiết">
@@ -312,11 +373,12 @@ const RoomList = () => {
             />
           </Tooltip>
           
-          <Tooltip title="Xóa phòng">
+          <Tooltip title={record.hasBeenUsed ? 'Phòng đã được sử dụng, không thể xóa' : 'Xóa phòng'}>
             <Button
               type="text"
               danger
               icon={<DeleteOutlined />}
+              disabled={record.hasBeenUsed}
               onClick={() => handleDeleteRoom(record)}
             />
           </Tooltip>
@@ -343,41 +405,58 @@ const RoomList = () => {
           </Col>
           <Col xs={24} md={8}>
             <div>
-              <Text style={{ display: 'block', marginBottom: 8 ,fontSize:12}}>Lọc theo trạng thái</Text>
+              <Text style={{ display: 'block', marginBottom: 8, fontSize:12 }}>Lọc theo loại phòng</Text>
               <Select
-                placeholder="Chọn trạng thái"
+                placeholder="Chọn loại phòng"
                 allowClear
-                value={statusFilter}
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                value={roomTypeFilter}
                 onChange={(value) => {
-                  setStatusFilter(value || '');
+                  setRoomTypeFilter(value || '');
                   if (!value) {
                     setPagination(prev => ({ ...prev, current: 1 }));
                   }
                 }}
                 style={{ width: '100%' }}
               >
-                <Select.Option value="true">Hoạt động</Select.Option>
-                <Select.Option value="false">Không hoạt động</Select.Option>
+                <Select.Option value="CONSULTATION">Phòng tư vấn/khám</Select.Option>
+                <Select.Option value="GENERAL_TREATMENT">Phòng điều trị TQ</Select.Option>
+                <Select.Option value="SURGERY">Phòng phẫu thuật</Select.Option>
+                <Select.Option value="ORTHODONTIC">Phòng chỉnh nha</Select.Option>
+                <Select.Option value="COSMETIC">Phòng thẩm mỹ</Select.Option>
+                <Select.Option value="PEDIATRIC">Phòng nha nhi</Select.Option>
+                <Select.Option value="X_RAY">Phòng X-quang</Select.Option>
+                <Select.Option value="STERILIZATION">Phòng tiệt trùng</Select.Option>
+                <Select.Option value="LAB">Phòng labo</Select.Option>
+                <Select.Option value="RECOVERY">Phòng hồi sức</Select.Option>
+                <Select.Option value="SUPPORT">Phòng phụ trợ</Select.Option>
               </Select>
             </div>
           </Col>
           <Col xs={24} md={8}>
             <div>
-              <Text style={{ display: 'block', marginBottom: 8, fontSize:12 }}>Lọc theo loại phòng</Text>
+              <Text style={{ display: 'block', marginBottom: 8, fontSize:12 }}>Lọc theo cấu trúc phòng</Text>
               <Select
-                placeholder="Chọn loại phòng"
+                placeholder="Chọn cấu trúc"
                 allowClear
-                value={typeFilter}
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+                value={structureFilter}
                 onChange={(value) => {
-                  setTypeFilter(value || '');
+                  setStructureFilter(value || '');
                   if (!value) {
                     setPagination(prev => ({ ...prev, current: 1 }));
                   }
                 }}
                 style={{ width: '100%' }}
               >
-                <Select.Option value="true">Có phòng con</Select.Option>
-                <Select.Option value="false">Phòng đơn</Select.Option>
+                <Select.Option value="true">Có buồng</Select.Option>
+                <Select.Option value="false">Không buồng</Select.Option>
               </Select>
             </div>
           </Col>
@@ -400,13 +479,27 @@ const RoomList = () => {
         </Button>
 
       </div>
+      
+      {/* Tabs thay thế bộ lọc trạng thái */}
+      <Tabs 
+        activeKey={activeTab} 
+        onChange={(key) => {
+          setActiveTab(key);
+          setPagination(prev => ({ ...prev, current: 1 }));
+        }}
+        style={{ marginBottom: 16 }}
+      >
+        <Tabs.TabPane tab="Phòng hoạt động" key="active" />
+        <Tabs.TabPane tab="Phòng không hoạt động" key="inactive" />
+      </Tabs>
+      
         <Table
           columns={columns}
           dataSource={filteredRooms}
           rowKey="_id"
           loading={loading}
           pagination={
-            (searchTerm || statusFilter || typeFilter) 
+            (searchTerm || activeTab !== 'active' || structureFilter || roomTypeFilter) 
               ? false 
               : {
                   current: pagination.current,
@@ -422,6 +515,7 @@ const RoomList = () => {
                 current: page,
                 pageSize: pageSize || 10
               }));
+              fetchRooms(); // 🔥 This will be triggered by useEffect dependency
             }
           }}
         />
@@ -429,10 +523,18 @@ const RoomList = () => {
 
       {/* Modal tạo/sửa phòng */}
       <RoomFormModal
-        visible={isModalVisible}
+        open={isModalVisible}
         onClose={handleModalClose}
         onSuccess={handleSuccess}
         room={editingRoom}
+      />
+
+      {/* Modal xem chi tiết phòng */}
+      <RoomDetailsModal
+        open={showDetailsModal}
+        onClose={handleDetailsModalClose}
+        roomId={selectedRoomForDetails?._id}
+        roomData={selectedRoomForDetails}
       />
 
       {/* Confirmation Modal */}

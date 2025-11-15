@@ -26,13 +26,17 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
+import { preventNonNumericInput } from '../utils/validationUtils';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
 const EditServiceAddOn = () => {
   const navigate = useNavigate();
-  const { serviceId, addOnId } = useParams();
+  const { serviceId, addonId } = useParams();
+  
+  console.log('EditServiceAddOn mounted, serviceId:', serviceId, 'addonId:', addonId);
+  
   const [service, setService] = useState(null);
   const [addOn, setAddOn] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,13 +49,14 @@ const EditServiceAddOn = () => {
   const [currentImageUrl, setCurrentImageUrl] = useState('');
 
   // Auto-save key for localStorage
-  const AUTO_SAVE_KEY = `addon_edit_draft_${addOnId}`;
+  const AUTO_SAVE_KEY = `addon_edit_draft_${addonId}`;
 
   useEffect(() => {
-    if (serviceId && addOnId) {
+    console.log('useEffect triggered, serviceId:', serviceId, 'addonId:', addonId);
+    if (serviceId && addonId) {
       fetchData();
     }
-  }, [serviceId, addOnId]);
+  }, [serviceId, addonId]);
 
   // Auto-save functionality
   useEffect(() => {
@@ -81,37 +86,59 @@ const EditServiceAddOn = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      console.log('Fetching data for serviceId:', serviceId, 'addonId:', addonId);
+      
       // Fetch service details
       const serviceResponse = await servicesService.getServiceById(serviceId);
-      setService(serviceResponse);
+      console.log('Service response:', serviceResponse);
+      // Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const serviceData = serviceResponse?.data || serviceResponse;
+      setService(serviceData);
 
       // Fetch add-on details
-      const addOnResponse = await servicesService.getServiceAddOnById(serviceId, addOnId);
-      setAddOn(addOnResponse.addOn);
+      const addOnResponse = await servicesService.getServiceAddOnById(serviceId, addonId);
+      console.log('AddOn response:', addOnResponse);
+      const addOnData = addOnResponse.data?.addOn || addOnResponse.addOn;
+      console.log('🔍 addOnData:', addOnData);
+      console.log('🔍 basePrice:', addOnData.basePrice);
+      console.log('🔍 effectivePrice:', addOnData.effectivePrice);
+      console.log('🔍 Final price:', addOnData.effectivePrice || addOnData.basePrice);
+      setAddOn(addOnData);
       
-      // Load draft if exists
+      // Always use the latest effectivePrice from API
+      const finalPrice = addOnData.effectivePrice || addOnData.basePrice;
+      console.log('💰 Using price from API:', finalPrice);
+      
+      // Load draft if exists (but always use latest price from API)
       const draft = loadDraft();
+      console.log('📝 Draft from localStorage:', draft);
       if (draft) {
-        form.setFieldsValue(draft.formData);
+        console.log('⚠️ Loading draft data but overriding price with API data');
+        form.setFieldsValue({
+          ...draft.formData,
+          price: finalPrice  // Override with latest price from API
+        });
         setAddOnDescription(draft.description);
         setHasUnsavedChanges(true);
-        message.info('Đã khôi phục bản nháp chưa lưu');
+        message.info('Đã khôi phục bản nháp chưa lưu (giá đã được cập nhật)');
       } else {
         // Load actual data
+        console.log('✅ Loading fresh data from API');
         form.setFieldsValue({
-          name: addOnResponse.addOn.name,
-          price: addOnResponse.addOn.price,
-          durationMinutes: addOnResponse.addOn.durationMinutes,
-          unit: addOnResponse.addOn.unit
+          name: addOnData.name,
+          price: finalPrice,
+          durationMinutes: addOnData.durationMinutes,
+          unit: addOnData.unit
         });
-        setAddOnDescription(addOnResponse.addOn.description || '');
-        setCurrentImageUrl(addOnResponse.addOn.imageUrl || '');
+        setAddOnDescription(addOnData.description || '');
+        setCurrentImageUrl(addOnData.imageUrl || '');
       }
     } catch (error) {
       console.error('Error fetching data:', error);
       toastService.error('Không thể tải dữ liệu: ' + error.message);
-      navigate(`/services/${serviceId}/edit`);
+      navigate(`/dashboard/services/${serviceId}/edit`);
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
@@ -165,6 +192,11 @@ const EditServiceAddOn = () => {
       setSaving(true);
       const values = await form.validateFields();
       
+      console.log('🔵 [EditServiceAddOn] Preparing to save addon');
+      console.log('🔵 [EditServiceAddOn] imageFile:', imageFile);
+      console.log('🔵 [EditServiceAddOn] imageFile type:', imageFile?.type);
+      console.log('🔵 [EditServiceAddOn] imageFile size:', imageFile?.size);
+      
       const formData = new FormData();
       formData.append('name', values.name);
       formData.append('price', values.price);
@@ -173,15 +205,34 @@ const EditServiceAddOn = () => {
       formData.append('description', addOnDescription);
       
       if (imageFile) {
-        formData.append('image', imageFile);
+        console.log('✅ [EditServiceAddOn] Appending image to FormData');
+        console.log('🔍 [EditServiceAddOn] imageFile is File instance?', imageFile instanceof File);
+        console.log('🔍 [EditServiceAddOn] imageFile is Blob instance?', imageFile instanceof Blob);
+        console.log('🔍 [EditServiceAddOn] imageFile constructor:', imageFile.constructor.name);
+        console.log('🔍 [EditServiceAddOn] imageFile keys:', Object.keys(imageFile));
+        
+        // ✅ Ensure we're appending the actual File object, not a wrapped object
+        const actualFile = imageFile.originFileObj || imageFile;
+        console.log('🔍 [EditServiceAddOn] actualFile:', actualFile.name, actualFile.type, actualFile.size);
+        
+        formData.append('image', actualFile);
+      } else {
+        console.log('⚠️ [EditServiceAddOn] No image file to upload');
       }
 
-      await servicesService.updateServiceAddOn(serviceId, addOnId, formData);
+      console.log('🔵 [EditServiceAddOn] Calling API updateServiceAddOn');
+      console.log('🔵 [EditServiceAddOn] serviceId:', serviceId, 'addonId:', addonId);
+      
+      const result = await servicesService.updateServiceAddOn(serviceId, addonId, formData);
+      
+      console.log('✅ [EditServiceAddOn] API response:', result);
+      
       setHasUnsavedChanges(false);
       clearDraft();
       toastService.success('Cập nhật tùy chọn dịch vụ thành công!');
-      navigate(`/services/${serviceId}/edit`);
+      navigate(`/dashboard/services/${serviceId}/edit`);
     } catch (error) {
+      console.error('❌ [EditServiceAddOn] Error:', error);
       toastService.error('Lỗi khi cập nhật tùy chọn dịch vụ');
     } finally {
       setSaving(false);
@@ -194,7 +245,7 @@ const EditServiceAddOn = () => {
       const confirmed = window.confirm('Bạn có thay đổi chưa được lưu. Bạn có chắc muốn rời khỏi trang?');
       if (!confirmed) return;
     }
-    navigate(`/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`);
   };
 
   if (loading) {
@@ -221,7 +272,7 @@ const EditServiceAddOn = () => {
       }}>
         <Text type="secondary">Không tìm thấy dữ liệu</Text>
         <br />
-        <Button onClick={() => navigate('/services')} style={{ marginTop: 16 }}>
+        <Button onClick={() => navigate('/dashboard/services')} style={{ marginTop: 16 }}>
           Quay lại danh sách
         </Button>
       </div>
@@ -275,12 +326,6 @@ const EditServiceAddOn = () => {
           form={form}
           layout="vertical"
           onValuesChange={handleFormChange}
-          initialValues={{
-            name: addOn?.name || '',
-            price: addOn?.price || 0,
-            durationMinutes: addOn?.durationMinutes || 30,
-            unit: addOn?.unit || 'Răng'
-          }}
         >
           <Row gutter={[16, 16]}>
             {/* Row 1: Tên tùy chọn + Giá */}
@@ -310,6 +355,7 @@ const EditServiceAddOn = () => {
                   style={{ width: '100%' }}
                   formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                   parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                  onKeyPress={preventNonNumericInput}
                 />
               </Form.Item>
             </Col>
@@ -331,6 +377,7 @@ const EditServiceAddOn = () => {
                   style={{ width: '100%' }}
                   min={1}
                   addonAfter="phút"
+                  onKeyPress={preventNonNumericInput}
                 />
               </Form.Item>
             </Col>
@@ -359,6 +406,7 @@ const EditServiceAddOn = () => {
               >
                 <Upload
                   customRequest={({ file, onSuccess }) => {
+                    console.log('🔵 [EditServiceAddOn] Image selected:', file.name, file.type, file.size);
                     setImageFile(file);
                     setHasUnsavedChanges(true);
                     
@@ -366,6 +414,7 @@ const EditServiceAddOn = () => {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                       setImagePreview(e.target.result);
+                      console.log('✅ [EditServiceAddOn] Image preview created');
                     };
                     reader.readAsDataURL(file);
                     

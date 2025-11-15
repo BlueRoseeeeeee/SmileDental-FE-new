@@ -1,0 +1,114 @@
+.booking-select-time-page {
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  margin-top: -46px;
+}
+.breadcrumb-container-booking-select-time {
+  margin-top: -5px;
+  margin-bottom: 25px;
+}
+
+.breadcrumb-container-booking-select-time a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-container-booking-select-time a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+}
+
+.main-content {
+  padding: 40px 0;
+}
+
+.booking-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.summary-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 24px;
+}
+
+.time-slot-button {
+  height: 50px;
+  border-radius: 8px;
+  border: 2px solid #d9d9d9;
+  background: white;
+  /* Transition removed for better performance */
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.time-slot-button:hover:not(:disabled) {
+  border-color: #2c5f4f;
+  color: #2c5f4f;
+  background: #e6f4f1;
+}
+
+.time-slot-button.selected {
+  border-color: #2c5f4f;
+  background: #2c5f4f;
+  color: white;
+}
+
+.time-slot-button.selected:hover {
+  border-color: #1c4a3f;
+  background: #1c4a3f;
+  color: white;
+}
+
+.time-slot-button:disabled {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  color: #999;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.time-slot-button.unavailable {
+  background: #fafafa !important;
+  border-color: #d9d9d9 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.time-slot-button.unavailable:hover {
+  background: #fafafa !important;
+  border-color: #d9d9d9 !important;
+  color: #999 !important;
+}
+
+/* ✅ NEW: Slot wrapper (div instead of button) */
+.time-slot-wrapper {
+  /* Transition removed for better performance */
+  user-select: none;
+}
+
+.time-slot-wrapper:hover:not(.unavailable) {
+  border-color: #2c5f4f !important;
+  background: #e6f4f1 !important;
+  /* Transform removed for better performance */
+  box-shadow: 0 4px 8px rgba(44, 95, 79, 0.15);
+}
+
+.time-slot-wrapper.selected {
+  box-shadow: 0 4px 12px rgba(44, 95, 79, 0.3);
+}
+
+.time-slot-wrapper.unavailable {
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .time-slot-button {
+    height: 45px;
+    font-size: 13px;
+  }
+}

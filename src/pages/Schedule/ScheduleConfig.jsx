@@ -3,26 +3,21 @@
  * Schedule Config - Trang cấu hình hệ thống lịch làm việc
  */
 import React, { useState, useEffect } from 'react';
-import { Card, Tabs, Alert, Spin, Button, Space, Typography } from 'antd';
+import { Card, Alert, Spin, Button, Space, Typography } from 'antd';
 import { 
   SettingOutlined, 
-  CalendarOutlined, 
-  ClockCircleOutlined,
   ExclamationCircleOutlined 
 } from '@ant-design/icons';
 import { scheduleConfigService } from '../../services/index.js';
 import { toast } from '../../services/toastService.js';
 import ScheduleConfigForm from '../../components/Schedule/ScheduleConfigForm.jsx';
-import HolidayManagement from './HolidayManagement.jsx';
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
 
 const ScheduleConfig = () => {
   const [loading, setLoading] = useState(true);
   const [configExists, setConfigExists] = useState(false);
   const [config, setConfig] = useState(null);
-  const [activeTab, setActiveTab] = useState('config');
 
   // Kiểm tra cấu hình tồn tại
   const checkConfigExists = async () => {
@@ -168,44 +163,15 @@ const ScheduleConfig = () => {
           Cấu hình Hệ thống
         </Title>
         <Text type="secondary">
-          Quản lý cấu hình ca làm việc và ngày nghỉ lễ
+          Quản lý cấu hình ca làm việc
         </Text>
       </div>
 
-      <Tabs 
-        activeKey={activeTab} 
-        onChange={setActiveTab}
-        type="card"
-        size="large"
-      >
-        <TabPane 
-          tab={
-            <span>
-              <ClockCircleOutlined />
-              Cấu hình Ca làm việc
-            </span>
-          } 
-          key="config"
-        >
-          <ScheduleConfigForm 
-            config={config}
-            onUpdate={handleConfigUpdate}
-            loading={loading}
-          />
-        </TabPane>
-
-        <TabPane 
-          tab={
-            <span>
-              <CalendarOutlined />
-              Quản lý Ngày nghỉ
-            </span>
-          } 
-          key="holidays"
-        >
-          <HolidayManagement />
-        </TabPane>
-      </Tabs>
+      <ScheduleConfigForm 
+        config={config}
+        onUpdate={handleConfigUpdate}
+        loading={loading}
+      />
     </div>
   );
 };

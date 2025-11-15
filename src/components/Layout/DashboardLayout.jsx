@@ -1,4 +1,4 @@
-/*
+﻿/*
 * @author: HoTram
 */
 import React, { useState } from 'react';
@@ -8,7 +8,6 @@ import {
   MenuOutlined,
   HomeOutlined,
   UserOutlined,
-  SettingOutlined,
   LogoutOutlined,
   BellOutlined,
   SearchOutlined,
@@ -23,8 +22,16 @@ import {
   MenuUnfoldOutlined,
   EnvironmentOutlined,
   MedicineBoxOutlined,
+  UserAddOutlined,
+  DollarOutlined,
+  FileDoneOutlined,
+  BarChartOutlined,
+  CloseCircleOutlined,
+  SettingOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
 import logo from '../../assets/image/smile-dental-logo.png';
 import './DashboardLayout.css';
 
@@ -43,6 +50,12 @@ const DashboardLayout = () => {
     navigate('/login');
   };
 
+  const handleRoleSwitch = (role) => {
+    localStorage.setItem('selectedRole', role);
+    navigate('/dashboard');
+    window.location.reload(); // Reload to apply new role
+  };
+
   const getRoleDisplayName = (role) => {
     const roleNames = {
       admin: 'Quản trị viên',
@@ -55,6 +68,29 @@ const DashboardLayout = () => {
     return roleNames[role] || role;
   };
 
+  // ✅ Get primary role to display based on selectedRole from login
+  const getPrimaryRole = () => {
+    const userRoles = user?.roles || (user?.role ? [user.role] : []);
+    
+    // If user has only 1 role, return it directly (no need for selectedRole)
+    if (userRoles.length === 1) {
+      return userRoles[0];
+    }
+    
+    // Priority 1: Use the role selected during login (only if it's valid)
+    const selectedRole = localStorage.getItem('selectedRole');
+    if (selectedRole && userRoles.includes(selectedRole)) {
+      return selectedRole;
+    }
+    
+    // Priority 2: Fall back to role priority if selectedRole is invalid or doesn't exist
+    const rolePriority = ['admin', 'manager', 'dentist', 'nurse', 'receptionist', 'patient'];
+    for (const role of rolePriority) {
+      if (userRoles.includes(role)) return role;
+    }
+    return userRoles[0] || 'patient';
+  };
+
   // Menu items based on user role
   const getMenuItems = () => {
     const baseItems = [
@@ -62,94 +98,183 @@ const DashboardLayout = () => {
         key: '/dashboard',
         icon: <HomeOutlined />,
         label: 'Trang chủ',
-      },
-      {
-        key: '/profile',
-        icon: <UserOutlined />,
-        label: 'Hồ sơ cá nhân',
-      },
+      }
     ];
 
     const roleBasedItems = [];
+    const addedKeys = new Set(['/dashboard']); // Track added keys to prevent duplicates
 
-    if (user?.role === 'admin' || user?.role === 'manager') {
-      roleBasedItems.push(
-        {
-          key: '/users',
-          icon: <UserSwitchOutlined />,
-          label: 'Quản lý nhân viên',
-        },
-        {
-          key: '/rooms',
-          icon: <EnvironmentOutlined />,
-          label: 'Quản lý phòng khám',
-        },
-        {
-          key: '/services',
-          icon: <MedicineBoxOutlined />,
-          label: 'Quản lý dịch vụ',
-        }
-      );
-    }
+    // ✅ Check ONLY selectedRole - user sees menu of the role they logged in as
+    const selectedRole = localStorage.getItem('selectedRole');
+    const hasRole = (roleToCheck) => selectedRole === roleToCheck;
 
-    if (user?.role === 'dentist') {
-      roleBasedItems.push(
-        {
-          key: '/certificates',
-          icon: <FileTextOutlined />,
-          label: 'Quản lý chứng chỉ',
-        }
-      );
-    }
-
-    if (user?.role === 'patient') {
-      roleBasedItems.push(
-        {
-          key: '/dentists',
-          icon: <TeamOutlined />,
-          label: 'Danh sách nha sĩ',
-        }
-      );
-    }
-
-    if (user?.role === 'dentist' || user?.role === 'nurse') {
-      roleBasedItems.push(
-        {
-          key: '/patients',
-          icon: <HeartOutlined />,
-          label: 'Quản lý bệnh nhân',
-        }
-      );
-    }
-
-    if (user?.role === 'admin' || user?.role === 'manager') {
-      roleBasedItems.push(
-        {
-          key: '/schedules',
-          icon: <ClockCircleOutlined />,
-          label: 'Quản lý lịch làm việc',
-          children: [
-            { key: '/schedules', label: 'Cấu hình hệ thống' },
-            { key: '/schedules/management', label: 'Quản lý lịch chính' },
-            { key: '/schedules/calendar', label: 'Lịch làm việc' },
-            { key: '/schedules/staff-assignment', label: 'Phân công nhân sự' },
-          ]
-        }
-      );
-    }
-
-    roleBasedItems.push(
-      {
-        key: '/appointments',
-        icon: <CalendarOutlined />,
-        label: 'Lịch hẹn',
-      },
-      {
-        key: '/settings',
-        icon: <SettingOutlined />,
-        label: 'Cài đặt',
+    // Helper function to add item only if key doesn't exist
+    const addMenuItem = (item) => {
+      if (!addedKeys.has(item.key)) {
+        addedKeys.add(item.key);
+        roleBasedItems.push(item);
       }
-    );
+    };
+
+    // ==================== ADMIN & MANAGER ====================
+    if (hasRole('admin') || hasRole('manager')) {
+      // 🧩 I. HỆ THỐNG & NHÂN SỰ
+      addMenuItem({
+        key: 'system-staff',
+        icon: <TeamOutlined />,
+        label: 'Hệ thống & Nhân sự',
+        children: [
+          { key: '/dashboard/schedules', label: 'Cấu hình hệ thống', icon: <SettingOutlined /> },
+          { key: '/dashboard/users', label: 'Quản lý nhân sự', icon: <UserSwitchOutlined /> },
+          { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined /> },
+          { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
+          { key: '/dashboard/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
+        ]
+      });
+
+      // 📅 II. LỊCH & VẬN HÀNH
+      addMenuItem({
+        key: 'schedules-operations',
+        icon: <CalendarOutlined />,
+        label: 'Lịch & Vận hành',
+        children: [
+          { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc tổng', icon: <CalendarOutlined /> },
+          { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng', icon: <CalendarOutlined /> },
+          { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ', icon: <CalendarOutlined /> },
+          { key: '/dashboard/day-closures', label: 'Lịch đóng cửa khẩn cấp', icon: <CloseCircleOutlined /> },
+        ]
+      });
+
+      // 🩺 III. KHÁM & ĐIỀU TRỊ
+      addMenuItem({
+        key: 'medical-treatment',
+        icon: <MedicineBoxOutlined />,
+        label: 'Khám & Điều trị',
+        children: [
+          { key: '/dashboard/walk-in-appointments', label: 'Lịch Walk-in', icon: <UserAddOutlined /> },
+          { key: '/dashboard/queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
+          { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
+          { key: '/dashboard/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
+          { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
+          { key: '/dashboard/cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined /> },
+          { key: '/dashboard/medicine', label: 'Danh mục thuốc', icon: <MedicineBoxOutlined /> },
+        ]
+      });
+
+      // 💰 IV. DỊCH VỤ & TÀI CHÍNH
+      addMenuItem({
+        key: 'finance',
+        icon: <DollarOutlined />,
+        label: 'Dịch vụ & Tài chính',
+        children: [
+          { key: '/dashboard/invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined /> },
+          { key: '/dashboard/payments', label: 'Quản lý thanh toán', icon: <DollarOutlined /> },
+        ]
+      });
+
+      // 📊 V. THỐNG KÊ & BÁO CÁO (New - 3 pages based on model analysis)
+      addMenuItem({
+        key: 'statistics',
+        icon: <BarChartOutlined />,
+        label: 'Thống kê & Báo cáo',
+        children: [
+          { key: '/dashboard/statistics/revenue', label: '💰 Thống kê Doanh thu', icon: <DollarOutlined /> },
+          { key: '/dashboard/statistics/booking-channels', label: '📱 Thống kê Online/Offline', icon: <CalendarOutlined /> },
+          { key: '/dashboard/statistics/clinic-utilization', label: '📊 Hiệu suất Phòng khám', icon: <LineChartOutlined /> },
+        ]
+      });
+    }
+
+    // ==================== DENTIST ====================
+    if (hasRole('dentist')) {
+      // 📅 Lịch làm việc
+      addMenuItem({
+        key: '/dashboard/schedules/calendar',
+        icon: <CalendarOutlined />,
+        label: 'Lịch làm việc',
+      });
+      
+      // 🩺 Lịch Walk-in
+      addMenuItem({
+        key: '/dashboard/walk-in-appointments',
+        icon: <UserAddOutlined />,
+        label: 'Lịch Walk-in',
+      });
+      
+      // 🩺 Hồ sơ bệnh án
+      addMenuItem({
+        key: '/dashboard/records',
+        icon: <FileDoneOutlined />,
+        label: 'Hồ sơ bệnh án',
+      });
+      
+      addMenuItem({
+        key: '/dashboard/certificates',
+        icon: <FileTextOutlined />,
+        label: 'Chứng chỉ hành nghề',
+      });
+    }
+
+    // ==================== NURSE ====================
+    if (hasRole('nurse')) {
+      // 📅 Lịch làm việc
+      addMenuItem({
+        key: '/dashboard/schedules/calendar',
+        icon: <CalendarOutlined />,
+        label: 'Lịch làm việc',
+      });
+      
+      // 🩺 Hồ sơ bệnh án
+      addMenuItem({
+        key: '/dashboard/records',
+        icon: <FileDoneOutlined />,
+        label: 'Hồ sơ bệnh án',
+      });
+    }
+
+    // ==================== RECEPTIONIST & STAFF ====================
+    if (hasRole('receptionist') || hasRole('staff')) {
+      // 🩺 Khám & Điều trị
+      addMenuItem({
+        key: 'medical-treatment-receptionist',
+        icon: <MedicineBoxOutlined />,
+        label: 'Khám & Điều trị',
+        children: [
+          { key: '/dashboard/walk-in-appointments', label: 'Lịch Walk-in', icon: <UserAddOutlined /> },
+          { key: '/dashboard/queue-receptionist', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
+          { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
+          { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
+        ]
+      });
+      
+      // � Dịch vụ & Tài chính
+      addMenuItem({
+        key: 'finance-receptionist',
+        icon: <DollarOutlined />,
+        label: 'Dịch vụ & Tài chính',
+        children: [
+          { key: '/dashboard/invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined /> },
+          { key: '/dashboard/payments', label: 'Quản lý thanh toán', icon: <DollarOutlined /> },
+        ]
+      });
+    }
+
+    // ==================== PATIENT ====================
+    if (hasRole('patient')) {
+      // 🧑‍🦷 Dành cho bệnh nhân
+      addMenuItem({
+        key: '/dentists',
+        icon: <TeamOutlined />,
+        label: 'Danh sách nha sĩ',
+      });
+    }
+
+    // ==================== COMMON ITEMS ====================
+    addMenuItem({
+      key: '/dashboard/profile',
+      icon: <UserOutlined />,
+      label: 'Hồ sơ cá nhân',
+    });
 
     return [...baseItems, ...roleBasedItems];
   };
@@ -159,20 +284,31 @@ const DashboardLayout = () => {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Hồ sơ cá nhân',
-      onClick: () => navigate('/profile'),
+      onClick: () => navigate('/dashboard/profile'),
     },
     {
       key: 'change-password',
       icon: <SafetyOutlined />,
       label: 'Đổi mật khẩu',
-      onClick: () => navigate('/change-password'),
+      onClick: () => navigate('/dashboard/change-password'),
     },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Cài đặt',
-      onClick: () => navigate('/settings'),
-    },
+    // Show role switcher only if user has multiple roles
+    ...(user?.roles && user.roles.length > 1 ? [{
+      type: 'divider',
+    }, {
+      key: 'role-switcher',
+      icon: <UserSwitchOutlined />,
+      label: 'Chuyển vai trò',
+      children: user.roles.map(role => ({
+        key: `role-${role}`,
+        label: getRoleDisplayName(role),
+        onClick: () => handleRoleSwitch(role),
+        style: {
+          fontWeight: localStorage.getItem('selectedRole') === role ? 'bold' : 'normal',
+          backgroundColor: localStorage.getItem('selectedRole') === role ? '#e6f7ff' : 'transparent',
+        }
+      }))
+    }] : []),
     {
       type: 'divider',
     },
@@ -187,7 +323,7 @@ const DashboardLayout = () => {
   const menuItems = getMenuItems();
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
       {/* Mobile Drawer */}
       <Drawer
         title="Menu"
@@ -195,11 +331,11 @@ const DashboardLayout = () => {
         onClose={() => setMobileMenuVisible(false)}
         open={mobileMenuVisible}
         width={280}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         <div style={{ padding: '16px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
           <img src={logo} alt="Smile Dental" style={{ width: '100%', height: '100%' }} />
-          <Text strong>Smile Dental</Text>
+          <h2 style={{ color: COLOR_BRAND_NAME, fontSize: '18px', fontWeight: '600', marginTop: '8px' }}>SmileCare Dental</h2>
         </div>
         <Menu
           mode="inline"
@@ -246,40 +382,36 @@ const DashboardLayout = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '100%'
+              width: '100%',
+              gap: '8px'
             }}>
               <img 
                 src={logo} 
-                alt="Smile Dental" 
+                alt="SmileCare Dental" 
                 style={{
                   width: '32px',
                   height: '32px',
-                  marginRight: '8px',
                   filter: 'drop-shadow(0 2px 4px rgba(37, 150, 190, 0.2))'
                 }}
               />
-              <Text 
-                strong 
+              <h2 
                 style={{
                   fontSize: '18px',
-                  color: '#2596be',
+                  color: COLOR_BRAND_NAME,
                   letterSpacing: '0.5px',
                   fontWeight: '600',
-                  textAlign: 'center',
-                  background: 'linear-gradient(45deg, #2596be, #40a9ff)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  margin: 0,
+                  lineHeight: '1'
                 }}
               >
-                Smile Dental
-              </Text>
+                SmileCare Dental
+              </h2>
             </div>
           )}
           {collapsed && (
             <img 
               src={logo} 
-              alt="Smile Dental" 
+              alt="SmileCare Dental" 
               style={{
                 width: '28px',
                 height: '28px',
@@ -311,7 +443,10 @@ const DashboardLayout = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           height: '64px',
-          borderBottom: '1px solid #f0f0f0'
+          borderBottom: '1px solid #f0f0f0',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100
         }}>
           {/* Left Section - Menu Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -441,7 +576,7 @@ const DashboardLayout = () => {
                     color: '#8c8c8c',
                     lineHeight: '1.2'
                   }}>
-                    {getRoleDisplayName(user?.role)}
+                    {getRoleDisplayName(getPrimaryRole())}
                   </div>
                 </div>
               </div>
@@ -453,9 +588,8 @@ const DashboardLayout = () => {
         <Content style={{ 
           margin: '24px', 
           padding: '24px', 
-          background: '#fff', 
+          background: 'transparent', 
           borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
           minHeight: 'calc(100vh - 112px)'
         }}>
           <Outlet />

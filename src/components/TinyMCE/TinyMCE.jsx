@@ -46,9 +46,9 @@ const TinyMCE = ({
 
   const apiKey = useMemo(() => {
     if (isUseSelfHost) {
-      return undefined;
+      return 'no-api-key';
     }
-    return TINYMCE_KEY;
+    return TINYMCE_KEY || 'no-api-key';
   }, [isUseSelfHost]);
 
   const handleOnChangeText = (newValue) => {

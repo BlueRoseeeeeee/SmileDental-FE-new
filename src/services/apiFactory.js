@@ -3,28 +3,37 @@
  * API Factory - Tạo axios instances cho các microservices khác nhau
  */
 import axios from 'axios';
+import { toast } from './toastService.js';
 
 // Configuration cho các microservices
 const MICROSERVICES_CONFIG = {
   auth: {
     baseURL: import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001/api',
-    timeout: 15000, // 15s 
+    timeout: 30000, // 30s
   },
   room: {
     baseURL: import.meta.env.VITE_ROOM_API_URL || 'http://localhost:3002/api',
-    timeout: 8000,  // 8s - CRUD operations nhanh
+    timeout: 30000, // 30s
   },
   service: {
     baseURL: import.meta.env.VITE_SERVICE_API_URL || 'http://localhost:3003/api',
-    timeout: 10000, // 10s - Service data có thể lớn
+    timeout: 30000, // 30s
   },
   user: {
     baseURL: import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api',
-    timeout: 12000, // 12s - User data + file upload
+    timeout: 30000, // 30s
   },
   schedule: {
     baseURL: import.meta.env.VITE_SCHEDULE_API_URL || 'http://localhost:3005/api',
-    timeout: 10000, 
+    timeout: 30000, // 30s
+  },
+  payment: {
+    baseURL: import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api',
+    timeout: 30000, // 30s
+  },
+  medicine: {
+    baseURL: import.meta.env.VITE_MEDICINE_API_URL || 'http://localhost:3009/api',
+    timeout: 30000, // 30s
   }
 };
 
@@ -51,11 +60,20 @@ const createAxiosInstance = (serviceName, config) => {
   // Request interceptor - thêm token
   instance.interceptors.request.use(
     (config) => {
-      // Trực tiếp get token từ localStorage để tránh circular dependency
+      // Get token from localStorage only
       const token = localStorage.getItem('accessToken');
+      
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      
+      // ✅ CRITICAL FIX: If sending FormData, remove Content-Type header
+      // Browser will automatically set it with correct boundary
+      if (config.data instanceof FormData) {
+        delete config.headers['Content-Type'];
+        console.log('🔧 [apiFactory] Removed Content-Type header for FormData upload');
+      }
+      
       return config;
     },
     (error) => {
@@ -69,17 +87,77 @@ const createAxiosInstance = (serviceName, config) => {
     async (error) => {
       const originalRequest = error.config;
 
-      // Handle 401 Unauthorized & 403 Forbidden (token expired/invalid)
-      if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+      // Handle 401 Unauthorized - try to refresh token first
+      if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
 
-        // Clear invalid tokens
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
+        // 🔍 DEBUG: Log 401 error details
+        const token = localStorage.getItem('accessToken');
+        const refreshToken = localStorage.getItem('refreshToken');
         
-        // Redirect to login
-        window.location.href = '/login';
+        console.error('🔴 401 Unauthorized Error:', {
+          url: originalRequest.url,
+          method: originalRequest.method,
+          hasAuthHeader: !!originalRequest.headers?.Authorization,
+          hasToken: !!token,
+          hasRefreshToken: !!refreshToken,
+          token: token?.substring(0, 20) + '...',
+          refreshToken: refreshToken?.substring(0, 20) + '...'
+        });
+
+        try {
+          // Try to refresh token
+          if (refreshToken) {
+            console.log('🔄 Attempting to refresh token...');
+            
+            // Call refresh token endpoint
+            const refreshResponse = await axios.post(
+              `${MICROSERVICES_CONFIG.auth.baseURL}/auth/refresh`,
+              { refreshToken }
+            );
+
+            if (refreshResponse.data?.accessToken) {
+              console.log('✅ Token refresh successful');
+              
+              // Save new access token to localStorage
+              localStorage.setItem('accessToken', refreshResponse.data.accessToken);
+              if (refreshResponse.data.refreshToken) {
+                localStorage.setItem('refreshToken', refreshResponse.data.refreshToken);
+              }
+              
+              // Update authorization header for the original request
+              originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
+              
+              // Retry original request with new token
+              return instance(originalRequest);
+            }
+          } else {
+            console.error('❌ No refresh token found in localStorage');
+          }
+        } catch (refreshError) {
+          console.error('❌ Token refresh failed:', refreshError.response?.data || refreshError.message);
+        }
+        
+        // Hiển thị thông báo token hết hạn
+        toast.warning('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 4000);
+        
+        // Đợi một chút để user thấy thông báo trước khi redirect
+        setTimeout(() => {
+          // Clear tokens
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          
+          // Redirect to login
+          window.location.href = '/login';
+        }, 2000); // Đợi 2 giây để user thấy thông báo
+        
+        return Promise.reject(error);
+      }
+
+      // Handle 403 Forbidden (không có quyền)
+      if (error.response?.status === 403) {
+        // Don't logout for 403 - user is authenticated but not authorized
         return Promise.reject(error);
       }
 
@@ -118,6 +196,8 @@ export const roomApi = getApiInstance('room');
 export const serviceApi = getApiInstance('service');
 export const userApi = getApiInstance('user');
 export const scheduleApi = getApiInstance('schedule');
+export const paymentApi = getApiInstance('payment');
+export const medicineApi = getApiInstance('medicine');
 
 export default {
   getApiInstance,
@@ -126,4 +206,5 @@ export default {
   serviceApi,
   userApi,
   scheduleApi,
+  medicineApi,
 };

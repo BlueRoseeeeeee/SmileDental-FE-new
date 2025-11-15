@@ -22,6 +22,9 @@ export { default as scheduleService } from './scheduleService.js';
 export { default as slotService } from './slotService.js';
 export { default as scheduleConfigService } from './scheduleConfigService.js';
 export { default as autoScheduleService } from './autoScheduleService.js';
+export { default as appointmentService } from './appointmentService.js';
+export { default as paymentService } from './paymentService.js';
+export { default as recordService } from './recordService.js';
 
 // Utilities
 export { toast } from './toastService.js';

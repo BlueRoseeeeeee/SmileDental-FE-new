@@ -39,6 +39,7 @@ import {
 import dayjs from 'dayjs';
 import { toast } from '../services/toastService';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
+import { useAuth } from '../contexts/AuthContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -47,6 +48,7 @@ const { TextArea } = AntInput;
 const EditUser = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth(); // ✅ Get current user
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -92,7 +94,8 @@ const EditUser = () => {
       
       // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
-      const response = await fetch(`http://localhost:3001/api/user/${id}?_t=${timestamp}`, {
+      const API_BASE = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_BASE}/user/${id}?_t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Cache-Control': 'no-cache',
@@ -119,18 +122,28 @@ const EditUser = () => {
         // Set form values - loại bỏ certificates khỏi form
         const { certificates, description: userDescription, ...formData } = userData;
         try {
+          // ✅ Convert role to roles array if needed
+          const rolesArray = userData.roles && userData.roles.length > 0 
+            ? userData.roles 
+            : (userData.role ? [userData.role] : []);
+          
           form.setFieldsValue({
             ...formData,
+            roles: rolesArray, // ✅ Use roles array
             dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
           });
         } catch (formError) {
           console.error('Form Set Fields Error:', formError);
           // Set basic fields if form setting fails
+          const rolesArray = userData.roles && userData.roles.length > 0 
+            ? userData.roles 
+            : (userData.role ? [userData.role] : []);
+          
           form.setFieldsValue({
             fullName: userData.fullName || '',
             email: userData.email || '',
             phone: userData.phone || '',
-            role: userData.role || '',
+            roles: rolesArray, // ✅ Use roles array
             isActive: userData.isActive !== undefined ? userData.isActive : true,
             dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
           });
@@ -139,7 +152,7 @@ const EditUser = () => {
         const errorText = await response.text();
         console.error('API Error:', response.status, errorText);
         toast.error(`Không thể tải thông tin người dùng (${response.status})`);
-        navigate('/users');
+        navigate('/dashboard/users');
       }
     } catch (error) {
       console.error('Load User Error:', error);
@@ -153,12 +166,21 @@ const EditUser = () => {
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
+      console.log('📤 Form values before processing:', values);
+      
       // Loại bỏ certificates và employeeCode khỏi dữ liệu update
-      const { certificates, employeeCode, ...updateData } = values;
+      const { certificates, employeeCode, phone, ...updateData } = values;
+      
+      // ✅ Convert field names to match backend
+      if (phone) updateData.phoneNumber = phone; // phone → phoneNumber
+      
       updateData.dateOfBirth = values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null;
       updateData.description = description;
+      
+      console.log('📤 Update data to send:', updateData);
 
-      const response = await fetch(`http://localhost:3001/api/user/${id}`, {
+      const API_BASE = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_BASE}/user/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -169,12 +191,17 @@ const EditUser = () => {
         body: JSON.stringify(updateData)
       });
 
+      console.log('📥 Response status:', response.status);
+
       if (response.ok) {
+        const responseData = await response.json();
+        console.log('✅ Update successful:', responseData);
         toast.success('Cập nhật thông tin thành công');
-        navigate('/users');
+        // ✅ Reload user data để hiển thị thông tin mới
+        await loadUser();
       } else {
         const errorData = await response.json();
-        console.error('Update User Error:', errorData);
+        console.error('❌ Update User Error:', errorData);
         
         // Ưu tiên hiển thị lỗi từ backend
         if (errorData.message) {
@@ -190,7 +217,8 @@ const EditUser = () => {
         }
       }
     } catch (error) {
-      toast.error('Lỗi khi cập nhật thông tin');
+      console.error('❌ Exception in handleSubmit:', error);
+      toast.error(`Lỗi khi cập nhật thông tin: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -217,6 +245,8 @@ const EditUser = () => {
         const userData = responseData.data || responseData.user;
         setUser(prev => ({ ...prev, avatar: userData.avatar }));
         toast.success('Cập nhật avatar thành công');
+        // ✅ Reload user data để force refresh
+        await loadUser();
       } else {
         const errorData = await response.json();
         console.error('Avatar Upload Error:', errorData);
@@ -605,7 +635,7 @@ const EditUser = () => {
             </Text>
           </div>
           <Button 
-            onClick={() => navigate('/users')}
+            onClick={() => navigate('/dashboard/users')}
             style={{ borderRadius: '8px' }}
           >
             Quay lại
@@ -725,7 +755,6 @@ const EditUser = () => {
                               prefix={<MailOutlined />}
                               placeholder="Nhập email"
                               style={{ borderRadius: '8px' }}
-                              disabled
                             />
                           </Form.Item>
                         </Col>
@@ -734,12 +763,15 @@ const EditUser = () => {
                           <Form.Item
                             name="phone"
                             label="Số điện thoại"
+                            rules={[
+                              { required: true, message: 'Vui lòng nhập số điện thoại!' },
+                              { pattern: /^0\d{9,10}$/, message: 'Số điện thoại không hợp lệ!' }
+                            ]}
                           >
                             <Input 
                               prefix={<PhoneOutlined />}
                               placeholder="Nhập số điện thoại"
                               style={{ borderRadius: '8px' }}
-                              disabled
                             />
                           </Form.Item>
                         </Col>
@@ -803,16 +835,43 @@ const EditUser = () => {
                       <Row gutter={[16, 16]}>
                         <Col xs={24} sm={12}>
                           <Form.Item
-                            name="role"
+                            name="roles"
                             label="Vai trò"
-                            rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
+                            rules={[
+                              { required: true, message: 'Vui lòng chọn ít nhất một vai trò!' },
+                              { type: 'array', min: 1, message: 'Phải có ít nhất một vai trò!' }
+                            ]}
                           >
-                            <Select placeholder="Chọn vai trò" style={{ borderRadius: '8px' }} disabled>
-                              <Option value="admin">Quản trị viên</Option>
-                              <Option value="manager">Quản lý</Option>
-                              <Option value="dentist">Nha sĩ</Option>
-                              <Option value="nurse">Y tá</Option>
-                              <Option value="receptionist">Lễ tân</Option>
+                            <Select 
+                              mode="multiple"
+                              placeholder="Chọn vai trò (có thể chọn nhiều)" 
+                              style={{ borderRadius: '8px' }}
+                              maxTagCount="responsive"
+                            >
+                              {/* ✅ Role hierarchy based on current user's permission */}
+                              {currentUser?.role === 'admin' ? (
+                                <>
+                                  {/* Admin can assign: manager, dentist, nurse, receptionist (NOT admin) */}
+                                  <Option value="manager">Quản lý</Option>
+                                  <Option value="dentist">Nha sĩ</Option>
+                                  <Option value="nurse">Y tá</Option>
+                                  <Option value="receptionist">Lễ tân</Option>
+                                </>
+                              ) : currentUser?.role === 'manager' ? (
+                                <>
+                                  {/* Manager can assign: dentist, nurse, receptionist (NOT admin, manager) */}
+                                  <Option value="dentist">Nha sĩ</Option>
+                                  <Option value="nurse">Y tá</Option>
+                                  <Option value="receptionist">Lễ tân</Option>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Fallback: should not happen */}
+                                  <Option value="dentist">Nha sĩ</Option>
+                                  <Option value="nurse">Y tá</Option>
+                                  <Option value="receptionist">Lễ tân</Option>
+                                </>
+                              )}
                             </Select>
                           </Form.Item>
                         </Col>
@@ -858,7 +917,7 @@ const EditUser = () => {
 
                       <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
                         <Button 
-                          onClick={() => navigate('/users')}
+                          onClick={() => navigate('/dashboard/users')}
                           style={{ borderRadius: '8px' }}
                         >
                           Hủy

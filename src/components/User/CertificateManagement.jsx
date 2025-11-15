@@ -50,7 +50,9 @@ const CertificateManagement = () => {
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (user?.role === 'dentist') {
+    // ✅ Check selectedRole from localStorage
+    const selectedRole = localStorage.getItem('selectedRole');
+    if (selectedRole === 'dentist' && user?._id) {
       loadCertificates();
     }
   }, [user]);
@@ -150,7 +152,10 @@ const CertificateManagement = () => {
 
   const stats = getCertificateStats();
 
-  if (user?.role !== 'dentist') {
+  // ✅ Check selectedRole from localStorage instead of user.role
+  const selectedRole = localStorage.getItem('selectedRole');
+  
+  if (selectedRole !== 'dentist') {
     return (
       <Alert
         message="Chức năng này chỉ dành cho nha sĩ"

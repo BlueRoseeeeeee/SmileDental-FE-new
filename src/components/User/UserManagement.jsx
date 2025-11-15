@@ -38,9 +38,11 @@ import {
   DeleteOutlined, 
   UserOutlined,
   EyeOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import { userService } from '../../services/userService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { canManageUsers } from '../Common/PermissionGuard.jsx';
 import SearchBar from '../Common/SearchBar.jsx';
 import { 
   searchAndFilter, 
@@ -57,6 +59,13 @@ import * as XLSX from 'xlsx';
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { Search } = Input;
+
+// Lấy từ cuối cùng (tên) từ trong fullName để sort
+const getLastName = (fullName) => {
+  if (!fullName) return '';
+  const parts = fullName.trim().split(/\s+/);
+  return parts[parts.length - 1] || '';
+};
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -80,11 +89,6 @@ const UserManagement = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
-  const [email, setEmail] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpMessage, setOtpMessage] = useState('');
-  const [localLoading, setLocalLoading] = useState(false);
-  const [formData, setFormData] = useState({}); // Lưu dữ liệu từ các steps
 
   // Toggle confirmation modal states
   const [showToggleModal, setShowToggleModal] = useState(false);
@@ -95,6 +99,16 @@ const UserManagement = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUserForDelete, setSelectedUserForDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Reset password modal states
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState(null);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [defaultPassword, setDefaultPassword] = useState('');
+  const [prevSearchTerm, setPrevSearchTerm] = useState('');
+  const [prevFilters, setPrevFilters] = useState({});
+  const [prevSortConfig, setPrevSortConfig] = useState({ field: null, order: null });
+  const [prevActiveTab, setPrevActiveTab] = useState('active');
 
   useEffect(() => {
     loadUsers();
@@ -154,8 +168,9 @@ const UserManagement = () => {
         
         // Xử lý các trường hợp đặc biệt
         if (sortConfig.field === 'fullName') {
-          aValue = a.fullName?.toLowerCase() || '';
-          bValue = b.fullName?.toLowerCase() || '';
+          // Sort theo từ cuối cùng (tên) thay vì toàn bộ fullName
+          aValue = getLastName(a.fullName || '').toLowerCase();
+          bValue = getLastName(b.fullName || '').toLowerCase();
         } else if (sortConfig.field === 'email') {
           aValue = a.email?.toLowerCase() || '';
           bValue = b.email?.toLowerCase() || '';
@@ -184,12 +199,22 @@ const UserManagement = () => {
     
     setFilteredUsers(filtered);
     
-    // Reset về page 1 khi có search/filter/sort mới để user thấy kết quả
-    if (searchTerm || Object.keys(filters).length > 0 || sortConfig.field) {
+    // Reset về page 1 chỉ khi có thay đổi trong search/filter/sort/tab, không reset khi chỉ thay đổi pagination
+    const searchChanged = searchTerm !== prevSearchTerm;
+    const filtersChanged = JSON.stringify(filters) !== JSON.stringify(prevFilters);
+    const sortChanged = sortConfig.field !== prevSortConfig.field || sortConfig.order !== prevSortConfig.order;
+    const tabChanged = activeTab !== prevActiveTab;
+    
+    if (searchChanged || filtersChanged || sortChanged || tabChanged) {
       setPagination(prev => ({
         ...prev,
         current: 1
       }));
+      // Update previous values
+      setPrevSearchTerm(searchTerm);
+      setPrevFilters(filters);
+      setPrevSortConfig(sortConfig);
+      setPrevActiveTab(activeTab);
     }
   };
 
@@ -201,7 +226,16 @@ const UserManagement = () => {
     setFilters(newFilters);
   };
 
-  const handleTableChange = (pagination, filters, sorter) => {
+  const handleTableChange = (newPagination, filters, sorter) => {
+    // Handle pagination change - cập nhật pagination mà không reset về page 1
+    if (newPagination.current !== pagination.current || newPagination.pageSize !== pagination.pageSize) {
+      setPagination(prev => ({
+        ...prev,
+        current: newPagination.current || prev.current,
+        pageSize: newPagination.pageSize || prev.pageSize
+      }));
+    }
+    
     // Handle sorting
     if (sorter && sorter.field) {
       setSortConfig({
@@ -243,9 +277,6 @@ const UserManagement = () => {
               break;
             case 'role':
               rowData['Vai trò'] = getRoleText(user.role);
-              break;
-            case 'isActive':
-              rowData['Trạng thái'] = user.isActive ? 'Đang làm việc' : 'Đã nghỉ việc';
               break;
             case 'updatedAt':
               rowData['Ngày cập nhật'] = user.updatedAt ? dayjs(user.updatedAt).format('DD/MM/YYYY HH:mm') : '';
@@ -299,9 +330,6 @@ const UserManagement = () => {
             break;
           case 'role':
             colWidths.push({ wch: 15 }); // Vai trò
-            break;
-          case 'isActive':
-            colWidths.push({ wch: 15 }); // Trạng thái
             break;
           case 'updatedAt':
             colWidths.push({ wch: 20 }); // Ngày cập nhật
@@ -361,12 +389,12 @@ const UserManagement = () => {
 
   const handleEdit = (user) => {
     // Navigate to edit page instead of opening modal
-    navigate(`/users/edit/${user._id}`);
+    navigate(`/dashboard/users/edit/${user._id}`);
   };
 
   const handleView = (user) => {
     // Navigate to detail page instead of opening modal
-    navigate(`/users/detail/${user._id}`);
+    navigate(`/dashboard/users/detail/${user._id}`);
   };
 
   // Handle show delete confirmation modal
@@ -433,17 +461,58 @@ const UserManagement = () => {
     setSelectedUserForToggle(null);
   };
 
+  // 🆕 Handle show reset password modal
+  const handleResetPassword = (user) => {
+    setSelectedUserForReset(user);
+    setShowResetPasswordModal(true);
+  };
+
+  // 🆕 Handle confirm reset password
+  const handleConfirmResetPassword = async () => {
+    if (!selectedUserForReset) return;
+    
+    try {
+      setResetPasswordLoading(true);
+      const response = await userService.resetUserPassword(selectedUserForReset._id);
+      
+      setDefaultPassword(response.defaultPassword);
+      
+      toast.success(`Đã reset mật khẩu cho "${selectedUserForReset.fullName}" thành công!`);
+      
+      // Reload users để cập nhật isFirstLogin status
+      loadUsers();
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error(error.response?.data?.message || 'Reset mật khẩu thất bại');
+      setShowResetPasswordModal(false);
+      setSelectedUserForReset(null);
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  // 🆕 Handle close reset password modal
+  const handleCloseResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setSelectedUserForReset(null);
+    setDefaultPassword('');
+  };
+
   const handleUpdate = async (values) => {
+    // ✅ Lấy tất cả form values (bao gồm cả fields từ step khác)
+    const allValues = form.getFieldsValue(true);
+    console.log('🔵 [handleUpdate] Received values from onFinish:', values);
+    console.log('🔵 [handleUpdate] All form values:', allValues);
+    
     try {
       if (selectedUser) {
         // Edit user - update profile information
-        const {...formData } = values;
+        const {...formData } = allValues;
         const updateData = {
           ...formData,
-          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null
+          dateOfBirth: allValues.dateOfBirth ? allValues.dateOfBirth.format('YYYY-MM-DD') : null,
+          specialties: allValues.specialties || [] // 🆕 Include specialties
         };
-        
-
 
         const response = await fetch(`http://localhost:3001/api/user/update/${selectedUser._id}`, {
           method: 'PUT',
@@ -462,47 +531,33 @@ const UserManagement = () => {
           return;
         }
       } else {
-        // Add new user - requires OTP verification
-        const step4Data = form.getFieldsValue();
-        // Combine data from all steps
-        const registerData = {
-          ...formData, // Dữ liệu từ step 3 đã lưu
-          ...step4Data, // Dữ liệu từ step 4
-          email: email, // Email từ step 1
-          role: step4Data.role || 'patient',
-          dateOfBirth: step4Data.dateOfBirth ? step4Data.dateOfBirth.format('YYYY-MM-DD') : formData.dateOfBirth ? formData.dateOfBirth.format('YYYY-MM-DD') : null
+        // Create new staff
+        const staffData = {
+          email: allValues.email,
+          phone: allValues.phone,
+          fullName: allValues.fullName,
+          dateOfBirth: allValues.dateOfBirth ? allValues.dateOfBirth.format('YYYY-MM-DD') : null,
+          gender: allValues.gender,
+          roles: allValues.roles || [],
+          isActive: allValues.isActive !== undefined ? allValues.isActive : true,
+          description: allValues.description || ''
         };
-        
 
-        
-        const response = await fetch('http://localhost:3001/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(registerData)
-        });
-        
-        if (response.ok) {
-          toast.success('Thêm nhân viên thành công');
-          
-          // Load lại tất cả users để có user mới
-          loadUsers();
-        } else {
-          const error = await response.json();
-          toast.error(error.message || 'Thêm nhân viên thất bại');
+        const result = await userService.createStaff(staffData);
+        if (!result.success) {
+          toast.error(result.message || 'Thêm nhân viên thất bại');
           return;
         }
+
+        toast.success('Tạo nhân viên thành công!');
+        loadUsers();
       }
       
       setModalVisible(false);
       form.resetFields();
       setCurrentStep(0);
-      setEmail('');
-      setOtpSent(false);
-      setOtpMessage('');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Thao tác thất bại');
+      toast.error(error.response?.data?.message || error.message || 'Thao tác thất bại');
     }
   };
 
@@ -519,14 +574,22 @@ const UserManagement = () => {
     const config = roleConfig[role] || { color: 'default', text: role };
     return <Tag color={config.color} style={{ fontSize: '16px' }}>{config.text}</Tag>;
   };
-
-  const getStatusTag = (isActive) => {
-    return isActive ? (
-      <Tag color="green" style={{ fontSize: '16px' }}>Đang làm việc</Tag>
-    ) : (
-      <Tag color="red" style={{ fontSize: '16px' }}>Đã nghỉ việc</Tag>
+  
+  // ✅ Render multiple roles
+  const getRolesTags = (roles) => {
+    if (!roles || !Array.isArray(roles)) {
+      return <Tag color="default">N/A</Tag>;
+    }
+    
+    return (
+      <Space size={[0, 4]} wrap>
+        {roles.map((role, index) => (
+          <span key={index}>{getRoleTag(role)}</span>
+        ))}
+      </Space>
     );
   };
+
 
   const columns = [
     {
@@ -581,16 +644,13 @@ const UserManagement = () => {
     },
     {
       title: 'Vai trò',
-      dataIndex: 'role',
-      key: 'role',
-      sorter: true,
-      render: (role) => getRoleTag(role)
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      render: (isActive) => getStatusTag(isActive)
+      dataIndex: 'roles',
+      key: 'roles',
+      render: (roles, record) => {
+        // ✅ Support both old 'role' and new 'roles'
+        const rolesToDisplay = roles || [record.role];
+        return getRolesTags(rolesToDisplay);
+      }
     },
     {
       title: 'Ngày cập nhật',
@@ -603,45 +663,71 @@ const UserManagement = () => {
       title: 'Hành động',
       key: 'actions',
       width: 150,
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="Xem chi tiết">
-            <Button 
-              type="text" 
-              icon={<EyeOutlined />}
-              onClick={() => handleView(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button 
-              type="text" 
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-            />
-          </Tooltip>
-          <Tooltip title={record.isActive ? 'Nhân viên nghỉ việc (Khóa tài khoản)' : 'Mở khóa tài khoản'}>
-            <Switch
-              size="small"
-              checked={record.isActive}
-              onChange={() => handleToggleStatus(record)}
-              checkedChildren="Mở"
-              unCheckedChildren="Khóa"
-            />
-          </Tooltip>
-          <Tooltip title="Xóa nhân viên">
-            <Button 
-              type="text" 
-              danger 
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record)}
-            />
-          </Tooltip>
-        </Space>
-      )
+      render: (_, record) => {
+        // 🆕 Task 3.5: Check permission to manage this user
+        const canManage = canManageUsers(currentUser, record);
+        
+        return (
+          <Space>
+            <Tooltip title="Xem chi tiết">
+              <Button 
+                type="text" 
+                icon={<EyeOutlined />}
+                onClick={() => handleView(record)}
+              />
+            </Tooltip>
+            <Tooltip title={canManage ? "Chỉnh sửa" : "Không có quyền chỉnh sửa"}>
+              <Button 
+                type="text" 
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+                disabled={!canManage}
+              />
+            </Tooltip>
+            <Tooltip title={canManage ? "Reset mật khẩu" : "Không có quyền reset mật khẩu"}>
+              <Button 
+                type="text" 
+                icon={<KeyOutlined />}
+                onClick={() => handleResetPassword(record)}
+                disabled={!canManage}
+                style={{ color: '#faad14' }}
+              />
+            </Tooltip>
+            <Tooltip title={
+              !canManage 
+                ? "Không có quyền thay đổi trạng thái"
+                : record.isActive 
+                  ? 'Nhân viên nghỉ việc (Khóa tài khoản)' 
+                  : 'Mở khóa tài khoản'
+            }>
+              <Switch
+                size="small"
+                checked={record.isActive}
+                onChange={() => handleToggleStatus(record)}
+                checkedChildren="Mở"
+                unCheckedChildren="Khóa"
+                disabled={!canManage}
+              />
+            </Tooltip>
+            <Tooltip title={canManage ? "Xóa nhân viên" : "Không có quyền xóa"}>
+              <Button 
+                type="text" 
+                danger 
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(record)}
+                disabled={!canManage}
+              />
+            </Tooltip>
+          </Space>
+        );
+      }
     }
   ];
 
-  if (!['admin', 'manager'].includes(currentUser?.role)) {
+  // ✅ Check selectedRole from localStorage instead of currentUser.role
+  const selectedRole = localStorage.getItem('selectedRole');
+  
+  if (!['admin', 'manager'].includes(selectedRole)) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
         <Title level={3} style={{ color: '#ff4d4f' }}>
@@ -659,7 +745,7 @@ const UserManagement = () => {
       <SearchBar
         onSearch={handleSearch}
         onFilterChange={handleFilterChange}
-        placeholder="       Tìm kiếm theo tên, email, số điện thoại, mã nhân viên..."
+        placeholder="Tìm kiếm theo tên, email, số điện thoại, mã nhân viên..."
         filters={[
           createRoleFilter()
         ]}
@@ -799,9 +885,6 @@ const UserManagement = () => {
           setModalVisible(false);
           form.resetFields();
           setCurrentStep(0);
-          setEmail('');
-          setOtpSent(false);
-          setOtpMessage('');
         }}
         footer={null}
         width={1000}
@@ -825,195 +908,54 @@ const UserManagement = () => {
               <Steps 
                 current={currentStep} 
                 items={selectedUser ? [
-
                   {
                     title: 'Thông tin cá nhân',
                     description: 'Nhập thông tin cơ bản',
                   },
                   {
                     title: 'Thông tin công việc',
-                    description: 'Vai trò, Loại công việc, Trạng thái',
+                    description: 'Vai trò, Chuyên khoa, Trạng thái',
                   }
                 ] : [
-
-                  {
-                    title: 'Xác thực Email',
-                    description: 'Nhập email để nhận mã OTP',
-                  },
-                  {
-                    title: 'Xác thực OTP',
-                    description: 'Nhập mã OTP để xác thực',
-                  },
                   {
                     title: 'Thông tin cá nhân',
                     description: 'Nhập thông tin cơ bản',
                   },
                   {
                     title: 'Thông tin công việc',
-                    description: 'Vai trò, Loại công việc, Trạng thái',
+                    description: 'Vai trò, Chuyên khoa, Trạng thái',
                   }
                 ]}
                 style={{ marginBottom: '40px' }}
               />
-
-              {/* Success Alerts */}
-              {otpSent && currentStep === 1 && (
-                <Alert
-                  message={otpMessage || "OTP đã được gửi đến email!"}
-                  type="success"
-                  showIcon
-                  icon={<CheckCircleOutlined />}
-                  style={{ marginBottom: '24px' }}
-                />
-              )}
 
               <Form
                 form={form}
                 layout="vertical"
                 onFinish={handleUpdate}
               >
-                {/* Step 1: Email Verification */}
-                {!selectedUser && currentStep === 0 && (
-                  <div>
-                    <Form.Item
-                      name="email"
-                      label="Email"
-                      rules={getAntDesignFormRules.email()}
-                    >
-                      <Input placeholder="Nhập email của nhân viên" />
-                    </Form.Item>
-
-                    <Button
-                      type="primary"
-                      onClick={async () => {
-                        const emailValue = form.getFieldValue('email');
-                        if (emailValue) {
-                          try {
-
-                            setLocalLoading(true);
-                            // Sử dụng fetch trực tiếp để tránh global loading
-                            const response = await fetch('http://localhost:3001/api/auth/send-otp-register', {
-                              method: 'POST',
-                              headers: {
-                                'Content-Type': 'application/json',
-                              },
-                              body: JSON.stringify({ email: emailValue })
-                            });
-                            
-                            if (response.ok) {
-                              const data = await response.json();
-
-                              setEmail(emailValue);
-                              setOtpMessage(data.message || 'OTP đã được gửi đến email!');
-                              setOtpSent(true);
-                              setCurrentStep(1);
-                            } else {
-                              const error = await response.json();
-                              toast.error(error.message || 'Gửi OTP thất bại!');
-                            }
-                            setLocalLoading(false);
-                          } catch (error) {
-                            console.error('Error sending OTP:', error);
-                            toast.error('Có lỗi xảy ra khi gửi OTP!');
-                            setLocalLoading(false);
-                          }
-                        }
-                      }}
-                      loading={localLoading}
-                      block
-                      style={{
-                        background: '#2596be',
-                        border: 'none',
-                        borderRadius: '8px',
-                        height: '48px'
-                      }}
-                    >
-                      {localLoading ? 'Đang gửi OTP...' : 'Gửi mã OTP'}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Step 2: OTP Verification */}
-                {!selectedUser && currentStep === 1 && (
-                  <div>
-                    <Form.Item
-                      name="otp"
-                      label="Mã OTP"
-                      rules={getAntDesignFormRules.otp()}
-                    >
-                      <Input 
-                        placeholder="Nhập 6 chữ số OTP"
-                        maxLength={6}
-                        style={{ 
-                          textAlign: 'center', 
-                          fontSize: '18px', 
-                          letterSpacing: '4px'
-                        }}
-                      />
-                    </Form.Item>
-
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      <Button
-                        type="primary"
-                        onClick={async () => {
-                          const otpValue = form.getFieldValue('otp');
-                          if (otpValue) {
-                            try {
-                              // Sử dụng fetch trực tiếp để tránh global loading
-                              const response = await fetch('http://localhost:3001/api/auth/verify-otp-register', {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({ 
-                                  email: email, 
-                                  otp: otpValue 
-                                })
-                              });
-                              
-                              if (response.ok) {
-                                setCurrentStep(2);
-                              } else {
-                                const error = await response.json();
-                                toast.error(error.message || 'Mã OTP không chính xác!');
-                              }
-                            } catch (error) {
-                              console.error('Error verifying OTP:', error);
-                              toast.error('Có lỗi xảy ra khi xác thực OTP!');
-                            }
-                          }
-                        }}
-                        block
-                        style={{
-                          background: '#2596be',
-                          border: 'none',
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
-                      >
-                        Xác thực OTP
-                      </Button>
-
-                      <Button
-                        type="default"
-                        icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(0)}
-                        block
-                        style={{
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
-                      >
-                        Quay lại
-                      </Button>
-                    </Space>
-                  </div>
-                )}
-
-                {/* Step 3: Personal Information */}
-                {currentStep === 2 && (
+                {/* 🆕 Step 1: Personal Information (was Step 3) */}
+                {currentStep === 0 && (
                   <div>
                     <Row gutter={[16, 16]}>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="email"
+                          label="Email"
+                          rules={getAntDesignFormRules.email()}
+                        >
+                          <Input placeholder="Nhập email của nhân viên" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <Form.Item
+                          name="phone"
+                          label="Số điện thoại"
+                          rules={getAntDesignFormRules.phone()}
+                        >
+                          <Input placeholder="Nhập số điện thoại" />
+                        </Form.Item>
+                      </Col>
                       <Col xs={24} sm={12}>
                         <Form.Item
                           name="fullName"
@@ -1024,15 +966,6 @@ const UserManagement = () => {
                             placeholder="Nhập họ và tên" 
                             onBlur={(e) => handleFullNameFormat(e, (field, value) => form.setFieldsValue({ [field]: value }))}
                           />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="phone"
-                          label="Số điện thoại"
-                          rules={getAntDesignFormRules.phone()}
-                        >
-                          <Input placeholder="Nhập số điện thoại" />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12}>
@@ -1058,7 +991,6 @@ const UserManagement = () => {
                             <Space direction="horizontal" size="large">
                               <Radio value="male">Nam</Radio>
                               <Radio value="female">Nữ</Radio>
-                              <Radio value="other">Khác</Radio>
                             </Space>
                           </Radio.Group>
                         </Form.Item>
@@ -1069,10 +1001,9 @@ const UserManagement = () => {
                       <Button
                         type="primary"
                         onClick={() => {
-                          // Save step 3 data before proceeding
-                          const step3Data = form.getFieldsValue(['fullName', 'phone', 'dateOfBirth', 'gender']);
-                          setFormData(prev => ({ ...prev, ...step3Data }));
-                          setCurrentStep(3);
+                          form.validateFields(['email', 'phone', 'fullName', 'dateOfBirth', 'gender'])
+                            .then(() => setCurrentStep(1))
+                            .catch((err) => console.log('Validation failed:', err));
                         }}
                         block
                         style={{
@@ -1084,42 +1015,78 @@ const UserManagement = () => {
                       >
                         Tiếp theo
                       </Button>
-
-                      <Button
-                        type="default"
-                        icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(selectedUser ? 0 : 1)}
-                        block
-                        style={{
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
-                      >
-                        Quay lại
-                      </Button>
                     </Space>
                   </div>
                 )}
 
-                {/* Step 4: Work Information */}
-                {currentStep === 3 && (
+                {/* 🆕 Step 2: Work Information (was Step 4) */}
+                {currentStep === 1 && (
                   <div>
+                    <Alert
+                      message="Lưu ý về mật khẩu"
+                      description="Mật khẩu mặc định sẽ được tự động tạo bằng mã nhân viên. Nhân viên sẽ phải đổi mật khẩu khi đăng nhập lần đầu."
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: '24px' }}
+                    />
+                    
                     <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={12}>
+                      <Col xs={24}>
                         <Form.Item
-                          name="role"
+                          name="roles"
                           label="Vai trò"
-                          rules={getAntDesignFormRules.role()}
+                          rules={[{ 
+                            required: true, 
+                            message: 'Vui lòng chọn ít nhất 1 vai trò!',
+                            type: 'array',
+                            min: 1
+                          }]}
                         >
-                          <Select placeholder="Chọn vai trò">
-                            <Option value="admin">Quản trị viên</Option>
-                            <Option value="manager">Quản lý</Option>
-                            <Option value="dentist">Nha sĩ</Option>
-                            <Option value="nurse">Y tá</Option>
-                            <Option value="receptionist">Lễ tân</Option>
+                          <Select 
+                            mode="multiple"
+                            placeholder="Chọn vai trò (có thể chọn nhiều)"
+                            maxTagCount="responsive"
+                          >
+                            {/* ✅ Role hierarchy: Admin cannot create Admin, Manager cannot create Admin/Manager */}
+                            {(() => {
+                              const selectedRole = localStorage.getItem('selectedRole');
+                              
+                              if (selectedRole === 'admin') {
+                                return (
+                                  <>
+                                    {/* Admin can create: manager, dentist, nurse, receptionist */}
+                                    <Option value="manager">Quản lý</Option>
+                                    <Option value="dentist">Nha sĩ</Option>
+                                    <Option value="nurse">Y tá</Option>
+                                    <Option value="receptionist">Lễ tân</Option>
+                                  </>
+                                );
+                              } else if (selectedRole === 'manager') {
+                                return (
+                                  <>
+                                    {/* Manager can create: dentist, nurse, receptionist */}
+                                    <Option value="dentist">Nha sĩ</Option>
+                                    <Option value="nurse">Y tá</Option>
+                                    <Option value="receptionist">Lễ tân</Option>
+                                  </>
+                                );
+                              } else {
+                                return (
+                                  <>
+                                    {/* Fallback: all roles (should not happen) */}
+                                    <Option value="admin">Quản trị viên</Option>
+                                    <Option value="manager">Quản lý</Option>
+                                    <Option value="dentist">Nha sĩ</Option>
+                                    <Option value="nurse">Y tá</Option>
+                                    <Option value="receptionist">Lễ tân</Option>
+                                  </>
+                                );
+                              }
+                            })()}
                           </Select>
                         </Form.Item>
                       </Col>
+                    
                       <Col xs={24} sm={12}>
                         <Form.Item
                           name="isActive"
@@ -1134,40 +1101,7 @@ const UserManagement = () => {
                       </Col>
                     </Row>
 
-                    {/* Password Fields */}
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="password"
-                          label="Mật khẩu"
-                          rules={getAntDesignFormRules.password()}
-                        >
-                          <Input.Password placeholder="Nhập mật khẩu (8-16 ký tự)" />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="confirmPassword"
-                          label="Xác nhận mật khẩu"
-                          dependencies={['password']}
-                          rules={[
-                            ...getAntDesignFormRules.confirmPassword(),
-                            ({ getFieldValue }) => ({
-                              validator(_, value) {
-                                if (!value || getFieldValue('password') === value) {
-                                  return Promise.resolve();
-                                }
-                                return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
-                              },
-                            }),
-                          ]}
-                        >
-                          <Input.Password placeholder="Nhập lại mật khẩu để xác nhận" />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Row gutter={[16, 16]}>
+                    {/* <Row gutter={[16, 16]}>
                       <Col xs={24}>
                         <Form.Item
                           name="description"
@@ -1177,12 +1111,13 @@ const UserManagement = () => {
                           <Input.TextArea rows={3} placeholder="Nhập mô tả..." />
                         </Form.Item>
                       </Col>
-                    </Row>
+                    </Row> */}
 
                     <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: '24px' }}>
                       <Button
                         type="primary"
                         htmlType="submit"
+                        loading={loading}
                         block
                         style={{
                           background: '#2596be',
@@ -1191,13 +1126,13 @@ const UserManagement = () => {
                           height: '48px'
                         }}
                       >
-                        {selectedUser ? 'Cập nhật' : 'Thêm mới'}
+                        {selectedUser ? 'Cập nhật' : 'Tạo nhân viên'}
                       </Button>
 
                       <Button
                         type="default"
                         icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(selectedUser ? 0 : 2)}
+                        onClick={() => setCurrentStep(0)}
                         block
                         style={{
                           borderRadius: '8px',
@@ -1216,7 +1151,7 @@ const UserManagement = () => {
       {/* Toggle Status Modal */}
       <Modal
         title={`${selectedUserForToggle?.isActive ? 'Khóa tài khoản nhân viên' : 'Mở khóa tài khoản nhân viên'}`}
-        visible={showToggleModal}
+        open={showToggleModal}
         onOk={handleConfirmToggle}
         onCancel={handleCancelToggle}
         confirmLoading={toggleLoading}
@@ -1280,10 +1215,114 @@ const UserManagement = () => {
         )}
       </Modal>
 
+      {/* Reset Password Confirmation Modal */}
+      <Modal
+        title="Reset mật khẩu về mặc định"
+        open={showResetPasswordModal}
+        onOk={defaultPassword ? handleCloseResetPasswordModal : handleConfirmResetPassword}
+        onCancel={handleCloseResetPasswordModal}
+        confirmLoading={resetPasswordLoading}
+        okText={defaultPassword ? "Đóng" : "Reset mật khẩu"}
+        cancelText={defaultPassword ? null : "Hủy bỏ"}
+        okType={defaultPassword ? "primary" : "danger"}
+        centered
+        width={550}
+        cancelButtonProps={{ style: { display: defaultPassword ? 'none' : 'inline-block' } }}
+      >
+        {selectedUserForReset && !defaultPassword && (
+          <div>
+            <p style={{ fontSize: '16px', lineHeight: '1.6' }}>
+              Bạn có chắc chắn muốn <strong style={{ color: '#faad14' }}>reset mật khẩu</strong> cho{' '}
+              <strong>{selectedUserForReset.employeeCode || selectedUserForReset.email} | {selectedUserForReset.fullName}</strong>
+              ?
+            </p>
+            
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: '#fffbe6', 
+              borderLeft: '4px solid #faad14',
+              borderRadius: '6px',
+              marginTop: '16px'
+            }}>
+              <p style={{ margin: 0, color: '#d48806', fontWeight: '500' }}>
+                 <strong>Lưu ý:</strong>
+              </p>
+              <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#d48806' }}>
+                <li>Mật khẩu sẽ được reset về giá trị mặc định</li>
+                <li>
+                  {selectedUserForReset.role === 'patient' || (selectedUserForReset.roles?.includes('patient') && selectedUserForReset.roles?.length === 1)
+                    ? 'Mật khẩu mặc định cho bệnh nhân: 12345678'
+                    : `Mật khẩu mặc định cho nhân viên: ${selectedUserForReset.employeeCode || '[Mã nhân viên]'}`
+                  }
+                </li>
+                <li>Người dùng sẽ được yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo</li>
+              </ul>
+            </div>
+          </div>
+        )}
+        
+        {defaultPassword && (
+          <div>
+            <div style={{ 
+              padding: '20px', 
+              backgroundColor: '#f6ffed', 
+              borderLeft: '4px solid #52c41a',
+              borderRadius: '6px',
+              marginBottom: '16px'
+            }}>
+              <p style={{ margin: 0, color: '#389e0d', fontWeight: '500', fontSize: '16px' }}>
+                ✓ Reset mật khẩu thành công!
+              </p>
+            </div>
+            
+            <div style={{
+              padding: '20px',
+              backgroundColor: '#fff7e6',
+              border: '2px dashed #faad14',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#595959' }}>
+                Mật khẩu mặc định của <strong>{selectedUserForReset.fullName}</strong>:
+              </p>
+              <p style={{ 
+                margin: 0, 
+                fontSize: '24px', 
+                fontWeight: 'bold',
+                color: '#fa8c16',
+                letterSpacing: '2px',
+                fontFamily: 'monospace'
+              }}>
+                {defaultPassword}
+              </p>
+              <Button
+                type="link"
+                onClick={() => {
+                  navigator.clipboard.writeText(defaultPassword);
+                  toast.success('Đã copy mật khẩu vào clipboard!');
+                }}
+                style={{ marginTop: '12px' }}
+              >
+                📋 Copy mật khẩu
+              </Button>
+            </div>
+            
+            <p style={{ 
+              marginTop: '16px', 
+              fontSize: '14px', 
+              color: '#8c8c8c',
+              textAlign: 'center'
+            }}>
+              Vui lòng thông báo mật khẩu này cho người dùng
+            </p>
+          </div>
+        )}
+      </Modal>
+
       {/* Delete Confirmation Modal */}
       <Modal
         title="Xác nhận xóa nhân viên"
-        visible={showDeleteModal}
+        open={showDeleteModal}
         onOk={handleConfirmDelete}
         onCancel={handleCancelDelete}
         confirmLoading={deleteLoading}

@@ -1,9 +1,11 @@
 /*
 * @author: HoTram
 */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext.jsx';
+import { App as AntApp } from 'antd'; // 🆕 Import App từ antd
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
+import { ToastContainer } from 'react-toastify';
 
 // Auth Components
 import Login from './components/Auth/Login.jsx';
@@ -13,21 +15,24 @@ import ProtectedRoute from './components/Auth/ProtectedRoute.jsx';
 
 // Layout
 import DashboardLayout from './components/Layout/DashboardLayout.jsx';
+import PatientLayout from './components/Layout/PatientLayout.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import HomepageLayout from './components/Layout/HomepageLayout.jsx';
 
 // Pages
 import Homepage from './pages/Homepage.jsx';
+import About from './pages/About.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Profile from './pages/Profile.jsx';
 import UserManagement from './components/User/UserManagement.jsx';
+import CertificateManagement from './components/User/CertificateManagement.jsx';
 import EditUser from './pages/EditUser.jsx';
 import DetailStaff from './pages/DetailStaff.jsx';
-import CertificateManagement from './components/User/CertificateManagement.jsx';
 import ChangePassword from './components/Auth/ChangePassword.jsx';
 import RoomList from './pages/RoomList.jsx';
-import RoomManagement from './pages/RoomManagement.jsx';
 import ServiceList from './pages/ServiceList.jsx';
 import ServiceDetails from './pages/ServiceDetails.jsx';
+import MedicineList from './pages/MedicineList.jsx';
 import AddService from './pages/AddService.jsx';
 import EditService from './pages/EditService.jsx';
 import AddServiceAddOn from './pages/AddServiceAddOn.jsx';
@@ -36,18 +41,80 @@ import PublicServiceAddOnDetail from './pages/PublicServiceAddOnDetail.jsx';
 import PublicServiceAddOns from './pages/PublicServiceAddOns.jsx';
 import PublicDentistDetail from './pages/PublicDentistDetail.jsx';
 
+// Admin - Patient Appointments Management
+import AdminPatientAppointments from './pages/Admin/PatientAppointments.jsx';
+
+// Admin - Patient Management
+import PatientManagement from './pages/Admin/PatientManagement.jsx';
+
+// Admin - Appointment Management (All appointments)
+import AppointmentManagement from './pages/Admin/AppointmentManagement.jsx';
+
+// Cash Payment & Walk-in
+import CashPaymentModal from './components/CashPayment/CashPaymentModal.jsx';
+import WalkInAppointmentForm from './components/CashPayment/WalkInAppointmentForm.jsx';
+
+// Medical Records Management
+import QueueDashboard from './pages/QueueDashboard.jsx';
+import QueueManagement from './pages/Staff/QueueManagement.jsx'; // 🔥 New Queue UI
+import StaffSchedule from './pages/Staff/StaffSchedule.jsx'; // 🔥 Staff Schedule View
+import RecordList from './pages/Records/RecordList.jsx';
+import RecordFormModal from './pages/Records/RecordFormModal.jsx';
+import PrescriptionForm from './pages/Records/PrescriptionForm.jsx';
+import RecordDetailDrawer from './pages/Records/RecordDetailDrawer.jsx';
+
+// Emergency Management
+import CancelledPatients from './pages/Emergency/CancelledPatients.jsx'; // 🚨 Day Closures History
+import CancelledPatientsList from './pages/Emergency/CancelledPatientsList.jsx'; // 📋 Cancelled Patients List
+
+// Invoice Management
+import InvoiceList from './pages/Invoices/InvoiceList.jsx';
+import InvoiceFormModal from './pages/Invoices/InvoiceFormModal.jsx';
+import InvoiceDetailDrawer from './pages/Invoices/InvoiceDetailDrawer.jsx';
+import InvoiceTemplate from './pages/Invoices/InvoiceTemplate.jsx';
+
+// Payment Management
+import PaymentList from './pages/Payment/PaymentList.jsx';
+
+// Statistics Dashboard (New - 3 pages based on model analysis)
+import RevenueStatistics from './pages/Statistics/RevenueStatistics.jsx';
+import BookingChannelStatistics from './pages/Statistics/BookingChannelStatistics.jsx';
+import ClinicUtilizationStatistics from './pages/Statistics/ClinicUtilizationStatistics.jsx';
+
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
-import HolidayManagement from './pages/Schedule/HolidayManagement.jsx';
-import ScheduleManagement from './pages/Schedule/ScheduleManagement.jsx';
+import HolidayManagementPage from './pages/Schedule/HolidayManagementPage.jsx';
 import ScheduleCalendar from './pages/Schedule/ScheduleCalendar.jsx';
 import StaffAssignment from './pages/Schedule/StaffAssignment.jsx';
+import StaffAssignmentNew from './pages/Schedule/StaffAssignmentNew.jsx';
+import StaffAssignmentDetail from './pages/Schedule/StaffAssignmentDetail.jsx';
+import AssignStaffForm from './pages/Schedule/AssignStaffForm.jsx';
+import CreateScheduleForRoom from './pages/Schedule/CreateScheduleForRoom.jsx';
+import StaffAssignmentUnified from './pages/Schedule/StaffAssignmentUnified.jsx';
+import StaffReplacement from './pages/Schedule/StaffReplacement.jsx';
+
+// Patient Pages
+import BookingSelectService from './pages/Patient/BookingSelectService.jsx';
+import BookingSelectAddOn from './pages/Patient/BookingSelectAddOn.jsx';
+import BookingSelectDentist from './pages/Patient/BookingSelectDentist.jsx';
+import BookingSelectDate from './pages/Patient/BookingSelectDate.jsx';
+import BookingSelectTime from './pages/Patient/BookingSelectTime.jsx';
+import CreateAppointment from './pages/Patient/CreateAppointment.jsx';
+import PatientHomePage from './pages/Patient/HomePage.jsx';
+import PatientProfile from './pages/Patient/PatientProfile.jsx';
+import PatientAppointments from './pages/Patient/PatientAppointments.jsx';
+import PatientRecords from './pages/Patient/PatientRecords.jsx';
+import PatientInvoices from './pages/Patient/PatientInvoices.jsx';
+import PaymentSelection from './pages/Patient/PaymentSelection.jsx';
+import PaymentResult from './pages/Patient/PaymentResult.jsx';
+import VisaPayment from './pages/Patient/VisaPayment.jsx';
+import PaymentSuccess from './pages/Patient/PaymentSuccess.jsx';
+import PaymentFailed from './pages/Patient/PaymentFailed.jsx';
 
 import { Result, Button } from 'antd';
 import { 
   HomeOutlined, 
-  LockOutlined, 
-  SettingOutlined,
+  LockOutlined,
   CalendarOutlined,
   HeartOutlined,
   TeamOutlined
@@ -84,30 +151,71 @@ const Unauthorized = () => (
   </div>
 );
 
-// Placeholder pages for development
-const Settings = () => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <SettingOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Cài đặt</h1>
-    </div>
-    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <p style={{ color: '#8c8c8c', margin: 0 }}>Trang cài đặt sẽ được phát triển ở đây...</p>
-    </div>
-  </div>
-);
+// Root redirect component
+const RootRedirect = () => {
+  const { isAuthenticated, user, loading } = useAuth();
+  
+  // Show loading for a maximum of 2 seconds, then show homepage
+  const [showHomepage, setShowHomepage] = useState(false);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHomepage(true);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (loading && !showHomepage) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        Loading...
+      </div>
+    );
+  }
+  
+  // 🎯 Redirect authenticated users based on role
+  if (isAuthenticated && user) {
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+    const isPatient = userRoles.includes('patient') && userRoles.length === 1;
+    
+    if (isPatient) {
+      return <Navigate to="/patient" replace />;
+    } else {
+      return <Navigate to="/dashboard" replace />;
+    }
+  }
+  
+  return <HomepageLayout><Homepage /></HomepageLayout>;
+};
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes - Trang chủ công khai */}
-          <Route path="/" element={
-            <HomepageLayout>
-              <Homepage />
-            </HomepageLayout>
-          } />
+    <AntApp>
+      <AuthProvider>
+        <Router>
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+          <Routes>
+          {/* Root redirect - redirect based on auth status */}
+          <Route path="/" element={<RootRedirect />} />
+          
+          {/* Public routes - Auth with HomepageLayout */}
           <Route path="/login" element={
             <HomepageLayout>
               <Login />
@@ -123,28 +231,131 @@ function App() {
               <ForgotPassword />
             </HomepageLayout>
           } />
+          
+          {/* Public Homepage */}
+          <Route path="/home" element={
+            <HomepageLayout>
+              <Homepage />
+            </HomepageLayout>
+          } />
+          
+          {/* Public About Page */}
+          <Route path="/about" element={
+            <HomepageLayout>
+              <About />
+            </HomepageLayout>
+          } />
            
-           {/* Public Service AddOns Route */}
-           <Route path="/services/pl/:serviceName/addons" element={
-             <HomepageLayout>
-               <PublicServiceAddOns />
-             </HomepageLayout>
-           } />
-           
-           {/* Public Service AddOn Detail Route */}
-           <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
-             <HomepageLayout>
-               <PublicServiceAddOnDetail />
-             </HomepageLayout>
-           } />
-           
-           {/* Dentist Detail Route - Public */}
-           <Route path="/dentist-detail/:id" element={
-             <HomepageLayout>
-               <PublicDentistDetail />
-             </HomepageLayout>
-           } />
-           
+          {/* Public Service Routes */}
+          <Route path="/services/pl/:serviceName/addons" element={
+            <HomepageLayout>
+              <PublicServiceAddOns />
+            </HomepageLayout>
+          } />
+          
+          <Route path="/services/pl/:serviceName/addons/:addOnName/detail" element={
+            <HomepageLayout>
+              <PublicServiceAddOnDetail />
+            </HomepageLayout>
+          } />
+          
+          <Route path="/dentist-detail/:id" element={
+            <HomepageLayout>
+              <PublicDentistDetail />
+            </HomepageLayout>
+          } />
+          
+          {/* Patient Public Routes with Layout */}
+          <Route path="/patient" element={<PatientLayout />}>
+            <Route index element={<PatientHomePage />} />
+            
+            {/* Patient About Page */}
+            <Route path="about" element={<About />} />
+            
+            {/* Patient Dentist Detail */}
+            <Route path="dentist-detail/:id" element={<PublicDentistDetail />} />
+            
+            {/* Patient Service Routes */}
+            <Route path="services/pl/:serviceName/addons" element={<PublicServiceAddOns />} />
+            <Route path="services/pl/:serviceName/addons/:addOnName/detail" element={<PublicServiceAddOnDetail />} />
+            
+            {/* Patient Booking Flow */}
+            <Route path="booking">
+              <Route index element={<Navigate to="/patient/booking/select-service" replace />} />
+              <Route path="select-service" element={<BookingSelectService />} />
+              <Route path="select-addon" element={<BookingSelectAddOn />} />
+              <Route path="select-dentist" element={<BookingSelectDentist />} />
+              <Route path="select-date" element={<BookingSelectDate />} />
+              <Route path="select-time" element={<BookingSelectTime />} />
+              <Route path="create-appointment" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <CreateAppointment />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+            </Route>
+            
+            {/* Payment Flow */}
+            <Route path="payment">
+              <Route path="select" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <PaymentSelection />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="result" element={
+                <ProtectedRoute>
+                  <ErrorBoundary>
+                    <PaymentResult />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="visa" element={
+                <ProtectedRoute>
+                  <VisaPayment />
+                </ProtectedRoute>
+              } />
+              <Route path="success" element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              } />
+              <Route path="failed" element={
+                <ProtectedRoute>
+                  <PaymentFailed />
+                </ProtectedRoute>
+              } />
+            </Route>
+            
+            {/* Patient Protected Routes */}
+            <Route path="profile" element={
+              <ProtectedRoute roles={['patient']}>
+                <PatientProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="change-password" element={
+              <ProtectedRoute roles={['patient']}>
+                <ChangePassword />
+              </ProtectedRoute>
+            } />
+            <Route path="appointments" element={
+              <ProtectedRoute roles={['patient']}>
+                <PatientAppointments />
+              </ProtectedRoute>
+            } />
+            <Route path="records" element={
+              <ProtectedRoute roles={['patient']}>
+                <PatientRecords />
+              </ProtectedRoute>
+            } />
+            <Route path="invoices" element={
+              <ProtectedRoute roles={['patient']}>
+                <PatientInvoices />
+              </ProtectedRoute>
+            } />
+          </Route>
           
           {/* Protected routes - Dashboard cho người đã đăng nhập */}
           <Route path="/dashboard" element={
@@ -152,225 +363,230 @@ function App() {
               <DashboardLayout />
             </ProtectedRoute>
           }>
-            {/* Default redirect cho dashboard */}
+            {/* Default redirect */}
             <Route index element={<Dashboard />} />
-          </Route>
-
-          {/* Individual protected routes outside dashboard layout */}
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Profile />} />
-          </Route>
-          
-          <Route path="/change-password" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ChangePassword />} />
-          </Route>
-          
-          {/* Admin/Manager routes */}
-          <Route path="/users" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<UserManagement />} />
-          </Route>
-          <Route path="/users/edit/:id" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<EditUser />} />
-          </Route>
-          <Route path="/users/detail/:id" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<DetailStaff />} />
-          </Route>
             
-          {/* Room Management (Admin/Manager only) */}
-          <Route path="/rooms" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<RoomList />} />
-          </Route>
-          <Route path="/rooms/:roomId" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<RoomManagement />} />
-          </Route>
-            
-          {/* Service Management (Admin/Manager only) */}
-          <Route path="/services" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ServiceList />} />
-          </Route>
-          <Route path="/services/:serviceId" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ServiceDetails />} />
-          </Route>
-          
-          {/* Edit Service (Admin/Manager only) */}
-          <Route path="/services/:serviceId/edit" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<EditService />} />
-          </Route>
-          
-          {/* Add Service (Admin/Manager only) */}
-          <Route path="/services/add" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AddService />} />
-          </Route>
-          
-          {/* Add Service Add-On (Admin/Manager only) */}
-          <Route path="/services/:serviceId/addons/add" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<AddServiceAddOn />} />
-          </Route>
-          
-          {/* Edit Service Add-On (Admin/Manager only) */}
-          <Route path="/services/:serviceId/addons/:addOnId/edit" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<EditServiceAddOn />} />
-          </Route>
-            
-          {/* Certificate Management (Dentist only) */}
-          <Route path="/certificates" element={
-            <ProtectedRoute roles={['dentist']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<CertificateManagement />} />
-          </Route>
-          
-          {/* Settings */}
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Settings />} />
-          </Route>
-            
-          {/* Placeholder routes for future development */}
-          <Route path="/appointments" element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <CalendarOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Lịch hẹn</h1>
-                </div>
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                </div>
-              </div>
+            {/* Profile */}
+            <Route path="profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
             } />
-          </Route>
             
-          <Route path="/patients" element={
-            <ProtectedRoute roles={['dentist', 'nurse']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <HeartOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Quản lý bệnh nhân</h1>
-                </div>
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                </div>
-              </div>
+            {/* Change Password */}
+            <Route path="change-password" element={<ChangePassword />} />
+            
+            {/* User Management */}
+            <Route path="users" element={<UserManagement />} />
+            <Route path="users/edit/:id" element={<EditUser />} />
+            <Route path="users/detail/:id" element={<DetailStaff />} />
+            
+            {/* Queue Dashboard */}
+            <Route path="queue" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <QueueManagement />
+              </ProtectedRoute>
             } />
-          </Route>
             
-          {/* Schedule Management (Admin/Manager only) */}
-          <Route path="/schedules" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ScheduleConfig />} />
-          </Route>
-          <Route path="/schedules/management" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ScheduleManagement />} />
-          </Route>
-          <Route path="/schedules/calendar" element={
-            <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<ScheduleCalendar />} />
-          </Route>
-          <Route path="/schedules/holidays" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<HolidayManagement />} />
-          </Route>
-          <Route path="/schedules/staff-assignment" element={
-            <ProtectedRoute roles={['admin', 'manager']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<StaffAssignment />} />
-          </Route>
+            {/* Queue Dashboard (Receptionist alias) */}
+            <Route path="queue-receptionist" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <QueueManagement />
+              </ProtectedRoute>
+            } />
             
-          <Route path="/dentists" element={
-            <ProtectedRoute roles={['patient']}>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <TeamOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
-                  <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#262626', margin: 0 }}>Danh sách nha sĩ</h1>
-                </div>
-                <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                  <p style={{ color: '#8c8c8c', margin: 0 }}>Đang phát triển...</p>
-                </div>
-              </div>
+            {/* Staff Schedule */}
+            <Route path="staff-schedule" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
+                <StaffSchedule />
+              </ProtectedRoute>
+            } />
+            
+            {/* Patient Appointments Management */}
+            <Route path="patient-appointments" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <AdminPatientAppointments />
+              </ProtectedRoute>
+            } />
+            
+            {/* Patient Appointments (Receptionist alias) */}
+            <Route path="patient-appointments-receptionist" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <AdminPatientAppointments />
+              </ProtectedRoute>
+            } />
+            
+            {/* Patient Management */}
+            <Route path="patients" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <PatientManagement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Walk-in Appointments */}
+            <Route path="walk-in-appointments" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist', 'dentist']}>
+                <WalkInAppointmentForm />
+              </ProtectedRoute>
+            } />
+            
+            {/* Medical Records */}
+            <Route path="records" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
+                <RecordList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Day Closures History (moved to Schedule menu) */}
+            <Route path="day-closures" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <CancelledPatients />
+              </ProtectedRoute>
+            } />
+            
+            {/* Cancelled Patients List */}
+            <Route path="cancelled-patients" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse', 'receptionist']}>
+                <CancelledPatientsList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Medicine Catalog */}
+            <Route path="medicine" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <MedicineList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Invoices */}
+            <Route path="invoices" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <InvoiceList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Payments */}
+            <Route path="payments" element={
+              <ProtectedRoute roles={['admin', 'manager', 'receptionist']}>
+                <PaymentList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Statistics Dashboard - New (3 pages based on model analysis) */}
+            <Route path="statistics">
+              <Route index element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <RevenueStatistics />
+                </ProtectedRoute>
+              } />
+              <Route path="revenue" element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <RevenueStatistics />
+                </ProtectedRoute>
+              } />
+              <Route path="booking-channels" element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <BookingChannelStatistics />
+                </ProtectedRoute>
+              } />
+              <Route path="clinic-utilization" element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <ClinicUtilizationStatistics />
+                </ProtectedRoute>
+              } />
+            </Route>
+            
+            {/* Room Management */}
+            <Route path="rooms" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <RoomList />
+              </ProtectedRoute>
+            } />
+            <Route path="rooms/:roomId" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <RoomList />
+              </ProtectedRoute>
+            } />
+            
+            {/* Service Management */}
+            <Route path="services" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ServiceList />
+              </ProtectedRoute>
+            } />
+            <Route path="services/add" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AddService />
+              </ProtectedRoute>
+            } />
+            <Route path="services/:serviceId" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ServiceDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="services/:serviceId/edit" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <EditService />
+              </ProtectedRoute>
+            } />
+            <Route path="services/:serviceId/addons/:addonId/edit" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <EditServiceAddOn />
+              </ProtectedRoute>
+            } />
+            <Route path="services/:serviceId/addons/add" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AddServiceAddOn />
+              </ProtectedRoute>
+            } />
+            
+            {/* Schedule Management */}
+            <Route path="schedules" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <ScheduleConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/holidays" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <HolidayManagementPage />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/create-for-room" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <CreateScheduleForRoom />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/calendar" element={
+              <ProtectedRoute roles={['admin', 'manager', 'dentist', 'nurse']}>
+                <ScheduleCalendar />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffAssignmentUnified />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment/detail" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffAssignmentDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-assignment/assign" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <AssignStaffForm />
+              </ProtectedRoute>
+            } />
+            <Route path="schedules/staff-replacement" element={
+              <ProtectedRoute roles={['admin', 'manager']}>
+                <StaffReplacement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Certificate Management */}
+            <Route path="certificates" element={
+              <ProtectedRoute roles={['dentist']}>
+                <CertificateManagement />
+              </ProtectedRoute>
             } />
           </Route>
           
@@ -380,6 +596,7 @@ function App() {
         </Routes>
       </Router>
     </AuthProvider>
+    </AntApp>
   );
 }
 

@@ -7,12 +7,24 @@ import { userApi } from './apiFactory.js';
 export const userService = {
   // Profile management - Used in Profile.jsx
   getProfile: async () => {
-    const response = await userApi.get('/user/profile');
+    const response = await userApi.get('/user/profile', {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      // ✅ Force refresh từ server
+      params: { _t: new Date().getTime() }
+    });
     return response.data;
   },
 
   updateProfile: async (userData) => {
-    const response = await userApi.put('/user/profile', userData);
+    const response = await userApi.put('/user/profile', userData, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     return response.data;
   },
 
@@ -22,8 +34,24 @@ export const userService = {
     return response.data;
   },
 
+  // Get all patients - Used in PatientManagement.jsx
+  getAllPatients: async (page = 1, limit = 1000) => {
+    const response = await userApi.get(`/user/all-patient?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
   getUserById: async (userId) => {
     const response = await userApi.get(`/user/${userId}`);
+    return response.data;
+  },
+
+  updateUser: async (userId, userData) => {
+    const response = await userApi.put(`/user/${userId}`, userData, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
     return response.data;
   },
 
@@ -43,9 +71,12 @@ export const userService = {
     const formData = new FormData();
     formData.append('avatar', file);
 
+    // ✅ Don't set Content-Type for FormData - browser will set it automatically
+    // This prevents overriding the Authorization header
     const response = await userApi.put(`/user/avatar/${userId}`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       },
     });
     return response.data;
@@ -57,11 +88,8 @@ export const userService = {
     formData.append('certificate', file);
     if (notes) formData.append('notes', notes);
 
-    const response = await userApi.post(`/user/${userId}/certificates`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // ✅ Don't set Content-Type for FormData - browser will set it automatically
+    const response = await userApi.post(`/user/${userId}/certificates`, formData);
     return response.data;
   },
 
@@ -80,6 +108,22 @@ export const userService = {
   // Public dentists API - Used in DentistsSection
   getPublicDentists: async () => {
     const response = await userApi.get('/user/public/dentists');
+    return response.data;
+  },
+
+  // 🆕 Nhiệm vụ 3.1: Create staff without OTP
+  createStaff: async (staffData) => {
+    console.log('🔵 [userService] Sending create-staff request:', staffData);
+    const response = await userApi.post('/user/create-staff', staffData);
+    console.log('✅ [userService] Create-staff response:', response.data);
+    return response.data;
+  },
+
+  // 🆕 Reset user password to default (Admin/Manager only)
+  resetUserPassword: async (userId) => {
+    console.log('🔵 [userService] Resetting password for user:', userId);
+    const response = await userApi.post(`/user/${userId}/reset-password`);
+    console.log('✅ [userService] Reset password response:', response.data);
     return response.data;
   },
 };

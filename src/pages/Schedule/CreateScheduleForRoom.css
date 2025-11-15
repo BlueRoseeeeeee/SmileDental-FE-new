@@ -1,0 +1,110 @@
+.ant-table-tbody > tr.table-row-light:hover,
+.ant-table-tbody > tr.table-row-dark:hover {
+  background-color: #f0f5ff !important;
+}
+
+.ant-table-tbody > tr.table-row-light {
+  background-color: #ffffff;
+}
+
+.ant-table-tbody > tr.table-row-dark {
+  background-color: #fafafa;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-select-focused .ant-select-selector {
+  border-color: #1890ff !important;
+}
+
+
+/* Select dropdown */
+.ant-select-dropdown {
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+
+.ant-radio-button-wrapper:hover {
+  color: rgb(52, 169, 214);
+}
+
+.ant-radio-button-wrapper-checked {
+  background: rgb(52, 169, 214) !important;
+  border-color: rgb(52, 169, 214) !important;
+  color: white !important;
+}
+
+.ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled):hover {
+  background: rgb(52, 169, 214) !important;
+  border-color: rgb(52, 169, 214) !important;
+}
+
+
+
+.ant-modal-content {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Scrollbar styling removed - using default browser scrollbar */
+
+/* Tooltip styling */
+.ant-tooltip-inner {
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .ant-card {
+    border-radius: 8px;
+  }
+  
+  .ant-table {
+    font-size: 13px;
+  }
+  
+  .ant-btn {
+    height: 36px;
+    font-size: 13px;
+  }
+}
+
+
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+/* Card hover effect */
+.ant-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Tag with icon */
+.ant-tag-has-color {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 4px 12px;
+}
+
+.create-schedule-for-holiday-btn {
+  height: 40px !important;
+  max-height: 40px !important;
+  padding: 22px !important;
+  font-weight: 500 !important;
+  font-size: 16px !important;
+}
+
+.create-schedule-for-holiday-btn:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6) !important;
+  border: 2px solid rgba(124, 80, 5, 0.6) !important;
+}

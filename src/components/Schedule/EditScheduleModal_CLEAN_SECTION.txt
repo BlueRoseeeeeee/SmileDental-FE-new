@@ -1,0 +1,112 @@
+  // 🆕 Update valid holiday dates when selected subrooms change
+  useEffect(() => {
+    const updateValidHolidayDates = async () => {
+      try {
+        const allSchedules = scheduleListData?.schedules || [];
+        
+        if (allSchedules.length === 0) {
+          setValidHolidayDates([]);
+          return;
+        }
+        
+        const firstSchedule = allSchedules[0];
+        
+        if (!firstSchedule || !firstSchedule.holidaySnapshot) {
+          setValidHolidayDates([]);
+          return;
+        }
+        
+        const allSubRooms = scheduleListData?.subRooms || [];
+        const hasSubRooms = allSubRooms.length > 0;
+        
+        // 🔥 Nếu có subroom nhưng chưa chọn → Không hiển thị ngày nào
+        if (hasSubRooms && selectedSubRoomsForOverride.length === 0) {
+          console.log('⚠️ Room có subrooms nhưng chưa chọn → Không hiển thị ngày nghỉ');
+          setValidHolidayDates([]);
+          return;
+        }
+        
+        // 🔥 Lọc schedules dựa vào subrooms đã chọn
+        let schedulesToCheck = allSchedules;
+        
+        if (hasSubRooms) {
+          // Chỉ check schedules của subrooms đã chọn
+          schedulesToCheck = allSchedules.filter(schedule => {
+            const scheduleId = schedule._id || schedule.scheduleId;
+            return selectedSubRoomsForOverride.includes(scheduleId);
+          });
+          
+          console.log(`🔍 Filtering schedules: Selected ${selectedSubRoomsForOverride.length} subrooms → ${schedulesToCheck.length} schedules to check`);
+        }
+        
+        if (schedulesToCheck.length === 0) {
+          setValidHolidayDates([]);
+          return;
+        }
+        
+        // 🆕 LOGIC: Chỉ hiển thị ngày nếu CÒN ÍT NHẤT 1 CA chưa override trong CÁC SCHEDULES ĐÃ CHỌN
+        const dateShiftsStatus = new Map();
+        
+        schedulesToCheck.forEach(schedule => {
+          const schedDaysOff = schedule.holidaySnapshot?.computedDaysOff || [];
+          
+          schedDaysOff.forEach(dayOff => {
+            const dateStr = dayOff.date;
+            
+            if (!dateShiftsStatus.has(dateStr)) {
+              dateShiftsStatus.set(dateStr, {
+                morning: new Set(),
+                afternoon: new Set(),
+                evening: new Set()
+              });
+            }
+            
+            const shifts = dateShiftsStatus.get(dateStr);
+            
+            // Check từng ca: Nếu chưa override trong schedule này → Thêm scheduleId vào Set
+            if (dayOff.shifts?.morning && !dayOff.shifts.morning.isOverridden) {
+              shifts.morning.add(schedule._id || schedule.scheduleId);
+            }
+            if (dayOff.shifts?.afternoon && !dayOff.shifts.afternoon.isOverridden) {
+              shifts.afternoon.add(schedule._id || schedule.scheduleId);
+            }
+            if (dayOff.shifts?.evening && !dayOff.shifts.evening.isOverridden) {
+              shifts.evening.add(schedule._id || schedule.scheduleId);
+            }
+          });
+        });
+        
+        // Lọc ngày: Chỉ giữ ngày nếu CÒN ÍT NHẤT 1 CA chưa override ở ÍT NHẤT 1 schedule đã chọn
+        const validDates = Array.from(dateShiftsStatus.entries())
+          .filter(([dateStr, shifts]) => {
+            const hasAvailableShift = 
+              shifts.morning.size > 0 || 
+              shifts.afternoon.size > 0 || 
+              shifts.evening.size > 0;
+            return hasAvailableShift;
+          })
+          .map(([dateStr]) => dateStr)
+          .sort();
+        
+        console.log(`📅 Valid holiday dates (còn ít nhất 1 ca chưa override trong ${schedulesToCheck.length} schedules đã chọn):`, validDates);
+        
+        setValidHolidayDates(validDates);
+        
+        // 🔥 Nếu ngày đang chọn không còn valid → Clear selection
+        if (overrideDate && !validDates.includes(overrideDate.format('YYYY-MM-DD'))) {
+          console.log('⚠️ Ngày đang chọn không còn available → Clear selection');
+          setOverrideDate(null);
+          setAvailableShiftsInfo(null);
+        }
+        
+      } catch (error) {
+        console.error('Error updating valid holiday dates:', error);
+        setValidHolidayDates([]);
+      }
+    };
+
+    // Chỉ update nếu modal đang mở
+    if (visible && scheduleListData) {
+      updateValidHolidayDates();
+    }
+  }, [visible, scheduleListData, selectedSubRoomsForOverride, overrideDate]);

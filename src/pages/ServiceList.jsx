@@ -28,7 +28,7 @@ import {
   EditOutlined,
   DeleteOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
 import { searchAndFilter, debounce } from '../utils/searchUtils';
 
@@ -36,13 +36,13 @@ const { Title, Text } = Typography;
 
 const ServiceList = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
-    showSizeChanger: true,
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
   });
@@ -109,7 +109,13 @@ const ServiceList = () => {
   const loadServices = async (page = 1, limit = 10) => {
     setLoading(true);
     try {
-      const response = await servicesService.getServices(page, limit);
+      //  Khi tìm kiếm HOẶC lọc, tải TẤT CẢ dịch vụ để có thể tìm/lọc trên tất cả các trang
+      const shouldFetchAll = searchTerm.trim() !== '' || typeFilter !== '';
+      
+      const response = await servicesService.getServices(
+        shouldFetchAll ? 1 : page, 
+        shouldFetchAll ? 9999 : limit
+      );
       setServices(response.services || []);
       setPagination(prev => ({
         ...prev,
@@ -125,8 +131,26 @@ const ServiceList = () => {
   };
 
   useEffect(() => {
-    loadServices();
-  }, []);
+    loadServices(pagination.current, 10); 
+  }, [searchTerm, typeFilter]); // Tải lại khi từ khóa tìm kiếm HOẶC bộ lọc loại thay đổi
+
+  // Reload services when pagination changes (page only, pageSize is fixed at 10)
+  // Chỉ tải từ API khi KHÔNG có filter. Khi có filter, phân trang được xử lý ở client-side
+  useEffect(() => {
+    if (!searchTerm && !typeFilter) {
+      loadServices(pagination.current, 10);
+    }
+  }, [pagination.current]);
+
+  // 🆕 Reload data when navigating back from add/edit page
+  useEffect(() => {
+    if (location.state?.reload) {
+      
+      loadServices(pagination.current, 10);
+      // Clear the state to prevent reload on subsequent renders
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   // Handle search 
   const handleSearch = (value) => {
@@ -150,7 +174,7 @@ const ServiceList = () => {
       toastService.success(`Đã ${newStatus} dịch vụ "${selectedService.name}" thành công!`);
       
       // Reload data để cập nhật UI
-      loadServices(pagination.current, pagination.pageSize);
+      loadServices(pagination.current, 10); 
     } catch (error) {
       toastService.error('Lỗi khi cập nhật trạng thái!');
     } finally {
@@ -168,7 +192,7 @@ const ServiceList = () => {
 
   // Handle edit service
   const handleEditService = (serviceId) => {
-    navigate(`/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`);
   };
 
   // Handle show delete confirmation modal
@@ -187,7 +211,7 @@ const ServiceList = () => {
       toastService.success(response.message || `Đã xóa dịch vụ "${selectedServiceForDelete.name}" thành công`);
       
       // Reload data để cập nhật UI
-      loadServices(pagination.current, pagination.pageSize);
+      loadServices(pagination.current, 10);
     } catch (error) {
       toastService.error('Lỗi khi xóa dịch vụ: ' + (error.response?.data?.message || error.message));
     } finally {
@@ -212,13 +236,14 @@ const ServiceList = () => {
     return typeMap[type] || type;
   };
 
-  // Hiển thị giá addon
+  // 🆕 Hiển thị giá addon với effective price
   const getAddOnPriceRange = (addOns) => {
     if (!addOns || addOns.length === 0) return null;
     const activeAddOns = addOns.filter(addon => addon.isActive);
     if (activeAddOns.length === 0) return null;
     
-    const prices = activeAddOns.map(addon => addon.price);
+    // 🆕 Use effectivePrice if available, fallback to price
+    const prices = activeAddOns.map(addon => addon.effectivePrice || addon.basePrice);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     
@@ -249,42 +274,35 @@ const ServiceList = () => {
         </Text>
       ),
     },
-    {
-      title: 'Thời gian',
-      dataIndex: 'durationMinutes',
-      key: 'durationMinutes',
-      width: 100,
-      sorter: (a, b) => a.durationMinutes - b.durationMinutes,
-      sortDirections: ['ascend', 'descend'],
-      render: (minutes) => (
-        <Tag color="blue">
-          {minutes} phút
-        </Tag>
-      ),
-    },
+    // {
+    //   title: 'Thời gian',
+    //   dataIndex: 'durationMinutes',
+    //   key: 'durationMinutes',
+    //   width: 100,
+    //   render: (minutes) => (
+    //     <Tag color="blue">
+    //       {minutes} phút
+    //     </Tag>
+    //   ),
+    // },
     {
       title: 'Giá dịch vụ',
       dataIndex: 'serviceAddOns',
       key: 'price',
-      width: 150,
-      sorter: (a, b) => {
-        const getMinPrice = (addOns) => {
-          if (!addOns || addOns.length === 0) return 0;
-          const activeAddOns = addOns.filter(addon => addon.isActive);
-          if (activeAddOns.length === 0) return 0;
-          return Math.min(...activeAddOns.map(addon => addon.price));
-        };
-        return getMinPrice(a.serviceAddOns) - getMinPrice(b.serviceAddOns);
-      },
-      sortDirections: ['ascend', 'descend'],
+      width: 180,
       render: (addOns) => {
         const priceRange = getAddOnPriceRange(addOns);
-        return priceRange ? (
-          <Text strong style={{ color: '#52c41a' }}>
-            {priceRange}
-          </Text>
-        ) : (
-          <Text type="secondary">Liên hệ</Text>
+        
+        return (
+          <div>
+            {priceRange ? (
+              <Text strong style={{ color: '#52c41a' }}>
+                {priceRange}
+              </Text>
+            ) : (
+              <Text type="secondary">Liên hệ</Text>
+            )}
+          </div>
         );
       },
     },
@@ -298,19 +316,6 @@ const ServiceList = () => {
       render: (type) => (
         <Tag color="green">
           {translateServiceType(type)}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 120,
-      sorter: (a, b) => a.isActive - b.isActive,
-      sortDirections: ['ascend', 'descend'],
-      render: (isActive) => (
-        <Tag color={isActive ? 'green' : 'red'}>
-          {isActive ? 'Hoạt động' : 'Ngưng hoạt động'}
         </Tag>
       ),
     },
@@ -403,7 +408,7 @@ const ServiceList = () => {
           </Col>
           <Col xs={24} md={8}>
             <div>
-              <Text style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Lọc theo loại</Text>
+              <Text style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Lọc theo loại dịch vụ</Text>
               <Select
                 placeholder="Chọn loại dịch vụ"
                 allowClear
@@ -432,7 +437,7 @@ const ServiceList = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/services/add')}
+            onClick={() => navigate('/dashboard/services/add')}
           >
             Thêm dịch vụ
           </Button>
@@ -448,24 +453,41 @@ const ServiceList = () => {
               children: (
                 <Table
                   columns={columns}
-                  dataSource={filteredServices}
+                  dataSource={
+                    // Khi có filter, chỉ hiển thị 10 items mỗi trang từ filteredServices
+                    (searchTerm || typeFilter) 
+                      ? filteredServices.slice((pagination.current - 1) * 10, pagination.current * 10)
+                      : filteredServices
+                  }
                   rowKey="_id"
                   loading={loading}
                   pagination={
                     (searchTerm || typeFilter) 
-                      ? false 
-                      : {
+                      ? {
+                          // Phân trang phía client cho kết quả đã lọc
                           current: pagination.current,
-                          pageSize: pagination.pageSize,
+                          pageSize: 10,
                           total: filteredServices.length,
-                          showSizeChanger: true,
                           showQuickJumper: true,
                           showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
-                          onChange: (page, pageSize) => {
+                          onChange: (page) => {
                             setPagination(prev => ({
                               ...prev,
-                              current: page,
-                              pageSize: pageSize || 10
+                              current: page
+                            }));
+                          }
+                        }
+                      : {
+                          // Phân trang phía server khi không có filter
+                          current: pagination.current,
+                          pageSize: 10, 
+                          total: pagination.total, 
+                          showQuickJumper: true,
+                          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
+                          onChange: (page) => {
+                            setPagination(prev => ({
+                              ...prev,
+                              current: page
                             }));
                           }
                         }
@@ -481,24 +503,41 @@ const ServiceList = () => {
               children: (
                 <Table
                   columns={columns}
-                  dataSource={filteredServices}
+                  dataSource={
+                    // Khi có filter, chỉ hiển thị 10 items mỗi trang từ filteredServices
+                    (searchTerm || typeFilter) 
+                      ? filteredServices.slice((pagination.current - 1) * 10, pagination.current * 10)
+                      : filteredServices
+                  }
                   rowKey="_id"
                   loading={loading}
                   pagination={
                     (searchTerm || typeFilter) 
-                      ? false 
-                      : {
+                      ? {
+                          // Phân trang phía client cho kết quả đã lọc
                           current: pagination.current,
-                          pageSize: pagination.pageSize,
+                          pageSize: 10,
                           total: filteredServices.length,
-                          showSizeChanger: true,
                           showQuickJumper: true,
                           showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
-                          onChange: (page, pageSize) => {
+                          onChange: (page) => {
                             setPagination(prev => ({
                               ...prev,
-                              current: page,
-                              pageSize: pageSize || 10
+                              current: page
+                            }));
+                          }
+                        }
+                      : {
+                          // Phân trang phía server khi không có filter
+                          current: pagination.current,
+                          pageSize: 10,
+                          total: pagination.total, 
+                          showQuickJumper: true,
+                          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
+                          onChange: (page) => {
+                            setPagination(prev => ({
+                              ...prev,
+                              current: page
                             }));
                           }
                         }

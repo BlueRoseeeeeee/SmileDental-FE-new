@@ -3,7 +3,7 @@
 */
 import React, { useState, useEffect } from 'react';
 import { Input, Select, Row, Col, Card } from 'antd';
-import { FilterOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -57,7 +57,7 @@ const SearchBar = ({
         border: '1px solid #f0f0f0',
         ...cardStyle
       }}
-      bodyStyle={{ padding: '20px 24px' }}
+      styles={{ body: { padding: '20px 24px' } }}
     >
       <Row gutter={[20, 16]} align="middle">
         {/* Search Input */}
@@ -75,49 +75,25 @@ const SearchBar = ({
               Tìm kiếm
             </div>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-              <div style={{ position: 'relative', width: '100%' }}>
-                <div style={{
-                  position: 'absolute',
-                  left: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  zIndex: 1,
-                  color: '#2596be',
-                  fontSize: '16px'
-                }}>
-                  <SearchOutlined />
-                </div>
-                <Input
-                  placeholder={placeholder}
-                  value={localSearchValue}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setLocalSearchValue(value);
-                    if (value === '') {
-                      handleSearch('');
-                    }
-                  }}
-                  onPressEnter={(e) => handleSearch(e.target.value)}
-                  onClear={handleClear}
-                  allowClear
-                  style={{ 
-                    width: '100%',
-                    borderRadius: '8px',
-                    paddingLeft: '40px',
-                    height: size === 'large' ? '40px' : '32px',
-                    border: '2px solid #e8e8e8',
-                    fontSize: '14px',
-                    ...style
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = '#2596be';
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = '#e8e8e8';
-                  }}
-                  loading={loading}
-                />
-              </div>
+              <Input
+                placeholder={placeholder}
+                prefix={<SearchOutlined />}
+                value={localSearchValue}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setLocalSearchValue(value);
+                  if (value === '') {
+                    handleSearch('');
+                  }
+                }}
+                onPressEnter={(e) => handleSearch(e.target.value)}
+                onClear={handleClear}
+                allowClear
+                style={{ 
+                  width: '100%',
+                  ...style
+                }}
+              />
             </div>
           </div>
         </Col>
@@ -139,16 +115,13 @@ const SearchBar = ({
               </div>
               <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                 <Select
-                  style={{ 
-                    width: '100%',
-                    borderRadius: '8px'
-                  }}
+                  mode={filter.multiple ? "multiple" : undefined}
+                  style={{ width: '100%' }}
                   value={localFilterValues[filter.key]}
                   onChange={(value) => handleFilterChange(filter.key, value)}
                   allowClear
-                  size={size}
-                  suffixIcon={<FilterOutlined style={{ color: '#2596be' }} />}
                   placeholder={filter.placeholder}
+                  maxTagCount={filter.multiple ? 'responsive' : undefined}
                   onClear={() => {
                     const newFilterValues = { ...localFilterValues };
                     delete newFilterValues[filter.key];

@@ -1,0 +1,25 @@
+.patient-profile-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.profile-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.avatar-section {
+  padding: 24px;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.ant-form-item-label > label {
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .avatar-section {
+    padding: 16px;
+  }
+}

@@ -1,0 +1,20 @@
+.payment-selection-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.payment-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.ant-radio-wrapper {
+  margin-right: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .payment-selection-container {
+    padding: 16px;
+  }
+}

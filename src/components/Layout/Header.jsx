@@ -13,6 +13,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { servicesService } from '../../services/servicesService';
+import { COLOR_BRAND_NAME } from '../../utils/common-colors';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -33,7 +34,7 @@ const Header = () => {
       const response = await servicesService.getServices(1, 100);
       setServices(response.services || []);
     } catch (error) {
-      console.error('Error loading services:', error);
+      setServices([]);
     }
   };
 
@@ -67,12 +68,12 @@ const Header = () => {
   ];
 
   const getServicesMenuItems = () => {
-    return services
-      .filter(service => service.isActive)
-      .map(service => ({
-        key: `/services/pl/${encodeURIComponent(service.name)}/addons`,
-        label: service.name
-      }));
+    const activeServices = services.filter(service => service.isActive);
+    const menuItems = activeServices.map(service => ({
+      key: `/services/pl/${encodeURIComponent(service.name)}/addons`,
+      label: service.name
+    }));
+    return menuItems;
   };
 
   // Menu items based on authentication status
@@ -87,10 +88,21 @@ const Header = () => {
         {
           key: '/dashboard',
           label: 'Dashboard'
-        }
+        },
       ];
     } else {
       // Menu for non-authenticated users
+      const serviceItems = getServicesMenuItems();
+      const servicesMenuItem = {
+        key: '/services',
+        label: 'Dịch vụ'
+      };
+      
+      // Chỉ thêm children nếu có services active
+      if (serviceItems.length > 0) {
+        servicesMenuItem.children = serviceItems;
+      }
+      
       return [
         {
           key: '/',
@@ -100,23 +112,7 @@ const Header = () => {
           key: '/about',
           label: 'Giới thiệu'
         },
-        {
-          key: '/pricing',
-          label: 'Bảng giá'
-        },
-        {
-          key: '/services',
-          label: 'Dịch vụ',
-          children: getServicesMenuItems()
-        },
-        {
-          key: '/knowledge',
-          label: 'Kiến thức nha khoa'
-        },
-        {
-          key: '/contact',
-          label: 'Liên hệ'
-        }
+        servicesMenuItem
       ];
     }
   };
@@ -129,11 +125,108 @@ const Header = () => {
   return (
     <>
       <style>{`
+        /*alignment for all menu items */
+        .ant-menu-horizontal {
+          border-bottom: none !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item,
+        .ant-menu-horizontal > .ant-menu-submenu {
+          height: 100px !important;
+          line-height: 100px !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          top: 0 !important;
+        }
+        
+        .ant-menu-horizontal > .ant-menu-item > span,
+        .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title {
+          height: 100px !important;
+          line-height: 100px !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          vertical-align: middle !important;
+          padding: 0 20px !important;
+          margin: 0 !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title > span {
+          display: inline-flex !important;
+          align-items: center !important;
+          vertical-align: middle !important;
+        }
+
+        /* Fix icon alignment in submenu */
+        .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title .ant-menu-submenu-arrow {
+          margin-top: 0 !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item::after,
+        .ant-menu-horizontal > .ant-menu-submenu::after {
+          display: none !important;
+        }
+
+        /* Replace selected background with underline */
+        .ant-menu-horizontal > .ant-menu-item-selected,
+        .ant-menu-horizontal > .ant-menu-submenu-selected {
+          background: transparent !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item-selected > span,
+        .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title,
+        .ant-menu-horizontal > .ant-menu-item-selected,
+        .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title {
+          background: transparent !important;
+          position: relative !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item-selected > span::after,
+        .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title::after {
+          content: '' !important;
+          position: absolute !important;
+          bottom: 0 !important;
+          left: 15px !important;
+          right: 15px !important;
+          height: 3px !important;
+          background: rgb(49, 59, 121) !important;
+          
+        }
+
+        .ant-menu-horizontal > .ant-menu-item:hover,
+        .ant-menu-horizontal > .ant-menu-submenu:hover {
+          background: transparent !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item:hover > span,
+        .ant-menu-horizontal > .ant-menu-submenu:hover > .ant-menu-submenu-title {
+          background: transparent !important;
+        }
+
+        /* Ensure menu items have visible text */
+        .ant-menu-horizontal > .ant-menu-item,
+        .ant-menu-horizontal > .ant-menu-submenu > .ant-menu-submenu-title {
+          color: #333 !important;
+        }
+
+        .ant-menu-horizontal > .ant-menu-item-selected,
+        .ant-menu-horizontal > .ant-menu-submenu-selected > .ant-menu-submenu-title {
+          color: rgb(49, 59, 121) !important;
+        }
+
+        .services-dropdown {
+          z-index: 10001 !important;
+        }
+        .services-dropdown .ant-menu-submenu-popup {
+          z-index: 10001 !important;
+        }
         .services-dropdown .ant-menu-submenu-popup .ant-menu {
           background: #ffffff !important;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
           border-radius: 6px !important;
           min-width: 200px !important;
+          z-index: 10001 !important;
         }
         .services-dropdown .ant-menu-submenu-popup .ant-menu .ant-menu-item {
           color: #333 !important;
@@ -179,11 +272,13 @@ const Header = () => {
               marginRight: '12px'
             }}
           />
-          <div>
-            <Text strong style={{ fontSize: '20px', color: '#2596be' }}>
-              SMILE DENTAL
-            </Text>
+          <div style={{display:'flex', flexDirection:'column', marginRight: '50px', marginTop:'15px',maxWidth:'150px'}}>
+            <h3 style={{color: COLOR_BRAND_NAME , fontSize: '22px', fontWeight: 'bold', marginBottom: '0'}}>
+              SmileCare
+            </h3>
+            <h3 style={{color: COLOR_BRAND_NAME, fontSize: '20px', fontWeight: 'bold', textAlign:'right'}}> Dental</h3>
           </div>
+          
         </div>
 
         {/* Desktop Menu */}

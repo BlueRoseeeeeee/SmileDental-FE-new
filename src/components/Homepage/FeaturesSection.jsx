@@ -78,7 +78,7 @@ const FeaturesSection = () => {
             fontWeight: '700',
             margin: 0
           }}>
-            Tại sao chọn SmileDental?
+            Tại sao chọn SmileCare Dental?
           </h3>
         </div>
         

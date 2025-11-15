@@ -1,0 +1,98 @@
+.booking-select-service-page {
+  min-height: 100vh;
+}
+
+.breadcrumb-container-booking-select-service {
+  margin-top: -50px;
+  margin-bottom: 20px;
+  display: flex;
+}
+
+.breadcrumb-container-booking-select-service a {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-container-booking-select-service a:hover {
+  color: rgb(24, 144, 255);
+  text-decoration: none;
+}
+
+.main-content {
+  padding: 40px 0;
+}
+
+.booking-select-service-page .container {
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+.booking-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: #E8F2F7;
+}
+
+.booking-card-header{
+  background-color: #2596BE;
+  padding: 4px;
+  border-radius: 12px 12px 0 0;
+  margin-bottom: 15px;
+  color:white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 50px;
+  font-weight: bold;
+}
+.booking-card-header h5{
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.service-item-card {
+  border-radius: 8px;
+  border: 2px solid #f0f0f0;
+  /* Transition removed for better performance */
+}
+
+.service-item-card:hover {
+  border-color: #2c5f4f;
+  box-shadow: 0 4px 12px rgba(44, 95, 79, 0.15);
+}
+
+.service-item-card:hover h5 {
+  color: #313b79 !important;
+  transition: color 0.2s ease;
+}
+
+/* Custom scrollbar for service list - Nhỏ lại */
+.booking-select-service-page ::-webkit-scrollbar {
+  width: 6px;
+  height: 10px;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.booking-select-service-page ::-webkit-scrollbar-thumb:hover {
+  background: #bfbfbf;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 20px 0;
+  }
+  
+  .service-item-card .ant-card-body {
+    padding: 16px;
+  }
+}
