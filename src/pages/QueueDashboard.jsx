@@ -79,7 +79,7 @@ const QueueDashboard = () => {
     // 1. APPOINTMENT SERVICE (port 3006) - for appointment updates (check-in, cancel)
     // 2. RECORD SERVICE (port 3010) - for record updates (in-progress, completed)
     
-    const APPOINTMENT_SERVICE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    const APPOINTMENT_SERVICE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3006';
     const RECORD_SERVICE_URL = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010';
     
     // Socket 1: Appointment Service

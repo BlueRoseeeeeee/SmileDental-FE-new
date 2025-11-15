@@ -1,6 +1,7 @@
 /*
 * @author: HoTram
 */
+import './test-env.js' // DEBUG: Test env vars
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ConfigProvider } from 'antd'

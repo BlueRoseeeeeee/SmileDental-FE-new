@@ -82,7 +82,8 @@ const PaymentSelection = () => {
         console.log('🔵 [Payment Selection] Request body:', requestBody);
         
         // Call payment service to create VNPay URL
-        const response = await fetch('http://localhost:3007/api/payments/vnpay/create-url', {
+        const PAYMENT_API = import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api';
+        const response = await fetch(`${PAYMENT_API}/payments/vnpay/create-url`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

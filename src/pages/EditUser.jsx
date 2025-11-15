@@ -94,7 +94,8 @@ const EditUser = () => {
       
       // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
-      const response = await fetch(`http://localhost:3001/api/user/${id}?_t=${timestamp}`, {
+      const API_BASE = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_BASE}/user/${id}?_t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Cache-Control': 'no-cache',
@@ -178,7 +179,8 @@ const EditUser = () => {
       
       console.log('📤 Update data to send:', updateData);
 
-      const response = await fetch(`http://localhost:3001/api/user/${id}`, {
+      const API_BASE = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${API_BASE}/user/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
