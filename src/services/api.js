@@ -1,10 +1,11 @@
 /*
  * Compatibility API wrapper
  * Many legacy services import './api' — create a small default axios instance
- * Uses VITE_STATISTIC_API_URL for statistics endpoints
+ * HARDCODED to production backend
  */
 import axios from 'axios';
 
+// ⚠️ HARDCODED - Directly pointing to production backend
 const API_BASE_URL = 'https://be.smilecare.io.vn/api';
 
 const api = axios.create({
@@ -14,6 +15,9 @@ const api = axios.create({
   },
   timeout: 30000 // 30s
 });
+
+// Log để debug
+console.log('🔧 [API Config] Hardcoded baseURL:', API_BASE_URL);
 
 // Request interceptor: add token if present in localStorage
 api.interceptors.request.use(
