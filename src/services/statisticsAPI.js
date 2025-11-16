@@ -265,11 +265,7 @@ export const getRevenueStatistics = async (params = {}) => {
     if (serviceId) queryParams.append('serviceId', serviceId);
     
     // Call real backend API
-<<<<<<< HEAD
-    const response = await api.get(`/statistics/revenue?${queryParams.toString()}`);
-=======
     const response = await statisticApi.get(`/statistics/revenue?${queryParams.toString()}`);
->>>>>>> develop
     
     if (!response.data.success) {
       throw new Error(response.data.message || 'Không thể lấy thống kê doanh thu');
@@ -397,11 +393,7 @@ export const getBookingChannelStatistics = async (params = {}) => {
       groupBy
     });
 
-<<<<<<< HEAD
-    const response = await api.get(`/appointments/booking-channel-stats?${queryParams.toString()}`);
-=======
     const response = await appointmentApi.get(`/appointments/booking-channel-stats?${queryParams.toString()}`);
->>>>>>> develop
 
     if (!response.data.success) {
       throw new Error(response.data.message || 'Không thể lấy thống kê kênh đặt hẹn');
