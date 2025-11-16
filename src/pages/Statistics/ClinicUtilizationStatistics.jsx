@@ -105,7 +105,7 @@ const ClinicUtilizationStatistics = () => {
     fetchRooms();
   }, []);
 
-  // Auto-select bookable rooms (không auto-fetch)
+  //(không auto-fetch)
   useEffect(() => {
     if (roomsList.length > 0 && selectedRooms.length === 0) {
       const bookableRooms = roomsList

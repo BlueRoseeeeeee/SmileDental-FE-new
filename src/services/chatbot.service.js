@@ -41,7 +41,7 @@ const chatbotService = {
       });
       return response.data;
     } catch (error) {
-      console.error('❌ Get history error:', error);
+      console.error('Get history error:', error);
       throw error;
     }
   },

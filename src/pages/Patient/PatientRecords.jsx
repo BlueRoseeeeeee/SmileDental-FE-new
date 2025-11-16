@@ -29,7 +29,6 @@ const PatientRecords = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
 
-  // Load records when component mounts and user is available
   useEffect(() => {
     if (user?._id) {
       loadRecords();
@@ -230,7 +229,7 @@ const PatientRecords = () => {
         />
       </Card>
 
-      {/* Record Detail Modal */}
+      {/* Record Detail Modal  */}
       <Modal
         title={<Space><FileTextOutlined /> Chi tiết hồ sơ</Space>}
         open={detailModalVisible}

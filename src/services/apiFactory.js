@@ -219,7 +219,7 @@ export const getApiInstance = (serviceName) => {
     return axiosInstances[serviceName];
   }
 
-  // Tạo instance mới và cache
+  // Tạo instance mới và     cache
   const config = MICROSERVICES_CONFIG[serviceName];
   axiosInstances[serviceName] = createAxiosInstance(serviceName, config);
   
