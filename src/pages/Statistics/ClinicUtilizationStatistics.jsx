@@ -44,8 +44,9 @@ import {
 import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { getClinicUtilizationStatistics } from '../../services/statisticsAPI';
-import api from '../../services/api';
+import { getApiInstance } from '../../services/apiFactory';
 
+const api = getApiInstance('room'); // For fetching room data
 dayjs.extend(quarterOfYear);
 
 const { Title, Text } = Typography;
@@ -91,7 +92,7 @@ const ClinicUtilizationStatistics = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const response = await api.get('/api/room');
+        const response = await api.get('/room');
         if (response.data && response.data.rooms) {
           setRoomsList(response.data.rooms || []);
         }

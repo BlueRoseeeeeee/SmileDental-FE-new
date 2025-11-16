@@ -48,10 +48,14 @@ const BookingChannelStatistics = () => {
       };
       
       const response = await getBookingChannelStatistics(params);
+      
       if (response.success) {
         setData(response.data);
+      } else {
+        message.error(response.message || 'Không thể tải dữ liệu thống kê');
       }
     } catch (error) {
+      console.error('Error fetching booking channel statistics:', error);
       message.error('Không thể tải dữ liệu thống kê');
     } finally {
       setLoading(false);
@@ -174,13 +178,16 @@ const BookingChannelStatistics = () => {
     );
   }
 
-  // Prepare pie chart data
-  const channelPieData = [
-    { name: 'Online', value: data.summary.online.count, percentage: data.summary.online.percentage },
-    { name: 'Offline', value: data.summary.offline.count, percentage: data.summary.offline.percentage }
-  ];
+  // ✅ Check if data is empty
+  const hasData = data.summary && data.summary.total > 0;
 
-  const rolePieData = data.offlineByRole.map(item => ({
+  // Prepare pie chart data with safe defaults
+  const channelPieData = [
+    { name: 'Online', value: data.summary?.online?.count || 0, percentage: data.summary?.online?.percentage || 0 },
+    { name: 'Offline', value: data.summary?.offline?.count || 0, percentage: data.summary?.offline?.percentage || 0 }
+  ].filter(item => item.value > 0); // Only show items with data
+
+  const rolePieData = (data.offlineByRole || []).map(item => ({
     name: item.name,
     value: item.count,
     percentage: item.percentage
@@ -188,26 +195,25 @@ const BookingChannelStatistics = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ marginBottom: 16 }}>
-          <CalendarOutlined style={{ marginRight: 8 }} />
-          Thống kê Đặt hẹn Online/Offline
-        </h2>
-        
-        <Card style={{ marginBottom: 16 }}>
-          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text strong>
-                <FilterOutlined /> Bộ lọc thống kê
-              </Text>
-              <Button 
-                icon={<ClearOutlined />} 
-                onClick={handleClearFilters}
-                size="small"
-              >
-                Xóa bộ lọc
-              </Button>
-            </div>
+      <h2 style={{ marginBottom: 16 }}>
+        <CalendarOutlined style={{ marginRight: 8 }} />
+        Thống kê Đặt hẹn Online/Offline
+      </h2>
+      
+      <Card style={{ marginBottom: 16 }}>
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text strong>
+              <FilterOutlined /> Bộ lọc thống kê
+            </Text>
+            <Button 
+              icon={<ClearOutlined />} 
+              onClick={handleClearFilters}
+              size="small"
+            >
+              Xóa bộ lọc
+            </Button>
+          </div>
             
             <Row gutter={[16, 16]}>
               <Col xs={24} md={12}>
@@ -240,6 +246,24 @@ const BookingChannelStatistics = () => {
           </Space>
         </Card>
 
+        {/* ✅ Empty State */}
+        {!hasData && (
+          <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <CalendarOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
+            <h3 style={{ color: '#595959' }}>Không có dữ liệu đặt hẹn</h3>
+            <p style={{ color: '#8c8c8c', marginBottom: 24 }}>
+              Không tìm thấy dữ liệu đặt hẹn trong khoảng thời gian đã chọn.<br />
+              Vui lòng chọn khoảng thời gian khác hoặc kiểm tra lại dữ liệu.
+            </p>
+            <Button type="primary" onClick={() => setDateRange([dayjs().subtract(90, 'days'), dayjs()])}>
+              Xem 90 ngày gần đây
+            </Button>
+          </Card>
+        )}
+
+        {/* ✅ Only show stats if has data */}
+        {hasData && (
+        <>
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={12} lg={6}>
             <Card>
@@ -312,7 +336,6 @@ const BookingChannelStatistics = () => {
             </Card>
           </Col>
         </Row>
-      </div>
 
       {/* Trend Chart */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -467,6 +490,8 @@ const BookingChannelStatistics = () => {
           </Card>
         </Col>
       </Row>
+      </>
+      )}
     </div>
   );
 };

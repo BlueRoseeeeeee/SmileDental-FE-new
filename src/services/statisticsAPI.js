@@ -8,7 +8,10 @@
  * 3. Patient Retention Statistics (Bệnh nhân quay lại)
  */
 
-import api from './api';
+import { getApiInstance } from './apiFactory.js';
+
+const statisticApi = getApiInstance('statistic'); // For statistics endpoints
+const appointmentApi = getApiInstance('appointment'); // For appointment-related stats
 
 // ==================== HELPER FUNCTIONS ====================
 
@@ -262,7 +265,7 @@ export const getRevenueStatistics = async (params = {}) => {
     if (serviceId) queryParams.append('serviceId', serviceId);
     
     // Call real backend API
-    const response = await api.get(`/api/statistics/revenue?${queryParams.toString()}`);
+    const response = await statisticApi.get(`/statistics/revenue?${queryParams.toString()}`);
     
     if (!response.data.success) {
       throw new Error(response.data.message || 'Không thể lấy thống kê doanh thu');
@@ -390,7 +393,7 @@ export const getBookingChannelStatistics = async (params = {}) => {
       groupBy
     });
 
-    const response = await api.get(`/api/appointments/booking-channel-stats?${queryParams.toString()}`);
+    const response = await appointmentApi.get(`/appointments/booking-channel-stats?${queryParams.toString()}`);
 
     if (!response.data.success) {
       throw new Error(response.data.message || 'Không thể lấy thống kê kênh đặt hẹn');
@@ -884,7 +887,7 @@ export const getClinicUtilizationStatistics = async (params = {}) => {
   } = params;
   
   try {
-    const response = await api.get('/api/statistics/clinic-utilization', { params });
+    const response = await statisticApi.get('/statistics/clinic-utilization', { params });
     return response.data;
   } catch (error) {
     console.error('Error fetching clinic utilization:', error);
