@@ -10,7 +10,7 @@
  * - Save prescription to record
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Form,
   Input,
@@ -30,19 +30,16 @@ import {
 import {
   PlusOutlined,
   DeleteOutlined,
-  SaveOutlined,
   MedicineBoxOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons';
-import recordService from '../../services/recordService';
 
 const { Option } = Select;
 const { TextArea } = Input;
 const { Text } = Typography;
 
-const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
+const PrescriptionForm = forwardRef(({ prescription, medicines }, ref) => {
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [medicineList, setMedicineList] = useState([]);
 
   useEffect(() => {
@@ -57,7 +54,9 @@ const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
         medicines: prescription.medicines.map(med => ({
           medicineId: med.medicineId,
           medicineName: med.medicineName,
-          dosage: med.dosage,
+          unit: med.unit,
+          category: med.category,
+          dosageInstruction: med.dosageInstruction,
           duration: med.duration,
           quantity: med.quantity,
           note: med.note
@@ -67,80 +66,58 @@ const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
     }
   }, [prescription, medicines]);
 
-  // Handle form submit
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      
-      // ✅ Validate: Check for duplicate medicines
-      const medicineIds = values.medicines.map(m => m.medicineId);
-      const uniqueMedicineIds = new Set(medicineIds);
-      if (medicineIds.length !== uniqueMedicineIds.size) {
-        message.error('Không được chọn thuốc trùng lặp trong đơn thuốc');
-        return;
-      }
-      
-      setLoading(true);
-
-      // Build medicines array
-      const prescriptionMedicines = values.medicines.map(med => {
-        const medicine = medicineList.find(m => m._id === med.medicineId);
-        return {
-          medicineId: med.medicineId,
-          medicineName: medicine?.name || med.medicineName,
-          dosage: med.dosage,
-          duration: med.duration,
-          quantity: med.quantity,
-          note: med.note || ''
-        };
-      });
-
-      // Create prescription data
-      const prescriptionData = {
-        medicines: prescriptionMedicines,
-        notes: values.prescriptionNotes || ''
-      };
-
-      console.log('📝 [PrescriptionForm] Submitting prescription:', prescriptionData);
-
-      // ✅ Call real API to add prescription
-      const response = await recordService.addPrescription(recordId, prescriptionData);
-
-      if (response.success) {
-        message.success('Đã thêm đơn thuốc thành công');
+  // Expose getPrescriptionData method to parent component
+  useImperativeHandle(ref, () => ({
+    getPrescriptionData: async () => {
+      try {
+        const values = await form.validateFields();
         
-        if (onUpdate) {
-          onUpdate(response.data);
+        // ✅ Validate: Check for duplicate medicines
+        const medicineIds = values.medicines.map(m => m.medicineId);
+        const uniqueMedicineIds = new Set(medicineIds);
+        if (medicineIds.length !== uniqueMedicineIds.size) {
+          throw new Error('Không được chọn thuốc trùng lặp trong đơn thuốc');
         }
+
+        // Build medicines array
+        const prescriptionMedicines = values.medicines.map(med => {
+          const medicine = medicineList.find(m => m._id === med.medicineId);
+          return {
+            medicineId: med.medicineId,
+            medicineName: medicine?.name || med.medicineName,
+            unit: medicine?.unit || med.unit,
+            category: medicine?.category || med.category,
+            dosageInstruction: med.dosageInstruction,
+            duration: med.duration,
+            quantity: med.quantity,
+            note: med.note || ''
+          };
+        });
+
+        // Create prescription data
+        return {
+          medicines: prescriptionMedicines,
+          notes: values.prescriptionNotes || ''
+        };
+      } catch (error) {
+        console.error('❌ Get prescription data error:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('❌ Add prescription error:', error);
-      if (error.errorFields) {
-        message.error('Vui lòng điền đầy đủ thông tin thuốc');
-      } else {
-        message.error(error.response?.data?.message || error.message || 'Có lỗi xảy ra khi thêm đơn thuốc');
-      }
-    } finally {
-      setLoading(false);
     }
-  };
+  }));
 
   // Handle medicine selection
   const handleMedicineSelect = (medicineId, fieldName) => {
     const medicine = medicineList.find(m => m._id === medicineId);
     
     if (medicine) {
-      // Auto-fill medicine name and dosage hint
       const medicines = form.getFieldValue('medicines');
       medicines[fieldName].medicineName = medicine.name;
-      
-      // ✅ Auto-fill dosage hint from medicine.dosage
-      if (medicine.dosage && !medicines[fieldName].dosage) {
-        medicines[fieldName].dosage = `${medicine.dosage} - `;
-      }
+      medicines[fieldName].unit = medicine.unit;
+      medicines[fieldName].category = medicine.category;
       
       form.setFieldsValue({ medicines });
-      console.log('✅ Selected medicine:', medicine.name, '- Dosage hint:', medicine.dosage);
+      console.log('✅ Selected medicine:', medicine.name, '- Unit:', medicine.unit, '- Category:', medicine.category);
     }
   };
   
@@ -234,20 +211,17 @@ const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
                             
                             return (
                               medicine.name.toLowerCase().includes(searchText) ||
-                              (medicine.ingredient && medicine.ingredient.toLowerCase().includes(searchText))
+                              (medicine.category && medicine.category.toLowerCase().includes(searchText))
                             );
                           }}
                           onChange={(value) => handleMedicineSelect(value, name)}
                         >
                           {medicineList.map(medicine => {
-                            // Build tooltip content
                             const tooltipContent = (
                               <div style={{ maxWidth: 300 }}>
                                 <div><strong>{medicine.name}</strong></div>
-                                {medicine.ingredient && <div>Thành phần: {medicine.ingredient}</div>}
-                                {medicine.dosage && <div>Hàm lượng: {medicine.dosage}</div>}
-                                {medicine.instructions && <div style={{ marginTop: 4 }}>Hướng dẫn: {medicine.instructions}</div>}
-                                {medicine.contraindications && <div style={{ marginTop: 4, color: '#ff4d4f' }}>Chống chỉ định: {medicine.contraindications}</div>}
+                                <div>Đơn vị: {medicine.unit}</div>
+                                <div>Phân loại: {medicine.category}</div>
                               </div>
                             );
                             
@@ -255,12 +229,12 @@ const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
                               <Option 
                                 key={medicine._id} 
                                 value={medicine._id}
-                                label={`${medicine.name} ${medicine.dosage || ''}`}
+                                label={`${medicine.name} (${medicine.unit})`}
                               >
                                 <Tooltip title={tooltipContent} placement="right">
                                   <Space>
                                     <span>{medicine.name}</span>
-                                    {medicine.dosage && <Text type="secondary">- {medicine.dosage}</Text>}
+                                    <Text type="secondary">- {medicine.unit}</Text>
                                     {medicine.category && (
                                       <Tag color={getCategoryColor(medicine.category)} style={{ fontSize: 11 }}>
                                         {medicine.category}
@@ -278,16 +252,16 @@ const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
                     <Col span={12}>
                       <Form.Item
                         {...restField}
-                        name={[name, 'dosage']}
+                        name={[name, 'dosageInstruction']}
                         label={
                           <Space>
-                            <span>Liều lượng</span>
+                            <span>Cách dùng</span>
                             <Tooltip title="Cách dùng và số lần dùng trong ngày">
                               <InfoCircleOutlined style={{ color: '#1890ff' }} />
                             </Tooltip>
                           </Space>
                         }
-                        rules={[{ required: true, message: 'Nhập liều lượng' }]}
+                        rules={[{ required: true, message: 'Nhập cách dùng' }]}
                       >
                         <Input placeholder="VD: 1 viên x 3 lần/ngày sau ăn" />
                       </Form.Item>
@@ -359,20 +333,6 @@ const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
             showCount
           />
         </Form.Item>
-
-        {/* Submit Button */}
-        <Form.Item>
-          <Button
-            type="primary"
-            onClick={handleSubmit}
-            loading={loading}
-            icon={<SaveOutlined />}
-            block
-            size="large"
-          >
-            Lưu đơn thuốc
-          </Button>
-        </Form.Item>
       </Form>
 
       {/* Prescription Preview */}
@@ -387,13 +347,15 @@ const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
               <div key={index}>
                 <Tag color="blue">{index + 1}</Tag>
                 <Text strong>{med.medicineName}</Text>
+                {med.unit && <Text type="secondary"> ({med.unit})</Text>}
+                {med.category && <Tag color={getCategoryColor(med.category)} style={{ marginLeft: 8 }}>{med.category}</Tag>}
                 <br />
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  • Liều lượng: {med.dosage}
+                  • Cách dùng: {med.dosageInstruction || med.dosage}
                   <br />
                   • Thời gian: {med.duration}
                   <br />
-                  • Số lượng: {med.quantity}
+                  • Số lượng: {med.quantity} {med.unit}
                   {med.note && (
                     <>
                       <br />
@@ -417,6 +379,8 @@ const PrescriptionForm = ({ recordId, prescription, medicines, onUpdate }) => {
       )}
     </div>
   );
-};
+});
+
+PrescriptionForm.displayName = 'PrescriptionForm';
 
 export default PrescriptionForm;

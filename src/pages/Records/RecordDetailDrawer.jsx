@@ -296,18 +296,20 @@ const RecordDetailDrawer = ({
                     <Space>
                       <Tag color="green">{index + 1}</Tag>
                       <Text strong>{medicine.medicineName}</Text>
+                      {medicine.unit && <Text type="secondary">({medicine.unit})</Text>}
+                      {medicine.category && <Tag color="blue">{medicine.category}</Tag>}
                     </Space>
                   }
                 >
                   <Descriptions column={1} size="small">
-                    <Descriptions.Item label="Liều lượng">
-                      {medicine.dosage}
+                    <Descriptions.Item label="Cách dùng">
+                      {medicine.dosageInstruction || medicine.dosage}
                     </Descriptions.Item>
                     <Descriptions.Item label="Thời gian dùng">
                       {medicine.duration}
                     </Descriptions.Item>
                     <Descriptions.Item label="Số lượng">
-                      {medicine.quantity}
+                      {medicine.quantity} {medicine.unit}
                     </Descriptions.Item>
                     {medicine.note && (
                       <Descriptions.Item label="Ghi chú">
