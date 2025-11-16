@@ -5,57 +5,63 @@
 import axios from 'axios';
 import { toast } from './toastService.js';
 
+// ⚠️ HARDCODED Configuration - Directly pointing to production backend
 // Configuration cho các microservices
 const MICROSERVICES_CONFIG = {
   auth: {
-    baseURL: import.meta.env.VITE_AUTH_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   room: {
-    baseURL: import.meta.env.VITE_ROOM_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   service: {
-    baseURL: import.meta.env.VITE_SERVICE_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   user: {
-    baseURL: import.meta.env.VITE_USER_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   schedule: {
-    baseURL: import.meta.env.VITE_SCHEDULE_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   appointment: {
-    baseURL: import.meta.env.VITE_APPOINTMENT_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   payment: {
-    baseURL: import.meta.env.VITE_PAYMENT_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   medicine: {
-    baseURL: import.meta.env.VITE_MEDICINE_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   record: {
-    baseURL: import.meta.env.VITE_RECORD_SERVICE_URL || 'https://be.smilecare.io.vn',
+    baseURL: 'https://be.smilecare.io.vn',
     timeout: 30000, // 30s
   },
   invoice: {
-    baseURL: import.meta.env.VITE_INVOICE_SERVICE_URL || 'https://be.smilecare.io.vn/api/invoice',
+    baseURL: 'https://be.smilecare.io.vn/api/invoice',
     timeout: 30000, // 30s
   },
   statistic: {
-    baseURL: import.meta.env.VITE_STATISTIC_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   },
   chatbot: {
-    baseURL: import.meta.env.VITE_CHATBOT_API_URL || 'https://be.smilecare.io.vn/api',
+    baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
   }
 };
+
+// Log để debug
+console.log('🔧 [apiFactory] Hardcoded baseURLs:', Object.fromEntries(
+  Object.entries(MICROSERVICES_CONFIG).map(([k, v]) => [k, v.baseURL])
+));
 
 // Cache cho các axios instances
 const axiosInstances = {};
