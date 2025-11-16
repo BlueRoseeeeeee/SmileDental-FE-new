@@ -1,10 +1,11 @@
 import axios from 'axios';
 
+// ⚠️ HARDCODED - Production backend URLs
 // Use record-service URL for queue operations (call, complete, cancel)
-const RECORD_SERVICE_URL = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010';
+const RECORD_SERVICE_URL = 'https://be.smilecare.io.vn';
 
 // Use appointment-service URL for queue viewing (getQueue, getQueueStats)
-const APPOINTMENT_SERVICE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3006';
+const APPOINTMENT_SERVICE_URL = 'https://be.smilecare.io.vn';
 
 // Create axios instance for record-service
 const recordApi = axios.create({
