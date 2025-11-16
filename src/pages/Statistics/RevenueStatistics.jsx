@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Tabs, Select, DatePicker, Statistic, Table, Spin, message, Space, Typography, Button } from 'antd';
+import { Card, Row, Col, Tabs, Select, DatePicker, Statistic, Table, Spin, message, Space, Typography, Button, Divider } from 'antd';
 import { 
   DollarOutlined, 
   CalendarOutlined, 
@@ -19,7 +19,8 @@ import dayjs from 'dayjs';
 import { getRevenueStatistics } from '../../services/statisticsAPI';
 import { getApiInstance } from '../../services/apiFactory';
 
-const api = getApiInstance('user'); // For fetching staff and service data
+const userApi = getApiInstance('user'); // For fetching staff data
+const serviceApi = getApiInstance('service'); // For fetching service data
 const { RangePicker, MonthPicker, YearPicker } = DatePicker;
 const { Text } = Typography;
 
@@ -40,7 +41,7 @@ const RevenueStatistics = () => {
   useEffect(() => {
     const fetchDentists = async () => {
       try {
-        const response = await api.get('/user/all-staff', { 
+        const response = await userApi.get('/user/all-staff', { 
           params: { 
             role: 'dentist',
             limit: 1000 // Lấy tất cả nha sỹ
@@ -64,7 +65,7 @@ const RevenueStatistics = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const response = await api.get('/service', { 
+        const response = await serviceApi.get('/service', { 
           params: { 
             limit: 1000 // Lấy tất cả dịch vụ
           } 
@@ -83,17 +84,14 @@ const RevenueStatistics = () => {
     fetchServices();
   }, []);
 
-  // ✅ Load data 1 lần khi thay đổi groupBy hoặc dateRange
-  useEffect(() => {
-    fetchData();
-  }, [groupBy, dateRange, dentists, services]);
-
   // ✅ Filter data ở frontend khi thay đổi dentist/service filter
   useEffect(() => {
     if (rawData) {
       applyFilters();
     }
   }, [selectedDentist, selectedService, rawData]);
+
+  // ✅ Không auto-call khi thay đổi filters - chỉ call khi click button
 
   const fetchData = async () => {
     if (dentists.length === 0 || services.length === 0) {
@@ -446,15 +444,11 @@ const RevenueStatistics = () => {
     }
   ];
 
-  if (loading || !data) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
-
-  const tabItems = [
+  // ✅ Define tabItems only when data exists
+  const getTabItems = () => {
+    if (!data) return [];
+    
+    return [
     {
       key: 'by-dentist',
       label: (
@@ -885,6 +879,7 @@ const RevenueStatistics = () => {
       )
     }
   ];
+  }; // end of getTabItems
 
   return (
     <div style={{ padding: '24px' }}>
@@ -1000,9 +995,37 @@ const RevenueStatistics = () => {
                 </Text>
               </div>
             )}
+            
+            {/* ✅ Button Thống kê */}
+            <Button 
+              type="primary" 
+              size="large"
+              icon={<DollarOutlined />}
+              onClick={fetchData}
+              loading={loading}
+              block
+              style={{ height: '48px', fontSize: '16px', fontWeight: 500, marginTop: '16px' }}
+            >
+              {loading ? 'Đang tải dữ liệu...' : 'Xem Thống kê'}
+            </Button>
           </Space>
         </Card>
+      </div>
 
+        {/* ✅ Empty State - Show when no data loaded yet */}
+        {!data && (
+          <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <DollarOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
+            <h3 style={{ color: '#595959' }}>Chưa có dữ liệu thống kê</h3>
+            <p style={{ color: '#8c8c8c' }}>
+              Vui lòng chọn khoảng thời gian và nhấn "Xem Thống kê" để tải dữ liệu
+            </p>
+          </Card>
+        )}
+
+        {/* ✅ Show stats only when data is loaded */}
+        {data && (
+        <>
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={12} lg={6}>
             <Card>
@@ -1049,9 +1072,10 @@ const RevenueStatistics = () => {
             </Card>
           </Col>
         </Row>
-      </div>
 
-      <Tabs items={tabItems} />
+      <Tabs items={getTabItems()} />
+      </>
+      )}
     </div>
   );
 };

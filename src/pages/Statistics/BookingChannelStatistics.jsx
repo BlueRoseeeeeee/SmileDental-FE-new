@@ -34,9 +34,7 @@ const BookingChannelStatistics = () => {
   const [groupBy, setGroupBy] = useState('day');
   const [dateRange, setDateRange] = useState([dayjs().subtract(30, 'days'), dayjs()]);
 
-  useEffect(() => {
-    fetchData();
-  }, [groupBy, dateRange]);
+  // ✅ Không auto-call khi thay đổi filters - chỉ call khi click button
 
   const fetchData = async () => {
     setLoading(true);
@@ -170,28 +168,8 @@ const BookingChannelStatistics = () => {
     }
   ];
 
-  if (loading || !data) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
-        <Spin size="large" tip="Đang tải dữ liệu..." />
-      </div>
-    );
-  }
-
   // ✅ Check if data is empty
-  const hasData = data.summary && data.summary.total > 0;
-
-  // Prepare pie chart data with safe defaults
-  const channelPieData = [
-    { name: 'Online', value: data.summary?.online?.count || 0, percentage: data.summary?.online?.percentage || 0 },
-    { name: 'Offline', value: data.summary?.offline?.count || 0, percentage: data.summary?.offline?.percentage || 0 }
-  ].filter(item => item.value > 0); // Only show items with data
-
-  const rolePieData = (data.offlineByRole || []).map(item => ({
-    name: item.name,
-    value: item.count,
-    percentage: item.percentage
-  }));
+  const hasData = data && data.summary && data.summary.total > 0;
 
   return (
     <div style={{ padding: '24px' }}>
@@ -243,11 +221,35 @@ const BookingChannelStatistics = () => {
                 </Select>
               </Col>
             </Row>
+            
+            {/* ✅ Button Thống kê */}
+            <Button 
+              type="primary" 
+              size="large"
+              icon={<CalendarOutlined />}
+              onClick={fetchData}
+              loading={loading}
+              block
+              style={{ height: '48px', fontSize: '16px', fontWeight: 500, marginTop: '16px' }}
+            >
+              {loading ? 'Đang tải dữ liệu...' : 'Xem Thống kê'}
+            </Button>
           </Space>
         </Card>
 
-        {/* ✅ Empty State */}
-        {!hasData && (
+        {/* ✅ Empty State - Show when no data loaded yet */}
+        {!data && (
+          <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <CalendarOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
+            <h3 style={{ color: '#595959' }}>Chưa có dữ liệu thống kê</h3>
+            <p style={{ color: '#8c8c8c' }}>
+              Vui lòng chọn khoảng thời gian và nhấn "Xem Thống kê" để tải dữ liệu
+            </p>
+          </Card>
+        )}
+
+        {/* ✅ Empty State - Show when data loaded but empty */}
+        {data && !hasData && (
           <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
             <CalendarOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
             <h3 style={{ color: '#595959' }}>Không có dữ liệu đặt hẹn</h3>
@@ -262,7 +264,20 @@ const BookingChannelStatistics = () => {
         )}
 
         {/* ✅ Only show stats if has data */}
-        {hasData && (
+        {hasData && (() => {
+          // Prepare pie chart data with safe defaults
+          const channelPieData = [
+            { name: 'Online', value: data.summary.online.count, percentage: data.summary.online.percentage },
+            { name: 'Offline', value: data.summary.offline.count, percentage: data.summary.offline.percentage }
+          ].filter(item => item.value > 0);
+
+          const rolePieData = (data.offlineByRole || []).map(item => ({
+            name: item.name,
+            value: item.count,
+            percentage: item.percentage
+          }));
+
+          return (
         <>
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={12} lg={6}>
@@ -491,7 +506,8 @@ const BookingChannelStatistics = () => {
         </Col>
       </Row>
       </>
-      )}
+      );
+        })()}
     </div>
   );
 };

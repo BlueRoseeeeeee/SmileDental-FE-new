@@ -105,27 +105,29 @@ const ClinicUtilizationStatistics = () => {
     fetchRooms();
   }, []);
 
-  // Auto-select bookable rooms
+  // Auto-select bookable rooms (không auto-fetch)
   useEffect(() => {
     if (roomsList.length > 0 && selectedRooms.length === 0) {
       const bookableRooms = roomsList
         .filter(r => !['X_RAY', 'STERILIZATION', 'LAB', 'SUPPORT'].includes(r.roomType))
         .map(r => r._id);
       setSelectedRooms(bookableRooms);
-      fetchStatistics(bookableRooms);
     }
   }, [roomsList]);
 
-  // Auto-fetch when filters change
-  useEffect(() => {
-    if (roomsList.length > 0 && selectedRooms.length > 0) {
-      fetchStatistics();
-    }
-  }, [groupBy, dateRange, selectedShift, selectedRooms]);
+  // ✅ Không auto-call khi thay đổi filters - chỉ call khi click button
 
   const fetchStatistics = async (rooms = selectedRooms) => {
     if (loading) return; // Prevent concurrent requests
     setLoading(true);
+    
+    console.log('🔍 [FE] Fetching statistics with:', {
+      selectedRooms,
+      rooms,
+      dateRange: [dateRange[0].format('YYYY-MM-DD'), dateRange[1].format('YYYY-MM-DD')],
+      groupBy,
+      selectedShift
+    });
     
     try {
       const params = {
@@ -135,6 +137,8 @@ const ClinicUtilizationStatistics = () => {
         timeRange: groupBy,
         shiftName: selectedShift
       };
+      
+      console.log('📤 [FE] API params:', params);
       
       const response = await getClinicUtilizationStatistics(params);
       
@@ -418,7 +422,10 @@ const ClinicUtilizationStatistics = () => {
                 style={{ width: '100%' }}
                 placeholder="Tất cả phòng"
                 value={selectedRooms}
-                onChange={setSelectedRooms}
+                onChange={(value) => {
+                  console.log('🏠 [FE] Rooms selection changed:', value);
+                  setSelectedRooms(value);
+                }}
                 maxTagCount="responsive"
                 allowClear
               >
@@ -441,7 +448,10 @@ const ClinicUtilizationStatistics = () => {
                 style={{ width: '100%' }}
                 placeholder="Tất cả ca"
                 value={selectedShift}
-                onChange={setSelectedShift}
+                onChange={(value) => {
+                  console.log('⏰ [FE] Shift selection changed:', value);
+                  setSelectedShift(value);
+                }}
                 allowClear
               >
                 <Option value="Ca Sáng">Ca Sáng</Option>
@@ -450,6 +460,19 @@ const ClinicUtilizationStatistics = () => {
             </Select>
           </Col>
         </Row>
+        
+        {/* ✅ Button Thống kê */}
+        <Button 
+          type="primary" 
+          size="large"
+          icon={<CalendarOutlined />}
+          onClick={() => fetchStatistics()}
+          loading={loading}
+          block
+          style={{ height: '48px', fontSize: '16px', fontWeight: 500, marginTop: '16px' }}
+        >
+          {loading ? 'Đang tải dữ liệu...' : 'Xem Thống kê'}
+        </Button>
         </Space>
       </Card>
 
