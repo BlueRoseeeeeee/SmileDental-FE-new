@@ -102,36 +102,70 @@ const PatientRecords = () => {
   const columns = [
     {
       title: 'Mã hồ sơ',
-      dataIndex: 'code',
-      key: 'code',
-      width: 120,
-      render: (code) => <Text strong>{code}</Text>
+      dataIndex: 'recordCode',
+      key: 'recordCode',
+      width: 140,
+      render: (code) => <Text strong>{code || 'N/A'}</Text>
     },
     {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 120,
+      width: 105,
       render: (date) => dayjs(date).format('DD/MM/YYYY')
     },
     {
       title: 'Loại',
       dataIndex: 'type',
       key: 'type',
-      width: 100,
+      width: 95,
       render: (type) => getRecordTypeTag(type)
     },
     {
       title: 'Nha sĩ',
-      dataIndex: ['dentist', 'fullName'],
+      dataIndex: 'dentistName',
       key: 'dentist',
-      width: 150,
-      render: (_, record) => record.dentist?.fullName || 'N/A'
+      width: 140,
+      render: (dentistName) => dentistName || 'N/A'
+    },
+    {
+      title: 'Phòng khám',
+      dataIndex: 'roomName',
+      key: 'roomName',
+      width: 160,
+      render: (roomName, record) => (
+        <div>
+          <div>{roomName || 'N/A'}</div>
+          {record.subroomName && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.subroomName}
+            </Text>
+          )}
+        </div>
+      )
+    },
+    {
+      title: 'Dịch vụ',
+      dataIndex: 'serviceName',
+      key: 'serviceName',
+      width: 170,
+      ellipsis: true,
+      render: (serviceName, record) => (
+        <div>
+          <div>{serviceName || 'N/A'}</div>
+          {record.serviceAddOnName && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {record.serviceAddOnName}
+            </Text>
+          )}
+        </div>
+      )
     },
     {
       title: 'Chẩn đoán',
       dataIndex: 'diagnosis',
       key: 'diagnosis',
+      width: 150,
       ellipsis: true,
       render: (diagnosis) => diagnosis || 'Chưa có'
     },
@@ -139,13 +173,13 @@ const PatientRecords = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 115,
       render: (status) => getRecordStatusTag(status)
     },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 100,
+      width: 95,
       fixed: 'right',
       render: (_, record) => (
         <Button
@@ -192,7 +226,7 @@ const PatientRecords = () => {
               />
             )
           }}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1200 }}
         />
       </Card>
 
@@ -211,7 +245,7 @@ const PatientRecords = () => {
         {selectedRecord && (
           <Descriptions bordered column={2}>
             <Descriptions.Item label="Mã hồ sơ" span={2}>
-              <Text strong>{selectedRecord.code}</Text>
+              <Text strong>{selectedRecord.recordCode || 'N/A'}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Ngày tạo">
               {dayjs(selectedRecord.createdAt).format('DD/MM/YYYY HH:mm')}
@@ -220,33 +254,112 @@ const PatientRecords = () => {
               {getRecordTypeTag(selectedRecord.type)}
             </Descriptions.Item>
             <Descriptions.Item label="Nha sĩ" span={2}>
-              {selectedRecord.dentist?.fullName || 'N/A'}
+              {selectedRecord.dentistName || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Dịch vụ" span={2}>
+              {selectedRecord.serviceName || 'N/A'}
+              {selectedRecord.serviceAddOnName && ` - ${selectedRecord.serviceAddOnName}`}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phòng khám">
+              {selectedRecord.roomName || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Buồng">
+              {selectedRecord.subroomName || 'N/A'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Giá dịch vụ">
+              {selectedRecord.servicePrice?.toLocaleString('vi-VN')} đ
+            </Descriptions.Item>
+            <Descriptions.Item label="Giá dịch vụ bổ sung">
+              {selectedRecord.serviceAddOnPrice?.toLocaleString('vi-VN')} đ
+            </Descriptions.Item>
+            <Descriptions.Item label="Số lượng">
+              {selectedRecord.quantity || 1}
+            </Descriptions.Item>
+            <Descriptions.Item label="Tổng chi phí">
+              <Text strong style={{ color: '#1890ff' }}>
+                {selectedRecord.totalCost?.toLocaleString('vi-VN')} đ
+              </Text>
             </Descriptions.Item>
             <Descriptions.Item label="Triệu chứng" span={2}>
-              {selectedRecord.symptoms || 'Không có'}
+              {selectedRecord.indications && selectedRecord.indications.length > 0
+                ? selectedRecord.indications.join(', ')
+                : 'Không có'}
             </Descriptions.Item>
             <Descriptions.Item label="Chẩn đoán" span={2}>
               {selectedRecord.diagnosis || 'Chưa có'}
             </Descriptions.Item>
             <Descriptions.Item label="Kế hoạch điều trị" span={2}>
-              {selectedRecord.treatmentPlan || 'Chưa có'}
+              {selectedRecord.treatmentIndications && selectedRecord.treatmentIndications.length > 0 ? (
+                <div>
+                  {selectedRecord.treatmentIndications.map((indication, index) => (
+                    <div key={index} style={{ marginBottom: 8 }}>
+                      <Text strong>{indication.serviceName}</Text>
+                      {indication.serviceAddOnName && ` - ${indication.serviceAddOnName}`}
+                      {indication.notes && (
+                        <div style={{ marginLeft: 16, color: '#666' }}>
+                          Ghi chú: {indication.notes}
+                        </div>
+                      )}
+                      <Tag color={indication.used ? 'success' : 'default'}>
+                        {indication.used ? 'Đã sử dụng' : 'Chưa sử dụng'}
+                      </Tag>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                'Chưa có'
+              )}
             </Descriptions.Item>
-            {selectedRecord.prescription && selectedRecord.prescription.length > 0 && (
-              <Descriptions.Item label="Đơn thuốc" span={2}>
-                {selectedRecord.prescription.map((med, index) => (
-                  <div key={index} style={{ marginBottom: 8 }}>
-                    <Text strong>{med.name}</Text>: {med.dosage} - {med.frequency}
-                    {med.duration && ` (${med.duration})`}
-                  </div>
-                ))}
-              </Descriptions.Item>
-            )}
+            <Descriptions.Item label="Dịch vụ bổ sung" span={2}>
+              {selectedRecord.additionalServices && selectedRecord.additionalServices.length > 0 ? (
+                <div>
+                  {selectedRecord.additionalServices.map((service, index) => (
+                    <div key={index} style={{ marginBottom: 8 }}>
+                      <Text strong>{service.serviceName}</Text>
+                      {service.serviceAddOnName && ` - ${service.serviceAddOnName}`}
+                      {service.price && (
+                        <span style={{ marginLeft: 8, color: '#1890ff' }}>
+                          {service.price.toLocaleString('vi-VN')} đ
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                'Không có'
+              )}
+            </Descriptions.Item>
             <Descriptions.Item label="Ghi chú" span={2}>
               {selectedRecord.notes || 'Không có'}
             </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái" span={2}>
+            <Descriptions.Item label="Kênh đặt">
+              <Tag color={selectedRecord.bookingChannel === 'online' ? 'blue' : 'green'}>
+                {selectedRecord.bookingChannel === 'online' ? 'Đặt online' : 'Đặt tại phòng khám'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Thanh toán">
+              <Tag color={selectedRecord.paymentStatus === 'paid' ? 'success' : 'warning'}>
+                {selectedRecord.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Độ ưu tiên">
+              <Tag color={selectedRecord.priority === 'urgent' ? 'red' : selectedRecord.priority === 'high' ? 'orange' : 'default'}>
+                {selectedRecord.priority === 'urgent' ? 'Khẩn cấp' : selectedRecord.priority === 'high' ? 'Cao' : 'Bình thường'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái">
               {getRecordStatusTag(selectedRecord.status)}
             </Descriptions.Item>
+            {selectedRecord.startedAt && (
+              <Descriptions.Item label="Bắt đầu">
+                {dayjs(selectedRecord.startedAt).format('DD/MM/YYYY HH:mm')}
+              </Descriptions.Item>
+            )}
+            {selectedRecord.completedAt && (
+              <Descriptions.Item label="Hoàn thành">
+                {dayjs(selectedRecord.completedAt).format('DD/MM/YYYY HH:mm')}
+              </Descriptions.Item>
+            )}
           </Descriptions>
         )}
       </Modal>

@@ -1,6 +1,7 @@
-import api from './api';
+import { getApiInstance } from './apiFactory.js';
 
-const CHATBOT_API_URL = '/api/ai';
+const api = getApiInstance('chatbot'); // Chatbot API
+const CHATBOT_API_URL = '/ai';
 
 const chatbotService = {
   /**

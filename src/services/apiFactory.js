@@ -55,6 +55,18 @@ const MICROSERVICES_CONFIG = {
   chatbot: {
     baseURL: 'https://be.smilecare.io.vn/api',
     timeout: 30000, // 30s
+  },
+  statistic: {
+    baseURL: import.meta.env.VITE_STATISTIC_API_URL || 'http://localhost:3011/api',
+    timeout: 30000, // 30s
+  },
+  appointment: {
+    baseURL: import.meta.env.VITE_APPOINTMENT_API_URL || 'http://localhost:3006/api',
+    timeout: 30000, // 30s
+  },
+  chatbot: {
+    baseURL: import.meta.env.VITE_CHATBOT_API_URL || 'http://localhost:3013/api',
+    timeout: 30000, // 30s
   }
 };
 
@@ -222,12 +234,10 @@ export const roomApi = getApiInstance('room');
 export const serviceApi = getApiInstance('service');
 export const userApi = getApiInstance('user');
 export const scheduleApi = getApiInstance('schedule');
-export const appointmentApi = getApiInstance('appointment');
 export const paymentApi = getApiInstance('payment');
 export const medicineApi = getApiInstance('medicine');
-export const recordApi = getApiInstance('record');
-export const invoiceApi = getApiInstance('invoice');
 export const statisticApi = getApiInstance('statistic');
+export const appointmentApi = getApiInstance('appointment');
 export const chatbotApi = getApiInstance('chatbot');
 
 export default {
@@ -237,11 +247,5 @@ export default {
   serviceApi,
   userApi,
   scheduleApi,
-  appointmentApi,
-  paymentApi,
   medicineApi,
-  recordApi,
-  invoiceApi,
-  statisticApi,
-  chatbotApi,
 };
