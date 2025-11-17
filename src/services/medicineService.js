@@ -11,7 +11,7 @@ const medicineService = {
   /**
    * Get list of medicines
    * @param {Object} params - Query parameters
-   * @returns {Promise} List of medicines
+   * @returns {Promise} List of medicines with pagination
    */
   getMedicines: async (params = {}) => {
     const { page = 1, limit = 20, isActive, category, search } = params;
@@ -31,7 +31,7 @@ const medicineService = {
     }
     
     const response = await medicineApi.get(`/medicine?${queryParams.toString()}`);
-    return response.data;
+    return response.data; // Returns { success, data, total, page, limit, totalPages }
   },
 
   /**

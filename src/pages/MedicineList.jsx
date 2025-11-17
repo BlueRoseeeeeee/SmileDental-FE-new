@@ -17,9 +17,7 @@ import {
   Select,
   Modal,
   Form,
-  Tabs,
-  Divider,
-  Badge
+  Divider
 } from 'antd';
 import { toast } from '../services/toastService';
 import {
@@ -31,9 +29,7 @@ import {
   InfoCircleOutlined
 } from '@ant-design/icons';
 import medicineService from '../services/medicineService';
-import { searchAndFilter, debounce } from '../utils/searchUtils';
 import { useAuth } from '../contexts/AuthContext';
-import { calc } from 'antd/es/theme/internal';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -55,7 +51,6 @@ const MedicineList = () => {
 
   // Search & Filter states
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('active'); // 'active' hoặc 'inactive'
   const [categoryFilter, setCategoryFilter] = useState('');
 
   // Toggle loading map
@@ -78,56 +73,32 @@ const MedicineList = () => {
     { value: 'khác', label: 'Khác' }
   ];
 
-  // Filtered data
-  const filteredMedicines = useMemo(() => {
-    const searchFields = ['name', 'ingredient', 'dosage', 'description'];
-    const filters = {};
-
-    if (activeTab === 'active') {
-      filters.isActive = true;
-    } else if (activeTab === 'inactive') {
-      filters.isActive = false;
-    }
-
-    if (categoryFilter !== '') {
-      filters.category = categoryFilter;
-    }
-
-    return searchAndFilter(medicines, searchTerm, searchFields, filters);
-  }, [medicines, searchTerm, activeTab, categoryFilter]);
-
-  // Debounced search function
-  const debouncedSearch = useMemo(
-    () => debounce((term) => {
-      setSearchTerm(term);
-      if (!term) {
-        setPagination(prev => ({ ...prev, current: 1 }));
-      }
-    }, 300),
-    []
-  );
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setPagination(prev => ({ ...prev, current: 1 })); // Reset to page 1 on search
+  };
 
   useEffect(() => {
     fetchMedicines();
-  }, [pagination.current, pagination.pageSize, searchTerm, activeTab, categoryFilter]);
+  }, [pagination.current, pagination.pageSize, searchTerm, categoryFilter]);
 
   const fetchMedicines = async () => {
     setLoading(true);
     try {
-      const shouldFetchAll = searchTerm.trim() !== '' || activeTab !== 'active' || categoryFilter !== '';
-      
       const response = await medicineService.getMedicines({
-        page: shouldFetchAll ? 1 : pagination.current,
-        limit: shouldFetchAll ? 9999 : pagination.pageSize,
-        isActive: activeTab === 'active' ? true : activeTab === 'inactive' ? false : undefined,
+        page: pagination.current,
+        limit: pagination.pageSize,
         category: categoryFilter || undefined,
-        search: searchTerm || undefined
+        search: searchTerm.trim() || undefined
       });
 
+      // Response structure: { success, data, total, page, limit, totalPages }
       setMedicines(response.data || []);
       setPagination(prev => ({
         ...prev,
-        total: response.total || 0
+        total: response.total || 0,
+        current: response.page || prev.current
       }));
     } catch (error) {
       toast.error('Lỗi khi tải danh sách thuốc: ' + (error.response?.data?.message || error.message));
@@ -147,13 +118,8 @@ const MedicineList = () => {
     setEditingMedicine(medicine);
     form.setFieldsValue({
       name: medicine.name,
-      ingredient: medicine.ingredient,
-      dosage: medicine.dosage,
-      category: medicine.category,
-      description: medicine.description,
-      instructions: medicine.instructions,
-      contraindications: medicine.contraindications,
-      sideEffects: medicine.sideEffects
+      unit: medicine.unit,
+      category: medicine.category
     });
     setIsModalVisible(true);
   };
@@ -224,36 +190,20 @@ const MedicineList = () => {
     });
   };
 
-  // Statistics
-  const stats = useMemo(() => {
-    const active = medicines.filter(m => m.isActive).length;
-    const inactive = medicines.filter(m => !m.isActive).length;
-    return { active, inactive, total: medicines.length };
-  }, [medicines]);
-
   const columns = [
     {
       title: 'Tên thuốc',
       dataIndex: 'name',
       key: 'name',
       fixed: 'left',
-      width: 200,
-      render: (text, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{text}</Text>
-          {record.ingredient && (
-            <Text type="secondary" style={{ fontSize: '12px' }}>
-              {record.ingredient}
-            </Text>
-          )}
-        </Space>
-      )
+      width: 300,
+      render: (text) => <Text strong>{text}</Text>
     },
     {
-      title: 'Liều dùng',
-      dataIndex: 'dosage',
-      key: 'dosage',
-      width: 150
+      title: 'Đơn vị',
+      dataIndex: 'unit',
+      key: 'unit',
+      width: 100
     },
     {
       title: 'Phân loại',
@@ -271,34 +221,6 @@ const MedicineList = () => {
         };
         return <Tag color={categoryColors[category] || 'default'}>{category}</Tag>;
       }
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      width: 250,
-      ellipsis: {
-        showTitle: false
-      },
-      render: (text) => (
-        <Tooltip placement="topLeft" title={text}>
-          {text || '-'}
-        </Tooltip>
-      )
-    },
-    {
-      title: 'Hướng dẫn sử dụng',
-      dataIndex: 'instructions',
-      key: 'instructions',
-      width: 200,
-      ellipsis: {
-        showTitle: false
-      },
-      render: (text) => (
-        <Tooltip placement="topLeft" title={text}>
-          {text || '-'}
-        </Tooltip>
-      )
     },
     {
       title: 'Trạng thái',
@@ -359,10 +281,10 @@ const MedicineList = () => {
           <Col>
             <Title level={3} style={{ margin: 0 }}>
               <MedicineBoxOutlined style={{ marginRight: 8 }} />
-              Quản lý danh mục thuốc (Kê đơn)
+              Danh mục thuốc (Kê đơn)
             </Title>
             <Text type="secondary">
-              Quản lý danh mục thuốc để kê đơn cho bệnh nhân
+              Danh sách thuốc để kê đơn cho bệnh nhân
             </Text>
           </Col>
           {isManagerOrAdmin && (
@@ -379,25 +301,6 @@ const MedicineList = () => {
           )}
         </Row>
 
-        {/* Statistics */}
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={8}>
-            <Card size="small">
-              <Badge status="success" text={`Đang hoạt động: ${stats.active}`} />
-            </Card>
-          </Col>
-          <Col span={8}>
-            <Card size="small">
-              <Badge status="error" text={`Ngưng sử dụng: ${stats.inactive}`} />
-            </Card>
-          </Col>
-          <Col span={8}>
-            <Card size="small">
-              <Badge status="processing" text={`Tổng số: ${stats.total}`} />
-            </Card>
-          </Col>
-        </Row>
-
         <Divider />
 
         {/* Search & Filter */}
@@ -407,7 +310,8 @@ const MedicineList = () => {
               placeholder="Tìm kiếm thuốc..."
               prefix={<SearchOutlined />}
               allowClear
-              onChange={(e) => debouncedSearch(e.target.value)}
+              value={searchTerm}
+              onChange={handleSearchChange}
             />
           </Col>
           <Col xs={24} sm={12} md={8}>
@@ -416,7 +320,10 @@ const MedicineList = () => {
               allowClear
               style={{ width: '100%' }}
               value={categoryFilter || undefined}
-              onChange={setCategoryFilter}
+              onChange={(value) => {
+                setCategoryFilter(value || '');
+                setPagination(prev => ({ ...prev, current: 1 })); // Reset to page 1
+              }}
             >
               {categories.map(cat => (
                 <Select.Option key={cat.value} value={cat.value}>
@@ -427,45 +334,10 @@ const MedicineList = () => {
           </Col>
         </Row>
 
-        {/* Tabs for Active/Inactive */}
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={[
-            {
-              key: 'active',
-              label: (
-                <span>
-                  <Badge status="success" />
-                  Đang hoạt động ({stats.active})
-                </span>
-              )
-            },
-            {
-              key: 'inactive',
-              label: (
-                <span>
-                  <Badge status="error" />
-                  Ngưng sử dụng ({stats.inactive})
-                </span>
-              )
-            },
-            {
-              key: 'all',
-              label: (
-                <span>
-                  <Badge status="processing" />
-                  Tất cả ({stats.total})
-                </span>
-              )
-            }
-          ]}
-        />
-
         {/* Table */}
         <Table
           columns={columns}
-          dataSource={filteredMedicines}
+          dataSource={medicines}
           loading={loading}
           rowKey="_id"
           pagination={{
@@ -486,22 +358,17 @@ const MedicineList = () => {
         open={isModalVisible}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
-        width={800}
+        width={600}
         okText={editingMedicine ? 'Cập nhật' : 'Tạo mới'}
         cancelText="Hủy"
         centered
-        bodyStyle={{ 
-          maxHeight: 'calc(100vh - 250px)', 
-          overflowY: 'auto',
-          paddingRight: '8px'
-        }}
       >
         <Form
           form={form}
           layout="vertical"
           initialValues={{
             category: 'khác',
-            isActive: true
+            unit: 'viên'
           }}
         >
           <Row gutter={16}>
@@ -520,24 +387,26 @@ const MedicineList = () => {
 
             <Col span={12}>
               <Form.Item
-                name="ingredient"
-                label="Thành phần hoạt chất"
+                name="unit"
+                label="Đơn vị"
+                rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
               >
-                <Input placeholder="Ví dụ: Amoxicillin trihydrate" />
+                <Select placeholder="Chọn đơn vị">
+                  <Select.Option value="viên">Viên</Select.Option>
+                  <Select.Option value="vỉ">Vỉ</Select.Option>
+                  <Select.Option value="hộp">Hộp</Select.Option>
+                  <Select.Option value="ống">Ống</Select.Option>
+                  <Select.Option value="lọ">Lọ</Select.Option>
+                  <Select.Option value="gói">Gói</Select.Option>
+                  <Select.Option value="tuýp">Tuýp</Select.Option>
+                  <Select.Option value="chai">Chai</Select.Option>
+                  <Select.Option value="kg">Kg</Select.Option>
+                  <Select.Option value="g">G</Select.Option>
+                </Select>
               </Form.Item>
             </Col>
 
             <Col span={12}>
-              <Form.Item
-                name="dosage"
-                label="Liều dùng"
-                rules={[{ required: true, message: 'Vui lòng nhập liều dùng' }]}
-              >
-                <Input placeholder="Ví dụ: 500mg" />
-              </Form.Item>
-            </Col>
-
-            <Col span={24}>
               <Form.Item
                 name="category"
                 label="Phân loại"
@@ -550,66 +419,6 @@ const MedicineList = () => {
                     </Select.Option>
                   ))}
                 </Select>
-              </Form.Item>
-            </Col>
-
-            <Col span={24}>
-              <Form.Item
-                name="description"
-                label="Mô tả"
-              >
-                <TextArea
-                  rows={5}
-                  placeholder="Mô tả ngắn gọn về thuốc"
-                  maxLength={1000}
-                  showCount
-                  className='custom-textarea'
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={24}>
-              <Form.Item
-                name="instructions"
-                label="Hướng dẫn sử dụng"
-              >
-                <TextArea
-                  rows={5}
-                  placeholder="Hướng dẫn cách sử dụng thuốc"
-                  maxLength={1000}
-                  showCount
-                  className='custom-textarea'
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={24}>
-              <Form.Item
-                name="contraindications"
-                label="Chống chỉ định"
-              >
-                <TextArea
-                  rows={5}
-                  placeholder="Các trường hợp không nên sử dụng thuốc này"
-                  maxLength={1000}
-                  showCount
-                  className='custom-textarea'
-                />
-              </Form.Item>
-            </Col>
-
-            <Col span={24}>
-              <Form.Item
-                name="sideEffects"
-                label="Tác dụng phụ"
-              >
-                <TextArea
-                  rows={5}
-                  placeholder="Các tác dụng phụ có thể xảy ra"
-                  maxLength={1000}
-                  showCount
-                  className='custom-textarea'
-                />
               </Form.Item>
             </Col>
           </Row>
