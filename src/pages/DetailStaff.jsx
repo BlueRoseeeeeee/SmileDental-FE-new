@@ -22,7 +22,7 @@ import {
   EyeOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { getServiceUrl } from '../../config/apiConfig';
+import { getServiceUrl } from '../config/apiConfig';
 
 const { Title, Text } = Typography;
 
