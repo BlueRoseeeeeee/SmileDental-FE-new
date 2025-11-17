@@ -42,8 +42,8 @@ const DetailStaff = () => {
   const loadUser = async () => {
     try {
       setLoading(true);
-      const apiUrl = await getServiceUrl('user');
-      const response = await fetch(`${apiUrl}/user/${id}`, {
+      
+      const response = await fetch(`https://be.smilecare.io.vn/api/user/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
