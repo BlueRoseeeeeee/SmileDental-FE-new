@@ -2606,15 +2606,16 @@ const ScheduleCalendar = () => {
           />
 
           <div>
-            <Text strong style={{ color: 'red' }}>* Lý do tắt lịch (bắt buộc):</Text>
+            <Text strong style={{ color: 'red', display: 'block' }}>
+              * Lý do tắt lịch (bắt buộc):
+            </Text>
             <Input.TextArea
               value={disableReason}
               onChange={(e) => setDisableReason(e.target.value)}
-              placeholder="Ví dụ: Bác sĩ nghỉ phép, Bảo trì phòng khám..."
+              // placeholder="Ví dụ: Bác sĩ nghỉ phép, Bảo trì phòng khám..."
               rows={3}
               maxLength={500}
               showCount
-              style={{ marginTop: 8 }}
             />
           </div>
 
@@ -2691,8 +2692,8 @@ const ScheduleCalendar = () => {
               style={{ width: '100%', marginTop: 8 }}
               disabled={emergencyClosing}
               disabledDate={(current) => {
-                // Không cho chọn ngày quá khứ
-                return current && current < dayjs().startOf('day');
+                // Chỉ cho phép chọn từ ngày mai trở đi (không cho chọn hôm nay và quá khứ)
+                return current && current <= dayjs().endOf('day');
               }}
             />
           </div>
@@ -2700,7 +2701,7 @@ const ScheduleCalendar = () => {
 
           {/* Reason Input */}
           <div>
-            <Text strong style={{ color: 'red', fontSize: 16 }}>
+            <Text strong style={{ color: 'red', fontSize: 16, display: 'block', marginBottom: 8 }}>
               * Lý do tắt toàn bộ lịch (bắt buộc, tối thiểu 10 ký tự):
             </Text>
             <Input.TextArea
@@ -2711,7 +2712,6 @@ const ScheduleCalendar = () => {
               rows={4}
               maxLength={500}
               showCount
-              style={{ marginTop: 8 }}
               disabled={emergencyClosing}
             />
             {emergencyClosureReason.length > 0 && emergencyClosureReason.length < 10 && (
@@ -2788,6 +2788,10 @@ const ScheduleCalendar = () => {
               placeholder="Chọn ngày"
               style={{ width: '100%', marginTop: 8 }}
               disabled={emergencyEnabling}
+              disabledDate={(current) => {
+                // Chỉ cho phép chọn từ ngày mai trở đi (không cho chọn hôm nay và quá khứ)
+                return current && current <= dayjs().endOf('day');
+              }}
             />
           </div>
 

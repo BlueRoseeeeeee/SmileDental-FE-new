@@ -56,11 +56,15 @@ const BookingSelectTime = () => {
       // Case 1: User selected a specific addon
       return selectedServiceAddOn.durationMinutes;
     } else if (selectedService?.serviceAddOns && selectedService.serviceAddOns.length > 0) {
-      // Case 2: No addon selected → use LONGEST addon duration
-      const longestAddon = selectedService.serviceAddOns.reduce((longest, addon) => {
-        return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
-      }, selectedService.serviceAddOns[0]);
-      return longestAddon.durationMinutes;
+      // Case 2: No addon selected → use LONGEST ACTIVE addon duration
+      const activeAddons = selectedService.serviceAddOns.filter(addon => addon.isActive === true);
+      if (activeAddons.length > 0) {
+        const longestAddon = activeAddons.reduce((longest, addon) => {
+          return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+        }, activeAddons[0]);
+        return longestAddon.durationMinutes;
+      }
+      // Fallback if no active addons
     } else if (selectedService?.durationMinutes) {
       // Case 3: Fallback to service duration (if exists)
       return selectedService.durationMinutes;
@@ -160,13 +164,18 @@ const BookingSelectTime = () => {
             serviceDuration = selectedServiceAddOn.durationMinutes;
             console.log('🎯 Using selected addon duration:', serviceDuration, 'minutes from', selectedServiceAddOn.name);
           } else if (serviceData?.serviceAddOns && serviceData.serviceAddOns.length > 0) {
-            // Case 2: No addon selected → use LONGEST addon duration
-            const longestAddon = serviceData.serviceAddOns.reduce((longest, addon) => {
-              return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
-            }, serviceData.serviceAddOns[0]);
-            
-            serviceDuration = longestAddon.durationMinutes;
-            console.log('🎯 No addon selected → Using LONGEST addon duration:', serviceDuration, 'minutes from', longestAddon.name);
+            // Case 2: No addon selected → use LONGEST ACTIVE addon duration
+            const activeAddons = serviceData.serviceAddOns.filter(addon => addon.isActive === true);
+            if (activeAddons.length > 0) {
+              const longestAddon = activeAddons.reduce((longest, addon) => {
+                return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+              }, activeAddons[0]);
+              
+              serviceDuration = longestAddon.durationMinutes;
+              console.log('🎯 No addon selected → Using LONGEST ACTIVE addon duration:', serviceDuration, 'minutes from', longestAddon.name);
+            } else {
+              console.log('⚠️ No active addons, using service duration');
+            }
           } else if (serviceData?.durationMinutes) {
             // Case 3: Fallback to service duration (if exists)
             serviceDuration = serviceData.durationMinutes;
