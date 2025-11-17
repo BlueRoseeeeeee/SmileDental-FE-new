@@ -9,7 +9,7 @@
  * - Tab 4: Treatment indications (for exam records only)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   Form,
@@ -68,6 +68,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   const [loadingData, setLoadingData] = useState(false); // For loading initial data
   const [activeTab, setActiveTab] = useState('1');
   const [recordType, setRecordType] = useState('exam');
+  const prescriptionFormRef = useRef(null); // ✅ Ref for PrescriptionForm
   
   // 🆕 Helper function to get price schedule info for addon
   const getPriceScheduleForAddon = (addon) => {
@@ -585,10 +586,10 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         // ⚠️ getFieldsValue() returns {} for disabled fields, so we need to get specific fields
         const allValues = form.getFieldsValue(true); // true = get all including disabled
         
-        // For edit mode, prioritize form values but fallback to record if empty
+        // For edit mode, use form values directly (allow empty strings)
         values = {
-          diagnosis: allValues.diagnosis || record.diagnosis || '',
-          notes: allValues.notes || record.notes || '',
+          diagnosis: allValues.diagnosis !== undefined ? allValues.diagnosis : record.diagnosis || '',
+          notes: allValues.notes !== undefined ? allValues.notes : record.notes || '',
           treatmentIndications: allValues.treatmentIndications || record.treatmentIndications || []
         };
         
@@ -599,30 +600,39 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           notes: record.notes,
           treatmentIndications: record.treatmentIndications
         });
-        
-        // Only validate required editable fields
-        if (!values.diagnosis || values.diagnosis.trim() === '') {
-          message.error('Vui lòng nhập chẩn đoán');
-          return;
-        }
-        
-        // 🆕 Check if service addon was changed
-        const serviceAddOnChanged = tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId;
-        if (serviceAddOnChanged) {
-          console.log('✅ [handleSubmit] Service addon changed');
-          // Validate service addon selection
-          const newAddOn = selectedMainServiceAddOns.find(a => a._id === tempServiceAddOnId);
-          if (!newAddOn) {
-            message.error('Không tìm thấy thông tin dịch vụ con');
-            return;
-          }
-        }
       } else {
         // In create mode, validate all required fields
         values = await form.validateFields();
       }
       
       setLoading(true);
+      
+      // 💊 Save prescription first (independent of record update)
+      if (mode === 'edit' && prescriptionFormRef.current) {
+        try {
+          console.log('💊 [RecordFormModal] Checking prescription data...');
+          const prescriptionData = await prescriptionFormRef.current.getPrescriptionData();
+          
+          if (prescriptionData && prescriptionData.medicines && prescriptionData.medicines.length > 0) {
+            console.log('💊 [RecordFormModal] Saving prescription:', prescriptionData);
+            console.log('💊 [RecordFormModal] First medicine:', JSON.stringify(prescriptionData.medicines[0], null, 2));
+            const prescriptionResponse = await recordService.addPrescription(record._id, prescriptionData);
+            
+            if (prescriptionResponse.success) {
+              console.log('✅ [RecordFormModal] Prescription saved successfully');
+            } else {
+              console.warn('⚠️ [RecordFormModal] Prescription save returned false:', prescriptionResponse);
+            }
+          } else {
+            console.log('ℹ️ [RecordFormModal] No prescription data to save');
+          }
+        } catch (prescriptionError) {
+          console.error('❌ [RecordFormModal] Failed to save prescription:', prescriptionError);
+          setLoading(false);
+          message.error('Có lỗi khi lưu đơn thuốc: ' + (prescriptionError.response?.data?.message || prescriptionError.message));
+          return;
+        }
+      }
 
       let recordData;
       
@@ -1217,7 +1227,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       <Form.Item
         name="diagnosis"
         label="Chẩn đoán"
-        rules={[{ required: true, message: 'Vui lòng nhập chẩn đoán' }]}
       >
         <TextArea
           rows={5}
@@ -1257,10 +1266,9 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
 
         {mode === 'edit' && record && (
           <PrescriptionForm
-            recordId={record._id}
+            ref={prescriptionFormRef}
             prescription={record.prescription}
             medicines={medicines}
-            onUpdate={onSuccess}
           />
         )}
 
