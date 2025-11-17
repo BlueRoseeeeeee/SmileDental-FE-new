@@ -501,8 +501,9 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
             label="Ghi chú"
           >
             <TextArea
-              rows={3}
+              rows={5}
               placeholder="Nhập ghi chú về dịch vụ này..."
+              className='custom-textarea'
               maxLength={300}
               showCount
             />

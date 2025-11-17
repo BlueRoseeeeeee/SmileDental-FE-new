@@ -140,6 +140,7 @@
 .desktop-search .ant-input:focus {
   border-color: #2596be !important;
   box-shadow: 0 0 0 2px rgba(37, 150, 190, 0.2) !important;
+  
 }
 
 /* Notification bell improvements */

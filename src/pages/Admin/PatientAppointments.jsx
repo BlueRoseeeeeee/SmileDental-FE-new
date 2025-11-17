@@ -16,7 +16,8 @@ import {
   message,
   Badge,
   Spin,
-  Empty
+  Empty,
+  Modal
 } from 'antd';
 import {
   SearchOutlined,
@@ -31,7 +32,9 @@ import {
   MedicineBoxOutlined,
   HomeOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  StopOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { io } from 'socket.io-client';
@@ -248,6 +251,27 @@ const PatientAppointments = () => {
     }
   };
 
+  const handleCancel = (appointment) => {
+    Modal.confirm({
+      title: 'Xác nhận hủy lịch hẹn',
+      icon: <ExclamationCircleOutlined />,
+      content: `Bạn có chắc chắn muốn hủy lịch hẹn của bệnh nhân ${appointment.patientInfo?.name}?`,
+      okText: 'Xác nhận hủy',
+      cancelText: 'Đóng',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await appointmentService.cancelAppointment(appointment._id, 'Hủy bởi admin');
+          message.success('Hủy lịch hẹn thành công');
+          fetchAllAppointments();
+        } catch (error) {
+          console.error('Error cancelling appointment:', error);
+          message.error(error.response?.data?.message || 'Không thể hủy lịch hẹn');
+        }
+      }
+    });
+  };
+
   const getStatusTag = (status) => {
     const statusConfig = {
       'confirmed': { color: 'blue', text: 'Đã xác nhận', icon: <CheckCircleOutlined /> },
@@ -306,18 +330,6 @@ const PatientAppointments = () => {
       key: 'dentistName',
       width: 120,
       render: (name) => <Text style={{ fontSize: 12 }}>{name}</Text>
-    },
-    {
-      title: 'Y tá',
-      key: 'nurse',
-      width: 120,
-      render: (_, record) => (
-        record.nurseName ? (
-          <Text style={{ fontSize: 12 }}>{record.nurseName}</Text>
-        ) : (
-          <Text type="secondary" style={{ fontSize: 11 }}>Chưa phân</Text>
-        )
-      )
     },
     {
       title: 'Dịch vụ',
@@ -379,6 +391,18 @@ const PatientAppointments = () => {
               style={{ height: 24, fontSize: 11, backgroundColor: '#52c41a' }}
             >
               Hoàn thành
+            </Button>
+          )}
+          {(record.status === 'confirmed' || record.status === 'checked-in') && (
+            <Button 
+              danger
+              icon={<StopOutlined />} 
+              onClick={() => handleCancel(record)}
+              size="small"
+              block
+              style={{ height: 24, fontSize: 11, marginTop:5 }}
+            >
+              Hủy lịch
             </Button>
           )}
         </Space>
@@ -526,9 +550,6 @@ const PatientAppointments = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Nha sĩ">
               {selectedAppointment.dentistName}
-            </Descriptions.Item>
-            <Descriptions.Item label="Y tá">
-              {selectedAppointment.nurseName || <Text type="secondary">Chưa phân công</Text>}
             </Descriptions.Item>
             <Descriptions.Item label="Phòng khám">
               {selectedAppointment.roomName}
