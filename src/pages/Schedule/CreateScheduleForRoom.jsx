@@ -141,7 +141,7 @@ const CreateScheduleForRoom = () => {
   // States
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
-  // Chỉ hiển thị phòng hoạt động (isActive = true), không cần filter nữa
+  const [roomActiveFilter, setRoomActiveFilter] = useState('active'); // 🆕 'active' | 'inactive'
   const [scheduleStatusFilter, setScheduleStatusFilter] = useState('all'); // 'all' | 'has-schedule' | 'no-schedule'
   const [roomSearchValue, setRoomSearchValue] = useState('');
   const [roomSearchTerm, setRoomSearchTerm] = useState('');
@@ -277,7 +277,7 @@ const CreateScheduleForRoom = () => {
 
   useEffect(() => {
     fetchRooms();
-  }, [pagination.current, pagination.pageSize, scheduleStatusFilter, roomSearchTerm]); // 🔥 Add roomSearchTerm to trigger search
+  }, [pagination.current, pagination.pageSize, scheduleStatusFilter, roomSearchTerm, roomActiveFilter]); // 🔥 Add roomActiveFilter to trigger reload
 
   const debouncedRoomSearch = useMemo(() => debounce((value) => {
     setRoomSearchTerm(value.trim().toLowerCase());
@@ -315,11 +315,11 @@ const CreateScheduleForRoom = () => {
       // �🔥 When searching, fetch ALL rooms to enable search across all pages
       const shouldFetchAll = roomSearchTerm.trim() !== '';
       
-      // Build params - chỉ lấy phòng hoạt động (isActive = true)
+      // Build params với filter trạng thái phòng
       const params = {
         page: shouldFetchAll ? 1 : pagination.current,
         limit: shouldFetchAll ? 9999 : pagination.pageSize,
-        isActive: true // Chỉ lấy phòng hoạt động
+        isActive: roomActiveFilter === 'active' ? true : false // 🆕 Filter theo trạng thái
       };
       
       console.log('📡 Calling API with params:', params);
@@ -604,39 +604,49 @@ const CreateScheduleForRoom = () => {
       const suggestedStart = scheduleListData?.summary?.suggestedStartDate;
       const startDateToUse = suggestedStart ? dayjs(suggestedStart) : dayjs().add(1, 'day');
       
-      // 🆕 Tìm tháng CHƯA CÓ LỊCH GẦN NHẤT với tháng hiện tại (có thể là quá khứ hoặc tương lai)
-      const currentYear = dayjs().year();
-      const currentMonth = dayjs().month() + 1;
-      const availableMonths = [];
+      // 🆕 Tìm tháng CHƯA CÓ LỊCH từ THÁNG HIỆN TẠI trở về sau (trong khoảng 6 tháng)
+      const today = dayjs().startOf('day');
+      const currentYear = today.year();
+      const currentMonth = today.month() + 1; // 1-12
+      let firstAvailableMonth = null;
+      let firstAvailableYear = null;
       
-      // Quét từ 2 năm trước đến 2 năm sau để tìm tháng chưa có lịch
-      for (let year = currentYear - 2; year <= currentYear + 2; year++) {
-        for (let m = 1; m <= 12; m++) {
+      // 🔥 Giới hạn: Chỉ tìm trong khoảng 6 tháng kể từ tháng hiện tại
+      const currentMonthDate = dayjs().year(currentYear).month(currentMonth - 1).startOf('month');
+      const maxAllowedDate = currentMonthDate.add(6, 'months');
+      const maxYear = maxAllowedDate.year();
+      const maxMonth = maxAllowedDate.month() + 1; // 1-12
+      
+      // 🔥 Quét từ tháng hiện tại đến tháng maxMonth/maxYear để tìm tháng chưa có lịch
+      outerLoop: for (let year = currentYear; year <= maxYear; year++) {
+        const startMonth = (year === currentYear) ? currentMonth : 1; // Bắt đầu từ tháng hiện tại nếu là năm hiện tại
+        const endMonth = (year === maxYear) ? maxMonth : 12; // Kết thúc ở maxMonth nếu là năm maxYear
+        
+        for (let m = startMonth; m <= endMonth; m++) {
           const hasSchedule = isMonthScheduled(m, year);
           
           if (!hasSchedule) {
-            // Tính khoảng cách từ tháng hiện tại
-            const monthDiff = Math.abs((year - currentYear) * 12 + (m - currentMonth));
-            availableMonths.push({ month: m, year, distance: monthDiff });
+            // Tìm thấy tháng đầu tiên chưa có lịch
+            firstAvailableMonth = m;
+            firstAvailableYear = year;
+            console.log(`✅ Tìm thấy tháng đầu tiên chưa có lịch: ${m}/${year}`);
+            break outerLoop;
           }
         }
       }
       
-      // Sắp xếp theo khoảng cách gần nhất
-      availableMonths.sort((a, b) => a.distance - b.distance);
-      
-      const firstAvailable = availableMonths[0];
-      let firstAvailableMonth = firstAvailable?.month || null;
-      let firstAvailableYear = firstAvailable?.year || startDateToUse.year();
+      // 🔥 Fallback: Nếu không tìm thấy tháng nào chưa có lịch (đã tạo đủ 6 tháng), dùng tháng hiện tại
+      if (!firstAvailableMonth) {
+        firstAvailableMonth = currentMonth;
+        firstAvailableYear = currentYear;
+        console.log(`⚠️ Không tìm thấy tháng chưa có lịch trong 6 tháng tới, fallback về tháng hiện tại: ${currentMonth}/${currentYear}`);
+      }
       
       if (firstAvailableMonth) {
         setFromMonth(firstAvailableMonth);
         setSelectedYear(firstAvailableYear);
         
         // 🆕 AUTO-FILL START DATE khi mở modal
-        const today = dayjs().startOf('day');
-        const currentMonth = today.month() + 1; // 1-12
-        const currentYear = today.year();
         const isFirstMonthCurrent = firstAvailableMonth === currentMonth && firstAvailableYear === currentYear;
         
         let autoStartDate;
@@ -651,23 +661,6 @@ const CreateScheduleForRoom = () => {
         }
         
         setStartDate(autoStartDate);
-      } else {
-        // ⚠️ Fallback: Không tìm thấy tháng available
-        const today = dayjs().startOf('day');
-        const isCurrentMonth = startDateToUse.month() + 1 === today.month() + 1 && startDateToUse.year() === today.year();
-        
-        setFromMonth(startDateToUse.month() + 1);
-        setSelectedYear(startDateToUse.year());
-        
-        // ✅ Đảm bảo startDate luôn >= ngày mai nếu là tháng hiện tại
-        // ✅ FIX: Dùng .isSameOrBefore() thay vì <=
-        if (isCurrentMonth && startDateToUse.isSameOrBefore(today, 'day')) {
-          setStartDate(today.add(1, 'day'));
-          console.log(`🎯 Fallback (tháng hiện tại): Tự động chọn ngày mai ${today.add(1, 'day').format('DD/MM/YYYY')}`);
-        } else {
-          setStartDate(startDateToUse);
-          console.log(`🎯 Fallback: Sử dụng suggested start date ${startDateToUse.format('DD/MM/YYYY')}`);
-        }
       }
       
       // Reset toMonth và toYear - chỉ cho chọn sau khi chọn fromMonth
@@ -2062,6 +2055,21 @@ const CreateScheduleForRoom = () => {
           </Col>
           <Col xs={24} sm={24} md={16} lg={18}>
             <Space wrap style={{ float: 'right' }}>
+              {/* Room Active Status Filter - Radio */}
+              <Radio.Group 
+                value={roomActiveFilter} 
+                onChange={(e) => setRoomActiveFilter(e.target.value)}
+                buttonStyle="solid"
+                size="large"
+              >
+                <Radio.Button value="active">
+                  <span style={{ fontWeight: 500 }}>Phòng hoạt động</span>
+                </Radio.Button>
+                <Radio.Button value="inactive">
+                  <span style={{ fontWeight: 500 }}>Phòng không hoạt động</span>
+                </Radio.Button>
+              </Radio.Group>
+              
               {/* Schedule Status Filter - Radio */}
               <Radio.Group 
                 value={scheduleStatusFilter} 
@@ -2148,14 +2156,20 @@ const CreateScheduleForRoom = () => {
           <Button key="close" onClick={handleCancelModal}>
             Đóng
           </Button>,
-          <Button 
-            key="create" 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={async () => await handleOpenCreateModal(selectedRoom, selectedSubRoom, null)}
+          <Tooltip 
+            key="create-tooltip" 
+            title={selectedRoom?.isActive === false ? 'Không thể tạo lịch cho phòng không hoạt động' : ''}
           >
-            Tạo lịch mới
-          </Button>
+            <Button 
+              key="create" 
+              type="primary" 
+              icon={<PlusOutlined />}
+              disabled={selectedRoom?.isActive === false}
+              onClick={async () => await handleOpenCreateModal(selectedRoom, selectedSubRoom, null)}
+            >
+              Tạo lịch mới
+            </Button>
+          </Tooltip>
         ]}
         width={800}
         bodyStyle={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' }}
@@ -2169,6 +2183,17 @@ const CreateScheduleForRoom = () => {
           </div>
         ) : scheduleListData && (
           <Space direction="vertical" style={{ width: '100%' }} size="large">
+            {/* 🆕 Warning for inactive room */}
+            {selectedRoom?.isActive === false && (
+              <Alert
+                type="error"
+                showIcon
+                message="Phòng không hoạt động"
+                description="Phòng này đang ở trạng thái không hoạt động. Không thể tạo lịch mới cho phòng này."
+                style={{ marginBottom: 8 }}
+              />
+            )}
+            
             {/* Summary Info */}
             <Card size="small" style={{ backgroundColor: '#f0f5ff' }}>
               <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -3532,15 +3557,18 @@ const CreateScheduleForRoom = () => {
                 disabled={isEditingExistingSchedule}
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
-                  const currentYear = dayjs().year();
-                  const currentMonth = dayjs().month() + 1;
+                  const today = dayjs();
+                  const currentYear = today.year();
+                  const currentMonth = today.month() + 1; // 1-12
                   
-                  // 🆕 Giới hạn: Chỉ cho chọn tháng trong khoảng 7 tháng từ hiện tại
-                  const maxDate = dayjs().add(7, 'months');
-                  const maxYear = maxDate.year();
-                  const maxMonth = maxDate.month() + 1;
+                  // 🔥 Giới hạn: Chỉ cho chọn tháng trong khoảng 6 tháng KỂ TỪ THÁNG HIỆN TẠI
+                  // Ví dụ: Tháng hiện tại là 11/2025 → Chỉ được chọn đến tháng 5/2026 (12,1,2,3,4,5)
+                  const currentMonthDate = dayjs().year(currentYear).month(currentMonth - 1).startOf('month');
+                  const maxAllowedDate = currentMonthDate.add(6, 'months'); // +6 tháng từ tháng hiện tại
+                  const maxYear = maxAllowedDate.year();
+                  const maxMonth = maxAllowedDate.month() + 1; // 1-12
                   
-                  const monthDate = dayjs().year(selectedYear).month(m - 1);
+                  const selectedMonthDate = dayjs().year(selectedYear).month(m - 1);
                   const isAfterMaxDate = selectedYear > maxYear || (selectedYear === maxYear && m > maxMonth);
                   
                   // Disable nếu là tháng trong quá khứ
@@ -3614,16 +3642,18 @@ const CreateScheduleForRoom = () => {
                 disabled={isEditingExistingSchedule}
               >
                 {(() => {
-                  const currentYear = dayjs().year();
-                  const currentMonth = dayjs().month() + 1;
+                  const today = dayjs();
+                  const currentYear = today.year();
+                  const currentMonth = today.month() + 1; // 1-12
                   
-                  // 🆕 Giới hạn: Chỉ cho chọn năm trong khoảng 7 tháng từ hiện tại
-                  const maxDate = dayjs().add(7, 'months');
-                  const maxYear = maxDate.year();
+                  // 🔥 Giới hạn: Chỉ cho chọn năm trong khoảng 6 tháng kể từ tháng hiện tại
+                  const currentMonthDate = dayjs().year(currentYear).month(currentMonth - 1).startOf('month');
+                  const maxAllowedDate = currentMonthDate.add(6, 'months');
+                  const maxYear = maxAllowedDate.year();
                   
                   const years = [];
                   
-                  // Chỉ tạo danh sách năm từ năm hiện tại đến năm của maxDate
+                  // Chỉ tạo danh sách năm từ năm hiện tại đến năm của maxAllowedDate
                   for (let year = currentYear; year <= maxYear; year++) {
                     years.push(
                       <Option key={year} value={year}>
@@ -3656,13 +3686,15 @@ const CreateScheduleForRoom = () => {
                   if (!fromMonth || !selectedYear) return [];
                   
                   const options = [];
-                  const currentYear = dayjs().year();
-                  const currentMonth = dayjs().month() + 1;
+                  const today = dayjs();
+                  const currentYear = today.year();
+                  const currentMonth = today.month() + 1; // 1-12
                   
-                  // 🆕 Giới hạn: Chỉ cho chọn tháng trong khoảng 7 tháng từ hiện tại
-                  const maxDate = dayjs().add(7, 'months');
-                  const maxYear = maxDate.year();
-                  const maxMonth = maxDate.month() + 1;
+                  // 🔥 Giới hạn: Chỉ cho chọn tháng trong khoảng 6 tháng KỂ TỪ THÁNG HIỆN TẠI
+                  const currentMonthDate = dayjs().year(currentYear).month(currentMonth - 1).startOf('month');
+                  const maxAllowedDate = currentMonthDate.add(6, 'months');
+                  const maxYear = maxAllowedDate.year();
+                  const maxMonth = maxAllowedDate.month() + 1; // 1-12
                   
                   // 🆕 Nếu chưa chọn năm kết thúc, mặc định dùng năm bắt đầu
                   const effectiveToYear = toYear || selectedYear;
@@ -3720,9 +3752,13 @@ const CreateScheduleForRoom = () => {
                 {(() => {
                   if (!fromMonth || !selectedYear) return [];
                   
-                  // 🆕 Giới hạn: Chỉ cho chọn năm trong khoảng 7 tháng từ hiện tại
-                  const maxDate = dayjs().add(7, 'months');
-                  const maxYear = maxDate.year();
+                  // 🔥 Giới hạn: Chỉ cho chọn năm trong khoảng 6 tháng KỂ TỪ THÁNG HIỆN TẠI
+                  const today = dayjs();
+                  const currentMonth = today.month() + 1; // 1-12
+                  const currentYear = today.year();
+                  const currentMonthDate = dayjs().year(currentYear).month(currentMonth - 1).startOf('month');
+                  const maxAllowedDate = currentMonthDate.add(6, 'months');
+                  const maxYear = maxAllowedDate.year();
                   
                   const years = [];
                   

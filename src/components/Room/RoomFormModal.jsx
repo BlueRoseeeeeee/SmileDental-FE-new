@@ -434,19 +434,8 @@ const RoomFormModal = ({ visible, open, onClose, onSuccess, room }) => {
               />
             </Form.Item>
           </Col>
-          <Col span={12}>
-            <Form.Item
-              name="isActive"
-              label="Trạng thái"
-              valuePropName="checked"
-            >
-              <Switch
-                checkedChildren="Hoạt động"
-                unCheckedChildren="Không hoạt động"
-                onChange={(value) => handleToggleConfirmation('isActive', value)}
-              />
-            </Form.Item>
-          </Col>
+          {/* ❌ Ẩn trạng thái khi tạo mới, luôn mặc định isActive: true */}
+          {/* Khi edit phòng, không hiển thị trạng thái */}
         </Row>
 
         <Divider />

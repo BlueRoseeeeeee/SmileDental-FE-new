@@ -80,7 +80,7 @@ const CancelledPatientsList = () => {
 
   const loadRooms = async () => {
     try {
-      const result = await roomService.getAllRooms();
+      const result = await roomService.getActiveRooms();
       if (result.success) {
         setRooms(result.data || []);
       }
@@ -91,9 +91,13 @@ const CancelledPatientsList = () => {
 
   const loadDentists = async () => {
     try {
-      const result = await userService.getUsersByRoles(['dentist']);
+      const result = await userService.getAllStaff(1, 1000);
       if (result.success) {
-        setDentists(result.data || []);
+        // Filter for dentists only
+        const dentistsOnly = (result.data || []).filter(user => 
+          user.roles?.includes('dentist')
+        );
+        setDentists(dentistsOnly);
       }
     } catch (error) {
       console.error('Error loading dentists:', error);

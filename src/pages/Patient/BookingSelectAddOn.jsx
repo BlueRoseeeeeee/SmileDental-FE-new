@@ -267,13 +267,23 @@ const BookingSelectAddOn = () => {
     
     // 🆕 If service has addons, save the longest one for slot grouping
     if (service.serviceAddOns && service.serviceAddOns.length > 0) {
-      const longestAddon = service.serviceAddOns.reduce((longest, addon) => {
-        return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
-      }, service.serviceAddOns[0]);
+      // 🔥 Filter only active addons
+      const activeAddons = service.serviceAddOns.filter(addon => addon.isActive === true);
       
-      localStorage.setItem('booking_serviceAddOn', JSON.stringify(longestAddon));
-      localStorage.setItem('booking_serviceAddOn_userSelected', 'false'); // 🆕 Flag: auto-selected for slot grouping only
-      console.log('⏭️ No addon selected → Using longest addon for slot grouping:', longestAddon.name, longestAddon.durationMinutes, 'min');
+      if (activeAddons.length > 0) {
+        const longestAddon = activeAddons.reduce((longest, addon) => {
+          return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+        }, activeAddons[0]);
+        
+        localStorage.setItem('booking_serviceAddOn', JSON.stringify(longestAddon));
+        localStorage.setItem('booking_serviceAddOn_userSelected', 'false'); // 🆕 Flag: auto-selected for slot grouping only
+        console.log('⏭️ No addon selected → Using longest ACTIVE addon for slot grouping:', longestAddon.name, longestAddon.durationMinutes, 'min');
+      } else {
+        // No active addons, clear addon selection
+        localStorage.removeItem('booking_serviceAddOn');
+        localStorage.removeItem('booking_serviceAddOn_userSelected');
+        console.log('⚠️ No active addons available');
+      }
     } else {
       // Clear addon selection if no addons exist
       localStorage.removeItem('booking_serviceAddOn');

@@ -837,6 +837,7 @@ const StaffAssignmentUnified = () => {
   const [staffRoleFilter, setStaffRoleFilter] = useState('all'); // 'all', 'dentist', 'nurse'
   const [staffSearchValue, setStaffSearchValue] = useState('');
   const [staffSearchTerm, setStaffSearchTerm] = useState('');
+  const [staffActiveFilter, setStaffActiveFilter] = useState('active'); // 🆕 'active', 'inactive' for main staff list
   const [staffScheduleMap, setStaffScheduleMap] = useState({}); // { staffId: hasSchedule }
   const [selectedStaffForReplacement, setSelectedStaffForReplacement] = useState(null);
   const [staffScheduleDetails, setStaffScheduleDetails] = useState(null);
@@ -866,6 +867,7 @@ const StaffAssignmentUnified = () => {
   const [loadingReplacementStaff, setLoadingReplacementStaff] = useState(false);
   const [selectedReplacementStaff, setSelectedReplacementStaff] = useState(null);
   const [replacementStaffFilter, setReplacementStaffFilter] = useState('all'); // 'all', 'no-conflict', 'has-conflict'
+  const [replacementStaffActiveFilter, setReplacementStaffActiveFilter] = useState('active'); // 🆕 'active', 'inactive'
   const [replacementStaffSearchValue, setReplacementStaffSearchValue] = useState('');
   const [replacementStaffSearchTerm, setReplacementStaffSearchTerm] = useState('');
 
@@ -948,8 +950,15 @@ const StaffAssignmentUnified = () => {
       filtered = filtered.filter(staff => staff.searchKeywords?.includes(staffSearchTerm));
     }
 
+    // Filter by isActive
+    if (staffActiveFilter === 'active') {
+      filtered = filtered.filter(staff => staff.isActive === true);
+    } else if (staffActiveFilter === 'inactive') {
+      filtered = filtered.filter(staff => staff.isActive === false);
+    }
+
     return filtered;
-  }, [allStaff, staffSearchTerm, staffRoleFilter, staffAssignmentFilter, staffScheduleMap]);
+  }, [allStaff, staffSearchTerm, staffRoleFilter, staffAssignmentFilter, staffScheduleMap, staffActiveFilter]);
 
   const slotSelectionStats = useMemo(() => {
     let selected = 0;
@@ -1956,16 +1965,20 @@ const StaffAssignmentUnified = () => {
     return assignedCount;
   }, [selectedSlotsForReplacement, monthStateForStaff, currentPageForStaff, slotDetailsCacheStaff]);
 
-  //  Auto-load replacement staff when slots are selected
+  //  Auto-load replacement staff when slots are selected OR when active filter changes
   useEffect(() => {
-    console.log('🔄 useEffect totalSelectedSlotCountForStaff changed:', { 
+    console.log('🔄 useEffect totalSelectedSlotCountForStaff/replacementStaffActiveFilter changed:', { 
       totalSelectedSlotCountForStaff,
+      replacementStaffActiveFilter,
       listLength: replacementStaffList.length,
       loading: loadingReplacementStaff
     });
     
     if (totalSelectedSlotCountForStaff > 0) {
-      console.log('🔄 Auto-loading replacement staff...', { totalSlots: totalSelectedSlotCountForStaff });
+      console.log('🔄 Auto-loading replacement staff...', { 
+        totalSlots: totalSelectedSlotCountForStaff,
+        activeFilter: replacementStaffActiveFilter
+      });
       fetchReplacementStaff();
     } else {
       console.log('🔄 Clearing replacement staff list');
@@ -1975,7 +1988,7 @@ const StaffAssignmentUnified = () => {
       setReplacementStaffFilter('all');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalSelectedSlotCountForStaff]);
+  }, [totalSelectedSlotCountForStaff, replacementStaffActiveFilter]);
 
   // Fetch replacement staff with conflict checking
   const fetchReplacementStaff = async () => {
@@ -2208,7 +2221,12 @@ const StaffAssignmentUnified = () => {
         .map(normalizeStaffRecord)
         .filter(staff => {
           // 🔥 Support multi-role: check if replacement staff has the required role
-          return staffHasRole(staff, currentRole) && staff._id !== selectedStaffForReplacement._id;
+          // 🆕 Filter theo isActive (mặc định chỉ lấy active staff)
+          const matchesRole = staffHasRole(staff, currentRole) && staff._id !== selectedStaffForReplacement._id;
+          const matchesActiveFilter = replacementStaffActiveFilter === 'active' 
+            ? staff.isActive === true 
+            : staff.isActive === false;
+          return matchesRole && matchesActiveFilter;
         });
 
       // ⚡ STEP 3: Map conflicts to replacement staff (NO LOOP - just Set.has())
@@ -4229,6 +4247,7 @@ const StaffAssignmentUnified = () => {
                               >
                               {staffList
                                 .filter(staff => staffHasRole(staff, 'dentist'))
+                                .filter(staff => staff.isActive === true) // 🔥 Only show active staff
                                 .filter(staff => !selectedNurses.includes(staff._id)) // 🔥 Mutual exclusion: exclude if already selected as nurse
                                 .filter(staff => {
                                   // 🔥 Use role-specific conflicts for dentist
@@ -4338,6 +4357,7 @@ const StaffAssignmentUnified = () => {
                               >
                               {staffList
                                 .filter(staff => staffHasRole(staff, 'nurse'))
+                                .filter(staff => staff.isActive === true) // 🔥 Only show active staff
                                 .filter(staff => !selectedDentists.includes(staff._id)) // 🔥 Mutual exclusion: exclude if already selected as dentist
                                 .filter(staff => {
                                   // 🔥 Use role-specific conflicts for nurse
@@ -4864,6 +4884,15 @@ const StaffAssignmentUnified = () => {
                         <Radio.Button value="all">Tất cả</Radio.Button>
                         <Radio.Button value="has-schedule">Có lịch</Radio.Button>
                         <Radio.Button value="no-schedule">Không có lịch</Radio.Button>
+                      </Radio.Group>
+                      
+                      <Radio.Group 
+                        value={staffActiveFilter} 
+                        onChange={(e) => setStaffActiveFilter(e.target.value)}
+                        buttonStyle="solid"
+                      >
+                        <Radio.Button value="active">Nhân sự hoạt động</Radio.Button>
+                        <Radio.Button value="inactive">Nhân sự nghỉ việc</Radio.Button>
                       </Radio.Group>
                       
                       <Button
@@ -5441,6 +5470,21 @@ const StaffAssignmentUnified = () => {
                                         }}
                                         allowClear
                                       /> */}
+                                      
+                                      {/* 🆕 Filter trạng thái nhân sự */}
+                                      <Radio.Group 
+                                        value={replacementStaffActiveFilter} 
+                                        onChange={(e) => {
+                                          setReplacementStaffActiveFilter(e.target.value);
+                                          setSelectedReplacementStaff(null); // Clear selection khi đổi filter
+                                        }}
+                                        size="small"
+                                        buttonStyle="solid"
+                                        style={{ width: '100%' }}
+                                      >
+                                        <Radio.Button value="active" style={{ flex: 1, textAlign: 'center' }}>Nhân sự hoạt động</Radio.Button>
+                                        <Radio.Button value="inactive" style={{ flex: 1, textAlign: 'center' }}>Nhân sự nghỉ việc</Radio.Button>
+                                      </Radio.Group>
                                       
                                       <Radio.Group 
                                         value={replacementStaffFilter} 
