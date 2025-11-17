@@ -94,7 +94,7 @@ const EditUser = () => {
       
       // Add timestamp to prevent caching
       const timestamp = new Date().getTime();
-      const API_BASE = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const API_BASE = await getServiceUrl('user');
       const response = await fetch(`${API_BASE}/user/${id}?_t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -179,7 +179,7 @@ const EditUser = () => {
       
       console.log('📤 Update data to send:', updateData);
 
-      const API_BASE = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const API_BASE = await getServiceUrl('user');
       const response = await fetch(`${API_BASE}/user/${id}`, {
         method: 'PUT',
         headers: {
@@ -230,7 +230,8 @@ const EditUser = () => {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await fetch(`http://localhost:3001/api/user/avatar/${id}`, {
+      const apiUrl = await getServiceUrl('user');
+      const response = await fetch(`${apiUrl}/user/avatar/${id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -297,7 +298,8 @@ const EditUser = () => {
         formData.append('backImages', newCertificate.backImage);
       }
 
-      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
+      const apiUrl = await getServiceUrl('user');
+      const response = await fetch(`${apiUrl}/user/${id}/certificates`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -353,7 +355,8 @@ const EditUser = () => {
       formData.append('action', 'batch-delete');
       formData.append('certificateId0', certificateId);
 
-      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
+      const apiUrl = await getServiceUrl('user');
+      const response = await fetch(`${apiUrl}/user/${id}/certificates`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -414,7 +417,8 @@ const EditUser = () => {
         formData.append('backImages', updateData.backImage);
       }
 
-      const response = await fetch(`http://localhost:3001/api/user/${id}/certificates`, {
+      const apiUrl = await getServiceUrl('user');
+      const response = await fetch(`${apiUrl}/user/${id}/certificates`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,

@@ -22,6 +22,7 @@ import {
   EyeOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { getServiceUrl } from '../../config/apiConfig';
 
 const { Title, Text } = Typography;
 
@@ -41,7 +42,8 @@ const DetailStaff = () => {
   const loadUser = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/user/${id}`, {
+      const apiUrl = await getServiceUrl('user');
+      const response = await fetch(`${apiUrl}/user/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }

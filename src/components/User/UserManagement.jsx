@@ -514,7 +514,8 @@ const UserManagement = () => {
           specialties: allValues.specialties || [] // 🆕 Include specialties
         };
 
-        const response = await fetch(`http://localhost:3001/api/user/update/${selectedUser._id}`, {
+        const apiUrl = await getServiceUrl('user');
+        const response = await fetch(`${apiUrl}/user/update/${selectedUser._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
