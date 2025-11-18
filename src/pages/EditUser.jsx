@@ -40,6 +40,7 @@ import dayjs from 'dayjs';
 import { toast } from '../services/toastService';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
 import { useAuth } from '../contexts/AuthContext';
+import { getServiceUrl } from '../config/apiConfig';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -93,9 +94,9 @@ const EditUser = () => {
       }
       
       // Add timestamp to prevent caching
-      const timestamp = new Date().getTime();
-      const API_BASE = await getServiceUrl('user');
-      const response = await fetch(`${API_BASE}/user/${id}?_t=${timestamp}`, {
+        const timestamp = new Date().getTime();
+        const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${USER_API}/user/${id}?_t=${timestamp}`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Cache-Control': 'no-cache',
@@ -179,8 +180,8 @@ const EditUser = () => {
       
       console.log('📤 Update data to send:', updateData);
 
-      const API_BASE = await getServiceUrl('user');
-      const response = await fetch(`${API_BASE}/user/${id}`, {
+        const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${USER_API}/user/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -230,8 +231,8 @@ const EditUser = () => {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const apiUrl = await getServiceUrl('user');
-      const response = await fetch(`${apiUrl}/user/avatar/${id}`, {
+        const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${USER_API}/user/avatar/${id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -298,8 +299,8 @@ const EditUser = () => {
         formData.append('backImages', newCertificate.backImage);
       }
 
-      const apiUrl = await getServiceUrl('user');
-      const response = await fetch(`${apiUrl}/user/${id}/certificates`, {
+      const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${USER_API}/user/${id}/certificates`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -355,8 +356,8 @@ const EditUser = () => {
       formData.append('action', 'batch-delete');
       formData.append('certificateId0', certificateId);
 
-      const apiUrl = await getServiceUrl('user');
-      const response = await fetch(`${apiUrl}/user/${id}/certificates`, {
+      const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${USER_API}/user/${id}/certificates`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -417,8 +418,8 @@ const EditUser = () => {
         formData.append('backImages', updateData.backImage);
       }
 
-      const apiUrl = await getServiceUrl('user');
-      const response = await fetch(`${apiUrl}/user/${id}/certificates`, {
+      const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${USER_API}/user/${id}/certificates`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,

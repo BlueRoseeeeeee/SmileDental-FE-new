@@ -42,8 +42,8 @@ const DetailStaff = () => {
   const loadUser = async () => {
     try {
       setLoading(true);
-      const apiUrl = await getServiceUrl('user');
-      const response = await fetch(`${apiUrl}/user/${id}`, {
+      const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${USER_API}/user/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }

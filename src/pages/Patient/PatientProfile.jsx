@@ -107,8 +107,8 @@ const PatientProfile = () => {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const apiUrl = import.meta.env.VITE_USER_SERVICE_URL || 'http://localhost:3001';
-      const response = await fetch(`${apiUrl}/api/user/avatar/${user._id}`, {
+      const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${USER_API}/user/avatar/${user._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
