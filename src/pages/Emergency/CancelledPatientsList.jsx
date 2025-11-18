@@ -214,7 +214,7 @@ const CancelledPatientsList = () => {
     {
       title: 'Thời gian hủy',
       key: 'cancelledDateTime',
-      width: 140,
+      width: 130,
       sorter: (a, b) => new Date(a.cancelledAt) - new Date(b.cancelledAt),
       render: (_, record) => (
         <Space direction="vertical" size={0}>
@@ -228,7 +228,7 @@ const CancelledPatientsList = () => {
     {
       title: 'Bệnh nhân',
       key: 'patient',
-      width: 200,
+      width: 180,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Text strong><UserOutlined /> {record.patientName}</Text>
@@ -243,7 +243,7 @@ const CancelledPatientsList = () => {
     {
       title: 'Lịch hẹn gốc',
       key: 'appointment',
-      width: 150,
+      width: 140,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Text><CalendarOutlined /> {dayjs(record.appointmentDate).format('DD/MM/YYYY')}</Text>
@@ -258,7 +258,7 @@ const CancelledPatientsList = () => {
       title: 'Nha sĩ',
       dataIndex: 'dentists',
       key: 'dentists',
-      width: 150,
+      width: 140,
       ellipsis: true,
       render: (text) => (
         <Tooltip title={text}>
@@ -267,21 +267,10 @@ const CancelledPatientsList = () => {
       )
     },
     {
-      title: 'Y tá',
-      dataIndex: 'nurses',
-      key: 'nurses',
-      width: 150,
-      ellipsis: true,
-      render: (text) => (
-        <Tooltip title={text}>
-          <Text>{text}</Text>
-        </Tooltip>
-      )
-    },
-    {
       title: 'Thanh toán',
       key: 'payment',
-      width: 100,
+      width: 90,
+      align: 'center',
       render: (_, record) => {
         if (record.paymentId) {
           return (
@@ -302,7 +291,8 @@ const CancelledPatientsList = () => {
     {
       title: 'Hóa đơn',
       key: 'invoice',
-      width: 100,
+      width: 90,
+      align: 'center',
       render: (_, record) => {
         if (record.invoiceId) {
           return (
@@ -319,24 +309,6 @@ const CancelledPatientsList = () => {
           return <Text type="secondary">Chưa có</Text>;
         }
       }
-    },
-    {
-      title: 'Lý do hủy',
-      dataIndex: 'cancelledReason',
-      key: 'reason',
-      width: 200,
-      ellipsis: true,
-      render: (text) => (
-        <Tooltip title={text}>
-          <Text type="secondary">{text}</Text>
-        </Tooltip>
-      )
-    },
-    {
-      title: 'Người hủy',
-      dataIndex: 'cancelledBy',
-      key: 'cancelledBy',
-      width: 120
     }
   ];
 
@@ -473,7 +445,7 @@ const CancelledPatientsList = () => {
             onChange={(newPagination) => {
               loadPatients(newPagination.current);
             }}
-            scroll={{ x: 1600 }}
+            scroll={{ x: 900 }}
             size="small"
           />
         </Space>

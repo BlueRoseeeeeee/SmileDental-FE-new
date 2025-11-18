@@ -37,7 +37,11 @@ const BookingChannelStatistics = () => {
   // ✅ Không auto-call khi thay đổi filters - chỉ call khi click button
 
   const fetchData = async () => {
+    if (loading) return; // Prevent multiple calls
+    
     setLoading(true);
+    console.log('📊 [BookingChannel] Fetching statistics...');
+    
     try {
       const params = {
         startDate: dateRange[0].format('YYYY-MM-DD'),
@@ -45,18 +49,26 @@ const BookingChannelStatistics = () => {
         groupBy
       };
       
+      console.log('📤 [BookingChannel] Request params:', params);
+      
       const response = await getBookingChannelStatistics(params);
+      
+      console.log('📥 [BookingChannel] Response:', response);
       
       if (response.success) {
         setData(response.data);
+        message.success('Đã tải dữ liệu thống kê');
       } else {
         message.error(response.message || 'Không thể tải dữ liệu thống kê');
+        setData(null);
       }
     } catch (error) {
-      console.error('Error fetching booking channel statistics:', error);
-      message.error('Không thể tải dữ liệu thống kê');
+      console.error('❌ [BookingChannel] Error fetching statistics:', error);
+      message.error('Lỗi khi tải thống kê: ' + (error.response?.data?.message || error.message));
+      setData(null);
     } finally {
       setLoading(false);
+      console.log('✅ [BookingChannel] Fetch completed');
     }
   };
 
@@ -237,8 +249,16 @@ const BookingChannelStatistics = () => {
           </Space>
         </Card>
 
+        {/* ✅ Loading State */}
+        {loading && (
+          <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16, color: '#8c8c8c' }}>Đang tải dữ liệu thống kê...</div>
+          </Card>
+        )}
+
         {/* ✅ Empty State - Show when no data loaded yet */}
-        {!data && (
+        {!loading && !data && (
           <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
             <CalendarOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
             <h3 style={{ color: '#595959' }}>Chưa có dữ liệu thống kê</h3>
@@ -249,17 +269,14 @@ const BookingChannelStatistics = () => {
         )}
 
         {/* ✅ Empty State - Show when data loaded but empty */}
-        {data && !hasData && (
+        {!loading && data && !hasData && (
           <Card style={{ textAlign: 'center', padding: '48px 24px' }}>
             <CalendarOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
             <h3 style={{ color: '#595959' }}>Không có dữ liệu đặt hẹn</h3>
-            <p style={{ color: '#8c8c8c', marginBottom: 24 }}>
+            <p style={{ color: '#8c8c8c' }}>
               Không tìm thấy dữ liệu đặt hẹn trong khoảng thời gian đã chọn.<br />
               Vui lòng chọn khoảng thời gian khác hoặc kiểm tra lại dữ liệu.
             </p>
-            <Button type="primary" onClick={() => setDateRange([dayjs().subtract(90, 'days'), dayjs()])}>
-              Xem 90 ngày gần đây
-            </Button>
           </Card>
         )}
 
