@@ -76,10 +76,11 @@ import InvoiceTemplate from './pages/Invoices/InvoiceTemplate.jsx';
 // Payment Management
 import PaymentList from './pages/Payment/PaymentList.jsx';
 
-// Statistics Dashboard (New - 3 pages based on model analysis)
+// Statistics Dashboard (New - 4 pages based on model analysis)
 import RevenueStatistics from './pages/Statistics/RevenueStatistics.jsx';
 import BookingChannelStatistics from './pages/Statistics/BookingChannelStatistics.jsx';
 import ClinicUtilizationStatistics from './pages/Statistics/ClinicUtilizationStatistics.jsx';
+import AppointmentStatusStatistics from './pages/Statistics/AppointmentStatusStatistics.jsx';
 
 // Schedule Management
 import ScheduleConfig from './pages/Schedule/ScheduleConfig.jsx';
@@ -492,6 +493,11 @@ function App() {
               <Route path="clinic-utilization" element={
                 <ProtectedRoute roles={['admin', 'manager']}>
                   <ClinicUtilizationStatistics />
+                </ProtectedRoute>
+              } />
+              <Route path="appointment-status" element={
+                <ProtectedRoute roles={['admin', 'manager']}>
+                  <AppointmentStatusStatistics />
                 </ProtectedRoute>
               } />
             </Route>

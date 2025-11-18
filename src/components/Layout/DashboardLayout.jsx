@@ -29,6 +29,7 @@ import {
   CloseCircleOutlined,
   SettingOutlined,
   LineChartOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { COLOR_BRAND_NAME } from '../../utils/common-colors.js';
@@ -172,7 +173,7 @@ const DashboardLayout = () => {
         ]
       });
 
-      // 📊 V. THỐNG KÊ & BÁO CÁO (New - 3 pages based on model analysis)
+      // 📊 V. THỐNG KÊ & BÁO CÁO (New - 4 pages based on model analysis)
       addMenuItem({
         key: 'statistics',
         icon: <BarChartOutlined />,
@@ -181,6 +182,7 @@ const DashboardLayout = () => {
           { key: '/dashboard/statistics/revenue', label: '💰 Thống kê Doanh thu', icon: <DollarOutlined /> },
           { key: '/dashboard/statistics/booking-channels', label: '📱 Thống kê Online/Offline', icon: <CalendarOutlined /> },
           { key: '/dashboard/statistics/clinic-utilization', label: '📊 Hiệu suất Phòng khám', icon: <LineChartOutlined /> },
+          { key: '/dashboard/statistics/appointment-status', label: '📋 Trạng thái Lịch hẹn', icon: <CheckCircleOutlined /> },
         ]
       });
     }

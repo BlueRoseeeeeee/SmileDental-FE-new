@@ -894,3 +894,46 @@ export const getClinicUtilizationStatistics = async (params = {}) => {
     throw error;
   }
 };
+
+// ==================== API 8: APPOINTMENT STATUS STATISTICS ====================
+
+/**
+ * 📊 Lấy thống kê trạng thái lịch hẹn (completed, cancelled, no-show)
+ * For pie chart and trend visualization
+ * @param {Object} params - { startDate, endDate, groupBy, dentistId, roomId }
+ */
+export const getAppointmentStatusStatistics = async (params = {}) => {
+  const { 
+    startDate, 
+    endDate, 
+    groupBy = 'day',
+    dentistId = null,
+    roomId = null
+  } = params;
+  
+  if (!startDate || !endDate) {
+    throw new Error('startDate và endDate là bắt buộc');
+  }
+  
+  try {
+    const queryParams = new URLSearchParams({
+      startDate,
+      endDate,
+      groupBy
+    });
+    
+    if (dentistId) queryParams.append('dentistId', dentistId);
+    if (roomId) queryParams.append('roomId', roomId);
+    
+    console.log('📤 [FE] Calling API:', `/statistics/appointment-status?${queryParams.toString()}`);
+    
+    const response = await statisticApi.get(`/statistics/appointment-status?${queryParams.toString()}`);
+    
+    console.log('📥 [FE] API Response:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching appointment status statistics:', error);
+    throw error;
+  }
+};
