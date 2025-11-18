@@ -351,18 +351,6 @@ const PatientAppointments = () => {
       render: (name) => <Text style={{ fontSize: 12 }}>{name}</Text>
     },
     {
-      title: 'Y tá',
-      key: 'nurse',
-      width: 120,
-      render: (_, record) => (
-        record.nurseName ? (
-          <Text style={{ fontSize: 12 }}>{record.nurseName}</Text>
-        ) : (
-          <Text type="secondary" style={{ fontSize: 11 }}>Chưa phân</Text>
-        )
-      )
-    },
-    {
       title: 'Dịch vụ',
       key: 'service',
       width: 180,
@@ -582,9 +570,6 @@ const PatientAppointments = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Nha sĩ">
               {selectedAppointment.dentistName}
-            </Descriptions.Item>
-            <Descriptions.Item label="Y tá">
-              {selectedAppointment.nurseName || <Text type="secondary">Chưa phân công</Text>}
             </Descriptions.Item>
             <Descriptions.Item label="Phòng khám">
               {selectedAppointment.roomName}

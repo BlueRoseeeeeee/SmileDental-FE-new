@@ -4,7 +4,8 @@
  */
 import axios from 'axios';
 
-const APPOINTMENT_API_URL = import.meta.env.VITE_APPOINTMENT_API_URL || 'http://localhost:3006/api';
+// ⚠️ HARDCODED - Production backend URL
+const APPOINTMENT_API_URL = 'https://be.smilecare.io.vn/api';
 
 // Create axios instance for appointment service
 const appointmentApi = axios.create({

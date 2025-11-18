@@ -4,7 +4,8 @@
  */
 import axios from 'axios';
 
-const PAYMENT_API_URL = import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api';
+// ⚠️ HARDCODED - Production backend URL
+const PAYMENT_API_URL = 'https://be.smilecare.io.vn/api';
 
 // Create axios instance for payment service
 const paymentApi = axios.create({

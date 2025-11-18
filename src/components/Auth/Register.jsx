@@ -327,15 +327,15 @@ const RegisterRHF = () => {
               flexDirection: 'column', 
               justifyContent: 'center' 
             }}>
-            <Title level={2} style={{ 
+            <h5 style={{ 
               textAlign: 'center', 
               marginBottom: '35px', 
               color: '#2596be', 
               fontSize: '2.5rem',
               fontWeight: 'bold'
             }}>
-              ĐĂNG KÝ
-            </Title>
+              ĐĂNG KÝ TÀI KHOẢN KHÁCH HÀNG
+            </h5>
 
             <Steps
               current={step}

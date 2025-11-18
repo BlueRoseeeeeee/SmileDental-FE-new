@@ -501,32 +501,7 @@ const DashboardLayout = () => {
 
           {/* Right Section - Notifications & User */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {/* Notification Bell */}
-            <Tooltip title="Thông báo">
-              <Badge 
-                count={5} 
-                size="small"
-                style={{ 
-                  backgroundColor: '#ff4d4f',
-                  boxShadow: '0 0 0 1px #fff'
-                }}
-              >
-                <Button 
-                  type="text" 
-                  icon={<BellOutlined />}
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '16px'
-                  }}
-                />
-              </Badge>
-            </Tooltip>
-
+            
             {/* User Profile Dropdown */}
             <Dropdown
               menu={{ items: userMenuItems }}

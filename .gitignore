@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 .public
+.env
 # Do NOT ignore .env.production and .env.development (committed to repo)
 .env.local
 .env.production.local

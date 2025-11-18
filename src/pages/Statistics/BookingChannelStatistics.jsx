@@ -34,8 +34,7 @@ const BookingChannelStatistics = () => {
   const [groupBy, setGroupBy] = useState('day');
   const [dateRange, setDateRange] = useState([dayjs().subtract(30, 'days'), dayjs()]);
 
-  // ✅ Không auto-call khi thay đổi filters - chỉ call khi click button
-
+  // Không auto-call khi thay đổi filters - chỉ call khi click button
   const fetchData = async () => {
     if (loading) return; // Prevent multiple calls
     

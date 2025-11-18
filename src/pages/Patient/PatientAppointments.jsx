@@ -310,7 +310,9 @@ const PatientAppointments = () => {
               {selectedAppointment.dentist?.fullName}
             </Descriptions.Item>
             <Descriptions.Item label="Phòng khám" span={1}>
-              {selectedAppointment.room}
+              {selectedAppointment.subroomName 
+                ? <>{selectedAppointment.room} - <span style={{ color: '#999' }}>{selectedAppointment.subroomName}</span></>
+                : selectedAppointment.room}
             </Descriptions.Item>
             <Descriptions.Item label="Dịch vụ" span={2}>
               {selectedAppointment.service?.name}
