@@ -214,7 +214,7 @@ const AppointmentStatusStatistics = () => {
         <Space direction="vertical" size={0}>
           <Text strong style={{ color: STATUS_COLORS.completed }}>{value}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.completedRate.toFixed(1)}%
+            {(record.completedRate || 0).toFixed(1)}%
           </Text>
         </Space>
       ),
@@ -230,7 +230,7 @@ const AppointmentStatusStatistics = () => {
         <Space direction="vertical" size={0}>
           <Text style={{ color: STATUS_COLORS.cancelled }}>{value}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.cancelledRate.toFixed(1)}%
+            {(record.cancelledRate || 0).toFixed(1)}%
           </Text>
         </Space>
       ),
@@ -246,7 +246,7 @@ const AppointmentStatusStatistics = () => {
         <Space direction="vertical" size={0}>
           <Text style={{ color: STATUS_COLORS.noShow }}>{value}</Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.noShowRate.toFixed(1)}%
+            {(record.noShowRate || 0).toFixed(1)}%
           </Text>
         </Space>
       ),
@@ -259,13 +259,14 @@ const AppointmentStatusStatistics = () => {
       width: 150,
       align: 'center',
       render: (rate) => {
+        const safeRate = rate || 0;
         let color = STATUS_COLORS.completed;
-        if (rate < 50) color = STATUS_COLORS.cancelled;
-        else if (rate < 70) color = STATUS_COLORS.noShow;
+        if (safeRate < 50) color = STATUS_COLORS.cancelled;
+        else if (safeRate < 70) color = STATUS_COLORS.noShow;
         
         return (
           <Tag color={color} style={{ fontSize: 14, fontWeight: 'bold' }}>
-            {rate.toFixed(1)}%
+            {safeRate.toFixed(1)}%
           </Tag>
         );
       },
@@ -371,7 +372,7 @@ const AppointmentStatusStatistics = () => {
                   prefix={<CheckCircleOutlined />}
                   suffix={
                     <span style={{ fontSize: 14, color: '#999' }}>
-                      ({data.summary.completedRate.toFixed(1)}%)
+                      ({(data.summary.completedRate || 0).toFixed(1)}%)
                     </span>
                   }
                   valueStyle={{ color: STATUS_COLORS.completed }}
@@ -386,7 +387,7 @@ const AppointmentStatusStatistics = () => {
                   prefix={<CloseCircleOutlined />}
                   suffix={
                     <span style={{ fontSize: 14, color: '#999' }}>
-                      ({data.summary.cancelledRate.toFixed(1)}%)
+                      ({(data.summary.cancelledRate || 0).toFixed(1)}%)
                     </span>
                   }
                   valueStyle={{ color: STATUS_COLORS.cancelled }}
@@ -401,7 +402,7 @@ const AppointmentStatusStatistics = () => {
                   prefix={<StopOutlined />}
                   suffix={
                     <span style={{ fontSize: 14, color: '#999' }}>
-                      ({data.summary.noShowRate.toFixed(1)}%)
+                      ({(data.summary.noShowRate || 0).toFixed(1)}%)
                     </span>
                   }
                   valueStyle={{ color: STATUS_COLORS.noShow }}
