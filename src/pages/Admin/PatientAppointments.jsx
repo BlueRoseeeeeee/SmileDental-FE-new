@@ -17,7 +17,8 @@ import {
   Badge,
   Spin,
   Empty,
-  Modal
+  Modal,
+  Form
 } from 'antd';
 import {
   SearchOutlined,
@@ -33,8 +34,8 @@ import {
   HomeOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  StopOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  StopOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { io } from 'socket.io-client';
@@ -45,6 +46,8 @@ import './PatientAppointments.css';
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+const { TextArea } = Input;
+const { confirm } = Modal;
 
 const PatientAppointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -62,6 +65,10 @@ const PatientAppointments = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [socket, setSocket] = useState(null);
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     fetchDentists();
@@ -251,30 +258,42 @@ const PatientAppointments = () => {
     }
   };
 
-  const handleCancel = (appointment) => {
-    Modal.confirm({
-      title: 'Xác nhận hủy lịch hẹn',
-      icon: <ExclamationCircleOutlined />,
-      content: `Bạn có chắc chắn muốn hủy lịch hẹn của bệnh nhân ${appointment.patientInfo?.name}?`,
-      okText: 'Xác nhận hủy',
-      cancelText: 'Đóng',
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          await appointmentService.cancelAppointment(appointment._id, 'Hủy bởi admin');
-          message.success('Hủy lịch hẹn thành công');
-          fetchAllAppointments();
-        } catch (error) {
-          console.error('Error cancelling appointment:', error);
-          message.error(error.response?.data?.message || 'Không thể hủy lịch hẹn');
-        }
-      }
-    });
+  const handleCancelAppointment = (appointment) => {
+    setAppointmentToCancel(appointment);
+    setCancelReason('');
+    setCancelModalVisible(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    try {
+      setCancelling(true);
+      
+      // Use patient's reason from notes/cancellationRequestReason
+      const finalReason = appointmentToCancel.notes || appointmentToCancel.cancellationRequestReason || 'Không có lý do';
+      
+      console.log('🔍 [Cancel] Appointment ID:', appointmentToCancel._id);
+      console.log('🔍 [Cancel] Reason:', finalReason);
+      console.log('🔍 [Cancel] Token:', localStorage.getItem('accessToken') ? 'Exists' : 'Missing');
+      
+      await appointmentService.adminCancelAppointment(appointmentToCancel._id, finalReason);
+      message.success('Đã hủy lịch hẹn thành công');
+      setCancelModalVisible(false);
+      setAppointmentToCancel(null);
+      setCancelReason('');
+      fetchAllAppointments();
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      console.error('Error response:', error.response);
+      message.error(error.response?.data?.message || 'Không thể hủy lịch hẹn');
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const getStatusTag = (status) => {
     const statusConfig = {
       'confirmed': { color: 'blue', text: 'Đã xác nhận', icon: <CheckCircleOutlined /> },
+      'pending-cancellation': { color: 'orange', text: 'Đang yêu cầu hủy', icon: <ExclamationCircleOutlined /> },
       'checked-in': { color: 'cyan', text: 'Đã check-in', icon: <CheckCircleOutlined /> },
       'in-progress': { color: 'processing', text: 'Đang khám', icon: <ClockCircleOutlined /> },
       'completed': { color: 'success', text: 'Hoàn thành', icon: <CheckCircleOutlined /> },
@@ -393,14 +412,14 @@ const PatientAppointments = () => {
               Hoàn thành
             </Button>
           )}
-          {(record.status === 'confirmed' || record.status === 'checked-in') && (
+          {record.status !== 'completed' && record.status !== 'cancelled' && (
             <Button 
               danger
               icon={<StopOutlined />} 
-              onClick={() => handleCancel(record)}
+              onClick={() => handleCancelAppointment(record)}
               size="small"
               block
-              style={{ height: 24, fontSize: 11, marginTop:5 }}
+              style={{ height: 24, fontSize: 11 }}
             >
               Hủy lịch
             </Button>
@@ -432,6 +451,7 @@ const PatientAppointments = () => {
               <Select style={{ width: '100%' }} value={statusFilter} onChange={setStatusFilter}>
                 <Option value="all">Tất cả trạng thái</Option>
                 <Option value="confirmed">Đã xác nhận</Option>
+                <Option value="pending-cancellation">Đang yêu cầu hủy</Option>
                 <Option value="checked-in">Đã check-in</Option>
                 <Option value="in-progress">Đang khám</Option>
                 <Option value="completed">Hoàn thành</Option>
@@ -602,6 +622,80 @@ const PatientAppointments = () => {
           </Descriptions>
         )}
       </Drawer>
+
+      {/* Cancel Appointment Modal */}
+      <Modal
+        title={
+          <Space>
+            <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
+            <span>Xác nhận hủy lịch hẹn</span>
+          </Space>
+        }
+        open={cancelModalVisible}
+        onCancel={() => {
+          if (!cancelling) {
+            setCancelModalVisible(false);
+            setAppointmentToCancel(null);
+            setCancelReason('');
+          }
+        }}
+        onOk={handleConfirmCancel}
+        okText="Xác nhận hủy"
+        cancelText="Đóng"
+        okButtonProps={{ danger: true, loading: cancelling }}
+        cancelButtonProps={{ disabled: cancelling }}
+        width={600}
+        closable={!cancelling}
+        maskClosable={false}
+      >
+        {appointmentToCancel && (
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            {/* Appointment Info */}
+            <div>
+              <p style={{ marginBottom: 8 }}>Bạn có chắc chắn muốn hủy lịch hẹn:</p>
+              <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
+                <p style={{ margin: '4px 0' }}><strong>Mã lịch hẹn:</strong> {appointmentToCancel.appointmentCode}</p>
+                <p style={{ margin: '4px 0' }}><strong>Bệnh nhân:</strong> {appointmentToCancel.patientInfo?.name}</p>
+                <p style={{ margin: '4px 0' }}><strong>Email:</strong> {appointmentToCancel.patientInfo?.email || appointmentToCancel.patientId?.email || 'Không có'}</p>
+                <p style={{ margin: '4px 0' }}><strong>Số điện thoại:</strong> {appointmentToCancel.patientInfo?.phone || appointmentToCancel.patientId?.phoneNumber || 'Không có'}</p>
+                <p style={{ margin: '4px 0' }}><strong>Ngày khám:</strong> {dayjs(appointmentToCancel.appointmentDate).format('DD/MM/YYYY')}</p>
+                <p style={{ margin: '4px 0' }}><strong>Giờ:</strong> {appointmentToCancel.startTime} - {appointmentToCancel.endTime}</p>
+                <p style={{ margin: '4px 0' }}><strong>Dịch vụ:</strong> {appointmentToCancel.serviceName}</p>
+                <p style={{ margin: '4px 0' }}><strong>Bác sĩ:</strong> {appointmentToCancel.dentistName}</p>
+              </div>
+            </div>
+
+            {/* Patient's Cancellation Reason (Read-only) */}
+            {appointmentToCancel.status === 'pending-cancellation' && (appointmentToCancel.notes || appointmentToCancel.cancellationRequestReason) && (
+              <div>
+                <div style={{ marginBottom: 8 }}>
+                  <strong>Lý do hủy của bệnh nhân:</strong>
+                </div>
+                <div style={{ 
+                  padding: '12px', 
+                  background: '#f0f5ff', 
+                  border: '1px solid #adc6ff',
+                  borderRadius: '4px',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {appointmentToCancel.notes || appointmentToCancel.cancellationRequestReason}
+                </div>
+              </div>
+            )}
+
+            {/* Warning */}
+            <div style={{ 
+              padding: '12px', 
+              background: '#fff7e6', 
+              border: '1px solid #ffd591',
+              borderRadius: '4px',
+              color: '#d46b08'
+            }}>
+              <ExclamationCircleOutlined /> <strong>Lưu ý:</strong> Hành động này sẽ hủy lịch hẹn và gửi email thông báo đến bệnh nhân.
+            </div>
+          </Space>
+        )}
+      </Modal>
     </div>
   );
 };

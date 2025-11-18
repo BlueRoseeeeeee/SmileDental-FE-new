@@ -19,7 +19,8 @@ import {
   Divider,
   Modal,
   Descriptions,
-  Spin
+  Spin,
+  Empty
 } from 'antd';
 import {
   SearchOutlined,
@@ -182,8 +183,22 @@ const CancelledPatientsList = () => {
       
       const invoiceService = (await import('../../services/invoiceService')).default;
       const result = await invoiceService.getInvoiceById(invoiceId);
+      
       if (result.success) {
-        setInvoiceDetail(result.data);
+        // Also fetch invoice details (line items)
+        let invoiceWithDetails = result.data;
+        try {
+          const detailsResult = await invoiceService.getInvoiceDetails(invoiceId);
+          if (detailsResult.success && detailsResult.data) {
+            invoiceWithDetails.invoiceDetails = Array.isArray(detailsResult.data) 
+              ? detailsResult.data 
+              : [detailsResult.data];
+          }
+        } catch (detailsError) {
+          console.error('Error loading invoice details:', detailsError);
+        }
+        
+        setInvoiceDetail(invoiceWithDetails);
       } else {
         toast.error('Không thể tải thông tin hóa đơn');
       }
@@ -489,31 +504,32 @@ const CancelledPatientsList = () => {
         ) : paymentDetail ? (
           <Descriptions bordered column={2}>
             <Descriptions.Item label="Mã thanh toán" span={2}>
-              {paymentDetail._id}
+              <Text strong copyable>{paymentDetail._id}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Số tiền">
-              {paymentDetail.amount?.toLocaleString('vi-VN')} VNĐ
+              <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
+                {paymentDetail.finalAmount?.toLocaleString('vi-VN') || '0'} VNĐ
+              </Text>
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
-              <Tag color={paymentDetail.status === 'success' ? 'green' : 'orange'}>
-                {paymentDetail.status === 'success' ? 'Thành công' : 
-                 paymentDetail.status === 'pending' ? 'Đang xử lý' : 
-                 paymentDetail.status}
+              <Tag color={
+                paymentDetail.status === 'completed' ? 'green' :
+                paymentDetail.status === 'pending' ? 'orange' :
+                paymentDetail.status === 'failed' ? 'red' : 'default'
+              }>
+                {paymentDetail.status}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Phương thức">
-              {paymentDetail.method === 'visa' ? 'Thẻ Visa' : 
-               paymentDetail.method === 'cash' ? 'Tiền mặt' : 
-               paymentDetail.method}
+              <Tag color="blue">
+                {paymentDetail.method || 'N/A'}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Ngày thanh toán">
-              {paymentDetail.paidAt ? new Date(paymentDetail.paidAt).toLocaleString('vi-VN') : 'Chưa thanh toán'}
+              {paymentDetail.createdAt 
+                ? dayjs(paymentDetail.createdAt).format('HH:mm:ss DD/MM/YYYY')
+                : 'N/A'}
             </Descriptions.Item>
-            {paymentDetail.transactionId && (
-              <Descriptions.Item label="Mã giao dịch" span={2}>
-                {paymentDetail.transactionId}
-              </Descriptions.Item>
-            )}
             {paymentDetail.notes && (
               <Descriptions.Item label="Ghi chú" span={2}>
                 {paymentDetail.notes}
@@ -550,48 +566,129 @@ const CancelledPatientsList = () => {
             <Spin size="large" />
           </div>
         ) : invoiceDetail ? (
-          <Descriptions bordered column={2}>
-            <Descriptions.Item label="Mã hóa đơn" span={2}>
-              {invoiceDetail.invoiceCode || invoiceDetail._id}
-            </Descriptions.Item>
-            <Descriptions.Item label="Tổng tiền">
-              {invoiceDetail.totalAmount?.toLocaleString('vi-VN')} VNĐ
-            </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
-              <Tag color={
-                invoiceDetail.status === 'completed' ? 'green' : 
-                invoiceDetail.status === 'pending' ? 'orange' : 
-                invoiceDetail.status === 'cancelled' ? 'red' : 'default'
-              }>
-                {invoiceDetail.status === 'completed' ? 'Hoàn tất' :
-                 invoiceDetail.status === 'pending' ? 'Chờ xử lý' :
-                 invoiceDetail.status === 'cancelled' ? 'Đã hủy' :
-                 invoiceDetail.status}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Ngày tạo">
-              {new Date(invoiceDetail.createdAt).toLocaleString('vi-VN')}
-            </Descriptions.Item>
-            <Descriptions.Item label="Người tạo">
-              {invoiceDetail.createdBy?.name || 'N/A'}
-            </Descriptions.Item>
-            {invoiceDetail.services && invoiceDetail.services.length > 0 && (
-              <Descriptions.Item label="Dịch vụ" span={2}>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {invoiceDetail.services.map((service, index) => (
-                    <li key={index}>
-                      {service.serviceName} - {service.price?.toLocaleString('vi-VN')} VNĐ
-                    </li>
-                  ))}
-                </ul>
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <Descriptions bordered column={2}>
+              <Descriptions.Item label="Mã hóa đơn" span={2}>
+                <Text strong copyable>{invoiceDetail._id}</Text>
               </Descriptions.Item>
-            )}
-            {invoiceDetail.notes && (
-              <Descriptions.Item label="Ghi chú" span={2}>
-                {invoiceDetail.notes}
+              <Descriptions.Item label="Tổng tiền">
+                <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
+                  {invoiceDetail.totalAmount?.toLocaleString('vi-VN') || '0'} VNĐ
+                </Text>
               </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                <Tag color={
+                  invoiceDetail.status === 'paid' ? 'green' : 
+                  invoiceDetail.status === 'pending' ? 'orange' : 
+                  invoiceDetail.status === 'partial_paid' ? 'blue' :
+                  invoiceDetail.status === 'cancelled' ? 'red' : 'default'
+                }>
+                  {invoiceDetail.status}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Ngày tạo" span={2}>
+                {invoiceDetail.createdAt 
+                  ? dayjs(invoiceDetail.createdAt).format('HH:mm:ss DD/MM/YYYY')
+                  : 'N/A'}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {/* Invoice Details Section */}
+            {invoiceDetail.invoiceDetails && invoiceDetail.invoiceDetails.length > 0 && (
+              <div>
+                <Divider orientation="left">
+                  <Text strong style={{ fontSize: 16 }}>Chi tiết dịch vụ</Text>
+                </Divider>
+                <Table
+                  dataSource={invoiceDetail.invoiceDetails}
+                  rowKey={(record) => record._id || record.id}
+                  pagination={false}
+                  size="small"
+                  columns={[
+                    {
+                      title: 'Dịch vụ',
+                      dataIndex: ['serviceInfo', 'name'],
+                      key: 'serviceName',
+                      render: (text, record) => (
+                        <Space direction="vertical" size={0}>
+                          <Text strong>{text || 'N/A'}</Text>
+                          {record.serviceInfo?.description && (
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {record.serviceInfo.description}
+                            </Text>
+                          )}
+                        </Space>
+                      )
+                    },
+                    {
+                      title: 'Loại',
+                      dataIndex: ['serviceInfo', 'type'],
+                      key: 'type',
+                      width: 120,
+                      render: (type) => (
+                        <Tag color="blue">
+                          {type === 'filling' ? 'Trám răng' :
+                           type === 'cleaning' ? 'Vệ sinh' :
+                           type === 'extraction' ? 'Nhổ răng' :
+                           type === 'root_canal' ? 'Nội nha' :
+                           type === 'orthodontics' ? 'Chỉnh nha' :
+                           type}
+                        </Tag>
+                      )
+                    },
+                    {
+                      title: 'Số lượng',
+                      dataIndex: 'quantity',
+                      key: 'quantity',
+                      width: 80,
+                      align: 'center',
+                      render: (qty) => <Text>{qty || 1}</Text>
+                    },
+                    {
+                      title: 'Đơn giá',
+                      dataIndex: 'unitPrice',
+                      key: 'unitPrice',
+                      width: 120,
+                      align: 'right',
+                      render: (price) => (
+                        <Text>{price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
+                      )
+                    },
+                    {
+                      title: 'Thành tiền',
+                      dataIndex: 'totalPrice',
+                      key: 'totalPrice',
+                      width: 120,
+                      align: 'right',
+                      render: (total) => (
+                        <Text strong style={{ color: '#52c41a' }}>
+                          {total?.toLocaleString('vi-VN') || '0'} VNĐ
+                        </Text>
+                      )
+                    },
+                    {
+                      title: 'Trạng thái',
+                      dataIndex: 'status',
+                      key: 'status',
+                      width: 100,
+                      render: (status) => (
+                        <Tag color={
+                          status === 'completed' ? 'green' :
+                          status === 'pending' ? 'orange' :
+                          status === 'cancelled' ? 'red' : 'default'
+                        }>
+                          {status === 'completed' ? 'Hoàn thành' :
+                           status === 'pending' ? 'Chờ xử lý' :
+                           status === 'cancelled' ? 'Đã hủy' :
+                           status}
+                        </Tag>
+                      )
+                    }
+                  ]}
+                />
+              </div>
             )}
-          </Descriptions>
+          </Space>
         ) : (
           <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
             Không có dữ liệu

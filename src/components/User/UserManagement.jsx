@@ -514,8 +514,8 @@ const UserManagement = () => {
           specialties: allValues.specialties || [] // 🆕 Include specialties
         };
 
-        const apiUrl = await getServiceUrl('user');
-        const response = await fetch(`${apiUrl}/user/update/${selectedUser._id}`, {
+          const USER_API = import.meta.env.VITE_USER_API_URL || 'http://localhost:3001/api';
+          const response = await fetch(`${USER_API}/user/update/${selectedUser._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

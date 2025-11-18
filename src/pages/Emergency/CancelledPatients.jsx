@@ -19,7 +19,8 @@ import {
   Descriptions,
   Collapse,
   Empty,
-  Spin
+  Spin,
+  Divider
 } from 'antd';
 import {
   CalendarOutlined,
@@ -77,7 +78,8 @@ const CancelledPatients = () => {
   const [invoiceModal, setInvoiceModal] = useState({
     visible: false,
     loading: false,
-    data: null
+    data: null,
+    details: []
   });
 
   // Load closures
@@ -162,18 +164,30 @@ const CancelledPatients = () => {
   // Load invoice details
   const loadInvoiceDetails = async (invoiceId) => {
     try {
-      setInvoiceModal({ visible: true, loading: true, data: null });
+      setInvoiceModal({ visible: true, loading: true, data: null, details: [] });
       const result = await invoiceService.getInvoiceById(invoiceId);
+      
       if (result.success) {
-        setInvoiceModal({ visible: true, loading: false, data: result.data });
+        // Also fetch invoice details (line items)
+        let details = [];
+        try {
+          const detailsResult = await invoiceService.getInvoiceDetails(invoiceId);
+          if (detailsResult.success && detailsResult.data) {
+            details = Array.isArray(detailsResult.data) ? detailsResult.data : [detailsResult.data];
+          }
+        } catch (detailsError) {
+          console.error('Error loading invoice details:', detailsError);
+        }
+        
+        setInvoiceModal({ visible: true, loading: false, data: result.data, details });
       } else {
         toast.error('Không thể tải thông tin hóa đơn');
-        setInvoiceModal({ visible: false, loading: false, data: null });
+        setInvoiceModal({ visible: false, loading: false, data: null, details: [] });
       }
     } catch (error) {
       console.error('Error loading invoice:', error);
       toast.error(error.response?.data?.message || 'Lỗi khi tải hóa đơn');
-      setInvoiceModal({ visible: false, loading: false, data: null });
+      setInvoiceModal({ visible: false, loading: false, data: null, details: [] });
     }
   };
 
@@ -339,7 +353,7 @@ const CancelledPatients = () => {
     {
       title: 'Thanh Toán',
       key: 'payment',
-      width: 120,
+      width: 140,
       align: 'center',
       render: (_, record) => {
         const paymentId = record.paymentInfo?.paymentId;
@@ -351,19 +365,24 @@ const CancelledPatients = () => {
               size="small"
               icon={<DollarOutlined />}
               onClick={() => loadPaymentDetails(paymentId)}
+              title="Xem chi tiết thanh toán"
             >
-              Xem
+              Xem chi tiết
             </Button>
           );
         } else {
-          return <Text type="secondary">Chưa có</Text>;
+          return (
+            <Tag color="default" icon={<ClockCircleOutlined />}>
+              Chưa khám
+            </Tag>
+          );
         }
       }
     },
     {
       title: 'Hóa Đơn',
       key: 'invoice',
-      width: 120,
+      width: 140,
       align: 'center',
       render: (_, record) => {
         const invoiceId = record.invoiceInfo?.invoiceId;
@@ -375,12 +394,17 @@ const CancelledPatients = () => {
               size="small"
               icon={<FileTextOutlined />}
               onClick={() => loadInvoiceDetails(invoiceId)}
+              title="Xem chi tiết hóa đơn"
             >
-              Xem
+              Xem chi tiết
             </Button>
           );
         } else {
-          return <Text type="secondary">Chưa có</Text>;
+          return (
+            <Tag color="default" icon={<ClockCircleOutlined />}>
+              Chưa khám
+            </Tag>
+          );
         }
       }
     }
@@ -599,7 +623,12 @@ const CancelledPatients = () => {
         ) : paymentModal.data ? (
           <Descriptions column={2} bordered size="small">
             <Descriptions.Item label="Mã thanh toán" span={2}>
-              <Text strong copyable>{paymentModal.data.paymentCode}</Text>
+              <Text strong copyable>{paymentModal.data._id || paymentModal.data.id}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Số tiền">
+              <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
+                {paymentModal.data.finalAmount?.toLocaleString('vi-VN') || '0'} VNĐ
+              </Text>
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
               <Tag color={
@@ -607,68 +636,19 @@ const CancelledPatients = () => {
                 paymentModal.data.status === 'pending' ? 'orange' :
                 paymentModal.data.status === 'failed' ? 'red' : 'default'
               }>
-                {paymentModal.data.status === 'completed' ? 'Hoàn thành' :
-                 paymentModal.data.status === 'pending' ? 'Đang xử lý' :
-                 paymentModal.data.status === 'failed' ? 'Thất bại' :
-                 paymentModal.data.status === 'cancelled' ? 'Đã hủy' :
-                 paymentModal.data.status === 'refunded' ? 'Đã hoàn tiền' :
-                 paymentModal.data.status}
+                {paymentModal.data.status}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Phương thức">
               <Tag color="blue">
-                {paymentModal.data.method === 'cash' ? 'Tiền mặt' :
-                 paymentModal.data.method === 'vnpay' ? 'VNPay' :
-                 paymentModal.data.method === 'visa' ? 'VISA' :
-                 paymentModal.data.method}
+                {paymentModal.data.method || 'N/A'}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Bệnh nhân">
-              {paymentModal.data.patientInfo?.name || 'N/A'}
+            <Descriptions.Item label="Ngày thanh toán">
+              {paymentModal.data.createdAt 
+                ? dayjs(paymentModal.data.createdAt).format('HH:mm:ss DD/MM/YYYY')
+                : 'N/A'}
             </Descriptions.Item>
-            <Descriptions.Item label="Số điện thoại">
-              {paymentModal.data.patientInfo?.phone || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Email" span={2}>
-              {paymentModal.data.patientInfo?.email || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Số tiền gốc">
-              <Text strong style={{ color: '#1890ff' }}>
-                {paymentModal.data.originalAmount?.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Giảm giá">
-              <Text type="danger">
-                -{paymentModal.data.discountAmount?.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Thuế">
-              {paymentModal.data.taxAmount?.toLocaleString('vi-VN')} VNĐ
-            </Descriptions.Item>
-            <Descriptions.Item label="Tổng tiền">
-              <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
-                {paymentModal.data.finalAmount?.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Đã thanh toán">
-              <Text style={{ color: '#52c41a' }}>
-                {paymentModal.data.paidAmount?.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Tiền thối">
-              {paymentModal.data.changeAmount?.toLocaleString('vi-VN')} VNĐ
-            </Descriptions.Item>
-            <Descriptions.Item label="Người xử lý">
-              {paymentModal.data.processedByName || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Thời gian xử lý">
-              {dayjs(paymentModal.data.processedAt).format('DD/MM/YYYY HH:mm:ss')}
-            </Descriptions.Item>
-            {paymentModal.data.description && (
-              <Descriptions.Item label="Mô tả" span={2}>
-                {paymentModal.data.description}
-              </Descriptions.Item>
-            )}
             {paymentModal.data.notes && (
               <Descriptions.Item label="Ghi chú" span={2}>
                 {paymentModal.data.notes}
@@ -689,116 +669,145 @@ const CancelledPatients = () => {
           </Space>
         }
         open={invoiceModal.visible}
-        onCancel={() => setInvoiceModal({ visible: false, loading: false, data: null })}
+        onCancel={() => setInvoiceModal({ visible: false, loading: false, data: null, details: [] })}
         footer={[
           <Button
             key="close"
-            onClick={() => setInvoiceModal({ visible: false, loading: false, data: null })}
+            onClick={() => setInvoiceModal({ visible: false, loading: false, data: null, details: [] })}
           >
             Đóng
           </Button>
         ]}
-        width={800}
+        width={1000}
       >
         {invoiceModal.loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <Spin size="large" />
           </div>
         ) : invoiceModal.data ? (
-          <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="Số hóa đơn" span={2}>
-              <Text strong copyable>{invoiceModal.data.invoiceNumber}</Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Trạng thái">
-              <Tag color={
-                invoiceModal.data.status === 'paid' ? 'green' :
-                invoiceModal.data.status === 'pending' ? 'orange' :
-                invoiceModal.data.status === 'partial_paid' ? 'blue' :
-                invoiceModal.data.status === 'cancelled' ? 'red' : 'default'
-              }>
-                {invoiceModal.data.status === 'paid' ? 'Đã thanh toán' :
-                 invoiceModal.data.status === 'pending' ? 'Chờ thanh toán' :
-                 invoiceModal.data.status === 'partial_paid' ? 'Thanh toán một phần' :
-                 invoiceModal.data.status === 'draft' ? 'Nháp' :
-                 invoiceModal.data.status === 'cancelled' ? 'Đã hủy' :
-                 invoiceModal.data.status}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Loại hóa đơn">
-              <Tag color="purple">
-                {invoiceModal.data.type === 'appointment' ? 'Lịch hẹn' :
-                 invoiceModal.data.type === 'treatment' ? 'Điều trị' :
-                 invoiceModal.data.type === 'consultation' ? 'Tư vấn' :
-                 invoiceModal.data.type}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Bệnh nhân">
-              {invoiceModal.data.patientInfo?.name || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Số điện thoại">
-              {invoiceModal.data.patientInfo?.phone || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Email" span={2}>
-              {invoiceModal.data.patientInfo?.email || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Nha sĩ">
-              {invoiceModal.data.dentistInfo?.name || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Chuyên khoa">
-              {invoiceModal.data.dentistInfo?.specialization || 'N/A'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Tổng phụ">
-              <Text style={{ color: '#1890ff' }}>
-                {invoiceModal.data.subtotal?.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Giảm giá">
-              {invoiceModal.data.discountInfo?.type !== 'none' ? (
-                <Text type="danger">
-                  {invoiceModal.data.discountInfo?.type === 'percentage' 
-                    ? `-${invoiceModal.data.discountInfo?.value}%`
-                    : `-${invoiceModal.data.discountInfo?.value?.toLocaleString('vi-VN')} VNĐ`
-                  }
+          <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <Descriptions column={2} bordered size="small">
+              <Descriptions.Item label="Mã hóa đơn" span={2}>
+                <Text strong copyable>{invoiceModal.data._id || invoiceModal.data.id}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Tổng tiền">
+                <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
+                  {invoiceModal.data.totalAmount?.toLocaleString('vi-VN') || '0'} VNĐ
                 </Text>
-              ) : (
-                <Text type="secondary">Không có</Text>
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="Thuế ({invoiceModal.data.taxInfo?.taxRate || 0}%)">
-              {invoiceModal.data.taxInfo?.taxAmount?.toLocaleString('vi-VN')} VNĐ
-            </Descriptions.Item>
-            <Descriptions.Item label="Tổng tiền">
-              <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
-                {invoiceModal.data.totalAmount?.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Đã thanh toán">
-              <Text style={{ color: '#52c41a' }}>
-                {invoiceModal.data.paymentSummary?.totalPaid?.toLocaleString('vi-VN') || '0'} VNĐ
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Còn lại">
-              <Text type={invoiceModal.data.paymentSummary?.remainingAmount > 0 ? 'danger' : 'secondary'}>
-                {invoiceModal.data.paymentSummary?.remainingAmount?.toLocaleString('vi-VN') || '0'} VNĐ
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Ngày phát hành">
-              {dayjs(invoiceModal.data.issueDate).format('DD/MM/YYYY')}
-            </Descriptions.Item>
-            <Descriptions.Item label="Ngày đến hạn">
-              {dayjs(invoiceModal.data.dueDate).format('DD/MM/YYYY')}
-            </Descriptions.Item>
-            {invoiceModal.data.description && (
-              <Descriptions.Item label="Mô tả" span={2}>
-                {invoiceModal.data.description}
               </Descriptions.Item>
-            )}
-            {invoiceModal.data.notes && (
-              <Descriptions.Item label="Ghi chú" span={2}>
-                {invoiceModal.data.notes}
+              <Descriptions.Item label="Trạng thái">
+                <Tag color={
+                  invoiceModal.data.status === 'paid' ? 'green' :
+                  invoiceModal.data.status === 'pending' ? 'orange' :
+                  invoiceModal.data.status === 'partial_paid' ? 'blue' :
+                  invoiceModal.data.status === 'cancelled' ? 'red' : 'default'
+                }>
+                  {invoiceModal.data.status}
+                </Tag>
               </Descriptions.Item>
+              <Descriptions.Item label="Ngày tạo" span={2}>
+                {invoiceModal.data.createdAt 
+                  ? dayjs(invoiceModal.data.createdAt).format('HH:mm:ss DD/MM/YYYY')
+                  : 'N/A'}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {/* Invoice Details Section */}
+            {invoiceModal.details && invoiceModal.details.length > 0 && (
+              <div>
+                <Divider orientation="left">
+                  <Text strong style={{ fontSize: 16 }}>Chi tiết dịch vụ</Text>
+                </Divider>
+                <Table
+                  dataSource={invoiceModal.details}
+                  rowKey={(record) => record._id || record.id}
+                  pagination={false}
+                  size="small"
+                  columns={[
+                    {
+                      title: 'Dịch vụ',
+                      dataIndex: ['serviceInfo', 'name'],
+                      key: 'serviceName',
+                      render: (text, record) => (
+                        <Space direction="vertical" size={0}>
+                          <Text strong>{text || 'N/A'}</Text>
+                          {record.serviceInfo?.description && (
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {record.serviceInfo.description}
+                            </Text>
+                          )}
+                        </Space>
+                      )
+                    },
+                    {
+                      title: 'Loại',
+                      dataIndex: ['serviceInfo', 'type'],
+                      key: 'type',
+                      width: 120,
+                      render: (type) => (
+                        <Tag color="blue">
+                          {type === 'filling' ? 'Trám răng' :
+                           type === 'cleaning' ? 'Vệ sinh' :
+                           type === 'extraction' ? 'Nhổ răng' :
+                           type === 'root_canal' ? 'Nội nha' :
+                           type === 'orthodontics' ? 'Chỉnh nha' :
+                           type}
+                        </Tag>
+                      )
+                    },
+                    {
+                      title: 'Số lượng',
+                      dataIndex: 'quantity',
+                      key: 'quantity',
+                      width: 80,
+                      align: 'center',
+                      render: (qty) => <Text>{qty || 1}</Text>
+                    },
+                    {
+                      title: 'Đơn giá',
+                      dataIndex: 'unitPrice',
+                      key: 'unitPrice',
+                      width: 120,
+                      align: 'right',
+                      render: (price) => (
+                        <Text>{price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
+                      )
+                    },
+                    {
+                      title: 'Thành tiền',
+                      dataIndex: 'totalPrice',
+                      key: 'totalPrice',
+                      width: 120,
+                      align: 'right',
+                      render: (total) => (
+                        <Text strong style={{ color: '#52c41a' }}>
+                          {total?.toLocaleString('vi-VN') || '0'} VNĐ
+                        </Text>
+                      )
+                    },
+                    {
+                      title: 'Trạng thái',
+                      dataIndex: 'status',
+                      key: 'status',
+                      width: 100,
+                      render: (status) => (
+                        <Tag color={
+                          status === 'completed' ? 'green' :
+                          status === 'pending' ? 'orange' :
+                          status === 'cancelled' ? 'red' : 'default'
+                        }>
+                          {status === 'completed' ? 'Hoàn thành' :
+                           status === 'pending' ? 'Chờ xử lý' :
+                           status === 'cancelled' ? 'Đã hủy' :
+                           status}
+                        </Tag>
+                      )
+                    }
+                  ]}
+                />
+              </div>
             )}
-          </Descriptions>
+          </Space>
         ) : (
           <Empty description="Không có dữ liệu" />
         )}

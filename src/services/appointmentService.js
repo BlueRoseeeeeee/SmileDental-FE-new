@@ -19,13 +19,27 @@ const appointmentApi = axios.create({
 // Request interceptor to add token
 appointmentApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken'); // Changed from 'token' to 'accessToken'
+    const token = localStorage.getItem('accessToken');
+    console.log('🔵 [appointmentService] Request interceptor:', {
+      url: config.url,
+      method: config.method,
+      hasToken: !!token,
+      tokenPreview: token ? token.substring(0, 20) + '...' : 'N/A'
+    });
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('✅ [appointmentService] Authorization header set');
+    } else {
+      console.warn('⚠️ [appointmentService] No token found in localStorage');
     }
+    
+    // Note: Role information is already included in the JWT token payload as 'activeRole'
+    // No need to send separate role header
     return config;
   },
   (error) => {
+    console.error('❌ [appointmentService] Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -34,12 +48,24 @@ appointmentApi.interceptors.request.use(
 appointmentApi.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error('❌ [appointmentService] Response error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url,
+      method: error.config?.method
+    });
+    
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      console.error('🔴 [appointmentService] 401 Unauthorized - Token invalid/expired');
+      // ⚠️ TEMPORARY: Comment out redirect for debugging
+      // localStorage.removeItem('accessToken');
+      // localStorage.removeItem('refreshToken');
+      // localStorage.removeItem('user');
+      // window.location.href = '/login';
+      
+      // Show alert instead of redirect
+      alert('⚠️ DEBUG: 401 Unauthorized error. Check console logs before this alert.');
     }
     return Promise.reject(error);
   }
@@ -200,6 +226,22 @@ const appointmentService = {
 
     const url = `/appointments/by-staff/${staffId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await appointmentApi.get(url);
+    return response.data;
+  },
+
+  // Admin/Manager/Receptionist cancel appointment (no time restrictions)
+  adminCancelAppointment: async (appointmentId, reason) => {
+    const response = await appointmentApi.post(`/appointments/${appointmentId}/admin-cancel`, {
+      reason: reason
+    });
+    return response.data;
+  },
+
+  // Patient request cancellation (must be >=1 day before appointment)
+  requestCancellation: async (appointmentId, reason) => {
+    const response = await appointmentApi.post(`/appointments/${appointmentId}/request-cancellation`, {
+      reason: reason
+    });
     return response.data;
   }
 };

@@ -2606,16 +2606,18 @@ const ScheduleCalendar = () => {
           />
 
           <div>
-            <Text strong style={{ color: 'red', display: 'block' }}>
+            <Text strong style={{ color: 'red', fontSize: 16 }}>
               * Lý do tắt lịch (bắt buộc):
             </Text>
             <Input.TextArea
+              className="custom-textarea"
               value={disableReason}
               onChange={(e) => setDisableReason(e.target.value)}
-              // placeholder="Ví dụ: Bác sĩ nghỉ phép, Bảo trì phòng khám..."
-              rows={3}
+              placeholder="Ví dụ: Bác sĩ nghỉ phép, Bảo trì phòng khám..."
+              rows={4}
               maxLength={500}
               showCount
+              style={{ marginTop: 8 }}
             />
           </div>
 

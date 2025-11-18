@@ -590,17 +590,32 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     
     let filtered = [...allServices];
     
+    // 🆕 Lọc bỏ các service có serviceAddOns nhưng KHÔNG có addon nào active
+    filtered = filtered.filter(service => {
+      // Nếu service không có addons -> OK, giữ lại
+      if (!service.serviceAddOns || service.serviceAddOns.length === 0) {
+        return true;
+      }
+      
+      // Nếu có addons -> phải có ít nhất 1 addon isActive = true
+      const hasActiveAddons = service.serviceAddOns.some(addon => addon.isActive === true);
+      if (!hasActiveAddons) {
+        console.log(`❌ [filterServices] "${service.name}" - has addons but none active`);
+      }
+      return hasActiveAddons;
+    });
+    
     // 🆕 Filter by source (normal or recommended)
     if (source === 'recommended' && unusedSvcs.length > 0) {
       // Chỉ hiển thị dịch vụ được chỉ định
       const recommendedIds = new Set(unusedSvcs.map(s => s.serviceId.toString()));
-      filtered = allServices.filter(service => recommendedIds.has(service._id.toString()));
+      filtered = filtered.filter(service => recommendedIds.has(service._id.toString()));
       console.log(`🌟 [filterServices] Showing ONLY recommended services: ${filtered.length}`);
     } else {
       // 🆕 Dịch vụ thường: CHỈ hiển thị dịch vụ KHÔNG yêu cầu khám trước
       // KHÔNG bao gồm dịch vụ được chỉ định
       const recommendedIds = new Set(unusedSvcs.map(s => s.serviceId.toString()));
-      filtered = allServices.filter(service => {
+      filtered = filtered.filter(service => {
         // Loại bỏ dịch vụ chỉ định
         if (recommendedIds.has(service._id.toString())) {
           console.log(`❌ [filterServices] "${service.name}" - is recommended, excluded from normal`);
