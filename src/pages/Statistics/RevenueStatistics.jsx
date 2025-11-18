@@ -231,7 +231,7 @@ const RevenueStatistics = () => {
 
       // Enrich service data và filter ra services có revenue = 0
       filtered.revenueByService = Array.from(serviceMap.values())
-        .filter(s => s.totalRevenue > 0) // ✅ Chỉ hiển thị services có doanh thu
+        .filter(s => s.totalRevenue > 0) //Chỉ hiển thị services có doanh thu
         .map(s => {
           const serviceInfo = serviceInfoMap.get(s.serviceId);
           return {

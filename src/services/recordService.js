@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const RECORD_API_BASE = import.meta.env.VITE_RECORD_SERVICE_URL || 'http://localhost:3010';
+// ⚠️ HARDCODED - Production backend URL
+const RECORD_API_BASE = 'https://be.smilecare.io.vn';
 
 // Create API instance with base URL
 const api = axios.create({

@@ -506,14 +506,13 @@ const Login = () => {
             >
               <Form.Item
                 name="login"
-                label="Email/ Mã nhân viên"
+                label="Email bệnh nhân/ Mã nhân viên"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập email hoặc mã nhân viên!' }
+                  { required: true, message: 'Vui lòng nhập email bệnh nhân hoặc mã nhân viên!' }
                 ]}
               >
                 <Input
                   prefix={<UserOutlined />}
-                  placeholder="Nhập email hoặc mã nhân viên"
                 />
               </Form.Item>
 
@@ -526,7 +525,6 @@ const Login = () => {
               >
                 <Input.Password
                   prefix={<LockOutlined />}
-                  placeholder="Nhập mật khẩu"
                   iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
                 />
               </Form.Item>

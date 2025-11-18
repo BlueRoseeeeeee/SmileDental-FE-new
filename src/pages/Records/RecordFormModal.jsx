@@ -1872,9 +1872,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                       >
                         Hủy
                       </Button>
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        * Dịch vụ sẽ được lưu khi bạn nhấn nút "Cập nhật" ở cuối form
-                      </Text>
                     </Space>
                   </Col>
                 </Row>
