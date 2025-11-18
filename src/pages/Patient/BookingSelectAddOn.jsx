@@ -173,6 +173,16 @@ const BookingSelectAddOn = () => {
       return;
     }
 
+    // 🆕 Kiểm tra xem có addon active nào không
+    const activeAddons = serviceData.serviceAddOns.filter(addon => addon.isActive === true);
+    if (activeAddons.length === 0) {
+      message.info('Hiện tại không có gói dịch vụ phụ nào khả dụng, chuyển sang bước tiếp theo');
+      setTimeout(() => {
+        navigate('/patient/booking/select-dentist');
+      }, 1000);
+      return;
+    }
+
     // Check if service requires exam first and user has indications
     if (serviceData.requireExamFirst && user) {
       setLoading(true);

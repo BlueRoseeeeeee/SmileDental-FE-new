@@ -131,6 +131,18 @@ const BookingSelectService = () => {
   const applyFilters = (search, type, source, allServices, recommendedServices) => {
     let filtered = allServices;
 
+    // 🆕 Lọc bỏ các service có serviceAddOns nhưng KHÔNG có addon nào active
+    filtered = filtered.filter(service => {
+      // Nếu service không có addons -> OK, giữ lại
+      if (!service.serviceAddOns || service.serviceAddOns.length === 0) {
+        return true;
+      }
+      
+      // Nếu có addons -> phải có ít nhất 1 addon isActive = true
+      const hasActiveAddons = service.serviceAddOns.some(addon => addon.isActive === true);
+      return hasActiveAddons;
+    });
+
     // 🆕 Filter by source (normal or recommended only)
     if (source === 'recommended' && recommendedServices.length > 0) {
       // Chỉ hiển thị dịch vụ được chỉ định
@@ -192,6 +204,15 @@ const BookingSelectService = () => {
   };
 
   const handleSelectService = (service) => {
+    // 🆕 Kiểm tra nếu có serviceAddOns nhưng KHÔNG có addon nào isActive
+    if (service.serviceAddOns && service.serviceAddOns.length > 0) {
+      const hasActiveAddons = service.serviceAddOns.some(addon => addon.isActive === true);
+      if (!hasActiveAddons) {
+        message.warning('Dịch vụ này hiện không có gói phụ khả dụng. Vui lòng chọn dịch vụ khác.');
+        return;
+      }
+    }
+    
     // Lưu service vào localStorage
     localStorage.setItem('booking_service', JSON.stringify(service));
     
