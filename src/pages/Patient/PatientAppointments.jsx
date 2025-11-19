@@ -13,7 +13,11 @@ import {
   message,
   Form,
   Input,
-  Alert
+  Alert,
+  DatePicker,
+  Select,
+  Row,
+  Col
 } from 'antd';
 import { 
   CalendarOutlined,
@@ -31,20 +35,32 @@ import './PatientAppointments.css';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
+const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const PatientAppointments = () => {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
+  const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [cancelForm] = Form.useForm();
+  
+  // 🆕 Filter states
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRange, setDateRange] = useState(null);
 
   useEffect(() => {
     loadAppointments();
   }, []);
+
+  // 🆕 Filter appointments when filters change
+  useEffect(() => {
+    filterAppointments();
+  }, [statusFilter, dateRange, appointments]);
 
   const loadAppointments = async () => {
     try {
@@ -68,16 +84,39 @@ const PatientAppointments = () => {
           room: apt.roomName || 'Chưa xác định'
         }));
         setAppointments(mappedData);
+        setFilteredAppointments(mappedData);
       } else {
         setAppointments([]);
+        setFilteredAppointments([]);
       }
     } catch (error) {
       console.error('Load appointments error:', error);
       message.error('Không thể tải danh sách lịch khám');
       setAppointments([]);
+      setFilteredAppointments([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 🆕 Filter appointments
+  const filterAppointments = () => {
+    let filtered = [...appointments];
+    
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(apt => apt.status === statusFilter);
+    }
+    
+    // Filter by date range
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      filtered = filtered.filter(apt => {
+        const aptDate = dayjs(apt.appointmentDate || apt.date);
+        return aptDate.isSameOrAfter(dateRange[0], 'day') && aptDate.isSameOrBefore(dateRange[1], 'day');
+      });
+    }
+    
+    setFilteredAppointments(filtered);
   };
 
   const getStatusTag = (status) => {
@@ -214,17 +253,7 @@ const PatientAppointments = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => getStatusTag(status),
-      filters: [
-        { text: 'Chờ xác nhận', value: 'pending' },
-        { text: 'Đã xác nhận', value: 'confirmed' },
-        { text: 'Đã check-in', value: 'checked-in' },
-        { text: 'Hoàn thành', value: 'completed' },
-        { text: 'Đã hủy', value: 'cancelled' },
-        { text: 'Đang yêu cầu hủy', value: 'pending-cancellation' },
-        { text: 'Không đến', value: 'no-show' }
-      ],
-      onFilter: (value, record) => record.status === value
+      render: (status) => getStatusTag(status)
     },
     {
       title: 'Thao tác',
@@ -261,9 +290,43 @@ const PatientAppointments = () => {
         </Title>
         <Divider />
 
+        {/* 🆕 Filters */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={8}>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Lọc theo trạng thái"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              allowClear
+              onClear={() => setStatusFilter('all')}
+            >
+              <Option value="all">Tất cả trạng thái</Option>
+              <Option value="pending">Chờ xác nhận</Option>
+              <Option value="confirmed">Đã xác nhận</Option>
+              <Option value="checked-in">Đã check-in</Option>
+              <Option value="in-progress">Đang khám</Option>
+              <Option value="completed">Hoàn thành</Option>
+              <Option value="cancelled">Đã hủy</Option>
+              <Option value="pending-cancellation">Đang yêu cầu hủy</Option>
+              <Option value="no-show">Không đến</Option>
+            </Select>
+          </Col>
+          <Col span={12}>
+            <RangePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY"
+              value={dateRange}
+              onChange={setDateRange}
+              placeholder={['Từ ngày', 'Đến ngày']}
+              allowClear
+            />
+          </Col>
+        </Row>
+
         <Table
           columns={columns}
-          dataSource={appointments}
+          dataSource={filteredAppointments}
           rowKey="_id"
           loading={loading}
           locale={{

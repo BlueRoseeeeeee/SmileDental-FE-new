@@ -399,6 +399,16 @@ const UserManagement = () => {
 
   // Handle show delete confirmation modal
   const handleDelete = (user) => {
+    // ✅ Prevent deleting yourself
+    if (user._id === currentUser?._id) {
+      toast.error('Không thể xóa chính mình!');
+      return;
+    }
+    // ✅ Prevent deleting users that have been used in the system
+    if (user.hasBeenUsed) {
+      toast.error(`Không thể xóa nhân viên "${user.fullName}" vì đã được sử dụng trong hệ thống. Vui lòng sử dụng chức năng khóa tài khoản thay thế.`);
+      return;
+    }
     setSelectedUserForDelete(user);
     setShowDeleteModal(true);
   };
@@ -710,13 +720,21 @@ const UserManagement = () => {
                 disabled={!canManage}
               />
             </Tooltip>
-            <Tooltip title={canManage ? "Xóa nhân viên" : "Không có quyền xóa"}>
+            <Tooltip title={
+              !canManage 
+                ? "Không có quyền xóa" 
+                : record._id === currentUser?._id
+                  ? "Không thể xóa chính mình"
+                  : record.hasBeenUsed
+                    ? "Không thể xóa nhân viên đã được sử dụng trong hệ thống"
+                    : "Xóa nhân viên"
+            }>
               <Button 
                 type="text" 
                 danger 
                 icon={<DeleteOutlined />}
                 onClick={() => handleDelete(record)}
-                disabled={!canManage}
+                disabled={!canManage || record._id === currentUser?._id || record.hasBeenUsed}
               />
             </Tooltip>
           </Space>

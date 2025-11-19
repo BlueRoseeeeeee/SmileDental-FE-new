@@ -9,7 +9,11 @@ import {
   Modal,
   Descriptions,
   message,
-  Empty
+  Empty,
+  DatePicker,
+  Select,
+  Row,
+  Col
 } from 'antd';
 import { 
   FileTextOutlined,
@@ -21,19 +25,32 @@ import dayjs from 'dayjs';
 import './PatientRecords.css';
 
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const PatientRecords = () => {
   const { user } = useAuth();
   const [records, setRecords] = useState([]);
+  const [filteredRecords, setFilteredRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
+  
+  // 🆕 Filter states
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [dateRange, setDateRange] = useState(null);
 
   useEffect(() => {
     if (user?._id) {
       loadRecords();
     }
   }, [user?._id]);
+
+  // 🆕 Filter records when filters change
+  useEffect(() => {
+    filterRecords();
+  }, [statusFilter, typeFilter, dateRange, records]);
 
   // Auto refresh every 30 seconds when component is visible
   useEffect(() => {
@@ -56,17 +73,45 @@ const PatientRecords = () => {
       if (response.success && response.data) {
         console.log('🔍 [DEBUG] Records count:', response.data.length);
         setRecords(response.data);
+        setFilteredRecords(response.data);
       } else {
         console.log('⚠️ [DEBUG] No records or failed response');
         setRecords([]);
+        setFilteredRecords([]);
       }
     } catch (error) {
       console.error('Load records error:', error);
       message.error('Không thể tải danh sách hồ sơ');
       setRecords([]);
+      setFilteredRecords([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 🆕 Filter records
+  const filterRecords = () => {
+    let filtered = [...records];
+    
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(rec => rec.status === statusFilter);
+    }
+    
+    // Filter by type
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(rec => rec.type === typeFilter);
+    }
+    
+    // Filter by date range
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      filtered = filtered.filter(rec => {
+        const recDate = dayjs(rec.createdAt);
+        return recDate.isSameOrAfter(dateRange[0], 'day') && recDate.isSameOrBefore(dateRange[1], 'day');
+      });
+    }
+    
+    setFilteredRecords(filtered);
   };
 
   const getRecordStatusTag = (status) => {
@@ -207,9 +252,55 @@ const PatientRecords = () => {
           </Button>
         }
       >
+        {/* 🆕 Filters */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={6}>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Lọc theo trạng thái"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              allowClear
+              onClear={() => setStatusFilter('all')}
+            >
+              <Option value="all">Tất cả trạng thái</Option>
+              <Option value="pending">Chờ xử lý</Option>
+              <Option value="in-progress">Đang điều trị</Option>
+              <Option value="completed">Hoàn thành</Option>
+              <Option value="cancelled">Đã hủy</Option>
+            </Select>
+          </Col>
+          <Col span={6}>
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Lọc theo loại"
+              value={typeFilter}
+              onChange={setTypeFilter}
+              allowClear
+              onClear={() => setTypeFilter('all')}
+            >
+              <Option value="all">Tất cả loại</Option>
+              <Option value="exam">Khám</Option>
+              <Option value="treatment">Điều trị</Option>
+              <Option value="checkup">Tái khám</Option>
+              <Option value="emergency">Cấp cứu</Option>
+            </Select>
+          </Col>
+          <Col span={12}>
+            <RangePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY"
+              value={dateRange}
+              onChange={setDateRange}
+              placeholder={['Từ ngày', 'Đến ngày']}
+              allowClear
+            />
+          </Col>
+        </Row>
+
         <Table
           columns={columns}
-          dataSource={records}
+          dataSource={filteredRecords}
           rowKey="_id"
           loading={loading}
           pagination={{
