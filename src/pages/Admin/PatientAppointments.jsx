@@ -54,7 +54,6 @@ const PatientAppointments = () => {
   const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
   const [dentistFilter, setDentistFilter] = useState('all');
   const [serviceTypeFilter, setServiceTypeFilter] = useState('all');
@@ -114,7 +113,7 @@ const PatientAppointments = () => {
 
   useEffect(() => {
     filterAppointments();
-  }, [statusFilter, dateFilter, dateRange, dentistFilter, serviceTypeFilter, roomFilter, searchText, appointments]);
+  }, [statusFilter, dateRange, dentistFilter, serviceTypeFilter, roomFilter, searchText, appointments]);
 
   const fetchDentists = async () => {
     try {
@@ -170,34 +169,23 @@ const PatientAppointments = () => {
     }
   };
 
-  const getDateRangeFromFilter = (filter) => {
-    const now = dayjs();
-    switch (filter) {
-      case 'today':
-        return [now.startOf('day'), now.endOf('day')];
-      case 'week':
-        return [now.startOf('week'), now.endOf('week')];
-      case 'month':
-        return [now.startOf('month'), now.endOf('month')];
-      case 'custom':
-        return dateRange;
-      default:
-        return null;
-    }
-  };
-
   const filterAppointments = () => {
     let filtered = [...appointments];
+    
+    // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter(apt => apt.status === statusFilter);
     }
-    const range = getDateRangeFromFilter(dateFilter);
-    if (range && range[0] && range[1]) {
+    
+    // Filter by date range
+    if (dateRange && dateRange[0] && dateRange[1]) {
       filtered = filtered.filter(apt => {
         const aptDate = dayjs(apt.appointmentDate);
-        return aptDate.isSameOrAfter(range[0], 'day') && aptDate.isSameOrBefore(range[1], 'day');
+        return aptDate.isSameOrAfter(dateRange[0], 'day') && aptDate.isSameOrBefore(dateRange[1], 'day');
       });
     }
+    
+    // Filter by dentist
     if (dentistFilter !== 'all') {
       filtered = filtered.filter(apt => apt.dentistId === dentistFilter);
     }
@@ -459,30 +447,16 @@ const PatientAppointments = () => {
                 <Option value="no-show">Không đến</Option>
               </Select>
             </Col>
-            <Col span={4}>
-              <Select
+            <Col span={8}>
+              <RangePicker
                 style={{ width: '100%' }}
-                value={dateFilter}
-                onChange={(value) => { setDateFilter(value); if (value !== 'custom') setDateRange(null); }}
-              >
-                <Option value="all">Tất cả</Option>
-                <Option value="today">Hôm nay</Option>
-                <Option value="week">Tuần này</Option>
-                <Option value="month">Tháng này</Option>
-                <Option value="custom">Tùy chỉnh</Option>
-              </Select>
+                format="DD/MM/YYYY"
+                value={dateRange}
+                onChange={setDateRange}
+                placeholder={['Từ ngày', 'Đến ngày']}
+                allowClear
+              />
             </Col>
-            {dateFilter === 'custom' && (
-              <Col span={8}>
-                <RangePicker
-                  style={{ width: '100%' }}
-                  format="DD/MM/YYYY"
-                  value={dateRange}
-                  onChange={setDateRange}
-                  placeholder={['Từ ngày', 'Đến ngày']}
-                />
-              </Col>
-            )}
           </Row>
 
           <Row gutter={[16, 16]}>
