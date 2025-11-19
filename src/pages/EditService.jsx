@@ -35,7 +35,7 @@ import {
   UpOutlined,
   DownOutlined
 } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { servicesService, toast as toastService } from '../services';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
 
@@ -62,6 +62,7 @@ const getRoomTypeLabel = (roomType) => {
 const EditService = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
+  const location = useLocation();
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,6 +72,7 @@ const EditService = () => {
   const [lastSaved, setLastSaved] = useState(null);
   const [roomTypes, setRoomTypes] = useState({});
   const [showDescriptionEditor, setShowDescriptionEditor] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState(location.state?.scheduleConfig || null);
 
   // Add-on confirmation states
   const [showToggleConfirmModal, setShowToggleConfirmModal] = useState(false);
@@ -857,7 +859,7 @@ const EditService = () => {
                     <Button
                       type="text"
                       icon={<EditOutlined />}
-                      onClick={() => navigate(`/dashboard/services/${serviceId}/addons/${record._id}/edit`)}
+                      onClick={() => navigate(`/dashboard/services/${serviceId}/addons/${record._id}/edit`, { state: { scheduleConfig } })}
                       size="small"
                     />
                     <Switch

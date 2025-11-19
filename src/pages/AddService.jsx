@@ -31,8 +31,8 @@ import {
   UpOutlined,
   DownOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import { servicesService, toast as toastService } from '../services';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { servicesService, scheduleConfigService, toast as toastService } from '../services';
 import { TinyMCE } from '../components/TinyMCE';
 import { preventNonNumericInput } from '../utils/validationUtils';
 
@@ -60,6 +60,7 @@ const getRoomTypeLabel = (roomType) => {
 
 const AddService = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form] = Form.useForm();
   const [submitLoading, setSubmitLoading] = useState(false);
   const [roomTypes, setRoomTypes] = useState({});
@@ -77,8 +78,10 @@ const AddService = () => {
     }
   ]);
   const [requireExamFirst, setRequireExamFirst] = useState(false);
+  const [scheduleConfig, setScheduleConfig] = useState(location.state?.scheduleConfig || null);
+  const [configLoading, setConfigLoading] = useState(!location.state?.scheduleConfig);
 
-  // Fetch room types on mount
+  // Fetch room types and schedule config on mount
   React.useEffect(() => {
     const fetchRoomTypes = async () => {
       try {
@@ -103,7 +106,34 @@ const AddService = () => {
         setRoomTypes(fallbackTypes);
       }
     };
+
+    const fetchScheduleConfig = async () => {
+      // Skip if already provided via location.state
+      if (location.state?.scheduleConfig) {
+        console.log('📋 Schedule config received from navigation state');
+        return;
+      }
+      
+      try {
+        setConfigLoading(true);
+        const response = await scheduleConfigService.getConfig();
+        if (response.success && response.config) {
+          setScheduleConfig(response.config);
+          console.log('📋 Schedule config loaded:', response.config);
+        } else if (response.config) {
+          setScheduleConfig(response.config);
+          console.log('📋 Schedule config loaded:', response.config);
+        }
+      } catch (error) {
+        console.error('Error fetching schedule config:', error);
+        setScheduleConfig(null);
+      } finally {
+        setConfigLoading(false);
+      }
+    };
+
     fetchRoomTypes();
+    fetchScheduleConfig();
   }, []);
 
   // Handle form submit
@@ -125,6 +155,35 @@ const AddService = () => {
       if (validAddOns.length === 0) {
         toastService.error('Vui lòng thêm ít nhất 1 tùy chọn dịch vụ hợp lệ (có đầy đủ tên, giá, thời gian và đơn vị)!');
         return;
+      }
+
+      // ✅ Validation với schedule config (BẮT BUỘC)
+      if (!scheduleConfig) {
+        toastService.error('Không thể lấy cấu hình lịch hẹn. Vui lòng đảm bảo đã cấu hình hệ thống trước!');
+        return;
+      }
+
+      const { unitDuration, depositAmount } = scheduleConfig;
+
+      // ✅ Validate từng addon: x = ceil(Thời gian / unitDuration) * depositAmount, x <= Giá
+      for (let i = 0; i < validAddOns.length; i++) {
+        const addon = validAddOns[i];
+        
+        // Công thức: x = Thời gian ước tính (phút) chia cho unitDuration, làm tròn lên, sau đó nhân với depositAmount
+        const x = Math.ceil(addon.durationMinutes / unitDuration) * depositAmount;
+        
+        // Kiểm tra: x phải <= Giá
+        if (x > addon.price) {
+          toastService.error(
+            `Tùy chọn "${addon.name}": ` +
+            `Tiền cọc tối thiểu (${x.toLocaleString('vi-VN')} VNĐ) vượt quá giá dịch vụ (${addon.price.toLocaleString('vi-VN')} VNĐ). ` +
+            `\nCông thức: ${addon.durationMinutes} phút ÷ ${unitDuration} phút = ${Math.ceil(addon.durationMinutes / unitDuration)} slot × ${depositAmount.toLocaleString('vi-VN')} VNĐ/slot = ${x.toLocaleString('vi-VN')} VNĐ. ` +
+            `\nVui lòng tăng giá dịch vụ hoặc giảm thời gian ước tính!`
+          );
+          return;
+        }
+
+        console.log(`✅ Addon "${addon.name}": ${addon.durationMinutes}min ÷ ${unitDuration}min = ${Math.ceil(addon.durationMinutes / unitDuration)} slots × ${depositAmount.toLocaleString('vi-VN')} VNĐ = ${x.toLocaleString('vi-VN')} VNĐ <= ${addon.price.toLocaleString('vi-VN')} VNĐ`);
       }
 
       // Prepare FormData for multipart/form-data (hỗ trợ upload ảnh)

@@ -29,7 +29,7 @@ import {
   DeleteOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { servicesService, toast as toastService } from '../services';
+import { servicesService, scheduleConfigService, toast as toastService } from '../services';
 import { searchAndFilter, debounce } from '../utils/searchUtils';
 
 const { Title, Text } = Typography;
@@ -46,6 +46,9 @@ const ServiceList = () => {
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} dịch vụ`,
   });
+
+  // 🆕 Schedule config state
+  const [scheduleConfig, setScheduleConfig] = useState(null);
 
   // Search & Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -130,17 +133,34 @@ const ServiceList = () => {
     }
   };
 
+  // 🆕 Load schedule config on mount
   useEffect(() => {
-    loadServices(pagination.current, 10); 
-  }, [searchTerm, typeFilter]); // Tải lại khi từ khóa tìm kiếm HOẶC bộ lọc loại thay đổi
+    const loadScheduleConfig = async () => {
+      try {
+        const response = await scheduleConfigService.getConfig();
+        console.log('🔍 Full response:', response);
+        // Handle different response structures
+        const config = response.config || response.data?.config || response.data || response;
+        setScheduleConfig(config);
+        console.log('✅ Schedule config loaded:', config);
+      } catch (error) {
+        console.error('❌ Failed to load schedule config:', error);
+      }
+    };
+    loadScheduleConfig();
+  }, []);
 
-  // Reload services when pagination changes (page only, pageSize is fixed at 10)
-  // Chỉ tải từ API khi KHÔNG có filter. Khi có filter, phân trang được xử lý ở client-side
+  // ✅ Combined effect: Load services on mount and when filters change
   useEffect(() => {
-    if (!searchTerm && !typeFilter) {
+    // Load when searchTerm or typeFilter changes
+    if (searchTerm || typeFilter) {
       loadServices(pagination.current, 10);
+      return;
     }
-  }, [pagination.current]);
+    
+    // Load when pagination changes (only if no filters)
+    loadServices(pagination.current, 10);
+  }, [searchTerm, typeFilter, pagination.current]);
 
   // 🆕 Reload data when navigating back from add/edit page
   useEffect(() => {
@@ -192,11 +212,16 @@ const ServiceList = () => {
 
   // Handle edit service
   const handleEditService = (serviceId) => {
-    navigate(`/dashboard/services/${serviceId}/edit`);
+    navigate(`/dashboard/services/${serviceId}/edit`, { state: { scheduleConfig } });
   };
 
   // Handle show delete confirmation modal
   const handleDeleteService = (service) => {
+    // ✅ Prevent deleting services that have been used in the system
+    if (service.hasBeenUsed) {
+      toastService.error(`Không thể xóa dịch vụ "${service.name}" vì đã được sử dụng trong hệ thống. Vui lòng sử dụng chức năng tắt dịch vụ thay thế.`);
+      return;
+    }
     setSelectedServiceForDelete(service);
     setShowDeleteModal(true);
   };
@@ -375,12 +400,17 @@ const ServiceList = () => {
               size="default"
             />
           </Tooltip>
-          <Tooltip title="Xóa dịch vụ" placement="top">
+          <Tooltip title={
+            record.hasBeenUsed 
+              ? "Không thể xóa dịch vụ đã được sử dụng trong hệ thống"
+              : "Xóa dịch vụ"
+          } placement="top">
             <Button
               type="text"
               danger
               icon={<DeleteOutlined />}
               onClick={() => handleDeleteService(record)}
+              disabled={record.hasBeenUsed}
             />
           </Tooltip>
         </Space>
@@ -437,7 +467,7 @@ const ServiceList = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/dashboard/services/add')}
+            onClick={() => navigate('/dashboard/services/add', { state: { scheduleConfig } })}
           >
             Thêm dịch vụ
           </Button>

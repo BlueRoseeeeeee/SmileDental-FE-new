@@ -23,8 +23,8 @@ import {
   SaveOutlined,
   UploadOutlined
 } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
-import { servicesService, toast as toastService } from '../services';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { servicesService, scheduleConfigService, toast as toastService } from '../services';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
 import { preventNonNumericInput } from '../utils/validationUtils';
 
@@ -34,6 +34,7 @@ const { Option } = Select;
 const EditServiceAddOn = () => {
   const navigate = useNavigate();
   const { serviceId, addonId } = useParams();
+  const location = useLocation();
   
   console.log('EditServiceAddOn mounted, serviceId:', serviceId, 'addonId:', addonId);
   
@@ -47,6 +48,8 @@ const EditServiceAddOn = () => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState('');
+  const [scheduleConfig, setScheduleConfig] = useState(location.state?.scheduleConfig || null);
+  const [configLoading, setConfigLoading] = useState(!location.state?.scheduleConfig);
 
   // Auto-save key for localStorage
   const AUTO_SAVE_KEY = `addon_edit_draft_${addonId}`;
@@ -57,6 +60,31 @@ const EditServiceAddOn = () => {
       fetchData();
     }
   }, [serviceId, addonId]);
+
+  // 🆕 Fetch schedule config on mount
+  useEffect(() => {
+    const loadScheduleConfig = async () => {
+      // Skip if already provided via location.state
+      if (location.state?.scheduleConfig) {
+        console.log('📋 Schedule config received from navigation state');
+        setConfigLoading(false);
+        return;
+      }
+      
+      try {
+        setConfigLoading(true);
+        const response = await scheduleConfigService.getConfig();
+        setScheduleConfig(response.config);
+        console.log('✅ Schedule config loaded:', response.config);
+      } catch (error) {
+        console.error('❌ Failed to load schedule config:', error);
+        setScheduleConfig(null);
+      } finally {
+        setConfigLoading(false);
+      }
+    };
+    loadScheduleConfig();
+  }, []);
 
   // Auto-save functionality
   useEffect(() => {
@@ -191,6 +219,28 @@ const EditServiceAddOn = () => {
     try {
       setSaving(true);
       const values = await form.validateFields();
+      
+      // ✅ Validation với schedule config (BẮT BUỘC)
+      if (!scheduleConfig) {
+        toastService.error('Không thể lấy cấu hình lịch hẹn. Vui lòng tải lại trang!');
+        return;
+      }
+
+      const { unitDuration, depositAmount } = scheduleConfig;
+
+      // ✅ Validate: x = ceil(Thời gian / unitDuration) * depositAmount, x <= Giá
+      const x = Math.ceil(values.durationMinutes / unitDuration) * depositAmount;
+      
+      if (x > values.price) {
+        toastService.error(
+          `Tiền cọc tối thiểu (${x.toLocaleString('vi-VN')} VNĐ) vượt quá giá dịch vụ (${values.price.toLocaleString('vi-VN')} VNĐ). ` +
+          `\nCông thức: ${values.durationMinutes} phút ÷ ${unitDuration} phút = ${Math.ceil(values.durationMinutes / unitDuration)} slot × ${depositAmount.toLocaleString('vi-VN')} VNĐ/slot = ${x.toLocaleString('vi-VN')} VNĐ. ` +
+          `\nVui lòng tăng giá dịch vụ hoặc giảm thời gian ước tính!`
+        );
+        return;
+      }
+
+      console.log(`✅ Validation passed: ${values.durationMinutes}min ÷ ${unitDuration}min = ${Math.ceil(values.durationMinutes / unitDuration)} slots × ${depositAmount.toLocaleString('vi-VN')} VNĐ = ${x.toLocaleString('vi-VN')} VNĐ <= ${values.price.toLocaleString('vi-VN')} VNĐ`);
       
       console.log('🔵 [EditServiceAddOn] Preparing to save addon');
       console.log('🔵 [EditServiceAddOn] imageFile:', imageFile);
