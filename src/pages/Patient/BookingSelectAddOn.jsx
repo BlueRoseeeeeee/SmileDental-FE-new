@@ -183,53 +183,66 @@ const BookingSelectAddOn = () => {
       return;
     }
 
-    // Check if service requires exam first and user has indications
-    if (serviceData.requireExamFirst && user) {
-      setLoading(true);
-      try {
-        console.log('🔍 Checking treatment indications for patient:', user._id, 'service:', serviceData._id);
-        
-        const response = await recordService.getTreatmentIndications(user._id, serviceData._id);
-        const indications = response.data || [];
-        
-        console.log('✅ Treatment indications found:', indications);
-        setTreatmentIndications(indications);
-        
-        // If has indications with serviceAddOnId, can select that specific addon
-        if (indications.length > 0 && indications[0].serviceAddOnId) {
-          setCanSelectAddOn(true);
-          console.log('✅ Can select addon (from indication):', indications[0].serviceAddOnName);
-        } else {
-          // Không có chỉ định → chỉ cho XEM, không cho chọn
+    // 🆕 Logic mới: Phân biệt dịch vụ exam và treatment
+    // - Dịch vụ EXAM (type = 'exam') → CHO PHÉP chọn addon tự do
+    // - Dịch vụ TREATMENT (type = 'treatment') → PHẢI có chỉ định mới được chọn addon
+    
+    // Kiểm tra loại dịch vụ
+    if (serviceData.type === 'treatment') {
+      // ===== DỊCH VỤ TREATMENT =====
+      // Bắt buộc phải có chỉ định từ bác sĩ mới được chọn addon
+      if (user) {
+        setLoading(true);
+        try {
+          console.log('🔍 [TREATMENT] Checking treatment indications for patient:', user._id, 'service:', serviceData._id);
+          
+          const response = await recordService.getTreatmentIndications(user._id, serviceData._id);
+          const indications = response.data || [];
+          
+          console.log('✅ Treatment indications found:', indications);
+          setTreatmentIndications(indications);
+          
+          // Chỉ cho phép chọn addon nếu có chỉ định cụ thể
+          if (indications.length > 0 && indications[0].serviceAddOnId) {
+            setCanSelectAddOn(true);
+            console.log('✅ [TREATMENT] Can select addon (from indication):', indications[0].serviceAddOnName);
+          } else {
+            // Không có chỉ định → chỉ cho XEM, không cho chọn
+            setCanSelectAddOn(false);
+            console.log('⚠️ [TREATMENT] No indication found - can only view addons, cannot select');
+          }
+        } catch (error) {
+          console.error('❌ Error fetching treatment indications:', error);
           setCanSelectAddOn(false);
-          console.log('⚠️ No indication found - can only view addons, cannot select');
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('❌ Error fetching treatment indications:', error);
+      } else {
+        // User chưa login nhưng là dịch vụ treatment
         setCanSelectAddOn(false);
-      } finally {
-        setLoading(false);
+        console.log('⚠️ [TREATMENT] User not logged in - can only view addons');
       }
-    } else if (serviceData.requireExamFirst && !user) {
-      // User chưa login nhưng service yêu cầu khám trước
-      // Vẫn cho xem addons nhưng không cho chọn
-      setCanSelectAddOn(false);
-      console.log('⚠️ User not logged in - can only view addons');
     } else {
-      // Service không yêu cầu khám trước → chỉ cho XEM, không cho chọn
-      setCanSelectAddOn(false);
-      console.log('⚠️ Service does not require exam first - can only view addons');
+      // ===== DỊCH VỤ EXAM =====
+      // Cho phép chọn addon tự do
+      setCanSelectAddOn(true);
+      console.log('✅ [EXAM] Service is exam type - can select any addon freely');
     }
   };
 
   const handleSelectAddOn = (addon) => {
     if (!canSelectAddOn) {
-      message.warning('Bạn cần khám trước để được chỉ định gói điều trị phù hợp');
+      // 🆕 Thông báo rõ ràng hơn dựa vào loại dịch vụ
+      if (service.type === 'treatment') {
+        message.warning('Dịch vụ điều trị yêu cầu phải có chỉ định từ bác sĩ. Vui lòng đặt lịch khám trước.');
+      } else {
+        message.warning('Vui lòng đăng nhập để đặt lịch khám');
+      }
       return;
     }
     
-    // Only allow selecting the indicated addon if there's an indication
-    if (treatmentIndications.length > 0) {
+    // 🆕 Chỉ kiểm tra chỉ định nếu là TREATMENT và có chỉ định
+    if (service.type === 'treatment' && treatmentIndications.length > 0) {
       // Check if this addon is in the list of indicated addons
       const isIndicatedAddon = treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
       
@@ -269,9 +282,10 @@ const BookingSelectAddOn = () => {
       return;
     }
     
-    if (service.requireExamFirst && treatmentIndications.length === 0) {
-      // Service yêu cầu khám nhưng không có chỉ định
-      message.warning('Dịch vụ này yêu cầu khám trước. Vui lòng đặt lịch khám tổng quát trước.');
+    // 🆕 Chỉ cảnh báo nếu là TREATMENT
+    if (service.type === 'treatment' && treatmentIndications.length === 0) {
+      // Service là treatment nhưng không có chỉ định
+      message.warning('Dịch vụ điều trị yêu cầu phải có chỉ định từ bác sĩ. Vui lòng đặt lịch khám trước.');
       return;
     }
     
@@ -340,11 +354,12 @@ const BookingSelectAddOn = () => {
           </div>
           <div style={{padding:'20px'}}>
             {/* Important Notifications */}
-            {service.requireExamFirst && (
+            {service.type === 'treatment' && (
               <Alert
                 type="warning"
                 showIcon
-                message="Dịch vụ này yêu cầu khám trước khi điều trị"
+                message="Dịch vụ điều trị yêu cầu phải có chỉ định từ bác sĩ"
+                description="Vui lòng đặt lịch khám để được bác sĩ đánh giá và chỉ định gói điều trị phù hợp"
                 style={{ marginBottom: 16 }}
               />
             )}
@@ -369,11 +384,13 @@ const BookingSelectAddOn = () => {
               />
             )}
             
-            {service.requireExamFirst && treatmentIndications.length === 0 && (
+            {/* 🆕 Chỉ hiển thị cảnh báo nếu là TREATMENT và không có chỉ định */}
+            {service.type === 'treatment' && treatmentIndications.length === 0 && (
               <Alert
                 type="info"
                 showIcon
-                message="Bạn cần khám trước để được nha sỹ chỉ định gói điều trị phù hợp."
+                message="Chưa có chỉ định điều trị"
+                description="Bạn cần đặt lịch khám để được bác sĩ đánh giá và chỉ định gói điều trị phù hợp."
                 style={{ marginBottom: 16 }}
               />
             )}
@@ -390,7 +407,11 @@ const BookingSelectAddOn = () => {
                   </Paragraph>
                 ) : (
                   <Paragraph type="warning" style={{ textAlign: 'center', marginBottom: 24, fontWeight: 500 }}>
-                    Các gói dịch vụ chỉ để tham khảo. Bạn cần khám trước để được chỉ định gói phù hợp.
+                    {/* 🆕 Thông báo khác nhau cho exam và treatment */}
+                    {service.type === 'treatment'
+                      ? 'Các gói dịch vụ chỉ để tham khảo. Dịch vụ điều trị yêu cầu phải có chỉ định từ bác sĩ.'
+                      : 'Chọn gói dịch vụ phù hợp với nhu cầu của bạn'
+                    }
                   </Paragraph>
                 )}
 
@@ -403,9 +424,11 @@ const BookingSelectAddOn = () => {
                   <Row gutter={[16, 16]}>
                     {service.serviceAddOns.filter(addon => addon.isActive).map((addon) => {
                       const isIndicated = treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
-                      // Disable if: user can't select OR (has indications AND this addon is NOT indicated)
+                      // 🆕 Logic mới:
+                      // - Nếu service là TREATMENT VÀ có chỉ định → chỉ enable addon được chỉ định
+                      // - Nếu service là EXAM → enable tất cả addon
                       const isDisabled = !canSelectAddOn || 
-                        (treatmentIndications.length > 0 && !isIndicated);
+                        (service.type === 'treatment' && treatmentIndications.length > 0 && !isIndicated);
                       
                       
                       return (

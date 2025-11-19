@@ -842,33 +842,33 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       }
     }
     
-    // 🆕 Logic mới: Check xem có BẮT BUỘC phải chọn addon không
-    // BẮT BUỘC chọn addon KHI:
-    // 1. Service có requireExamFirst = true
-    // 2. Service có addons
-    // 3. Patient đã chọn và có addon được chỉ định
+    // 🆕 Logic mới: Kiểm tra điều kiện chọn addon
+    // - Dịch vụ KHÁM (exam): Tự do chọn addon hoặc không
+    // - Dịch vụ ĐIỀU TRỊ (treatment): 
+    //   + CÓ chỉ định → Bắt buộc phải chọn addon được chỉ định
+    //   + KHÔNG có chỉ định → KHÔNG được chọn (block luôn, hiển thị cảnh báo)
     
     if (service.serviceAddOns && service.serviceAddOns.length > 0) {
       // Service có addons
-      if (service.requireExamFirst && selectedPatient && selectedPatient._id) {
-        // Service yêu cầu khám trước + có patient → check indications
+      if (service.type === 'treatment' && selectedPatient && selectedPatient._id) {
+        // Service điều trị + có patient → check indications
         const hasAddonIndication = await loadTreatmentIndications(selectedPatient._id, service._id);
         
         if (hasAddonIndication) {
           // Có addon được chỉ định → BẮT BUỘC phải chọn
-          console.log('⚠️ Service requires exam AND has addon indication - MUST select addon');
+          console.log('⚠️ Treatment service AND has addon indication - MUST select addon');
           setRequiresAddonSelection(true);
           setDentists([]); // Clear dentist list
         } else {
-          // Không có addon chỉ định → Cho phép skip, load dentists ngay
-          console.log('✅ Service has addons but no indication - can skip addon');
+          // Không có addon chỉ định → KHÔNG cho phép tiếp tục (block service)
+          console.log('❌ Treatment service but NO indication - BLOCKED');
           setRequiresAddonSelection(false);
-          const serviceDuration = service.durationMinutes || 15;
-          loadDentists(serviceDuration, service._id);
+          setDentists([]); // Clear dentist list
+          message.warning('Dịch vụ điều trị này yêu cầu chỉ định từ bác sĩ. Vui lòng chọn dịch vụ khác.');
         }
       } else {
-        // Service không yêu cầu khám hoặc chưa chọn patient → Cho phép skip
-        console.log('✅ Service has addons but does not require exam - can skip addon');
+        // Service không phải điều trị (exam) hoặc chưa chọn patient → Cho phép chọn addon tự do
+        console.log('✅ Service has addons but is exam service - can select addon freely');
         setRequiresAddonSelection(false);
         const serviceDuration = service.durationMinutes || 15;
         loadDentists(serviceDuration, service._id);
@@ -1739,14 +1739,104 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   </div>
                 )}
 
-                {/* 🆕 Hiển thị danh sách addon để tham khảo (nếu có addon nhưng KHÔNG bắt buộc chọn) */}
-                {!requiresAddonSelection && selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
+                {/* 🆕 Addon selection cho dịch vụ KHÁM (exam services) - Tự do chọn hoặc bỏ qua */}
+                {!requiresAddonSelection && selectedService && selectedService.type === 'exam' && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
                   <div style={{ marginTop: 16 }}>
                     <Divider orientation="left" style={{ fontSize: 14, fontWeight: 500 }}>
-                      📋 Các gói dịch vụ có sẵn (tham khảo)
+                      📋 Chọn gói dịch vụ (tùy chọn)
                     </Divider>
+                    
                     <Alert
-                      message="Thông tin gói dịch vụ"
+                      message="Gói dịch vụ không bắt buộc"
+                      description="Bạn có thể chọn một gói dịch vụ cụ thể hoặc bỏ qua để tiếp tục"
+                      type="info"
+                      showIcon
+                      style={{ marginBottom: 16 }}
+                    />
+                    
+                    <Form.Item
+                      label="Gói dịch vụ"
+                    >
+                      <Select
+                        placeholder="Chọn gói dịch vụ (hoặc bỏ qua)"
+                        onChange={handleServiceAddOnChange}
+                        value={selectedServiceAddOn?._id}
+                        allowClear
+                        onClear={() => {
+                          setSelectedServiceAddOn(null);
+                          if (selectedService) {
+                            const serviceDuration = selectedService.durationMinutes || 15;
+                            loadDentists(serviceDuration, selectedService._id);
+                          }
+                        }}
+                      >
+                        {selectedService.serviceAddOns.map((addon) => {
+                          const priceInfo = getPriceScheduleInfo(addon.priceSchedules, addon.price);
+                          const { activeSchedule, effectivePrice, hasActiveSchedule } = priceInfo;
+                          
+                          return (
+                            <Option key={addon._id} value={addon._id}>
+                              <Space direction="vertical" size={0}>
+                                <Text strong>{addon.name}</Text>
+                                <Space size="large">
+                                  <Space size={4} direction="vertical" align="start">
+                                    {hasActiveSchedule ? (
+                                      <>
+                                        <Space size={4}>
+                                          <DollarOutlined style={{ color: '#ff4d4f' }} />
+                                          <Text delete type="secondary" style={{ fontSize: 12 }}>
+                                            {formatPrice(addon.price)}
+                                          </Text>
+                                        </Space>
+                                        <Space size={4}>
+                                          <Text strong style={{ fontSize: 14, color: '#ff4d4f' }}>
+                                            {formatPrice(activeSchedule.price)}
+                                          </Text>
+                                          <Tag color="red" style={{ fontSize: 10, margin: 0 }}>
+                                            Giảm giá
+                                          </Tag>
+                                        </Space>
+                                      </>
+                                    ) : (
+                                      <Space size={4}>
+                                        <DollarOutlined style={{ color: '#52c41a' }} />
+                                        <Text strong style={{ fontSize: 14, color: '#52c41a' }}>
+                                          {formatPrice(addon.price)}
+                                        </Text>
+                                        <Text type="secondary" style={{ fontSize: 12 }}>/ {addon.unit}</Text>
+                                      </Space>
+                                    )}
+                                  </Space>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                    <ClockCircleOutlined /> {addon.durationMinutes}p
+                                  </Text>
+                                </Space>
+                              </Space>
+                            </Option>
+                          );
+                        })}
+                      </Select>
+                    </Form.Item>
+                  </div>
+                )}
+
+                {/* 🆕 Hiển thị addon READ-ONLY cho dịch vụ ĐIỀU TRỊ không có chỉ định */}
+                {!requiresAddonSelection && selectedService && selectedService.type === 'treatment' && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
+                  <div style={{ marginTop: 16 }}>
+                    <Divider orientation="left" style={{ fontSize: 14, fontWeight: 500 }}>
+                      📋 Các gói dịch vụ có sẵn (chỉ tham khảo)
+                    </Divider>
+                    
+                    <Alert
+                      message="Dịch vụ điều trị yêu cầu chỉ định"
+                      description="Dịch vụ này cần có chỉ định từ bác sĩ sau khi khám. Vui lòng chọn dịch vụ khám trước hoặc chọn dịch vụ điều trị khác đã có chỉ định."
+                      type="warning"
+                      showIcon
+                      style={{ marginBottom: 16 }}
+                    />
+                    
+                    <Alert
+                      message="Thông tin các gói dịch vụ"
                       description={
                         <Space direction="vertical" size={12} style={{ width: '100%' }}>
                           {selectedService.serviceAddOns.map((addOn, index) => {
@@ -1834,7 +1924,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       }
                       type="info"
                       showIcon
-                      style={{ backgroundColor: '#e6f7ff', border: '1px solid #91d5ff' }}
+                      style={{ backgroundColor: '#fff7e6', border: '1px solid #ffd591' }}
                     />
                   </div>
                 )}
