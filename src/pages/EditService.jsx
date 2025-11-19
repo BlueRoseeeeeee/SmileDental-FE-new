@@ -873,6 +873,8 @@ const EditService = () => {
                       icon={<DeleteOutlined />}
                       onClick={() => handleDeleteAddOn(record)}
                       size="small"
+                      disabled={record.hasBeenUsed}
+                      title={record.hasBeenUsed ? 'Không thể xóa tùy chọn đã được sử dụng' : 'Xóa tùy chọn'}
                     />
                   </Space>
                 ),
