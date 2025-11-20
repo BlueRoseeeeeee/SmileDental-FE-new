@@ -4,25 +4,30 @@
 import React from 'react';
 import { Carousel, Button } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import bannerCarousel from '../../assets/image/banner-caroseul.png';
+import banner01 from '../../assets/image/banner-01.jpg';
+import minhhoa from '../../assets/image/minhhoa.jpg';
+import minhhoa2 from '../../assets/image/minhhoa2.png';
+import bannerCarousel2 from '../../assets/image/banner-caroseul2.png';
 
 const HeroCarousel = () => {
   const carouselRef = React.useRef(null);
 
   const carouselContent = [
     {
-      image: '/src/assets/image/banner-caroseul.png',
+      image: bannerCarousel,
     },
     {
-      image: '/src/assets/image/banner-01.jpg',
+      image: banner01,
     },
     {
-      image: '/src/assets/image/minhhoa.jpg',
+      image: minhhoa,
     },
     {
-      image: '/src/assets/image/minhhoa2.png',
+      image: minhhoa2,
     },
     {
-      image: '/src/assets/image/banner-caroseul2.png',
+      image: bannerCarousel2,
     }
   ];
 
