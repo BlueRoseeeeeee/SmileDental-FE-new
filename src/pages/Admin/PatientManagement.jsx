@@ -21,7 +21,9 @@ import {
   Modal,
   Form,
   DatePicker,
-  Select
+  Select,
+  Switch,
+  Popconfirm
 } from 'antd';
 import {
   SearchOutlined,
@@ -52,6 +54,8 @@ const PatientManagement = () => {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
   const [editForm] = Form.useForm();
+  const [toggleModalVisible, setToggleModalVisible] = useState(false);
+  const [patientToToggle, setPatientToToggle] = useState(null);
 
   useEffect(() => {
     fetchPatients();
@@ -150,6 +154,40 @@ const PatientManagement = () => {
     setEditModalVisible(false);
     editForm.resetFields();
     setEditingPatient(null);
+  };
+
+  const showToggleModal = (patient) => {
+    setPatientToToggle(patient);
+    setToggleModalVisible(true);
+  };
+
+  const handleToggleStatus = async () => {
+    if (!patientToToggle) return;
+    
+    try {
+      const action = patientToToggle.isActive ? 'khóa' : 'mở khóa';
+      setLoading(true);
+      
+      const response = await userService.toggleUserStatus(patientToToggle._id);
+      
+      if (response.success) {
+        message.success(`${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công`);
+        setToggleModalVisible(false);
+        setPatientToToggle(null);
+        // Refresh patient list
+        fetchPatients();
+      }
+    } catch (error) {
+      console.error('Error toggling patient status:', error);
+      message.error(error.message || 'Không thể thay đổi trạng thái tài khoản');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelToggle = () => {
+    setToggleModalVisible(false);
+    setPatientToToggle(null);
   };
 
   const getGenderTag = (gender, large = false) => {
@@ -269,10 +307,17 @@ const PatientManagement = () => {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 150,
+      width: 200,
       fixed: 'right',
       render: (_, record) => (
         <Space>
+          <Tooltip title={record.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}>
+            <Switch
+              checked={record.isActive}
+              size="small"
+              onChange={() => showToggleModal(record)}
+            />
+          </Tooltip>
           <Button
             type="link"
             icon={<EditOutlined />}
@@ -421,6 +466,115 @@ const PatientManagement = () => {
           </>
         )}
       </Drawer>
+
+      {/* Toggle Status Modal */}
+      <Modal
+        title={
+          <Space>
+            <span style={{ fontSize: '18px' }}>⚠️</span>
+            <span>{patientToToggle?.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}</span>
+          </Space>
+        }
+        open={toggleModalVisible}
+        onOk={handleToggleStatus}
+        onCancel={handleCancelToggle}
+        okText="Xác nhận"
+        cancelText="Hủy"
+        confirmLoading={loading}
+        okButtonProps={{ 
+          danger: patientToToggle?.isActive,
+          style: patientToToggle?.isActive ? {} : { background: '#52c41a', borderColor: '#52c41a' }
+        }}
+      >
+        {patientToToggle && (
+          <div style={{ padding: '16px 0' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <Text strong style={{ fontSize: '15px' }}>
+                Bạn có chắc chắn muốn {patientToToggle.isActive ? 'khóa' : 'mở khóa'} tài khoản của:
+              </Text>
+              <div style={{ 
+                marginTop: '12px',
+                padding: '12px',
+                background: '#f5f5f5',
+                borderRadius: '8px',
+                border: '1px solid #d9d9d9'
+              }}>
+                <Space direction="vertical" size={4}>
+                  <Text strong style={{ fontSize: '16px' }}>{patientToToggle.fullName}</Text>
+                  <Text type="secondary">{patientToToggle.email}</Text>
+                  <Text type="secondary">{patientToToggle.phone}</Text>
+                </Space>
+              </div>
+            </div>
+
+            {patientToToggle.isActive ? (
+              // Cảnh báo khi KHÓA tài khoản
+              <div style={{
+                padding: '16px',
+                background: '#fff2e8',
+                border: '1px solid #ffbb96',
+                borderRadius: '8px'
+              }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <Text strong style={{ color: '#d4380d', fontSize: '15px' }}>
+                    Khi khóa tài khoản, bệnh nhân này sẽ:
+                  </Text>
+                </div>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#d4380d', marginRight: '8px', fontSize: '20px', lineHeight: '1' }}>•</span>
+                    <Text>Không thể đăng nhập vào hệ thống</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#d4380d', marginRight: '8px', fontSize: '20px', lineHeight: '1' }}>•</span>
+                    <Text>Mất quyền truy cập tất cả chức năng</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#d4380d', marginRight: '8px', fontSize: '20px', lineHeight: '1' }}>•</span>
+                    <Text>Không thể đặt lịch hẹn mới</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#d4380d', marginRight: '8px', fontSize: '20px', lineHeight: '1' }}>•</span>
+                    <Text>Không thể xem hồ sơ bệnh án</Text>
+                  </div>
+                </Space>
+              </div>
+            ) : (
+              // Thông báo khi MỞ KHÓA tài khoản
+              <div style={{
+                padding: '16px',
+                background: '#f6ffed',
+                border: '1px solid #b7eb8f',
+                borderRadius: '8px'
+              }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <Text strong style={{ color: '#389e0d', fontSize: '15px' }}>
+                    Khi mở khóa tài khoản, bệnh nhân này sẽ:
+                  </Text>
+                </div>
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#389e0d', marginRight: '8px', fontSize: '20px', lineHeight: '1' }}>•</span>
+                    <Text>Có thể đăng nhập vào hệ thống</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#389e0d', marginRight: '8px', fontSize: '20px', lineHeight: '1' }}>•</span>
+                    <Text>Khôi phục quyền truy cập tất cả chức năng</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#389e0d', marginRight: '8px', fontSize: '20px', lineHeight: '1' }}>•</span>
+                    <Text>Có thể đặt lịch hẹn mới</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                    <span style={{ color: '#389e0d', marginRight: '8px', fontSize: '20px', lineHeight: '1' }}>•</span>
+                    <Text>Có thể xem hồ sơ bệnh án</Text>
+                  </div>
+                </Space>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Edit Patient Modal */}
       <Modal
