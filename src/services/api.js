@@ -4,6 +4,7 @@
  * HARDCODED to production backend
  */
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 // ⚠️ HARDCODED - Directly pointing to production backend
 const API_BASE_URL = 'https://be.smilecare.io.vn/api';
@@ -47,12 +48,21 @@ api.interceptors.response.use(
   (error) => {
     if (error?.response?.status === 401) {
       try {
+        // Clear all auth data
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        // Redirect to login page
-        window.location.href = '/login';
-      } catch (e) {}
+        localStorage.removeItem('selectedRole');
+        
+        // Show warning message (if running in browser)
+        if (typeof window !== 'undefined') {
+          toast.warn(' Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+          // Redirect to login page
+          window.location.href = '/login';
+        }
+      } catch (e) {
+        console.error('Error during 401 handling:', e);
+      }
     }
     return Promise.reject(error);
   }

@@ -175,15 +175,16 @@ const createAxiosInstance = (serviceName, config) => {
         }
         
         // Chỉ hiển thị thông báo token hết hạn khi thực sự là token hết hạn
-        toast.warning('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 4000);
+        toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 4000);
+        
+        // Clear tokens và auth data
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('selectedRole');
         
         // Đợi một chút để user thấy thông báo trước khi redirect
         setTimeout(() => {
-          // Clear tokens
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
-          
           // Redirect to login
           window.location.href = '/login';
         }, 2000); // Đợi 2 giây để user thấy thông báo
