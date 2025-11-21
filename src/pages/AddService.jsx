@@ -80,6 +80,11 @@ const AddService = () => {
   const [requireExamFirst, setRequireExamFirst] = useState(false);
   const [scheduleConfig, setScheduleConfig] = useState(location.state?.scheduleConfig || null);
   const [configLoading, setConfigLoading] = useState(!location.state?.scheduleConfig);
+  // 🆕 Common duration for treatment services without exam requirement
+  const [commonDuration, setCommonDuration] = useState(null);
+  
+  // 🆕 Watch for form field changes to trigger conditional rendering
+  const serviceType = Form.useWatch('type', form);
 
   // Fetch room types and schedule config on mount
   React.useEffect(() => {
@@ -136,11 +141,31 @@ const AddService = () => {
     fetchScheduleConfig();
   }, []);
 
+  // 🆕 Reset commonDuration when switching away from treatment without exam
+  React.useEffect(() => {
+    if (!(serviceType === 'treatment' && requireExamFirst === false)) {
+      setCommonDuration(null);
+    }
+  }, [serviceType, requireExamFirst]);
+
   // Handle form submit
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       setSubmitLoading(true);
+
+      // 🆕 Nếu là treatment không yêu cầu khám, áp dụng commonDuration cho tất cả addons
+      if (serviceType === 'treatment' && requireExamFirst === false) {
+        if (!commonDuration || commonDuration <= 0) {
+          toastService.error('Vui lòng nhập thời gian ước tính!');
+          setSubmitLoading(false);
+          return;
+        }
+        // Apply common duration to all addons
+        serviceAddOns.forEach(addon => {
+          addon.durationMinutes = commonDuration;
+        });
+      }
 
       // Filter valid add-ons (có đầy đủ fields bắt buộc)
       const validAddOns = serviceAddOns.filter(addon => 
@@ -154,8 +179,12 @@ const AddService = () => {
       
       if (validAddOns.length === 0) {
         toastService.error('Vui lòng thêm ít nhất 1 tùy chọn dịch vụ hợp lệ (có đầy đủ tên, giá, thời gian và đơn vị)!');
+        setSubmitLoading(false);
         return;
       }
+
+      // ✅ Validation đã được xử lý ở trên bằng cách áp dụng commonDuration cho tất cả addons
+      // Không cần validate lại vì tất cả addons đã có cùng duration
 
       // ✅ Validation với schedule config (BẮT BUỘC)
       if (!scheduleConfig) {
@@ -557,6 +586,46 @@ const AddService = () => {
                      Thêm tùy chọn
                    </Button>
                  </div>
+
+                 {/* 🆕 Common duration input for treatment without exam */}
+                 {serviceType === 'treatment' && requireExamFirst === false && (
+                   <Card
+                     style={{
+                       marginBottom: '24px',
+                       borderRadius: '12px',
+                       border: '2px solid #3b82f6',
+                       background: '#eff6ff'
+                     }}
+                     bodyStyle={{ padding: '20px' }}
+                   >
+                     <Row gutter={16} align="middle">
+                       <Col xs={24} md={12}>
+                         <div>
+                           <Text strong style={{ color: '#1e40af', fontSize: '16px' }}>
+                             ⏱️ Thời gian ước tính chung cho tất cả tùy chọn *
+                           </Text>
+                           <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>
+                             Thời gian này sẽ được áp dụng cho tất cả các tùy chọn dịch vụ
+                           </div>
+                         </div>
+                       </Col>
+                       <Col xs={24} md={12}>
+                         <InputNumber
+                           style={{ width: '100%' }}
+                           placeholder="Nhập thời gian (phút)"
+                           value={commonDuration}
+                           onChange={setCommonDuration}
+                           min={1}
+                           max={999}
+                           size="large"
+                           addonAfter="phút"
+                           onKeyPress={preventNonNumericInput}
+                         />
+                       </Col>
+                     </Row>
+                   </Card>
+                 )}
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {serviceAddOns.map((addon, index) => (
                   <Card 
@@ -687,26 +756,29 @@ const AddService = () => {
                          </Select>
                       </Col>
 
-                      <Col xs={24} sm={12} md={5}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <Text strong style={{ color: '#262626' }}>Thời gian ước tính (phút) *</Text>
-                        </div>
-                         <InputNumber
-                           style={{ 
-                             width: '100%',
-                             borderRadius: '8px'
-                           }}
-                           placeholder="Nhập thời gian"
-                           value={addon.durationMinutes}
-                           onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
-                           min={1}
-                           size="large"
-                           addonAfter="phút"
-                           onKeyPress={preventNonNumericInput}
-                         />
-                      </Col>
+                      {/* Ẩn ô thời gian nếu là treatment không yêu cầu khám (vì dùng common duration) */}
+                      {!(serviceType === 'treatment' && requireExamFirst === false) && (
+                        <Col xs={24} sm={12} md={5}>
+                          <div style={{ marginBottom: '8px' }}>
+                            <Text strong style={{ color: '#262626' }}>Thời gian ước tính (phút) *</Text>
+                          </div>
+                          <InputNumber
+                            style={{ 
+                              width: '100%',
+                              borderRadius: '8px'
+                            }}
+                            placeholder="Nhập thời gian"
+                            value={addon.durationMinutes}
+                            onChange={(value) => updateServiceAddOn(index, 'durationMinutes', value)}
+                            min={1}
+                            size="large"
+                            addonAfter="phút"
+                            onKeyPress={preventNonNumericInput}
+                          />
+                        </Col>
+                      )}
 
-                      <Col xs={24} sm={12} md={5}>
+                      <Col xs={24} sm={12} md={serviceType === 'treatment' && requireExamFirst === false ? 10 : 5}>
                         <div style={{ marginBottom: '8px' }}>
                           <Text strong style={{ color: '#262626' }}>Giá *</Text>
                         </div>
