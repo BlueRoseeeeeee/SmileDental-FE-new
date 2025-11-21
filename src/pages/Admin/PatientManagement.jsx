@@ -23,7 +23,8 @@ import {
   DatePicker,
   Select,
   Switch,
-  Popconfirm
+  Popconfirm,
+  Tabs
 } from 'antd';
 import {
   SearchOutlined,
@@ -56,6 +57,7 @@ const PatientManagement = () => {
   const [editForm] = Form.useForm();
   const [toggleModalVisible, setToggleModalVisible] = useState(false);
   const [patientToToggle, setPatientToToggle] = useState(null);
+  const [activeTab, setActiveTab] = useState('active');
 
   useEffect(() => {
     fetchPatients();
@@ -64,7 +66,7 @@ const PatientManagement = () => {
   useEffect(() => {
     filterPatients();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchText, patients]);
+  }, [searchText, patients, activeTab]);
 
   const fetchPatients = async () => {
     try {
@@ -91,18 +93,26 @@ const PatientManagement = () => {
   };
 
   const filterPatients = () => {
-    if (!searchText.trim()) {
-      setFilteredPatients(patients);
-      return;
+    let filtered = patients;
+
+    // Filter by active tab
+    if (activeTab === 'active') {
+      filtered = filtered.filter(p => p.isActive === true);
+    } else if (activeTab === 'inactive') {
+      filtered = filtered.filter(p => p.isActive === false);
     }
 
-    const search = searchText.toLowerCase();
-    const filtered = patients.filter(patient =>
-      patient.fullName?.toLowerCase().includes(search) ||
-      patient.email?.toLowerCase().includes(search) ||
-      patient.phone?.includes(search) ||
-      patient.address?.toLowerCase().includes(search)
-    );
+    // Filter by search text
+    if (searchText.trim()) {
+      const search = searchText.toLowerCase();
+      filtered = filtered.filter(patient =>
+        patient.fullName?.toLowerCase().includes(search) ||
+        patient.email?.toLowerCase().includes(search) ||
+        patient.phone?.includes(search) ||
+        patient.address?.toLowerCase().includes(search)
+      );
+    }
+
     setFilteredPatients(filtered);
   };
 
@@ -235,9 +245,6 @@ const PatientManagement = () => {
           <div>
             <div>
               <Text strong>{record.fullName}</Text>
-              {!record.isActive && (
-                <Tag color="red" style={{ marginLeft: 8 }}>Đã khóa</Tag>
-              )}
             </div>
             <Text type="secondary" style={{ fontSize: 12 }}>
               <MailOutlined /> {record.email}
@@ -276,18 +283,6 @@ const PatientManagement = () => {
         return dayjs(a.dateOfBirth).unix() - dayjs(b.dateOfBirth).unix();
       },
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : 'Chưa có'
-    },
-    {
-      title: 'Địa chỉ',
-      dataIndex: 'address',
-      key: 'address',
-      width: 200,
-      ellipsis: true,
-      render: (address) => (
-        <Tooltip title={address}>
-          <Text>{address || 'Chưa có'}</Text>
-        </Tooltip>
-      )
     },
     {
       title: 'Ngày đăng ký',
@@ -367,30 +362,83 @@ const PatientManagement = () => {
           </Col>
         </Row>
 
-        {/* Table */}
-        <Table
-          columns={getColumns()}
-          dataSource={filteredPatients}
-          rowKey="_id"
-          loading={loading}
-          scroll={{ x: 800, y: 600 }}
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            total: filteredPatients.length,
-            showTotal: (total) => `Tổng ${total} bệnh nhân`,
-            onChange: (page, pageSize) => {
-              setPagination({ current: page, pageSize });
+        {/* Tabs */}
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => {
+            setActiveTab(key);
+            setPagination({ current: 1, pageSize: 10 }); // Reset pagination
+          }}
+          items={[
+            {
+              key: 'active',
+              label: (
+                <span>
+                  Đang hoạt động
+                </span>
+              ),
+              children: (
+                <Table
+                  columns={getColumns()}
+                  dataSource={filteredPatients}
+                  rowKey="_id"
+                  loading={loading}
+                  scroll={{ x: 800, y: 600 }}
+                  pagination={{
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    total: filteredPatients.length,
+                    showTotal: (total) => `Tổng ${total} bệnh nhân`,
+                    onChange: (page, pageSize) => {
+                      setPagination({ current: page, pageSize });
+                    }
+                  }}
+                  locale={{
+                    emptyText: (
+                      <Empty
+                        description="Không có bệnh nhân đang hoạt động"
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      />
+                    )
+                  }}
+                />
+              )
+            },
+            {
+              key: 'inactive',
+              label: (
+                <span>
+                  Đã khóa tài khoản
+                </span>
+              ),
+              children: (
+                <Table
+                  columns={getColumns()}
+                  dataSource={filteredPatients}
+                  rowKey="_id"
+                  loading={loading}
+                  scroll={{ x: 800, y: 600 }}
+                  pagination={{
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    total: filteredPatients.length,
+                    showTotal: (total) => `Tổng ${total} bệnh nhân`,
+                    onChange: (page, pageSize) => {
+                      setPagination({ current: page, pageSize });
+                    }
+                  }}
+                  locale={{
+                    emptyText: (
+                      <Empty
+                        description="Không có bệnh nhân bị khóa tài khoản"
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      />
+                    )
+                  }}
+                />
+              )
             }
-          }}
-          locale={{
-            emptyText: (
-              <Empty
-                description="Không có dữ liệu"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
-            )
-          }}
+          ]}
         />
       </Card>
 
