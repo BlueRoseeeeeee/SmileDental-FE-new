@@ -171,17 +171,43 @@ const Login = () => {
       // 🎯 Redirect based on user role
       const userRoles = response.user?.roles || (response.user?.role ? [response.user.role] : []);
       const isPatient = userRoles.includes('patient') && userRoles.length === 1;
+      const isAdmin = userRoles.includes('admin');
+      const isManager = userRoles.includes('manager');
+      const isStaff = userRoles.includes('dentist') || userRoles.includes('nurse') || userRoles.includes('receptionist');
       
-      let redirectPath = location.state?.from || '/dashboard';
+      // Get the "from" path but validate if user has permission
+      const requestedPath = location.state?.from?.pathname || location.state?.from || null;
+      let redirectPath = '/dashboard'; // Default fallback
       
-      // 🔄 If patient, redirect to /patient instead of /dashboard
+      // If patient, always redirect to /patient (ignore "from" path)
       if (isPatient) {
         redirectPath = '/patient';
         console.log('🎯 [Login] Patient detected - redirecting to /patient');
+      } 
+      // Check if requested path is safe for current user role
+      else if (requestedPath && requestedPath !== '/login' && requestedPath !== '/unauthorized') {
+        //  Block staff from accessing admin-only routes
+        const isAdminRoute = requestedPath.includes('/users/') || 
+                            requestedPath.includes('/rooms') || 
+                            requestedPath.includes('/services') ||
+                            requestedPath.includes('/statistics') ||
+                            requestedPath.includes('/schedules/');
+        
+        // If staff tries to access admin route → redirect to dashboard instead
+        if (isStaff && !isAdmin && !isManager && isAdminRoute) {
+          toast.warn('[Login] Bạn không có quyền truy cập:', requestedPath);
+          redirectPath = '/dashboard';
+        } else {
+          // Safe to use requested path
+          redirectPath = requestedPath;
+      
+        }
+      } else {
+        console.log(' Using default dashboard path');
       }
       
-      console.log('🎯 [Login] Redirecting to:', redirectPath);
-      navigate(redirectPath);
+      console.log('[Login] Final redirect to:', redirectPath);
+      navigate(redirectPath, { replace: true }); // Use replace to clear location state
     } catch (error) {
       console.error('❌ [Login] Login failed:', {
         message: error.message,
