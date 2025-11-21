@@ -354,7 +354,8 @@ const CertificateManagement = () => {
             label="Ghi chú (tùy chọn)"
           >
             <TextArea
-              rows={3}
+              rows={5}
+              className='custom-textarea'
               placeholder="Nhập ghi chú về chứng chỉ..."
               maxLength={200}
               showCount
@@ -405,8 +406,9 @@ const CertificateManagement = () => {
             label="Ghi chú"
           >
             <TextArea
-              rows={4}
+              rows={5}
               placeholder="Nhập ghi chú về chứng chỉ..."
+              className='custom-textarea'
               maxLength={200}
               showCount
             />
