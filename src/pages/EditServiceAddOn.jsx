@@ -220,6 +220,11 @@ const EditServiceAddOn = () => {
       setSaving(true);
       const values = await form.validateFields();
       
+      // ✅ Nếu dịch vụ điều trị không yêu cầu khám, giữ nguyên durationMinutes cũ (không cho edit)
+      if (service?.type === 'treatment' && service?.requireExamFirst === false) {
+        values.durationMinutes = addOn.durationMinutes; // Giữ nguyên giá trị cũ
+      }
+      
       // ✅ Validation với schedule config (BẮT BUỘC)
       if (!scheduleConfig) {
         toastService.error('Không thể lấy cấu hình lịch hẹn. Vui lòng tải lại trang!');
@@ -413,25 +418,28 @@ const EditServiceAddOn = () => {
 
           <Row gutter={[16, 16]}>
             {/* Row 2: Thời gian + Đơn vị */}
-            <Col span={12}>
-              <Form.Item
-                name="durationMinutes"
-                label="Thời gian (phút)"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập thời gian' },
-                  { type: 'number', min: 1, message: 'Thời gian phải lớn hơn 0' }
-                ]}
-              >
-                <InputNumber
-                  placeholder="Nhập thời gian"
-                  style={{ width: '100%' }}
-                  min={1}
-                  addonAfter="phút"
-                  onKeyPress={preventNonNumericInput}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
+            {/* Ẩn trường thời gian nếu dịch vụ điều trị không yêu cầu khám (vì tất cả addon phải có cùng thời gian) */}
+            {!(service?.type === 'treatment' && service?.requireExamFirst === false) && (
+              <Col span={12}>
+                <Form.Item
+                  name="durationMinutes"
+                  label="Thời gian (phút)"
+                  rules={[
+                    { required: true, message: 'Vui lòng nhập thời gian' },
+                    { type: 'number', min: 1, message: 'Thời gian phải lớn hơn 0' }
+                  ]}
+                >
+                  <InputNumber
+                    placeholder="Nhập thời gian"
+                    style={{ width: '100%' }}
+                    min={1}
+                    addonAfter="phút"
+                    onKeyPress={preventNonNumericInput}
+                  />
+                </Form.Item>
+              </Col>
+            )}
+            <Col span={!(service?.type === 'treatment' && service?.requireExamFirst === false) ? 12 : 24}>
               <Form.Item
                 name="unit"
                 label="Đơn vị"

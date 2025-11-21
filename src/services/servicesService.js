@@ -128,6 +128,15 @@ export const servicesService = {
     return response.data.data || response.data;
   },
 
+  // Cập nhật thời gian cho tất cả add-ons của dịch vụ
+  async updateAllAddonsDuration(serviceId, durationMinutes) {
+    const response = await serviceApi.patch(`/service/${serviceId}/addons/duration`, { 
+      durationMinutes 
+    });
+    // Cấu trúc mới: { success: true, data: {...} }
+    return response.data.data || response.data;
+  },
+
   // Get room types enum
   async getRoomTypes() {
     const response = await serviceApi.get('/service/enums/room-types');

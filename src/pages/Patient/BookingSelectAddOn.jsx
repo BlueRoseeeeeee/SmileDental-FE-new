@@ -282,12 +282,9 @@ const BookingSelectAddOn = () => {
       return;
     }
     
-    // 🆕 Chỉ cảnh báo nếu là TREATMENT
-    if (service.type === 'treatment' && treatmentIndications.length === 0) {
-      // Service là treatment nhưng không có chỉ định
-      message.warning('Dịch vụ điều trị yêu cầu phải có chỉ định từ bác sĩ. Vui lòng đặt lịch khám trước.');
-      return;
-    }
+    // ✅ REMOVED: Không chặn treatment không có chỉ định
+    // Cho phép user tiếp tục đặt lịch ngay cả khi chưa có chỉ định
+    // User sẽ cần đặt lịch khám trước để được chỉ định sau
     
     // 🆕 If service has addons, save the longest one for slot grouping
     if (service.serviceAddOns && service.serviceAddOns.length > 0) {
