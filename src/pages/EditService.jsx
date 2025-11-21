@@ -90,6 +90,11 @@ const EditService = () => {
   const [selectedStartDate, setSelectedStartDate] = useState(null);
   const [dateAnalysis, setDateAnalysis] = useState(null);
 
+  // 🆕 Duration management for treatment services
+  const [showDurationModal, setShowDurationModal] = useState(false);
+  const [bulkDuration, setBulkDuration] = useState(null);
+  const [durationLoading, setDurationLoading] = useState(false);
+
 
   // Auto-save key for localStorage
   const AUTO_SAVE_KEY = `service_draft_${serviceId}`;
@@ -263,6 +268,33 @@ const EditService = () => {
       if (!confirmed) return;
     }
     navigate('/dashboard/services', { state: { reload: true } });
+  };
+
+  // 🆕 Handle bulk duration update
+  const handleBulkDurationUpdate = async () => {
+    if (!bulkDuration || bulkDuration <= 0) {
+      message.error('Vui lòng nhập thời gian hợp lệ');
+      return;
+    }
+
+    try {
+      setDurationLoading(true);
+      
+      // Update all addons
+      await servicesService.updateAllAddonsDuration(serviceId, bulkDuration);
+      
+      message.success(`Đã cập nhật thời gian thành ${bulkDuration} phút cho tất cả tùy chọn`);
+      setShowDurationModal(false);
+      setBulkDuration(null);
+      
+      // Reload service data
+      await fetchServiceDetails();
+    } catch (error) {
+      console.error('Error updating bulk duration:', error);
+      message.error(error.response?.data?.message || 'Lỗi khi cập nhật thời gian');
+    } finally {
+      setDurationLoading(false);
+    }
   };
 
   // Handle delete add-on
@@ -771,14 +803,30 @@ const EditService = () => {
         title="Các tùy chọn dịch vụ" 
         style={{ marginTop: 24 }}
         extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate(`/dashboard/services/${serviceId}/addons/add`)}
-            size="small"
-          >
-            Thêm tùy chọn
-          </Button>
+          <Space>
+            {/* Chỉ hiển thị button chỉnh sửa thời gian cho treatment không yêu cầu khám */}
+            {service?.type === 'treatment' && service?.requireExamFirst === false && service?.serviceAddOns?.length > 0 && (
+              <Button
+                icon={<EditOutlined />}
+                onClick={() => {
+                  // Set giá trị mặc định là thời gian của addon đầu tiên
+                  setBulkDuration(service.serviceAddOns[0]?.durationMinutes || 30);
+                  setShowDurationModal(true);
+                }}
+                size="small"
+              >
+                Chỉnh sửa thời gian
+              </Button>
+            )}
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate(`/dashboard/services/${serviceId}/addons/add`)}
+              size="small"
+            >
+              Thêm tùy chọn
+            </Button>
+          </Space>
         }
       >
         {service?.serviceAddOns && service.serviceAddOns.length > 0 ? (
@@ -1374,6 +1422,36 @@ const EditService = () => {
               unCheckedChildren="Tạm ngưng" 
             />
           </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal chỉnh sửa thời gian hàng loạt */}
+      <Modal
+        title="Chỉnh sửa thời gian cho tất cả tùy chọn"
+        open={showDurationModal}
+        onCancel={() => {
+          setShowDurationModal(false);
+          setBulkDuration(null);
+        }}
+        onOk={handleBulkDurationUpdate}
+        confirmLoading={durationLoading}
+        okText="Cập nhật"
+        cancelText="Hủy"
+      >
+        <Form layout="vertical">
+          <Form.Item label="Thời gian ước tính (phút)" required>
+            <InputNumber
+              min={1}
+              max={999}
+              value={bulkDuration}
+              onChange={setBulkDuration}
+              placeholder="Nhập thời gian (phút)"
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <div style={{ color: '#666', fontSize: '13px' }}>
+            Thời gian này sẽ được áp dụng cho tất cả các tùy chọn của dịch vụ điều trị không yêu cầu khám.
+          </div>
         </Form>
       </Modal>
 

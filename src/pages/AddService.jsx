@@ -154,7 +154,26 @@ const AddService = () => {
       
       if (validAddOns.length === 0) {
         toastService.error('Vui lòng thêm ít nhất 1 tùy chọn dịch vụ hợp lệ (có đầy đủ tên, giá, thời gian và đơn vị)!');
+        setSubmitLoading(false);
         return;
+      }
+
+      // ✅ NEW VALIDATION: Kiểm tra tất cả serviceAddOn phải có cùng thời gian ước tính
+      // CHỈ áp dụng cho dịch vụ ĐIỀU TRỊ (treatment) và KHÔNG yêu cầu khám trước (requireExamFirst = false)
+      if (validAddOns.length > 1 && values.type === 'treatment' && requireExamFirst === false) {
+        const firstDuration = validAddOns[0].durationMinutes;
+        const allSameDuration = validAddOns.every(addon => addon.durationMinutes === firstDuration);
+        
+        if (!allSameDuration) {
+          const durations = validAddOns.map(addon => `"${addon.name}": ${addon.durationMinutes} phút`).join(', ');
+          toastService.error(
+            `Đối với dịch vụ điều trị không yêu cầu khám trước, tất cả các tùy chọn phải có cùng thời gian ước tính!\n\nHiện tại: ${durations}\n\nVui lòng đặt cùng một thời gian cho tất cả tùy chọn.`
+          );
+          setSubmitLoading(false);
+          return;
+        }
+        
+        console.log(`✅ All ${validAddOns.length} service add-ons have same duration: ${firstDuration} minutes (treatment service without exam requirement)`);
       }
 
       // ✅ Validation với schedule config (BẮT BUỘC)
