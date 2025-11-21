@@ -4845,7 +4845,7 @@ const StaffAssignmentUnified = () => {
               <>
                 {/* Filters */}
                 <Row gutter={16} style={{ marginBottom: 16 }}>
-                  <Col flex="320px">
+                  <Col flex="320px" style={{marginBottom:10}}>
                     <Input
                       allowClear
                       value={staffSearchValue}
