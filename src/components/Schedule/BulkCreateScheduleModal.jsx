@@ -1,7 +1,7 @@
 /**
- * @author: Your Name  
+ * @author: HoTram 
  * BulkCreateScheduleModal - Modal tạo lịch cho nhiều phòng cùng lúc
- * Logic phức tạp:
+ * Logic:
  * - Disabled tháng nếu TẤT CẢ phòng đã có lịch tháng đó
  * - Disabled ca nếu TẤT CẢ phòng đã có ca đó trong khoảng thời gian đã chọn
  */
@@ -32,8 +32,13 @@ import {
   LoadingOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
+import viVN from 'antd/locale/vi_VN';
 import { toast } from '../../services/toastService';
 import scheduleService from '../../services/scheduleService';
+
+// Set dayjs locale to Vietnamese
+dayjs.locale('vi');
 
 const { Title, Text } = Typography;
 
@@ -621,6 +626,7 @@ const BulkCreateScheduleModal = ({
                 form.setFieldsValue({ toMonth: null, startDate: null });
               }}
               defaultPickerValue={dayjs()} // 🔥 Mặc định mở ở tháng hiện tại
+              locale={viVN.DatePicker}
             />
           </Form.Item>
 
@@ -645,6 +651,7 @@ const BulkCreateScheduleModal = ({
                   form.setFieldsValue({ startDate: null });
                 }}
                 defaultPickerValue={fromMonth || dayjs()} // 🔥 Mặc định mở ở tháng bắt đầu hoặc tháng hiện tại
+                locale={viVN.DatePicker}
               />
             </Form.Item>
           )}
@@ -707,6 +714,7 @@ const BulkCreateScheduleModal = ({
                 disabledDate={disabledStartDate}
                 onChange={(date) => setStartDate(date)}
                 disabled
+                locale={viVN.DatePicker}
               />
             </Form.Item>
           )}
