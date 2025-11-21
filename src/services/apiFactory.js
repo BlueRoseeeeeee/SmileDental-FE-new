@@ -129,6 +129,18 @@ const createAxiosInstance = (serviceName, config) => {
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
 
+        // ⚠️ IMPORTANT: Bỏ qua 401 từ login/register endpoint (đó là lỗi sai mật khẩu, không phải token hết hạn)
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                              originalRequest.url?.includes('/auth/register') ||
+                              originalRequest.url?.includes('/auth/refresh');
+        
+        if (isAuthEndpoint) {
+          // Đây là lỗi login/register, không phải token hết hạn
+          // Component Login/Register sẽ tự xử lý message lỗi
+          console.log('🔵 401 from auth endpoint - invalid credentials, not expired token');
+          return Promise.reject(error);
+        }
+
         // 🔍 DEBUG: Log 401 error details
         const token = localStorage.getItem('accessToken');
         const refreshToken = localStorage.getItem('refreshToken');
@@ -176,7 +188,7 @@ const createAxiosInstance = (serviceName, config) => {
           console.error('❌ Token refresh failed:', refreshError.response?.data || refreshError.message);
         }
         
-        // Hiển thị thông báo token hết hạn
+        // Chỉ hiển thị thông báo token hết hạn khi thực sự là token hết hạn
         toast.warning('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 4000);
         
         // Đợi một chút để user thấy thông báo trước khi redirect
