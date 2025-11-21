@@ -1319,7 +1319,8 @@ const StaffAssignmentUnified = () => {
   const fetchAllStaff = async () => {
     setLoadingAllStaff(true);
     try {
-      const response = await userService.getAllStaff(1, 1000);
+      setAllStaff([]);
+      const response = await userService.getAllStaff(1, 1000, { _t: Date.now() });
       
       if (response.success) {
         let normalizedStaff = (response.users || []).map(normalizeStaffRecord);
@@ -2418,7 +2419,7 @@ const StaffAssignmentUnified = () => {
         
         // ⭐ Reset ALL selections
         setMonthStateForStaff({}); // Clear all month states
-        setSelectedShiftFiltersForStaff([]); // Uncheck all shift checkboxes
+        setSelectedShiftFiltersStaff([]); // Uncheck all shift checkboxes
         setSelectedSlotsForReplacement([]);
         setSelectedReplacementStaff(null);
         
@@ -2502,26 +2503,23 @@ const StaffAssignmentUnified = () => {
       if (response?.success) {
         toast.success(`Đã thay thế ${allSlotIds.length} slot cho ${selectedReplacementStaff.displayName || buildStaffDisplayName(selectedReplacementStaff)}`);
         
-        // Refresh calendar
-        await fetchStaffCalendar(
-          selectedStaffForReplacement._id, 
-          role,
-          currentPageForStaff
-        );
+        // Đóng modal trước
+        setShowStaffScheduleModal(false);
         
-        // ⭐ Reset ALL selections (including month state and shift filters)
+        //Reset ALL selections (including month state and shift filters)
         setMonthStateForStaff({}); // Clear all month states
         setSelectedShiftFiltersStaff([]); // Uncheck all shift checkboxes
         setSelectedSlotsForReplacement([]);
         setSelectedReplacementStaff(null);
         setReplacementStaffList([]);
-        
-        console.log('✅ All replacement selections cleared');
+        setSelectedStaffForReplacement(null);
+        setStaffCalendarData(null);
+        // Force refresh danh sách nhân sự ngay lập tức
+        await fetchAllStaff();
       } else {
         throw new Error(response?.message || 'Không thể thay thế nhân sự');
       }
     } catch (error) {
-      console.error('❌ Error replacing staff:', error);
       toast.error('Lỗi khi thay thế nhân sự: ' + error.message);
     }
   };
