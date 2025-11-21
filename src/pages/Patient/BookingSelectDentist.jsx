@@ -280,6 +280,22 @@ const BookingSelectDentist = () => {
                                   <Text type="secondary">Chưa cập nhật</Text>
                                 )}
                               </Space>
+                              <div style={{ marginTop: 12, textAlign: 'right' }}>
+                                <a
+                                  href={`/patient/dentist-detail/${dentist._id}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                  style={{
+                                    color: '#1890ff',
+                                    fontSize: '14px',
+                                    textDecoration: 'none',
+                                    fontWeight: 500
+                                  }}
+                                >
+                                  Xem chi tiết →
+                                </a>
+                              </div>
                             </Space>
                           </Col>
                         </Row>
