@@ -214,7 +214,7 @@ const DashboardLayout = () => {
       addMenuItem({
         key: '/dashboard/certificates',
         icon: <FileTextOutlined />,
-        label: 'Chứng chỉ hành nghề',
+        label: 'Bằng cấp & chứng chỉ',
       });
     }
 
