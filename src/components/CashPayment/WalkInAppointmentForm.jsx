@@ -828,7 +828,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     form.setFieldsValue({ 
       dentistId: undefined, 
       date: undefined, 
-      slotGroup: undefined
+      slotGroup: undefined,
+      serviceAddOnId: undefined
     });
     
     if (!service) return;
@@ -842,40 +843,60 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       }
     }
     
-    // 🆕 Logic mới: Kiểm tra điều kiện chọn addon
-    // - Dịch vụ KHÁM (exam): Tự do chọn addon hoặc không
-    // - Dịch vụ ĐIỀU TRỊ (treatment): 
-    //   + CÓ chỉ định → Bắt buộc phải chọn addon được chỉ định
-    //   + KHÔNG có chỉ định → KHÔNG được chọn (block luôn, hiển thị cảnh báo)
-    
+    // 🔥 LOGIC ĐÚNG:
     if (service.serviceAddOns && service.serviceAddOns.length > 0) {
-      // Service có addons
-      if (service.type === 'treatment' && selectedPatient && selectedPatient._id) {
-        // Service điều trị + có patient → check indications
-        const hasAddonIndication = await loadTreatmentIndications(selectedPatient._id, service._id);
+      // Service CÓ addons
+      
+      if (service.type === 'exam') {
+        // 1. EXAM service → Cho phép chọn addon tự do
+        console.log('✅ Exam service with addons - showing addon selection');
+        setRequiresAddonSelection(true);
+        setDentists([]); // Clear dentist list, chờ chọn addon
         
-        if (hasAddonIndication) {
-          // Có addon được chỉ định → BẮT BUỘC phải chọn
-          console.log('⚠️ Treatment service AND has addon indication - MUST select addon');
-          setRequiresAddonSelection(true);
-          setDentists([]); // Clear dentist list
+      } else if (service.type === 'treatment') {
+        // 2. TREATMENT service → Kiểm tra có indication không
+        
+        if (selectedPatient && selectedPatient._id) {
+          // Có patient → check indication
+          const hasAddonIndication = await loadTreatmentIndications(selectedPatient._id, service._id);
+          
+          if (hasAddonIndication) {
+            // 2a. Treatment + CÓ indication → Cho phép chọn addon được chỉ định
+            console.log('✅ Treatment service with indication - showing addon selection');
+            setRequiresAddonSelection(true);
+            setDentists([]); // Clear dentist list, chờ chọn addon
+          } else {
+            // 2b. Treatment + KHÔNG có indication → KHÔNG cho chọn addon, nhưng vẫn load dentists
+            console.log('⚠️ Treatment service without indication - no addon selection, loading dentists with longest addon duration');
+            setRequiresAddonSelection(false);
+            
+            // Tính duration dài nhất từ các addon để load dentists
+            const longestAddon = service.serviceAddOns.reduce((longest, addon) => {
+              return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+            }, service.serviceAddOns[0]);
+            
+            const serviceDuration = longestAddon?.durationMinutes || service.durationMinutes || 15;
+            console.log('🔄 Loading dentists with longest addon duration:', serviceDuration, 'minutes');
+            loadDentists(serviceDuration, service._id);
+          }
         } else {
-          // Không có addon chỉ định → KHÔNG cho phép tiếp tục (block service)
-          console.log('❌ Treatment service but NO indication - BLOCKED');
+          // Chưa có patient → KHÔNG cho chọn addon, nhưng vẫn load dentists
+          console.log('⚠️ Treatment service but no patient - no addon selection, loading dentists');
           setRequiresAddonSelection(false);
-          setDentists([]); // Clear dentist list
-          message.warning('Dịch vụ điều trị này yêu cầu chỉ định từ bác sĩ. Vui lòng chọn dịch vụ khác.');
+          
+          const longestAddon = service.serviceAddOns.reduce((longest, addon) => {
+            return (addon.durationMinutes > longest.durationMinutes) ? addon : longest;
+          }, service.serviceAddOns[0]);
+          
+          const serviceDuration = longestAddon?.durationMinutes || service.durationMinutes || 15;
+          loadDentists(serviceDuration, service._id);
         }
-      } else {
-        // Service không phải điều trị (exam) hoặc chưa chọn patient → Cho phép chọn addon tự do
-        console.log('✅ Service has addons but is exam service - can select addon freely');
-        setRequiresAddonSelection(false);
-        const serviceDuration = service.durationMinutes || 15;
-        loadDentists(serviceDuration, service._id);
       }
+      
     } else {
-      // Service không có addons → Load dentists ngay
+      // Service KHÔNG có addons → Load dentists NGAY
       console.log('🔄 Service has NO addons - loading dentists immediately');
+      setRequiresAddonSelection(false);
       const serviceDuration = service.durationMinutes || service.duration || 15;
       loadDentists(serviceDuration, service._id);
     }
@@ -1641,7 +1662,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   </Select>
                 </Form.Item>
 
-                {/* ⭐ ServiceAddOn Selection - CHỈ hiển thị khi BẮT BUỘC phải chọn */}
+                {/* ⭐ ServiceAddOn Selection - Chỉ hiển thị khi requiresAddonSelection = true */}
                 {requiresAddonSelection && selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
                   <div style={{ marginTop: 16 }}>
                     <Divider orientation="left" style={{ fontSize: 14, fontWeight: 500 }}>
@@ -1668,33 +1689,37 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                     )}
                     <Form.Item
                       label="Gói dịch vụ"
-                      rules={[{ required: true, message: 'Vui lòng chọn gói dịch vụ đã được chỉ định' }]}
+                      rules={[{ required: true, message: 'Vui lòng chọn gói dịch vụ' }]}
                     >
                       <Select
-                        placeholder="Chọn gói dịch vụ đã được chỉ định"
+                        placeholder="Chọn gói dịch vụ"
                         onChange={handleServiceAddOnChange}
                         value={selectedServiceAddOn?._id}
                       >
                         {selectedService.serviceAddOns
                           .filter(addon => {
-                            // CHỈ hiển thị các addon đã được chỉ định
-                            if (treatmentIndications.length > 0) {
+                            // Nếu là treatment service + có indication → CHỈ hiển thị addon được chỉ định
+                            if (selectedService.type === 'treatment' && treatmentIndications.length > 0) {
                               return treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
                             }
-                            return true; // Fallback: hiển thị tất cả
+                            // Exam service → Hiển thị tất cả active addons
+                            return addon.isActive === true;
                           })
                           .map((addon) => {
                             const priceInfo = getPriceScheduleInfo(addon.priceSchedules, addon.price);
                             const { activeSchedule, effectivePrice, hasActiveSchedule } = priceInfo;
+                            const isRecommended = treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
                             
                             return (
                               <Option key={addon._id} value={addon._id}>
                                 <Space direction="vertical" size={0}>
                                   <Space>
                                     <Text strong>{addon.name}</Text>
-                                    <Tag color="success" icon={<CheckCircleOutlined />}>
-                                      Đã chỉ định
-                                    </Tag>
+                                    {isRecommended && (
+                                      <Tag color="success" icon={<CheckCircleOutlined />}>
+                                        Đã chỉ định
+                                      </Tag>
+                                    )}
                                   </Space>
                                   <Space size="large">
                                     <Space size={4} direction="vertical" align="start">

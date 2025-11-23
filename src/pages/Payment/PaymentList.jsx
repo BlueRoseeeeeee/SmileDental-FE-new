@@ -807,6 +807,12 @@ const PaymentList = () => {
                     <span>VNPay (Chuyển khoản)</span>
                   </Space>
                 </Option>
+                <Option value="stripe">
+                  <Space>
+                    <span style={{ color: '#635bff' }}>💳</span>
+                    <span>Stripe (Thẻ quốc tế)</span>
+                  </Space>
+                </Option>
               </Select>
             </div>
 

@@ -105,6 +105,47 @@ const PaymentSelection = () => {
         } else {
           throw new Error(data.message || 'Không thể tạo URL thanh toán VNPay');
         }
+      } else if (paymentMethod === 'stripe') {
+        console.log('🟣 [Payment Selection] Creating Stripe payment session...');
+        
+        const requestBody = {
+          orderId: orderId,
+          amount: amount,
+          orderInfo: `Thanh toan dat lich kham nha khoa - ${orderId}`,
+          customerEmail: reservationData.email || null,
+          metadata: {
+            patientName: reservationData.patientName,
+            serviceName: reservationData.serviceName,
+            appointmentDate: reservationData.appointmentDate
+          }
+        };
+        
+        console.log('🟣 [Payment Selection] Request body:', requestBody);
+        
+        // Call payment service to create Stripe checkout session
+        const PAYMENT_API = import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api';
+        const response = await fetch(`${PAYMENT_API}/payments/stripe/create-session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+
+        const data = await response.json();
+        console.log('🟣 [Payment Selection] Stripe response:', data);
+
+        if (data.success && data.data.checkoutUrl) {
+          console.log('✅ [Payment Selection] Redirecting to Stripe:', data.data.checkoutUrl);
+          message.success('Đang chuyển đến Stripe...');
+          
+          // Redirect to Stripe Checkout after short delay
+          setTimeout(() => {
+            window.location.href = data.data.checkoutUrl;
+          }, 500);
+        } else {
+          throw new Error(data.message || 'Không thể tạo Stripe checkout session');
+        }
       } else if (paymentMethod === 'visa') {
         // Navigate to Visa payment page
         navigate('/patient/payment/visa', {
@@ -199,7 +240,7 @@ const PaymentSelection = () => {
               style={{ width: '100%' }}
             >
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                {/* VNPay Option - Only payment method available */}
+                {/* VNPay Option */}
                 <Radio value="vnpay" style={{ width: '100%' }}>
                   <Card 
                     hoverable
@@ -217,6 +258,30 @@ const PaymentSelection = () => {
                         <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           ATM / Internet Banking / Ví điện tử / Thẻ quốc tế
+                        </Text>
+                      </div>
+                    </Space>
+                  </Card>
+                </Radio>
+
+                {/* Stripe Option */}
+                <Radio value="stripe" style={{ width: '100%' }}>
+                  <Card 
+                    hoverable
+                    style={{ 
+                      marginLeft: 24,
+                      border: paymentMethod === 'stripe' ? '2px solid #2c5f4f' : '1px solid #d9d9d9'
+                    }}
+                  >
+                    <Space>
+                      <CreditCardOutlined style={{ fontSize: 32, color: '#635bff' }} />
+                      <div>
+                        <Text strong style={{ fontSize: 16 }}>
+                          Stripe
+                        </Text>
+                        <br />
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          Visa / MasterCard / American Express / Thẻ quốc tế
                         </Text>
                       </div>
                     </Space>
