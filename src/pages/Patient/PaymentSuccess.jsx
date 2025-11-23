@@ -81,7 +81,7 @@ const PaymentSuccess = () => {
                 <Text type="secondary"> + {reservation.serviceAddOnName}</Text>
               )}
             </Descriptions.Item>
-            <Descriptions.Item label="Bác sĩ">
+            <Descriptions.Item label="Nha sĩ">
               {reservation.dentistName}
             </Descriptions.Item>
             <Descriptions.Item label="Ngày khám">

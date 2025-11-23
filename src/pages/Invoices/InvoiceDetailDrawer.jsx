@@ -249,7 +249,7 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
       </Card>
 
       {/* Dentist Information */}
-      <Card title="Thông tin bác sĩ" style={{ marginBottom: 16 }}>
+      <Card title="Thông tin Nha sĩ" style={{ marginBottom: 16 }}>
         <Descriptions column={2} size="small">
           <Descriptions.Item label="Họ tên">{invoice.dentistInfo.name}</Descriptions.Item>
           <Descriptions.Item label="Chuyên khoa">{invoice.dentistInfo.specialization}</Descriptions.Item>

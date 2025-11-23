@@ -27,7 +27,7 @@ const About = () => {
     {
       icon: <TeamOutlined />,
       title: 'Đội ngũ chuyên nghiệp',
-      description: 'Đội ngũ bác sĩ của SmileCare Dental là những chuyên gia giàu kinh nghiệm, được đào tạo bài bản tại các trường đại học y khoa hàng đầu. Các bác sĩ thường xuyên tham gia các khóa đào tạo, hội thảo chuyên môn trong và ngoài nước để cập nhật những kỹ thuật mới nhất.',
+      description: 'Đội ngũ Nha sĩ của SmileCare Dental là những chuyên gia giàu kinh nghiệm, được đào tạo bài bản tại các trường đại học y khoa hàng đầu. Các Nha sĩ thường xuyên tham gia các khóa đào tạo, hội thảo chuyên môn trong và ngoài nước để cập nhật những kỹ thuật mới nhất.',
       color: '#52c41a',
       titleColor: 'rgb(49, 59, 121)'
     },

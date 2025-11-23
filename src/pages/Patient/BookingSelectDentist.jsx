@@ -190,7 +190,7 @@ const BookingSelectDentist = () => {
             <div style={{ marginBottom: 24 }}>
               <Input
                 size="large"
-                placeholder="Tìm bác sĩ theo tên"
+                placeholder="Tìm Nha sĩ theo tên"
                 prefix={<SearchOutlined />}
                 value={searchValue}
                 onChange={(e) => handleSearch(e.target.value)}
@@ -205,7 +205,7 @@ const BookingSelectDentist = () => {
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
                   <UserOutlined style={{ fontSize: 64, color: '#d9d9d9', marginBottom: 16 }} />
                   <Paragraph type="secondary">
-                    {searchValue ? 'Không tìm thấy bác sĩ phù hợp' : 'Chưa có bác sĩ nào'}
+                    {searchValue ? 'Không tìm thấy Nha sĩ phù hợp' : 'Chưa có Nha sĩ nào'}
                   </Paragraph>
                 </div>
               ) : (

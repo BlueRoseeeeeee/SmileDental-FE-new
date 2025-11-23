@@ -108,6 +108,7 @@ const BookingSelectTime = () => {
     // Kiểm tra xem đã chọn đủ thông tin chưa
     const service = localStorage.getItem('booking_service');
     const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
+    const serviceAddOnUserSelected = localStorage.getItem('booking_serviceAddOn_userSelected');
     const dentist = localStorage.getItem('booking_dentist');
     const date = localStorage.getItem('booking_date');
     
@@ -121,7 +122,8 @@ const BookingSelectTime = () => {
     const dentistData = JSON.parse(dentist);
     
     setSelectedService(serviceData);
-    setSelectedServiceAddOn(serviceAddOnData);
+    // Only set selectedServiceAddOn if user actually selected it (not auto-selected)
+    setSelectedServiceAddOn(serviceAddOnUserSelected === 'true' ? serviceAddOnData : null);
     setSelectedDentist(dentistData);
     setSelectedDate(dayjs(date));
     
@@ -420,7 +422,7 @@ const BookingSelectTime = () => {
                   
                   {selectedServiceAddOn && (
                     <div>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Gói dịch vụ đã chọn:</Text>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Gói dịch vụ:</Text>
                       <Text style={{ fontSize: 13 }}>
                         {selectedServiceAddOn.name}
                       </Text>

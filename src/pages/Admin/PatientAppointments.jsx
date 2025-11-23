@@ -635,7 +635,7 @@ const PatientAppointments = () => {
                 <p style={{ margin: '4px 0' }}><strong>Ngày khám:</strong> {dayjs(appointmentToCancel.appointmentDate).format('DD/MM/YYYY')}</p>
                 <p style={{ margin: '4px 0' }}><strong>Giờ:</strong> {appointmentToCancel.startTime} - {appointmentToCancel.endTime}</p>
                 <p style={{ margin: '4px 0' }}><strong>Dịch vụ:</strong> {appointmentToCancel.serviceName}</p>
-                <p style={{ margin: '4px 0' }}><strong>Bác sĩ:</strong> {appointmentToCancel.dentistName}</p>
+                <p style={{ margin: '4px 0' }}><strong>Nha sĩ:</strong> {appointmentToCancel.dentistName}</p>
               </div>
             </div>
 

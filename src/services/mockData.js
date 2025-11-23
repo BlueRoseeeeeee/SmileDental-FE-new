@@ -2,8 +2,8 @@
 export const mockServices = [
   {
     _id: 'service1',
-    name: 'Khám - Gặp bác sĩ tư vấn',
-    description: 'Tư vấn và khám tổng quát răng miệng với đội ngũ bác sĩ giàu kinh nghiệm',
+    name: 'Khám - Gặp Nha sĩ tư vấn',
+    description: 'Tư vấn và khám tổng quát răng miệng với đội ngũ Nha sĩ giàu kinh nghiệm',
     price: 100000,
     duration: 30,
     isActive: true
