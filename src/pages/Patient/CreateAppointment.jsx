@@ -145,6 +145,7 @@ const CreateAppointment = () => {
     // Kiểm tra xem đã chọn đủ thông tin chưa
     const service = localStorage.getItem('booking_service');
     const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
+    const serviceAddOnUserSelected = localStorage.getItem('booking_serviceAddOn_userSelected');
     const dentist = localStorage.getItem('booking_dentist');
     const date = localStorage.getItem('booking_date');
     const slotGroup = localStorage.getItem('booking_slotGroup');
@@ -155,7 +156,8 @@ const CreateAppointment = () => {
     }
     
     setSelectedService(JSON.parse(service));
-    if (serviceAddOn) {
+    // Only set selectedServiceAddOn if user actually selected it (not auto-selected)
+    if (serviceAddOn && serviceAddOnUserSelected === 'true') {
       setSelectedServiceAddOn(JSON.parse(serviceAddOn));
       console.log('📦 Loaded serviceAddOn:', JSON.parse(serviceAddOn));
     }

@@ -60,6 +60,7 @@ const BookingSelectDate = () => {
     // Kiểm tra xem đã chọn service và dentist chưa
     const service = localStorage.getItem('booking_service');
     const serviceAddOn = localStorage.getItem('booking_serviceAddOn');
+    const serviceAddOnUserSelected = localStorage.getItem('booking_serviceAddOn_userSelected');
     const dentist = localStorage.getItem('booking_dentist');
     
     if (!service || !dentist) {
@@ -72,13 +73,12 @@ const BookingSelectDate = () => {
     const dentistData = JSON.parse(dentist);
     
     setSelectedService(serviceData);
-    setSelectedServiceAddOn(serviceAddOnData);
+    // Only set selectedServiceAddOn if user actually selected it (not auto-selected)
+    setSelectedServiceAddOn(serviceAddOnUserSelected === 'true' ? serviceAddOnData : null);
     setSelectedDentist(dentistData);
     
-    // Calculate service duration (prioritize addon)
-    const serviceDuration = serviceAddOnData?.durationMinutes 
-                         || serviceData?.durationMinutes 
-                         || 15;
+    // Use serviceAddOn duration if available, otherwise use default
+    const serviceDuration = serviceAddOnData?.durationMinutes || 15;
     
     console.log('🎯 Fetching working dates with duration:', serviceDuration, 'minutes');
     console.log('📦 Service:', serviceData.name, '| AddOn:', serviceAddOnData?.name || 'none');
@@ -189,7 +189,7 @@ const BookingSelectDate = () => {
                   </div>
                   {selectedServiceAddOn && (
                     <div>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Gói dịch vụ đã chọn:</Text>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>Gói dịch vụ:</Text>
                       <Text style={{ fontSize: 13 }}>
                         {selectedServiceAddOn?.name}
                       </Text>
