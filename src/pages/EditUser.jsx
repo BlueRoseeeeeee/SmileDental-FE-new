@@ -50,6 +50,11 @@ const EditUser = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth(); // ✅ Get current user
+  const currentUserRoles = Array.isArray(currentUser?.roles) && currentUser.roles.length > 0
+    ? currentUser.roles
+    : (currentUser?.role ? [currentUser.role] : []);
+  const isAdmin = currentUserRoles.includes('admin');
+  const isManager = currentUserRoles.includes('manager');
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -854,7 +859,7 @@ const EditUser = () => {
                               maxTagCount="responsive"
                             >
                               {/* ✅ Role hierarchy based on current user's permission */}
-                              {currentUser?.role === 'admin' ? (
+                              {isAdmin ? (
                                 <>
                                   {/* Admin can assign: manager, dentist, nurse, receptionist (NOT admin) */}
                                   <Option value="manager">Quản lý</Option>
@@ -862,7 +867,7 @@ const EditUser = () => {
                                   <Option value="nurse">Y tá</Option>
                                   <Option value="receptionist">Lễ tân</Option>
                                 </>
-                              ) : currentUser?.role === 'manager' ? (
+                              ) : isManager ? (
                                 <>
                                   {/* Manager can assign: dentist, nurse, receptionist (NOT admin, manager) */}
                                   <Option value="dentist">Nha sĩ</Option>
