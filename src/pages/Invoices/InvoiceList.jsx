@@ -296,7 +296,7 @@ const InvoiceList = () => {
       )
     },
     {
-      title: 'Bác sĩ',
+      title: 'Nha sĩ',
       dataIndex: ['dentistInfo', 'name'],
       key: 'dentist',
       width: 130,

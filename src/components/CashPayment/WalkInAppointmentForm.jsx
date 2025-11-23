@@ -1854,7 +1854,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                     
                     <Alert
                       message="Dịch vụ điều trị yêu cầu chỉ định"
-                      description="Dịch vụ này cần có chỉ định từ bác sĩ sau khi khám. Vui lòng chọn dịch vụ khám trước hoặc chọn dịch vụ điều trị khác đã có chỉ định."
+                      description="Dịch vụ này cần có chỉ định từ Nha sĩ sau khi khám. Vui lòng chọn dịch vụ khám trước hoặc chọn dịch vụ điều trị khác đã có chỉ định."
                       type="warning"
                       showIcon
                       style={{ marginBottom: 16 }}

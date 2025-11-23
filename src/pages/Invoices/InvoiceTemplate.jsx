@@ -92,7 +92,7 @@ const InvoiceTemplate = ({ invoice }) => {
         )}
         <div className="section-row">
           <div className="section-col">
-            <div className="info-label">Bác sĩ điều trị:</div>
+            <div className="info-label">Nha sĩ điều trị:</div>
             <div className="info-value">{invoice.dentistInfo.name}</div>
           </div>
           <div className="section-col">

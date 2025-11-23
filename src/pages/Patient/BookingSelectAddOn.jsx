@@ -164,7 +164,7 @@ const BookingSelectAddOn = () => {
     localStorage.removeItem('booking_serviceAddOn');
     localStorage.removeItem('booking_recordId');
 
-    // Nếu service không có addons, skip sang màn chọn bác sĩ
+    // Nếu service không có addons, skip sang màn chọn Nha sĩ
     if (!serviceData.serviceAddOns || serviceData.serviceAddOns.length === 0) {
       message.info('Dịch vụ này không có gói phụ, chuyển sang bước tiếp theo');
       setTimeout(() => {
@@ -190,7 +190,7 @@ const BookingSelectAddOn = () => {
     // Kiểm tra loại dịch vụ
     if (serviceData.type === 'treatment') {
       // ===== DỊCH VỤ TREATMENT =====
-      // Bắt buộc phải có chỉ định từ bác sĩ mới được chọn addon
+      // Bắt buộc phải có chỉ định từ Nha sĩ mới được chọn addon
       if (user) {
         setLoading(true);
         try {
@@ -234,7 +234,7 @@ const BookingSelectAddOn = () => {
     if (!canSelectAddOn) {
       // 🆕 Thông báo rõ ràng hơn dựa vào loại dịch vụ
       if (service.type === 'treatment') {
-        message.warning('Dịch vụ điều trị yêu cầu phải có chỉ định từ bác sĩ. Vui lòng đặt lịch khám trước.');
+        message.warning('Dịch vụ điều trị yêu cầu phải có chỉ định từ Nha sĩ. Vui lòng đặt lịch khám trước.');
       } else {
         message.warning('Vui lòng đăng nhập để đặt lịch khám');
       }
@@ -355,8 +355,8 @@ const BookingSelectAddOn = () => {
               <Alert
                 type="warning"
                 showIcon
-                message="Dịch vụ điều trị yêu cầu phải có chỉ định từ bác sĩ"
-                description="Vui lòng đặt lịch khám để được bác sĩ đánh giá và chỉ định gói điều trị phù hợp"
+                message="Dịch vụ điều trị yêu cầu phải có chỉ định từ Nha sĩ"
+                description="Vui lòng đặt lịch khám để được Nha sĩ đánh giá và chỉ định gói điều trị phù hợp"
                 style={{ marginBottom: 16 }}
               />
             )}
@@ -387,7 +387,7 @@ const BookingSelectAddOn = () => {
                 type="info"
                 showIcon
                 message="Chưa có chỉ định điều trị"
-                description="Bạn cần đặt lịch khám để được bác sĩ đánh giá và chỉ định gói điều trị phù hợp."
+                description="Bạn cần đặt lịch khám để được Nha sĩ đánh giá và chỉ định gói điều trị phù hợp."
                 style={{ marginBottom: 16 }}
               />
             )}
@@ -406,7 +406,7 @@ const BookingSelectAddOn = () => {
                   <Paragraph type="warning" style={{ textAlign: 'center', marginBottom: 24, fontWeight: 500 }}>
                     {/* 🆕 Thông báo khác nhau cho exam và treatment */}
                     {service.type === 'treatment'
-                      ? 'Các gói dịch vụ chỉ để tham khảo. Dịch vụ điều trị yêu cầu phải có chỉ định từ bác sĩ.'
+                      ? 'Các gói dịch vụ chỉ để tham khảo. Dịch vụ điều trị yêu cầu phải có chỉ định từ Nha sĩ.'
                       : 'Chọn gói dịch vụ phù hợp với nhu cầu của bạn'
                     }
                   </Paragraph>

@@ -251,7 +251,7 @@ const InvoiceFormModal = ({ visible, mode, invoice, onSuccess, onCancel }) => {
       }
 
       if (!selectedPatient || !selectedDentist) {
-        message.error('Vui lòng chọn bệnh nhân và bác sĩ');
+        message.error('Vui lòng chọn bệnh nhân và Nha sĩ');
         return;
       }
 
@@ -466,12 +466,12 @@ const InvoiceFormModal = ({ visible, mode, invoice, onSuccess, onCancel }) => {
             </Col>
             <Col span={8}>
               <Form.Item
-                label="Bác sĩ điều trị"
+                label="Nha sĩ điều trị"
                 name="dentistId"
-                rules={[{ required: true, message: 'Vui lòng chọn bác sĩ' }]}
+                rules={[{ required: true, message: 'Vui lòng chọn Nha sĩ' }]}
               >
                 <Select
-                  placeholder="Chọn bác sĩ"
+                  placeholder="Chọn Nha sĩ"
                   showSearch
                   onChange={handleDentistChange}
                   filterOption={(input, option) =>

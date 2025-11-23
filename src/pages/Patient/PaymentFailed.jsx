@@ -57,7 +57,7 @@ const PaymentFailed = () => {
               <Text strong>Dịch vụ:</Text> {reservation.serviceName}
             </Paragraph>
             <Paragraph>
-              <Text strong>Bác sĩ:</Text> {reservation.dentistName}
+              <Text strong>Nha sĩ:</Text> {reservation.dentistName}
             </Paragraph>
           </Card>
         )}

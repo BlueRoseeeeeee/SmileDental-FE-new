@@ -38,7 +38,7 @@ const FeaturesSection = () => {
     },
     {
       title: 'Uy tín được xây dựng từ chất lượng và sự tận tâm',
-      description: 'SmileCare Dental luôn đặt lợi ích khách hàng lên hàng đầu, với đội ngũ bác sĩ giàu kinh nghiệm và quy trình điều trị chuyên nghiệp, mang đến dịch vụ nha khoa an toàn và hiệu quả.'
+      description: 'SmileCare Dental luôn đặt lợi ích khách hàng lên hàng đầu, với đội ngũ Nha sĩ giàu kinh nghiệm và quy trình điều trị chuyên nghiệp, mang đến dịch vụ nha khoa an toàn và hiệu quả.'
     },
     {
       title: 'Công nghệ hiện đại',

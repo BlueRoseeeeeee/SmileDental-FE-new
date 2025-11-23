@@ -228,7 +228,7 @@ const PatientAppointments = () => {
       )
     },
     {
-      title: 'Bác sĩ',
+      title: 'Nha sĩ',
       dataIndex: ['dentist', 'fullName'],
       key: 'dentist',
       render: (name) => (
@@ -369,7 +369,7 @@ const PatientAppointments = () => {
             <Descriptions.Item label="Giờ khám" span={1}>
               {selectedAppointment.time}
             </Descriptions.Item>
-            <Descriptions.Item label="Bác sĩ" span={1}>
+            <Descriptions.Item label="Nha sĩ" span={1}>
               {selectedAppointment.dentist?.fullName}
             </Descriptions.Item>
             <Descriptions.Item label="Phòng khám" span={1}>
@@ -412,7 +412,7 @@ const PatientAppointments = () => {
               <div style={{ marginTop: 8, lineHeight: '1.8' }}>
                 <div><strong>Ngày:</strong> {dayjs(appointmentToCancel.date).format('DD/MM/YYYY')}</div>
                 <div><strong>Giờ:</strong> {appointmentToCancel.time}</div>
-                <div><strong>Bác sĩ:</strong> {appointmentToCancel.dentist?.fullName}</div>
+                <div><strong>Nha sĩ:</strong> {appointmentToCancel.dentist?.fullName}</div>
               </div>
             </div>
 

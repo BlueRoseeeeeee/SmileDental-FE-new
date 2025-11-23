@@ -218,7 +218,7 @@ const QueueManagement = () => {
             </Space>
           </Descriptions.Item>
 
-          <Descriptions.Item label={<><TeamOutlined /> Bác sĩ</>} span={2}>
+          <Descriptions.Item label={<><TeamOutlined /> Nha sĩ</>} span={2}>
             <Text strong>BS. {selectedAppointment.dentistName}</Text>
           </Descriptions.Item>
 

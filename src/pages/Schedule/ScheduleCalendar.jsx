@@ -2613,7 +2613,7 @@ const ScheduleCalendar = () => {
               className="custom-textarea"
               value={disableReason}
               onChange={(e) => setDisableReason(e.target.value)}
-              placeholder="Ví dụ: Bác sĩ nghỉ phép, Bảo trì phòng khám..."
+              placeholder="Ví dụ: Nha sĩ nghỉ phép, Bảo trì phòng khám..."
               rows={4}
               maxLength={500}
               showCount
