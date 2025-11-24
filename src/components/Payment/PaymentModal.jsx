@@ -156,6 +156,36 @@ const PaymentModal = ({ visible, onCancel, recordId, onSuccess }) => {
     }
   };
 
+  const handleStripePayment = async () => {
+    if (!payment) {
+      message.error('Không có thông tin thanh toán');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      console.log('💳 [PaymentModal] Creating Stripe URL for payment:', payment._id);
+
+      const response = await paymentService.createStripeUrlForPayment(payment._id);
+      
+      console.log('✅ [PaymentModal] Stripe URL created:', response);
+
+      if (response.success && response.data?.paymentUrl) {
+        message.success('Đang chuyển đến trang thanh toán Stripe...');
+        
+        // Redirect to Stripe payment page
+        window.location.href = response.data.paymentUrl;
+      } else {
+        message.error('Không thể tạo link thanh toán Stripe');
+      }
+    } catch (error) {
+      console.error('❌ [PaymentModal] Stripe payment error:', error);
+      message.error(error.response?.data?.message || 'Không thể tạo link thanh toán Stripe');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -295,6 +325,23 @@ const PaymentModal = ({ visible, onCancel, recordId, onSuccess }) => {
                   </Button>
                   <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
                     Bạn sẽ được chuyển đến trang VNPay để thanh toán
+                  </Text>
+                </Card>
+
+                {/* Stripe Payment Section */}
+                <Card title="Thanh toán Stripe (Thẻ quốc tế)" size="small">
+                  <Button
+                    block
+                    size="large"
+                    icon={<CreditCardOutlined />}
+                    onClick={handleStripePayment}
+                    loading={processing}
+                    style={{ backgroundColor: '#635BFF', color: 'white', borderColor: '#635BFF' }}
+                  >
+                    Thanh toán qua Stripe
+                  </Button>
+                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                    Bạn sẽ được chuyển đến trang Stripe để thanh toán
                   </Text>
                 </Card>
               </>

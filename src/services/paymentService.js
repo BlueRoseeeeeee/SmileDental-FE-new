@@ -96,6 +96,12 @@ const paymentService = {
     return response.data;
   },
 
+  // Create Stripe URL for existing payment
+  createStripeUrlForPayment: async (paymentId) => {
+    const response = await paymentApi.post(`/payments/${paymentId}/stripe-url`);
+    return response.data;
+  },
+
   // Verify payment status
   verifyPayment: async (transactionId) => {
     const response = await paymentApi.get(`/payment/verify/${transactionId}`);
