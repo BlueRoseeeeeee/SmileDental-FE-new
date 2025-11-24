@@ -474,7 +474,7 @@ const PaymentList = () => {
               onClick={() => handleViewDetails(record)}
             />
           </Tooltip>
-          {record.status === 'pending' && (
+          {record.status !== 'completed' && (
             <Tooltip title="Thanh toán">
               <Button
                 type="primary"
