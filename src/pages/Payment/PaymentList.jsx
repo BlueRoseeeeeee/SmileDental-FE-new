@@ -231,12 +231,12 @@ const PaymentList = () => {
         const vnpayResponse = await createVNPayUrlForPayment(processingPayment._id);
 
         if (vnpayResponse.success && vnpayResponse.data?.paymentUrl) {
-          message.success('Đang mở trang thanh toán VNPay...');
+          message.success('Đang chuyển đến trang thanh toán VNPay...');
           setPaymentMethodModalVisible(false);
           setProcessingPayment(null);
           setCashPaidAmount(0);
           setCashNotes('');
-          window.open(vnpayResponse.data.paymentUrl, '_blank');
+          window.location.href = vnpayResponse.data.paymentUrl;
           return;
         }
 
@@ -248,12 +248,12 @@ const PaymentList = () => {
         const stripeResponse = await createStripeUrlForPayment(processingPayment._id);
 
         if (stripeResponse.success && stripeResponse.data?.paymentUrl) {
-          message.success('Đang mở trang thanh toán Stripe...');
+          message.success('Đang chuyển đến trang thanh toán Stripe...');
           setPaymentMethodModalVisible(false);
           setProcessingPayment(null);
           setCashPaidAmount(0);
           setCashNotes('');
-          window.open(stripeResponse.data.paymentUrl, '_blank');
+          window.location.href = stripeResponse.data.paymentUrl;
           return;
         }
 
@@ -486,7 +486,7 @@ const PaymentList = () => {
               </Button>
             </Tooltip>
           )}
-          {['pending', 'processing'].includes(record.status) && (
+          {/* {['pending', 'processing'].includes(record.status) && (
             <Tooltip title="Hủy">
               <Button
                 type="text"
@@ -495,7 +495,7 @@ const PaymentList = () => {
                 onClick={() => handleCancelPayment(record._id)}
               />
             </Tooltip>
-          )}
+          )} */}
         </Space>
       )
     }
@@ -738,7 +738,13 @@ const PaymentList = () => {
           setCashNotes('');
         }}
         onOk={handleProcessPayment}
-        okText={selectedPaymentMethod === 'vnpay' ? 'Thanh toán VNPay' : 'Xác nhận thanh toán'}
+        okText={
+          selectedPaymentMethod === 'vnpay' 
+            ? 'Thanh toán VNPay' 
+            : selectedPaymentMethod === 'stripe'
+            ? 'Thanh toán Stripe'
+            : 'Xác nhận thanh toán'
+        }
         cancelText="Hủy"
         width={600}
         confirmLoading={modalSubmitting}
