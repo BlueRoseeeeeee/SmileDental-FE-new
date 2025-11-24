@@ -185,20 +185,6 @@ const PrescriptionForm = forwardRef(({ prescription, medicines }, ref) => {
                             </Tooltip>
                           </Space>
                         }
-                        rules={[
-                          { required: true, message: 'Chọn thuốc' },
-                          ({ getFieldValue }) => ({
-                            validator(_, value) {
-                              const medicines = getFieldValue('medicines') || [];
-                              const selectedIds = medicines.map(m => m?.medicineId).filter(Boolean);
-                              const count = selectedIds.filter(id => id === value).length;
-                              if (count > 1) {
-                                return Promise.reject(new Error('Thuốc này đã được chọn'));
-                              }
-                              return Promise.resolve();
-                            }
-                          })
-                        ]}
                       >
                         <Select
                           showSearch
@@ -261,7 +247,6 @@ const PrescriptionForm = forwardRef(({ prescription, medicines }, ref) => {
                             </Tooltip>
                           </Space>
                         }
-                        rules={[{ required: true, message: 'Nhập cách dùng' }]}
                       >
                         <Input placeholder="VD: 1 viên x 3 lần/ngày sau ăn" />
                       </Form.Item>
@@ -272,7 +257,6 @@ const PrescriptionForm = forwardRef(({ prescription, medicines }, ref) => {
                         {...restField}
                         name={[name, 'duration']}
                         label="Thời gian dùng"
-                        rules={[{ required: true, message: 'Nhập thời gian' }]}
                       >
                         <Input placeholder="VD: 5 ngày" />
                       </Form.Item>
@@ -283,7 +267,6 @@ const PrescriptionForm = forwardRef(({ prescription, medicines }, ref) => {
                         {...restField}
                         name={[name, 'quantity']}
                         label="Số lượng"
-                        rules={[{ required: true, message: 'Nhập số lượng' }]}
                       >
                         <InputNumber
                           min={1}
