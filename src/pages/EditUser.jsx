@@ -136,7 +136,7 @@ const EditUser = () => {
           form.setFieldsValue({
             ...formData,
             roles: rolesArray, // ✅ Use roles array
-            dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth).format('DD-MM-YYYY') : null
+            dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
           });
         } catch (formError) {
           console.error('Form Set Fields Error:', formError);
@@ -821,6 +821,7 @@ const EditUser = () => {
                             <DatePicker 
                               style={{ width: '100%', borderRadius: '8px' }}
                               placeholder="Chọn ngày sinh"
+                              format="DD/MM/YYYY"
                             />
                           </Form.Item>
                         </Col>
