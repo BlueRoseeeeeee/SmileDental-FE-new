@@ -42,7 +42,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: simple handling for 401 to redirect to login
+// Response interceptor: simple handling for 401/403 to redirect to login
 api.interceptors.response.use(
   (res) => res,
   (error) => {
@@ -64,6 +64,33 @@ api.interceptors.response.use(
         console.error('Error during 401 handling:', e);
       }
     }
+    
+    // Xử lý 403 với thông báo "Invalid or expired token"
+    if (error?.response?.status === 403) {
+      const message = error?.response?.data?.message;
+      if (message === 'Invalid or expired token') {
+        try {
+          
+          // Clear all auth data từ localStorage
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          localStorage.removeItem('selectedRole');
+          
+          // Show error message
+          if (typeof window !== 'undefined') {
+            toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+            // Redirect to login page
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 1500);
+          }
+        } catch (e) {
+          console.error('Error during 403 handling:', e);
+        }
+      }
+    }
+    
     return Promise.reject(error);
   }
 );

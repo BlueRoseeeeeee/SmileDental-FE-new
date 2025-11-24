@@ -192,9 +192,29 @@ const createAxiosInstance = (serviceName, config) => {
         return Promise.reject(error);
       }
 
-      // Handle 403 Forbidden (không có quyền)
+      // Handle 403 Forbidden
       if (error.response?.status === 403) {
-        // Don't logout for 403 - user is authenticated but not authorized
+        // Check nếu vấn để là do hết hạn token chứ không phải là vấn đề không có quyền
+        const message = error.response?.data?.message;
+        if (message === 'Invalid or expired token') {
+          toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại', 4000);
+          
+          // Xoá tokens và auth data trong localStorage
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          localStorage.removeItem('selectedRole');
+          
+          // Redirect đến trang đăng nhập sau khi hiển thị thông báo
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1500);
+          
+          return Promise.reject(error);
+        }
+        
+        // Lỗi 403 thông thường - lỗi do người dùng cố truy cập nhưng không có quyền
+        toast.error('Bạn không có quyền truy cập tài nguyên này.', 4000);
         return Promise.reject(error);
       }
 
