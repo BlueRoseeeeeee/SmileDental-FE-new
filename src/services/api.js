@@ -83,7 +83,7 @@ api.interceptors.response.use(
             // Redirect to login page
             setTimeout(() => {
               window.location.href = '/login';
-            }, 1500);
+            }, 4000);
           }
         } catch (e) {
           console.error('Error during 403 handling:', e);
