@@ -43,6 +43,7 @@ import {
   confirmCashPayment as confirmCashPaymentApi,
   updatePayment,
   createVNPayUrlForPayment,
+  createStripeUrlForPayment,
   cancelPayment
 } from '../../services/payment.api';
 
@@ -242,6 +243,23 @@ const PaymentList = () => {
         throw new Error(vnpayResponse.message || 'Không thể tạo URL thanh toán VNPay');
       }
 
+      if (selectedPaymentMethod === 'stripe') {
+        console.log('💳 Creating Stripe URL for payment:', processingPayment.paymentCode);
+        const stripeResponse = await createStripeUrlForPayment(processingPayment._id);
+
+        if (stripeResponse.success && stripeResponse.data?.paymentUrl) {
+          message.success('Đang mở trang thanh toán Stripe...');
+          setPaymentMethodModalVisible(false);
+          setProcessingPayment(null);
+          setCashPaidAmount(0);
+          setCashNotes('');
+          window.open(stripeResponse.data.paymentUrl, '_blank');
+          return;
+        }
+
+        throw new Error(stripeResponse.message || 'Không thể tạo URL thanh toán Stripe');
+      }
+
       if (selectedPaymentMethod === 'cash') {
         const requiredAmount = processingPayment.finalAmount || 0;
 
@@ -335,6 +353,7 @@ const PaymentList = () => {
     const colors = {
       cash: 'green',
       vnpay: 'blue',
+      stripe: 'purple',
       visa: 'gold'
     };
     return colors[method] || 'default';
@@ -344,6 +363,7 @@ const PaymentList = () => {
     const texts = {
       cash: 'Tiền mặt',
       vnpay: 'VNPay',
+      stripe: 'Stripe',
       visa: 'VISA/Mastercard'
     };
     return texts[method] || method;
@@ -784,9 +804,9 @@ const PaymentList = () => {
               <div style={{ marginBottom: 8 }}>
                 <Space>
                   <span style={{ fontWeight: 'bold' }}>Chọn phương thức thanh toán:</span>
-                  {processingPayment.method && (
+                  {/* {processingPayment.method && (
                     <Tag color="blue">Hiện tại: {getMethodText(processingPayment.method)}</Tag>
-                  )}
+                  )} */}
                 </Space>
               </div>
               <Select
@@ -882,6 +902,17 @@ const PaymentList = () => {
                   <span>💳</span>
                   <span>
                     Bệnh nhân sẽ được chuyển đến trang thanh toán VNPay để quét mã QR hoặc nhập thông tin thẻ
+                  </span>
+                </Space>
+              </Card>
+            )}
+
+            {selectedPaymentMethod === 'stripe' && (
+              <Card size="small" style={{ background: '#f0e6ff' }}>
+                <Space>
+                  <span>💳</span>
+                  <span>
+                    Bệnh nhân sẽ được chuyển đến trang thanh toán Stripe để nhập thông tin thẻ quốc tế (Visa/Mastercard)
                   </span>
                 </Space>
               </Card>

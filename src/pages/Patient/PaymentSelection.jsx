@@ -124,7 +124,7 @@ const PaymentSelection = () => {
         
         // Call payment service to create Stripe checkout session
         const PAYMENT_API = import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:3007/api';
-        const response = await fetch(`${PAYMENT_API}/payments/stripe/create-session`, {
+        const response = await fetch(`${PAYMENT_API}/payments/stripe/create-payment-link`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -134,14 +134,17 @@ const PaymentSelection = () => {
 
         const data = await response.json();
         console.log('🟣 [Payment Selection] Stripe response:', data);
+        console.log('🔍 [Payment Selection] data.data:', data.data);
+        console.log('🔍 [Payment Selection] data.data keys:', data.data ? Object.keys(data.data) : 'undefined');
+        console.log('🔍 [Payment Selection] paymentUrl:', data.data?.paymentUrl);
 
-        if (data.success && data.data.checkoutUrl) {
-          console.log('✅ [Payment Selection] Redirecting to Stripe:', data.data.checkoutUrl);
+        if (data.success && data.data && data.data.paymentUrl) {
+          console.log('✅ [Payment Selection] Redirecting to Stripe:', data.data.paymentUrl);
           message.success('Đang chuyển đến Stripe...');
           
           // Redirect to Stripe Checkout after short delay
           setTimeout(() => {
-            window.location.href = data.data.checkoutUrl;
+            window.location.href = data.data.paymentUrl;
           }, 500);
         } else {
           throw new Error(data.message || 'Không thể tạo Stripe checkout session');

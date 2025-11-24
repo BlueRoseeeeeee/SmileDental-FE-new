@@ -273,6 +273,21 @@ export const createVNPayUrlForPayment = async (id) => {
 };
 
 /**
+ * Create Stripe URL for an existing payment
+ * @param {string} id - Payment ID
+ * @returns {Promise} Payment URL payload
+ */
+export const createStripeUrlForPayment = async (id) => {
+  try {
+    const response = await paymentApi.post(`/payments/${id}/stripe-url`);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe URL:', error);
+    throw error;
+  }
+};
+
+/**
  * Cancel payment
  * @param {string} id - Payment ID
  * @param {string} reason - Cancellation reason
@@ -382,6 +397,7 @@ export default {
   confirmCashPayment,
   updatePayment,
   createVNPayUrlForPayment,
+  createStripeUrlForPayment,
   cancelPayment,
   createRefund,
   verifyPayment,

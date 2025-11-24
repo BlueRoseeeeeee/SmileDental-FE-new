@@ -16,6 +16,7 @@ const PaymentResult = () => {
   const orderId = searchParams.get('orderId');
   const code = searchParams.get('code');
   const message = searchParams.get('message');
+  const error = searchParams.get('error'); // Stripe error details
 
   useEffect(() => {
     // Simulate checking payment status
@@ -81,7 +82,7 @@ const PaymentResult = () => {
           status: 'warning',
           icon: <WarningOutlined style={{ color: '#faad14' }} />,
           title: 'Có lỗi xảy ra',
-          subTitle: message || 'Không thể xác nhận thanh toán. Vui lòng liên hệ với chúng tôi.',
+          subTitle: error || message || 'Không thể xác nhận thanh toán. Vui lòng liên hệ với chúng tôi.',
           extra: [
             <Button type="primary" key="support" onClick={() => navigate(isStaff() ? '/dashboard/invoices' : '/patient/support')}>
               {isStaff() ? 'Quay lại hóa đơn' : 'Liên hệ hỗ trợ'}

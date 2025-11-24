@@ -185,10 +185,25 @@ export const confirmCashPayment = async (paymentId) => {
  */
 export const getVNPayPaymentUrl = async (paymentId) => {
   try {
-    const response = await recordApi.post(`/api/payment/${paymentId}/vnpay`, {});
+    const response = await recordApi.post(`/api/payments/${paymentId}/vnpay-url`, {});
     return response.data;
   } catch (error) {
     console.error('Error getting VNPay URL:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get Stripe payment URL
+ * @param {string} paymentId - Payment ID
+ * @returns {Promise<Object>} Payment URL
+ */
+export const getStripePaymentUrl = async (paymentId) => {
+  try {
+    const response = await recordApi.post(`/api/payments/${paymentId}/stripe-url`, {});
+    return response.data;
+  } catch (error) {
+    console.error('Error getting Stripe URL:', error);
     throw error;
   }
 };
@@ -249,6 +264,7 @@ export default {
   cancelRecord,
   confirmCashPayment,
   getVNPayPaymentUrl,
+  getStripePaymentUrl,
   getQueue,
   getQueueStats,
   triggerAutoStart

@@ -60,6 +60,23 @@ const PaymentConfirmModal = ({ show, onHide, record, paymentData, onPaymentConfi
     }
   };
 
+  const handleStripePayment = async () => {
+    toast.info('Đang chuyển hướng đến Stripe...');
+    
+    // Get payment URL from backend
+    try {
+      const response = await queueService.getStripePaymentUrl(payment._id);
+
+      if (response.success && response.data.paymentUrl) {
+        // Redirect to Stripe
+        window.location.href = response.data.paymentUrl;
+      }
+    } catch (error) {
+      console.error('Error getting Stripe URL:', error);
+      toast.error('Không thể tạo liên kết thanh toán Stripe');
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -156,7 +173,7 @@ const PaymentConfirmModal = ({ show, onHide, record, paymentData, onPaymentConfi
         
         <Row>
           {/* Cash Payment */}
-          <Col md={6} className="mb-3">
+          <Col md={4} className="mb-3">
             <div
               className={`p-4 border rounded text-center h-100 ${
                 selectedMethod === 'cash'
@@ -180,7 +197,7 @@ const PaymentConfirmModal = ({ show, onHide, record, paymentData, onPaymentConfi
           </Col>
 
           {/* VNPay Payment */}
-          <Col md={6} className="mb-3">
+          <Col md={4} className="mb-3">
             <div
               className={`p-4 border rounded text-center h-100 ${
                 selectedMethod === 'vnpay'
@@ -196,6 +213,30 @@ const PaymentConfirmModal = ({ show, onHide, record, paymentData, onPaymentConfi
                 Thanh toán qua ví điện tử
               </p>
               {selectedMethod === 'vnpay' && (
+                <Badge bg="primary" className="mt-2">
+                  Đã chọn
+                </Badge>
+              )}
+            </div>
+          </Col>
+
+          {/* Stripe Payment */}
+          <Col md={4} className="mb-3">
+            <div
+              className={`p-4 border rounded text-center h-100 ${
+                selectedMethod === 'stripe'
+                  ? 'border-primary bg-primary bg-opacity-10'
+                  : 'border-secondary'
+              }`}
+              style={{ cursor: 'pointer', transition: 'all 0.3s' }}
+              onClick={() => setSelectedMethod('stripe')}
+            >
+              <FaCreditCard size={48} className="text-info mb-3" />
+              <h5>Stripe</h5>
+              <p className="text-muted mb-0">
+                Thẻ quốc tế
+              </p>
+              {selectedMethod === 'stripe' && (
                 <Badge bg="primary" className="mt-2">
                   Đã chọn
                 </Badge>
@@ -249,6 +290,17 @@ const PaymentConfirmModal = ({ show, onHide, record, paymentData, onPaymentConfi
           >
             <FaCreditCard className="me-2" />
             Chuyển Đến VNPay
+          </Button>
+        )}
+        
+        {selectedMethod === 'stripe' && (
+          <Button
+            variant="info"
+            onClick={handleStripePayment}
+            disabled={processing}
+          >
+            <FaCreditCard className="me-2" />
+            Chuyển Đến Stripe
           </Button>
         )}
       </Modal.Footer>
