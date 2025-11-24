@@ -134,8 +134,11 @@ const PaymentSelection = () => {
 
         const data = await response.json();
         console.log('🟣 [Payment Selection] Stripe response:', data);
+        console.log('🔍 [Payment Selection] data.data:', data.data);
+        console.log('🔍 [Payment Selection] data.data keys:', data.data ? Object.keys(data.data) : 'undefined');
+        console.log('🔍 [Payment Selection] paymentUrl:', data.data?.paymentUrl);
 
-        if (data.success && data.data.paymentUrl) {
+        if (data.success && data.data && data.data.paymentUrl) {
           console.log('✅ [Payment Selection] Redirecting to Stripe:', data.data.paymentUrl);
           message.success('Đang chuyển đến Stripe...');
           
