@@ -821,7 +821,6 @@ const EditUser = () => {
                             <DatePicker 
                               style={{ width: '100%', borderRadius: '8px' }}
                               placeholder="Chọn ngày sinh"
-                              format="DD/MM/YYYY"
                             />
                           </Form.Item>
                         </Col>
