@@ -82,8 +82,9 @@ const InvoiceList = () => {
       if (result.success) {
         setInvoices(result.data.invoices);
         setPagination({
-          ...pagination,
-          total: result.data.pagination.totalItems
+          currentPage: result.data.page,
+          pageSize: pagination.pageSize,
+          total: result.data.total
         });
       }
     } catch (error) {
@@ -198,11 +199,11 @@ const InvoiceList = () => {
     message.info('Chức năng in đang được phát triển');
   };
 
-  const handleTableChange = (pagination) => {
+  const handleTableChange = (paginationConfig) => {
     setPagination({
-      ...pagination,
-      currentPage: pagination.current,
-      pageSize: pagination.pageSize
+      currentPage: paginationConfig.current,
+      pageSize: paginationConfig.pageSize,
+      total: pagination.total
     });
   };
 
