@@ -38,8 +38,11 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
-import viVN from 'antd/locale/vi_VN';
+import locale from 'antd/es/date-picker/locale/vi_VN';
 import { toast } from '../services/toastService';
+
+// Set dayjs locale to Vietnamese
+dayjs.locale('vi');
 import TinyMCE from '../components/TinyMCE/TinyMCE';
 import { useAuth } from '../contexts/AuthContext';
 import { getServiceUrl } from '../config/apiConfig';
@@ -823,7 +826,7 @@ const EditUser = () => {
                             <DatePicker 
                               style={{ width: '100%', borderRadius: '8px' }}
                               placeholder="Chọn ngày sinh"
-                              locale={viVN.DatePicker}
+                              locale={locale}
                               format="DD/MM/YYYY"
                             />
                           </Form.Item>
