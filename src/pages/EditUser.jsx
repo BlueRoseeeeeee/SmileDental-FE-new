@@ -37,6 +37,8 @@ import {
   EditOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
+import viVN from 'antd/locale/vi_VN';
 import { toast } from '../services/toastService';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
 import { useAuth } from '../contexts/AuthContext';
@@ -136,7 +138,7 @@ const EditUser = () => {
           form.setFieldsValue({
             ...formData,
             roles: rolesArray, // ✅ Use roles array
-            dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
+            dateOfBirth: dayjs(userData.dateOfBirth).format('DD/MM/YYYY') ? dayjs(userData.dateOfBirth).format('DD/MM/YYYY') : null
           });
         } catch (formError) {
           console.error('Form Set Fields Error:', formError);
@@ -821,6 +823,8 @@ const EditUser = () => {
                             <DatePicker 
                               style={{ width: '100%', borderRadius: '8px' }}
                               placeholder="Chọn ngày sinh"
+                              locale={viVN.DatePicker}
+                              format="DD/MM/YYYY"
                             />
                           </Form.Item>
                         </Col>
