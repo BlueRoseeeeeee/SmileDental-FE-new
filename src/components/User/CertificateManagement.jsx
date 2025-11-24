@@ -190,11 +190,8 @@ const CertificateManagement = () => {
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ marginBottom: '24px' }}>
         <Title level={2} style={{ marginBottom: '8px' }}>
-          Quản lý chứng chỉ
+          Danh sách chứng chỉ
         </Title>
-        <Text type="secondary">
-          Upload và quản lý các chứng chỉ chuyên môn của bạn
-        </Text>
       </div>
 
       {/* Stats Cards */}
@@ -207,36 +204,7 @@ const CertificateManagement = () => {
             <Text type="secondary">Tổng số chứng chỉ</Text>
           </Card>
         </Col>
-        <Col xs={8}>
-          <Card style={{ textAlign: 'center', borderRadius: '8px' }}>
-            <Title level={3} style={{ margin: 0, color: '#52c41a' }}>
-              {stats.verified}
-            </Title>
-            <Text type="secondary">Đã xác thực</Text>
-          </Card>
-        </Col>
-        <Col xs={8}>
-          <Card style={{ textAlign: 'center', borderRadius: '8px' }}>
-            <Title level={3} style={{ margin: 0, color: '#faad14' }}>
-              {stats.pending}
-            </Title>
-            <Text type="secondary">Chờ xác thực</Text>
-          </Card>
-        </Col>
       </Row>
-
-      {/* Upload Button */}
-      <div style={{ marginBottom: '24px' }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setUploadModalVisible(true)}
-          size="large"
-          style={{ borderRadius: '8px' }}
-        >
-          Upload chứng chỉ mới
-        </Button>
-      </div>
 
       {/* Certificates Grid */}
       {certificates.length === 0 ? (
@@ -245,9 +213,6 @@ const CertificateManagement = () => {
           <Title level={4} style={{ color: '#999' }}>
             Chưa có chứng chỉ nào
           </Title>
-          <Text type="secondary">
-            Hãy upload chứng chỉ đầu tiên để bắt đầu
-          </Text>
         </Card>
       ) : (
         <Row gutter={[16, 16]}>
@@ -342,75 +307,6 @@ const CertificateManagement = () => {
         </Row>
       )}
 
-      {/* Upload Modal */}
-      <Modal
-        title="Upload chứng chỉ mới"
-        open={uploadModalVisible}
-        onCancel={() => {
-          setUploadModalVisible(false);
-          form.resetFields();
-        }}
-        footer={null}
-        width={600}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleUpload}
-        >
-          <Form.Item
-            name="file"
-            label="Chọn file ảnh chứng chỉ"
-            rules={[{ required: true, message: 'Vui lòng chọn file!' }]}
-          >
-            <Upload
-              beforeUpload={() => false}
-              accept="image/*"
-              listType="picture-card"
-              maxCount={1}
-            >
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 8 }}>Chọn ảnh</div>
-              </div>
-            </Upload>
-          </Form.Item>
-
-          <Form.Item
-            name="notes"
-            label="Ghi chú (tùy chọn)"
-          >
-            <TextArea
-              rows={5}
-              className='custom-textarea'
-              placeholder="Nhập ghi chú về chứng chỉ..."
-              maxLength={200}
-              showCount
-            />
-          </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button
-                onClick={() => {
-                  setUploadModalVisible(false);
-                  form.resetFields();
-                }}
-              >
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={uploading}
-                style={{ borderRadius: '8px' }}
-              >
-                {uploading ? 'Đang upload...' : 'Upload'}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
 
       {/* Edit Notes Modal */}
       <Modal
