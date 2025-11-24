@@ -136,7 +136,7 @@ const EditUser = () => {
           form.setFieldsValue({
             ...formData,
             roles: rolesArray, // ✅ Use roles array
-            dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth) : null
+            dateOfBirth: userData.dateOfBirth ? dayjs(userData.dateOfBirth).format('DD-MM-YYYY') : null
           });
         } catch (formError) {
           console.error('Form Set Fields Error:', formError);
