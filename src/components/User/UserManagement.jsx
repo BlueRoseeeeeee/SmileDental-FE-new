@@ -731,10 +731,14 @@ const UserManagement = () => {
             }>
               <Button 
                 type="text" 
-                danger 
+                danger={!record.hasBeenUsed && canManage && record._id !== currentUser?._id}
                 icon={<DeleteOutlined />}
                 onClick={() => handleDelete(record)}
                 disabled={!canManage || record._id === currentUser?._id || record.hasBeenUsed}
+                style={{
+                  opacity: (!canManage || record._id === currentUser?._id || record.hasBeenUsed) ? 0.4 : 1,
+                  cursor: (!canManage || record._id === currentUser?._id || record.hasBeenUsed) ? 'not-allowed' : 'pointer'
+                }}
               />
             </Tooltip>
           </Space>

@@ -55,11 +55,10 @@ const PatientAppointments = () => {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateRange, setDateRange] = useState(null);
-  const [dentistFilter, setDentistFilter] = useState('all');
+  const [bookingChannelFilter, setBookingChannelFilter] = useState('all'); // 'all', 'online', 'offline'
   const [serviceTypeFilter, setServiceTypeFilter] = useState('all');
   const [roomFilter, setRoomFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
-  const [dentists, setDentists] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -70,7 +69,6 @@ const PatientAppointments = () => {
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
-    fetchDentists();
     fetchAllAppointments();
     
     // Setup WebSocket connection
@@ -113,20 +111,7 @@ const PatientAppointments = () => {
 
   useEffect(() => {
     filterAppointments();
-  }, [statusFilter, dateRange, dentistFilter, serviceTypeFilter, roomFilter, searchText, appointments]);
-
-  const fetchDentists = async () => {
-    try {
-      const response = await userService.getAllStaff(1, 1000);
-      if (response.success && response.data) {
-        const dentistList = (response.data.users || response.data)?.filter(u => u.role === 'dentist') || [];
-        setDentists(dentistList);
-      }
-    } catch (error) {
-      console.error('Error fetching dentists:', error);
-      setDentists([]);
-    }
-  };
+  }, [statusFilter, dateRange, bookingChannelFilter, serviceTypeFilter, roomFilter, searchText, appointments]);
 
   const fetchAllAppointments = async () => {
     try {
@@ -185,9 +170,15 @@ const PatientAppointments = () => {
       });
     }
     
-    // Filter by dentist
-    if (dentistFilter !== 'all') {
-      filtered = filtered.filter(apt => apt.dentistId === dentistFilter);
+    // Filter by booking channel (online/offline)
+    if (bookingChannelFilter !== 'all') {
+      if (bookingChannelFilter === 'online') {
+        // Online: bookedByRole === 'patient'
+        filtered = filtered.filter(apt => apt.bookedByRole === 'patient');
+      } else if (bookingChannelFilter === 'offline') {
+        // Offline: bookedByRole !== 'patient' (admin, manager, receptionist, dentist, etc.)
+        filtered = filtered.filter(apt => apt.bookedByRole && apt.bookedByRole !== 'patient');
+      }
     }
     if (serviceTypeFilter !== 'all') {
       filtered = filtered.filter(apt => apt.serviceType === serviceTypeFilter);
@@ -211,9 +202,9 @@ const PatientAppointments = () => {
 
   const handleResetFilters = () => {
     setStatusFilter('all');
-    setDateFilter('all');
+    setStatusFilter('all');
     setDateRange(null);
-    setDentistFilter('all');
+    setBookingChannelFilter('all');
     setServiceTypeFilter('all');
     setRoomFilter('all');
     setSearchText('');
@@ -461,11 +452,10 @@ const PatientAppointments = () => {
 
           <Row gutter={[16, 16]}>
             <Col span={6}>
-              <Select style={{ width: '100%' }} value={dentistFilter} onChange={setDentistFilter} showSearch optionFilterProp="children">
-                <Option value="all">Tất cả nha sĩ</Option>
-                {dentists.map(dentist => (
-                  <Option key={dentist._id} value={dentist._id}>{dentist.fullName}</Option>
-                ))}
+              <Select style={{ width: '100%' }} value={bookingChannelFilter} onChange={setBookingChannelFilter}>
+                <Option value="all">Tất cả kênh đặt</Option>
+                <Option value="online">Đặt Online</Option>
+                <Option value="offline">Đặt Offline</Option>
               </Select>
             </Col>
             <Col span={4}>

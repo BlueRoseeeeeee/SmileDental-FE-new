@@ -996,30 +996,78 @@ const ScheduleCalendar = () => {
     
     setSelectedSlotsForToggle(prev => {
       const newSelected = { ...prev };
-      if (newSelected[slotId]) {
-        // Already selected, remove it
-        console.log('[ToggleSelect] Deselecting slot:', slotId);
-        delete newSelected[slotId];
-      } else {
-        // Not selected, add it
-        console.log('[ToggleSelect] Selecting slot:', slotId);
-        // Ensure date is string format
-        const dateStr = typeof date === 'string' ? date : date?.format ? date.format('YYYY-MM-DD') : date;
-        const shiftName = typeof shift === 'string' ? shift : shift?.name || '';
+      const isCurrentlySelected = !!newSelected[slotId];
+      
+      // ✅ Check if slot has appointmentId - need to select/deselect all slots with same appointmentId
+      const appointmentId = slot.appointmentId;
+      
+      if (appointmentId) {
+        console.log('[ToggleSelect] Slot has appointmentId:', appointmentId);
         
-        newSelected[slotId] = {
-          slotData: slot,
-          date: dateStr,
-          shift: shiftName,
-          roomId: slot.roomId,
-          subRoomId: slot.subRoomId,
-          isActive: slot.isActive
-        };
+        // Find all slots in modalSlots with same appointmentId
+        const slotsWithSameAppointment = modalSlots.filter(s => 
+          s.appointmentId && s.appointmentId === appointmentId
+        );
+        
+        console.log('[ToggleSelect] Found', slotsWithSameAppointment.length, 'slots with same appointmentId');
+        
+        if (isCurrentlySelected) {
+          // Deselect all slots with same appointmentId
+          slotsWithSameAppointment.forEach(s => {
+            const sId = s._id || s.id || s.slotId;
+            if (sId) {
+              console.log('[ToggleSelect] Deselecting slot:', sId);
+              delete newSelected[sId];
+            }
+          });
+        } else {
+          // Select all slots with same appointmentId
+          const dateStr = typeof date === 'string' ? date : date?.format ? date.format('YYYY-MM-DD') : date;
+          const shiftName = typeof shift === 'string' ? shift : shift?.name || '';
+          
+          slotsWithSameAppointment.forEach(s => {
+            const sId = s._id || s.id || s.slotId;
+            if (sId) {
+              console.log('[ToggleSelect] Selecting slot:', sId);
+              newSelected[sId] = {
+                slotData: s,
+                date: dateStr,
+                shift: shiftName,
+                roomId: s.roomId,
+                subRoomId: s.subRoomId,
+                isActive: s.isActive
+              };
+            }
+          });
+        }
+      } else {
+        // No appointmentId - select/deselect single slot as before
+        if (isCurrentlySelected) {
+          // Already selected, remove it
+          console.log('[ToggleSelect] Deselecting slot:', slotId);
+          delete newSelected[slotId];
+        } else {
+          // Not selected, add it
+          console.log('[ToggleSelect] Selecting slot:', slotId);
+          // Ensure date is string format
+          const dateStr = typeof date === 'string' ? date : date?.format ? date.format('YYYY-MM-DD') : date;
+          const shiftName = typeof shift === 'string' ? shift : shift?.name || '';
+          
+          newSelected[slotId] = {
+            slotData: slot,
+            date: dateStr,
+            shift: shiftName,
+            roomId: slot.roomId,
+            subRoomId: slot.subRoomId,
+            isActive: slot.isActive
+          };
+        }
       }
+      
       console.log('[ToggleSelect] New selection state:', Object.keys(newSelected));
       return newSelected;
     });
-  }, []);  // Empty deps - chỉ tạo 1 lần
+  }, [modalSlots]);  // ✅ Add modalSlots as dependency
 
   const handleSelectAllSlotsInWeek = (shiftName) => {
     // 🆕 Select all slots of the given shift in current week (from tomorrow onwards only)
@@ -1353,8 +1401,8 @@ const ScheduleCalendar = () => {
     const isShiftActive = shift.isActive;
     
     // 🆕 Check if can toggle this cell (admin/manager, room view, tomorrow or later)
+    // 🆕 Allow toggle for all view modes (room/dentist/nurse) when viewing tomorrow or later
     const canToggleCell = (hasRole('admin') || hasRole('manager')) 
-      && viewMode === 'room' 
       && isTomorrowOrLater(date);
 
     if (!isShiftActive) {
@@ -1461,15 +1509,16 @@ const ScheduleCalendar = () => {
             setLoadingModalSlots(true);
             
             // 🆕 Determine modal mode based on role and view mode
-            if (hasRole('dentist')) {
-              setModalMode('dentist_view');
-            } else if (hasRole('nurse')) {
-              setModalMode('nurse_view');
-            } else if (canToggleCell) {
-              // Admin/Manager in room view AND tomorrow or later
+            // Priority: canToggleCell (tomorrow+) > view mode specific > view-only
+            if (canToggleCell) {
+              // Admin/Manager viewing tomorrow or later (any view mode)
               setModalMode('toggle');
+            } else if (hasRole('dentist') && viewMode === 'dentist') {
+              setModalMode('dentist_view');
+            } else if (hasRole('nurse') && viewMode === 'nurse') {
+              setModalMode('nurse_view');
             } else {
-              setModalMode('assign');
+              setModalMode('view'); // View-only mode (no assignment)
             }
             
             // ✅ Use shiftData.slots directly if available (from calendar API - has full dentist/nurse info)
@@ -1871,8 +1920,12 @@ const ScheduleCalendar = () => {
               </Card>
             )}
 
-            {/* 🆕 Toggle Slots Controls - Only for admin/manager in room view */}
-            {(hasRole('admin') || hasRole('manager')) && viewMode === 'room' && selectedRoom && (
+            {/* 🆕 Toggle Slots Controls - For admin/manager in all view modes */}
+            {(hasRole('admin') || hasRole('manager')) && (
+              (viewMode === 'room' && selectedRoom) || 
+              (viewMode === 'dentist' && selectedDentist) || 
+              (viewMode === 'nurse' && selectedNurse)
+            ) && (
               <Card size="small" style={{ marginTop: 16, background: '#f0f5ff', marginBottom:10 }}>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
                   <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -2129,19 +2182,11 @@ const ScheduleCalendar = () => {
                 );
               } else {
                 const stats = getModalStats();
-                if (selectedSlots.length > 0) {
-                  return (
-                    <Text type="success" style={{ fontSize: '12px' }}>
-                      Đã chọn: {stats.selectedCount} / {stats.totalSlots} slot
-                    </Text>
-                  );
-                } else {
-                  return (
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      Đã phân công: {stats.assignedSlots} / {stats.totalSlots} slot
-                    </Text>
-                  );
-                }
+                return (
+                  <Text type="secondary" style={{ fontSize: '12px' }}>
+                    Tổng cộng: {stats.totalSlots} slot
+                  </Text>
+                );
               }
             })()}
           </Space>
@@ -2154,8 +2199,8 @@ const ScheduleCalendar = () => {
         }}
         width={800}
         footer={
-          modalMode === 'dentist_view' || modalMode === 'nurse_view' ? [
-            // Dentist/Nurse: Only close button
+          modalMode === 'dentist_view' || modalMode === 'nurse_view' || modalMode === 'view' ? [
+            // Dentist/Nurse/View: Only close button
             <Button key="close" type="primary" onClick={() => {
               setShowSlotModal(false);
               setSlotFilter('all');
@@ -2176,19 +2221,6 @@ const ScheduleCalendar = () => {
               setSlotFilter('all');
             }}>
               Đóng
-            </Button>,
-            <Button 
-              key="assign" 
-              type="primary" 
-              disabled={selectedSlots.length === 0}
-              onClick={() => {
-                // TODO: Implement assignment logic
-                toast.success(`Đã chọn ${selectedSlots.length} slot để phân công`);
-                setShowSlotModal(false);
-                setSelectedSlots([]);
-              }}
-            >
-              Phân công ({selectedSlots.length} slot)
             </Button>
           ]
         }
@@ -2200,8 +2232,8 @@ const ScheduleCalendar = () => {
           </div>
         ) : (
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            {/* Filter and Select All Controls - Only show in assign mode (not for dentist/nurse view) */}
-            {modalMode === 'assign' && (
+            {/* Filter and Select All Controls - Hidden in view mode */}
+            {false && (
               <>
                 <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                   <Radio.Group 
@@ -2301,49 +2333,36 @@ const ScheduleCalendar = () => {
                                     </Text>
                                   </div>
                                   
-                                  {/* Slot Details */}
+                                  {/* Appointment Summary Info */}
                                   <div>
-                                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                                      Chi tiết slots ({group.slots.length}):
-                                    </Text>
-                                    <div style={{ marginTop: 8 }}>
-                                      {sortedSlots.map((slot, idx) => {
-                                        const slotStart = slot.startTimeVN || dayjs(slot.startTime).format('HH:mm');
-                                        const slotEnd = slot.endTimeVN || dayjs(slot.endTime).format('HH:mm');
-                                        
+                                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                      {/* Room info if available */}
+                                      {sortedSlots[0]?.subRoom?.name && (
+                                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                                          📍 Phòng: {sortedSlots[0].subRoom.name}
+                                        </Text>
+                                      )}
+                                      {/* Slot count and status */}
+                                      <Text type="secondary" style={{ fontSize: '12px' }}>
+                                        ⏱️ {group.slots.length} slot ({startTime} - {endTime})
+                                      </Text>
+                                      {/* Check if all slots are active */}
+                                      {(() => {
+                                        const inactiveCount = sortedSlots.filter(s => !s.isActive).length;
+                                        if (inactiveCount > 0) {
+                                          return (
+                                            <Tag color="warning" size="small" style={{ width: 'fit-content' }}>
+                                              ⚠️ {inactiveCount} slot tạm ngừng
+                                            </Tag>
+                                          );
+                                        }
                                         return (
-                                          <div 
-                                            key={getSlotId(slot)}
-                                            style={{ 
-                                              padding: '6px 12px',
-                                              backgroundColor: 'white',
-                                              borderRadius: '4px',
-                                              marginBottom: 6,
-                                              display: 'flex',
-                                              justifyContent: 'space-between',
-                                              alignItems: 'center'
-                                            }}
-                                          >
-                                            <Space>
-                                              <Text strong style={{ minWidth: 90 }}>
-                                                {slotStart} - {slotEnd}
-                                              </Text>
-                                              {slot.subRoom?.name && (
-                                                <Tag color="blue" size="small">
-                                                  {slot.subRoom.name}
-                                                </Tag>
-                                              )}
-                                              <Tag 
-                                                color={slot.isActive ? 'green' : 'red'} 
-                                                size="small"
-                                              >
-                                                {slot.isActive ? 'Hoạt động' : 'Tạm ngừng'}
-                                              </Tag>
-                                            </Space>
-                                          </div>
+                                          <Tag color="success" size="small" style={{ width: 'fit-content' }}>
+                                            ✓ Tất cả slot hoạt động
+                                          </Tag>
                                         );
-                                      })}
-                                    </div>
+                                      })()}
+                                    </Space>
                                   </div>
                                   
                                   {/* Additional Info */}
@@ -2476,16 +2495,21 @@ const ScheduleCalendar = () => {
                     
                     // 🆕 Check if can toggle this slot (tomorrow or later)
                     const canToggleThisSlot = modalMode === 'toggle' && isTomorrowOrLater(selectedCellDate);
+                    
+                    // ✅ Check if this slot is part of an appointment (for visual grouping)
+                    const hasAppointment = !!slot.appointmentId;
+                    const appointmentBorderColor = hasAppointment ? '#722ed1' : '#d9d9d9'; // Purple for appointments
 
                     return (
                       <Card
                         key={getSlotId(slot)}
                         size="small"
                         style={{ 
-                          cursor: modalMode === 'assign' ? 'default' : (canToggleThisSlot ? 'pointer' : 'not-allowed'),
-                          backgroundColor: isSelected ? '#e6f7ff' : 'white',
-                          borderColor: isSelected ? '#1890ff' : '#d9d9d9',
-                          opacity: modalMode === 'assign' ? 1 : (canToggleThisSlot ? 1 : 0.6)
+                          cursor: 'default',
+                          backgroundColor: isSelected ? '#e6f7ff' : (hasAppointment ? '#f9f0ff' : 'white'),
+                          borderColor: isSelected ? '#1890ff' : appointmentBorderColor,
+                          borderWidth: hasAppointment ? '2px' : '1px',
+                          opacity: 1
                         }}
                       >
                         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -2510,6 +2534,17 @@ const ScheduleCalendar = () => {
                               {slot.subRoom?.name && (
                                 <Tag color="blue" size="small" style={{ marginLeft: 8 }}>
                                   {slot.subRoom.name}
+                                </Tag>
+                              )}
+                              {/* ✅ Show appointment code if exists */}
+                              {slot.appointmentId && slot.appointmentCode && (
+                                <Tag 
+                                  color="purple" 
+                                  size="small" 
+                                  style={{ marginLeft: 8, fontWeight: 'bold' }}
+                                  title="Slot này thuộc cùng appointment, click để chọn/bỏ tất cả"
+                                >
+                                  📋 {slot.appointmentCode}
                                 </Tag>
                               )}
                               {/* ✅ Always show isActive status for both modes */}
