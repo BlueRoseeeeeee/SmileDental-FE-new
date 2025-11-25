@@ -64,8 +64,6 @@ const PaymentList = () => {
   // Filters
   const [filters, setFilters] = useState({
     status: null,
-    method: null,
-    type: null,
     fromDate: null,
     toDate: null,
     keyword: ''
@@ -86,7 +84,15 @@ const PaymentList = () => {
 
   useEffect(() => {
     fetchPayments();
-  }, [pagination.current, pagination.pageSize, filters]);
+  }, [pagination.current, pagination.pageSize]);
+
+  // Auto-search when filters change
+  useEffect(() => {
+    if (payments.length > 0 || pagination.current > 1) {
+      setPagination(prev => ({ ...prev, current: 1 }));
+      fetchPayments();
+    }
+  }, [filters.keyword, filters.status, filters.fromDate, filters.toDate]);
 
   const fetchPayments = async () => {
     try {
@@ -135,7 +141,6 @@ const PaymentList = () => {
       ...prev,
       [key]: value
     }));
-    setPagination(prev => ({ ...prev, current: 1 })); // Reset to first page
   };
 
   const handleSearch = async () => {
@@ -534,17 +539,16 @@ const PaymentList = () => {
           title={<><FilterOutlined /> Bộ lọc</>}
         >
           <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} md={6}>
+            <Col xs={24} sm={12} md={8}>
               <Input
                 placeholder="Tìm theo mã hoặc tên BN..."
                 prefix={<SearchOutlined />}
                 value={filters.keyword}
                 onChange={(e) => handleFilterChange('keyword', e.target.value)}
-                onPressEnter={handleSearch}
                 allowClear
               />
             </Col>
-            <Col xs={24} sm={12} md={4}>
+            <Col xs={24} sm={12} md={6}>
               <Select
                 placeholder="Trạng thái"
                 style={{ width: '100%' }}
@@ -560,42 +564,15 @@ const PaymentList = () => {
                 <Option value="refunded">Đã hoàn tiền</Option>
               </Select>
             </Col>
-            <Col xs={24} sm={12} md={4}>
-              <Select
-                placeholder="Phương thức"
-                style={{ width: '100%' }}
-                value={filters.method}
-                onChange={(value) => handleFilterChange('method', value)}
-                allowClear
-              >
-                <Option value="cash">Tiền mặt</Option>
-                <Option value="vnpay">VNPay</Option>
-                <Option value="visa">VISA/Mastercard</Option>
-              </Select>
-            </Col>
-            <Col xs={24} sm={12} md={4}>
-              <Select
-                placeholder="Loại"
-                style={{ width: '100%' }}
-                value={filters.type}
-                onChange={(value) => handleFilterChange('type', value)}
-                allowClear
-              >
-                <Option value="payment">Thanh toán</Option>
-                <Option value="refund">Hoàn tiền</Option>
-                <Option value="deposit">Đặt cọc</Option>
-                <Option value="adjustment">Điều chỉnh</Option>
-              </Select>
-            </Col>
-            <Col xs={24} sm={24} md={6}>
+            <Col xs={24} sm={24} md={10}>
               <RangePicker
                 style={{ width: '100%' }}
                 format="DD/MM/YYYY"
                 placeholder={['Từ ngày', 'Đến ngày']}
                 onChange={(dates) => {
                   if (dates) {
-                    handleFilterChange('fromDate', dates[0]?.toISOString());
-                    handleFilterChange('toDate', dates[1]?.toISOString());
+                    handleFilterChange('fromDate', dates[0]?.format('YYYY-MM-DD'));
+                    handleFilterChange('toDate', dates[1]?.format('YYYY-MM-DD'));
                   } else {
                     handleFilterChange('fromDate', null);
                     handleFilterChange('toDate', null);
@@ -605,11 +582,6 @@ const PaymentList = () => {
             </Col>
           </Row>
           <Row gutter={16} style={{ marginTop: 8 }}>
-            <Col>
-              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                Tìm kiếm
-              </Button>
-            </Col>
             <Col>
               <Button onClick={handleReset}>
                 Đặt lại

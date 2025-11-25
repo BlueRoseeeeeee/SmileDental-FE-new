@@ -49,7 +49,6 @@ const InvoiceList = () => {
   const [filters, setFilters] = useState({
     keyword: '',
     status: undefined,
-    type: undefined,
     dateRange: undefined
   });
 
@@ -62,7 +61,20 @@ const InvoiceList = () => {
   // Load data
   useEffect(() => {
     loadInvoices();
-  }, [pagination.currentPage, pagination.pageSize, filters]);
+  }, [pagination.currentPage, pagination.pageSize]);
+
+  // Auto-search when filters change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (pagination.currentPage !== 1) {
+        setPagination(prev => ({ ...prev, currentPage: 1 }));
+      } else {
+        loadInvoices();
+      }
+    }, 300); // Debounce 300ms
+
+    return () => clearTimeout(timer);
+  }, [filters.keyword, filters.status, filters.dateRange?.[0]?.valueOf(), filters.dateRange?.[1]?.valueOf()]);
 
   const loadInvoices = async () => {
     setLoading(true);
@@ -72,7 +84,6 @@ const InvoiceList = () => {
         limit: pagination.pageSize,
         keyword: filters.keyword,
         status: filters.status,
-        type: filters.type,
         startDate: filters.dateRange?.[0]?.format('YYYY-MM-DD'),
         endDate: filters.dateRange?.[1]?.format('YYYY-MM-DD')
       };
@@ -97,22 +108,18 @@ const InvoiceList = () => {
   // Handlers
   const handleSearch = (value) => {
     setFilters({ ...filters, keyword: value });
-    setPagination({ ...pagination, currentPage: 1 });
   };
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
-    setPagination({ ...pagination, currentPage: 1 });
   };
 
   const handleResetFilters = () => {
     setFilters({
       keyword: '',
       status: undefined,
-      type: undefined,
       dateRange: undefined
     });
-    setPagination({ ...pagination, currentPage: 1 });
   };
 
   const handleCreate = () => {
@@ -420,9 +427,8 @@ const InvoiceList = () => {
             <Search
               placeholder="Tìm theo mã HĐ, tên, SĐT..."
               allowClear
-              onSearch={handleSearch}
               value={filters.keyword}
-              onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
+              onChange={(e) => handleSearch(e.target.value)}
             />
           </Col>
           <Col xs={24} sm={12} md={4}>
@@ -433,27 +439,8 @@ const InvoiceList = () => {
               value={filters.status}
               onChange={(value) => handleFilterChange('status', value)}
             >
-              <Option value="draft">Nháp</Option>
-              <Option value="pending">Chờ thanh toán</Option>
-              <Option value="partial_paid">TT 1 phần</Option>
               <Option value="paid">Đã thanh toán</Option>
-              <Option value="overdue">Quá hạn</Option>
               <Option value="cancelled">Đã hủy</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={12} md={4}>
-            <Select
-              placeholder="Loại hóa đơn"
-              allowClear
-              style={{ width: '100%' }}
-              value={filters.type}
-              onChange={(value) => handleFilterChange('type', value)}
-            >
-              <Option value="appointment">Cuộc hẹn</Option>
-              <Option value="treatment">Điều trị</Option>
-              <Option value="consultation">Tư vấn</Option>
-              <Option value="emergency">Cấp cứu</Option>
-              <Option value="checkup">Kiểm tra</Option>
             </Select>
           </Col>
           <Col xs={24} sm={12} md={6}>
@@ -465,7 +452,7 @@ const InvoiceList = () => {
               onChange={(dates) => handleFilterChange('dateRange', dates)}
             />
           </Col>
-          <Col xs={24} sm={12} md={4}>
+          <Col xs={24} sm={12} md={8}>
             <Space>
               <Button onClick={handleResetFilters}>
                 Đặt lại
