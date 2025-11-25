@@ -432,6 +432,7 @@ const InvoiceList = () => {
                 type="text"
                 icon={<FilePdfOutlined />}
                 onClick={() => handleExportPDF(record)}
+                disabled={record.status !== 'paid'}
               />
             </Tooltip>
             <Dropdown menu={{ items }} trigger={['click']}>
