@@ -105,6 +105,12 @@ const createAxiosInstance = (serviceName, config) => {
         config.headers.Authorization = `Bearer ${token}`;
       }
       
+      // ✅ Add selectedRole header for multi-role users
+      const selectedRole = localStorage.getItem('selectedRole');
+      if (selectedRole) {
+        config.headers['X-Selected-Role'] = selectedRole;
+      }
+      
       // ✅ CRITICAL FIX: If sending FormData, remove Content-Type header
       // Browser will automatically set it with correct boundary
       if (config.data instanceof FormData) {

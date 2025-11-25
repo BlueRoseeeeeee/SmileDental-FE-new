@@ -82,11 +82,8 @@ const SearchBar = ({
                 onChange={(e) => {
                   const value = e.target.value;
                   setLocalSearchValue(value);
-                  if (value === '') {
-                    handleSearch('');
-                  }
+                  handleSearch(value);
                 }}
-                onPressEnter={(e) => handleSearch(e.target.value)}
                 onClear={handleClear}
                 allowClear
                 style={{ 

@@ -144,12 +144,12 @@ const RecordDetailDrawer = ({
           <Tag color={currentStatus.color} style={{ fontSize: 13 }}>
             {currentStatus.text}
           </Tag>
-          <Tag color={currentPayment.color} style={{ fontSize: 13 }}>
+          {/* <Tag color={currentPayment.color} style={{ fontSize: 13 }}>
             {currentPayment.text}
           </Tag>
           <Tag color={currentPriority.color} style={{ fontSize: 13 }}>
             Ưu tiên: {currentPriority.text}
-          </Tag>
+          </Tag> */}
         </Space>
       </div>
 
@@ -174,9 +174,9 @@ const RecordDetailDrawer = ({
           <Descriptions.Item label="Năm sinh">
             {record.patientInfo.birthYear}
           </Descriptions.Item>
-          <Descriptions.Item label="Giới tính">
+          {/* <Descriptions.Item label="Giới tính">
             {record.patientInfo.gender === 'male' ? 'Nam' : record.patientInfo.gender === 'female' ? 'Nữ' : 'Khác'}
-          </Descriptions.Item>
+          </Descriptions.Item> */}
           {record.patientInfo.address && (
             <Descriptions.Item label="Địa chỉ">
               {record.patientInfo.address}

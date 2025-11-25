@@ -427,16 +427,16 @@ const PatientRecords = () => {
                 {selectedRecord.bookingChannel === 'online' ? 'Đặt online' : 'Đặt tại phòng khám'}
               </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Thanh toán">
+            {/* <Descriptions.Item label="Thanh toán">
               <Tag color={selectedRecord.paymentStatus === 'paid' ? 'success' : 'warning'}>
                 {selectedRecord.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
               </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Độ ưu tiên">
+            </Descriptions.Item> */}
+            {/* <Descriptions.Item label="Độ ưu tiên">
               <Tag color={selectedRecord.priority === 'urgent' ? 'red' : selectedRecord.priority === 'high' ? 'orange' : 'default'}>
                 {selectedRecord.priority === 'urgent' ? 'Khẩn cấp' : selectedRecord.priority === 'high' ? 'Cao' : 'Bình thường'}
               </Tag>
-            </Descriptions.Item>
+            </Descriptions.Item> */}
             <Descriptions.Item label="Trạng thái">
               {getRecordStatusTag(selectedRecord.status)}
             </Descriptions.Item>
