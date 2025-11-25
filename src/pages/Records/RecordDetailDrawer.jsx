@@ -144,12 +144,12 @@ const RecordDetailDrawer = ({
           <Tag color={currentStatus.color} style={{ fontSize: 13 }}>
             {currentStatus.text}
           </Tag>
-          <Tag color={currentPayment.color} style={{ fontSize: 13 }}>
+          {/* <Tag color={currentPayment.color} style={{ fontSize: 13 }}>
             {currentPayment.text}
           </Tag>
           <Tag color={currentPriority.color} style={{ fontSize: 13 }}>
             Ưu tiên: {currentPriority.text}
-          </Tag>
+          </Tag> */}
         </Space>
       </div>
 
