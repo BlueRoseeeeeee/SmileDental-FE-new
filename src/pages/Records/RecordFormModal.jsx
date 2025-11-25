@@ -1374,11 +1374,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                 <Text type="warning" style={{ fontSize: 12 }}>
                   (Bắt buộc chọn)
                 </Text>
-                {tempServiceAddOnId !== null && tempServiceAddOnId !== record.serviceAddOnId && (
-                  <Text type="warning" style={{ fontSize: 11, marginLeft: 8 }}>
-                    ⚠️ Chưa lưu - Nhấn "Cập nhật" để lưu thay đổi
-                  </Text>
-                )}
               </div>
               {loading ? (
                 <div><Text type="secondary">Đang tải danh sách dịch vụ con...</Text></div>
