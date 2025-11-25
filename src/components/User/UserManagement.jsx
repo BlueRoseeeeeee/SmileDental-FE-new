@@ -19,7 +19,6 @@ import {
   Row,
   Col,
   Tooltip,
-  Steps,
   Radio,
   Alert,
   DatePicker,
@@ -88,7 +87,6 @@ const UserManagement = () => {
   });
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
-  const [currentStep, setCurrentStep] = useState(0);
 
   // Toggle confirmation modal states
   const [showToggleModal, setShowToggleModal] = useState(false);
@@ -566,7 +564,6 @@ const UserManagement = () => {
       
       setModalVisible(false);
       form.resetFields();
-      setCurrentStep(0);
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || 'Thao tác thất bại');
     }
@@ -907,7 +904,6 @@ const UserManagement = () => {
         onCancel={() => {
           setModalVisible(false);
           form.resetFields();
-          setCurrentStep(0);
         }}
         footer={null}
         width={1000}
@@ -927,246 +923,166 @@ const UserManagement = () => {
                 {selectedUser ? 'CHỈNH SỬA' : 'THÊM MỚI'}
               </Typography.Title>
 
-              {/* Steps */}
-              <Steps 
-                current={currentStep} 
-                items={selectedUser ? [
-                  {
-                    title: 'Thông tin cá nhân',
-                    description: 'Nhập thông tin cơ bản',
-                  },
-                  {
-                    title: 'Thông tin công việc',
-                    description: 'Vai trò, Chuyên khoa, Trạng thái',
-                  }
-                ] : [
-                  {
-                    title: 'Thông tin cá nhân',
-                    description: 'Nhập thông tin cơ bản',
-                  },
-                  {
-                    title: 'Thông tin công việc',
-                    description: 'Vai trò, Chuyên khoa, Trạng thái',
-                  }
-                ]}
-                style={{ marginBottom: '40px' }}
-              />
-
               <Form
                 form={form}
                 layout="vertical"
                 onFinish={handleUpdate}
               >
-                {/* 🆕 Step 1: Personal Information (was Step 3) */}
-                {currentStep === 0 && (
-                  <div>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="email"
-                          label="Email"
-                          rules={getAntDesignFormRules.email()}
-                        >
-                          <Input placeholder="Nhập email của nhân viên" />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="phone"
-                          label="Số điện thoại"
-                          rules={getAntDesignFormRules.phone()}
-                        >
-                          <Input placeholder="Nhập số điện thoại" />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="fullName"
-                          label="Họ và tên"
-                          rules={getAntDesignFormRules.fullName()}
-                        >
-                          <Input 
-                            placeholder="Nhập họ và tên" 
-                            onBlur={(e) => handleFullNameFormat(e, (field, value) => form.setFieldsValue({ [field]: value }))}
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="dateOfBirth"
-                          label="Ngày sinh"
-                          rules={getAntDesignFormRules.dateOfBirthEmployee()}
-                        >
-                          <DatePicker 
-                            style={{ width: '100%' }}
-                            placeholder="Chọn ngày sinh"
-                            format="DD/MM/YYYY"
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12}>
-                        <Form.Item
-                          name="gender"
-                          label="Giới tính"
-                          rules={[{ required: true, message: 'Vui lòng chọn giới tính!' }]}
-                        >
-                          <Radio.Group>
-                            <Space direction="horizontal" size="large">
-                              <Radio value="male">Nam</Radio>
-                              <Radio value="female">Nữ</Radio>
-                            </Space>
-                          </Radio.Group>
-                        </Form.Item>
-                      </Col>
-                    </Row>
+                <Alert
+                  message="Lưu ý về mật khẩu"
+                  description="Mật khẩu mặc định sẽ được tự động tạo bằng mã nhân viên. Nhân viên sẽ phải đổi mật khẩu khi đăng nhập lần đầu."
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: '24px' }}
+                />
 
-                    <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: '24px' }}>
-                      <Button
-                        type="primary"
-                        onClick={() => {
-                          form.validateFields(['email', 'phone', 'fullName', 'dateOfBirth', 'gender'])
-                            .then(() => setCurrentStep(1))
-                            .catch((err) => console.log('Validation failed:', err));
-                        }}
-                        block
-                        style={{
-                          background: '#2596be',
-                          border: 'none',
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <Form.Item
+                      name="email"
+                      label="Email"
+                      rules={getAntDesignFormRules.email()}
+                    >
+                      <Input placeholder="Nhập email của nhân viên" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item
+                      name="phone"
+                      label="Số điện thoại"
+                      rules={getAntDesignFormRules.phone()}
+                    >
+                      <Input placeholder="Nhập số điện thoại" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item
+                      name="fullName"
+                      label="Họ và tên"
+                      rules={getAntDesignFormRules.fullName()}
+                    >
+                      <Input 
+                        placeholder="Nhập họ và tên" 
+                        onBlur={(e) => handleFullNameFormat(e, (field, value) => form.setFieldsValue({ [field]: value }))}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item
+                      name="dateOfBirth"
+                      label="Ngày sinh"
+                      rules={getAntDesignFormRules.dateOfBirthEmployee()}
+                    >
+                      <DatePicker 
+                        style={{ width: '100%' }}
+                        placeholder="Chọn ngày sinh"
+                        format="DD/MM/YYYY"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item
+                      name="gender"
+                      label="Giới tính"
+                      rules={[{ required: true, message: 'Vui lòng chọn giới tính!' }]}
+                    >
+                      <Radio.Group>
+                        <Space direction="horizontal" size="large">
+                          <Radio value="male">Nam</Radio>
+                          <Radio value="female">Nữ</Radio>
+                        </Space>
+                      </Radio.Group>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Form.Item
+                      name="roles"
+                      label="Vai trò"
+                      rules={[{ 
+                        required: true, 
+                        message: 'Vui lòng chọn ít nhất 1 vai trò!',
+                        type: 'array',
+                        min: 1
+                      }]}
+                    >
+                      <Select 
+                        mode="multiple"
+                        placeholder="Chọn vai trò (có thể chọn nhiều)"
+                        maxTagCount="responsive"
                       >
-                        Tiếp theo
-                      </Button>
-                    </Space>
-                  </div>
-                )}
+                        {/* ✅ Role hierarchy: Admin cannot create Admin, Manager cannot create Admin/Manager */}
+                        {(() => {
+                          const selectedRole = localStorage.getItem('selectedRole');
+                          
+                          if (selectedRole === 'admin') {
+                            return (
+                              <>
+                                {/* Admin can create: manager, dentist, nurse, receptionist */}
+                                <Option value="manager">Quản lý</Option>
+                                <Option value="dentist">Nha sĩ</Option>
+                                <Option value="nurse">Y tá</Option>
+                                <Option value="receptionist">Lễ tân</Option>
+                              </>
+                            );
+                          } else if (selectedRole === 'manager') {
+                            return (
+                              <>
+                                {/* Manager can create: dentist, nurse, receptionist */}
+                                <Option value="dentist">Nha sĩ</Option>
+                                <Option value="nurse">Y tá</Option>
+                                <Option value="receptionist">Lễ tân</Option>
+                              </>
+                            );
+                          } else {
+                            return (
+                              <>
+                                {/* Fallback: all roles (should not happen) */}
+                                <Option value="admin">Quản trị viên</Option>
+                                <Option value="manager">Quản lý</Option>
+                                <Option value="dentist">Nha sĩ</Option>
+                                <Option value="nurse">Y tá</Option>
+                                <Option value="receptionist">Lễ tân</Option>
+                              </>
+                            );
+                          }
+                        })()}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
 
-                {/* 🆕 Step 2: Work Information (was Step 4) */}
-                {currentStep === 1 && (
-                  <div>
-                    <Alert
-                      message="Lưu ý về mật khẩu"
-                      description="Mật khẩu mặc định sẽ được tự động tạo bằng mã nhân viên. Nhân viên sẽ phải đổi mật khẩu khi đăng nhập lần đầu."
-                      type="info"
-                      showIcon
-                      style={{ marginBottom: '24px' }}
-                    />
-                    
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24}>
-                        <Form.Item
-                          name="roles"
-                          label="Vai trò"
-                          rules={[{ 
-                            required: true, 
-                            message: 'Vui lòng chọn ít nhất 1 vai trò!',
-                            type: 'array',
-                            min: 1
-                          }]}
-                        >
-                          <Select 
-                            mode="multiple"
-                            placeholder="Chọn vai trò (có thể chọn nhiều)"
-                            maxTagCount="responsive"
-                          >
-                            {/* ✅ Role hierarchy: Admin cannot create Admin, Manager cannot create Admin/Manager */}
-                            {(() => {
-                              const selectedRole = localStorage.getItem('selectedRole');
-                              
-                              if (selectedRole === 'admin') {
-                                return (
-                                  <>
-                                    {/* Admin can create: manager, dentist, nurse, receptionist */}
-                                    <Option value="manager">Quản lý</Option>
-                                    <Option value="dentist">Nha sĩ</Option>
-                                    <Option value="nurse">Y tá</Option>
-                                    <Option value="receptionist">Lễ tân</Option>
-                                  </>
-                                );
-                              } else if (selectedRole === 'manager') {
-                                return (
-                                  <>
-                                    {/* Manager can create: dentist, nurse, receptionist */}
-                                    <Option value="dentist">Nha sĩ</Option>
-                                    <Option value="nurse">Y tá</Option>
-                                    <Option value="receptionist">Lễ tân</Option>
-                                  </>
-                                );
-                              } else {
-                                return (
-                                  <>
-                                    {/* Fallback: all roles (should not happen) */}
-                                    <Option value="admin">Quản trị viên</Option>
-                                    <Option value="manager">Quản lý</Option>
-                                    <Option value="dentist">Nha sĩ</Option>
-                                    <Option value="nurse">Y tá</Option>
-                                    <Option value="receptionist">Lễ tân</Option>
-                                  </>
-                                );
-                              }
-                            })()}
-                          </Select>
-                        </Form.Item>
-                      </Col>
-                    
-                      <Col xs={24} sm={12} style={{ display: 'none' }}>
-                        <Form.Item
-                          name="isActive"
-                          label="Trạng thái"
-                          initialValue={true}
-                        >
-                          <Select placeholder="Chọn trạng thái">
-                            <Option value={true}>Hoạt động</Option>
-                            <Option value={false}>Không hoạt động</Option>
-                          </Select>
-                        </Form.Item>
-                      </Col>
-                    </Row>
+                <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: '24px' }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    loading={loading}
+                    block
+                    style={{
+                      background: '#2596be',
+                      border: 'none',
+                      borderRadius: '8px',
+                      height: '48px'
+                    }}
+                  >
+                    {selectedUser ? 'Cập nhật' : 'Tạo nhân viên'}
+                  </Button>
 
-                    {/* <Row gutter={[16, 16]}>
-                      <Col xs={24}>
-                        <Form.Item
-                          name="description"
-                          label="Mô tả"
-                          rules={getAntDesignFormRules.description()}
-                        >
-                          <Input.TextArea rows={3} placeholder="Nhập mô tả..." />
-                        </Form.Item>
-                      </Col>
-                    </Row> */}
-
-                    <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: '24px' }}>
-                      <Button
-                        type="primary"
-                        htmlType="submit"
-                        loading={loading}
-                        block
-                        style={{
-                          background: '#2596be',
-                          border: 'none',
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
-                      >
-                        {selectedUser ? 'Cập nhật' : 'Tạo nhân viên'}
-                      </Button>
-
-                      <Button
-                        type="default"
-                        icon={<ArrowLeftOutlined />}
-                        onClick={() => setCurrentStep(0)}
-                        block
-                        style={{
-                          borderRadius: '8px',
-                          height: '48px'
-                        }}
-                      >
-                        Quay lại
-                      </Button>
-                    </Space>
-                  </div>
-                )}
+                  <Button
+                    type="default"
+                    icon={<ArrowLeftOutlined />}
+                    onClick={() => {
+                      setModalVisible(false);
+                      form.resetFields();
+                    }}
+                    block
+                    style={{
+                      borderRadius: '8px',
+                      height: '48px'
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                </Space>
               </Form>
         </div>
       </Modal>
