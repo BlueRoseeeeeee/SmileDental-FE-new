@@ -71,14 +71,30 @@ const CertificateManagement = () => {
 
   const handleUpload = async (values) => {
     try {
+      const file = values.file.file;
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Chỉ chấp nhận file ảnh (JPEG, PNG, WebP) hoặc PDF!');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const isLt5M = file.size / 1024 / 1024 < 5;
+      if (!isLt5M) {
+        toast.error('Kích thước file không được vượt quá 5MB!');
+        return;
+      }
+
       setUploading(true);
       const formData = new FormData();
-      formData.append('certificate', values.file.file);
+      formData.append('certificate', file);
       if (values.notes) {
         formData.append('notes', values.notes);
       }
 
-      await userService.uploadCertificate(user._id, values.file.file, values.notes);
+      await userService.uploadCertificate(user._id, file, values.notes);
       toast.success('Upload chứng chỉ thành công');
       setUploadModalVisible(false);
       form.resetFields();
@@ -333,18 +349,19 @@ const CertificateManagement = () => {
         >
           <Form.Item
             name="file"
-            label="Chọn file ảnh chứng chỉ"
+            label="Chọn file ảnh chứng chỉ (tối đa 5MB)"
             rules={[{ required: true, message: 'Vui lòng chọn file!' }]}
           >
             <Upload
               beforeUpload={() => false}
-              accept="image/*"
+              accept="image/*,application/pdf"
               listType="picture-card"
               maxCount={1}
             >
               <div>
                 <UploadOutlined />
-                <div style={{ marginTop: 8 }}>Chọn ảnh</div>
+                <div style={{ marginTop: 8 }}>Chọn ảnh/PDF</div>
+                <div style={{ fontSize: '12px', color: '#999' }}>Max 5MB</div>
               </div>
             </Upload>
           </Form.Item>

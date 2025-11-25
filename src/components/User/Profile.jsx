@@ -102,6 +102,20 @@ const Profile = () => {
   };
 
   const handleAvatarUpload = async (file) => {
+    // Validate file type
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      toast.error('Chỉ chấp nhận file ảnh (JPEG, PNG, WebP)!');
+      return false;
+    }
+
+    // Validate file size (max 5MB)
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      toast.error('Kích thước ảnh không được vượt quá 5MB!');
+      return false;
+    }
+
     try {
       setUploading(true);
       const response = await userService.uploadAvatar(user._id, file);
@@ -109,7 +123,7 @@ const Profile = () => {
       updateUser(response.user);
       toast.success('Cập nhật avatar thành công');
     } catch (error) {
-      toast.error('Cập nhật avatar thất bại');
+      toast.error(error.response?.data?.message || 'Cập nhật avatar thất bại');
     } finally {
       setUploading(false);
     }
