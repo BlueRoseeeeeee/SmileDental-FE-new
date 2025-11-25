@@ -252,7 +252,7 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
       <Card title="Thông tin Nha sĩ" style={{ marginBottom: 16 }}>
         <Descriptions column={2} size="small">
           <Descriptions.Item label="Họ tên">{invoice.dentistInfo.name}</Descriptions.Item>
-          <Descriptions.Item label="Chuyên khoa">{invoice.dentistInfo.specialization}</Descriptions.Item>
+          {/* <Descriptions.Item label="Chuyên khoa">{invoice.dentistInfo.specialization}</Descriptions.Item> */}
           {invoice.dentistInfo.licenseNumber && (
             <Descriptions.Item label="Số chứng chỉ">{invoice.dentistInfo.licenseNumber}</Descriptions.Item>
           )}

@@ -96,7 +96,7 @@ const InvoiceTemplate = ({ invoice }) => {
             <div className="info-value">{invoice.dentistInfo.name}</div>
           </div>
           <div className="section-col">
-            <div className="info-label">Chuyên khoa:</div>
+            {/* <div className="info-label">Chuyên khoa:</div> */}
             <div className="info-value">{invoice.dentistInfo.specialization}</div>
           </div>
         </div>
