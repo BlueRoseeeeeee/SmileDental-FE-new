@@ -346,7 +346,7 @@ const QueueManagement = () => {
           )}
 
           {/* Next Patient - Minimal */}
-          {nextPatient && (
+          {/* {nextPatient && (
             <>
               <Divider style={{ margin: '12px 0' }} dashed />
               <div className="next-patient-compact">
@@ -356,7 +356,7 @@ const QueueManagement = () => {
                 {renderPatientInfo(nextPatient)}
               </div>
             </>
-          )}
+          )} */}
 
           {/* Waiting Count - Minimized */}
           {waitingList.length > 0 && (

@@ -570,7 +570,6 @@ const RecordList = () => {
               <div class="tag-group">
                 <span class="tag">Loại: ${typeLabel}</span>
                 <span class="tag">Trạng thái: ${statusConfig[record.status] || 'Không xác định'}</span>
-                <span class="tag">Ưu tiên: ${priorityConfig[record.priority] || 'Bình thường'}</span>
               </div>
             </div>
 
@@ -600,7 +599,6 @@ const RecordList = () => {
                 <div><span>Dịch vụ chính:</span> ${record.serviceName || '-'}</div>
                 <div><span>Dịch vụ con:</span> ${record.serviceAddOnName || 'Chưa chọn'}</div>
                 <div><span>Chi phí:</span> ${formatCurrency(record.totalCost)}</div>
-                <div><span>Thanh toán:</span> ${paymentConfig[record.paymentStatus] || 'Không xác định'}</div>
               </div>
             </div>
 
