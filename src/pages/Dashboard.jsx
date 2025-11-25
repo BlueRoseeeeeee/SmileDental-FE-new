@@ -107,7 +107,7 @@ const Dashboard = () => {
   return (
     <div style={{ 
       minHeight: 'calc(100vh - 112px)',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: '#E8F2F7',
       margin: '-24px',
       padding: '16px'
     }}>
@@ -123,9 +123,9 @@ const Dashboard = () => {
       >
         <Row align="middle" justify="space-between" style={{ padding: '8px 0' }}>
           <Col>
-            <Title level={3} style={{ marginBottom: '4px', color: 'white', fontSize: '24px' }}>
+            <h5 style={{ marginBottom: '4px', color: 'white', fontSize: '26px', fontWeight: '600' }}>
               {getGreeting()}
-            </Title>
+            </h5>
             <Text style={{ fontSize: '14px', color: 'white', opacity: 0.95 }}>
               {getRoleTitle()} • {new Date().toLocaleDateString('vi-VN', { 
                 weekday: 'long', 

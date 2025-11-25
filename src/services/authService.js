@@ -125,6 +125,14 @@ export const authService = {
     localStorage.removeItem('user');
     localStorage.removeItem('rememberLogin');
     localStorage.removeItem('selectedRole'); // ✅ Clear selected role on logout
+    
+    //Clear any booking/appointment data from previous session
+    localStorage.removeItem('booking_service');
+    localStorage.removeItem('booking_serviceAddOn');
+    localStorage.removeItem('booking_dentist');
+    localStorage.removeItem('booking_recordId');
+    
+    console.log('✅ [authService] Logout complete - all data cleared');
   },
 
   // Refresh access token

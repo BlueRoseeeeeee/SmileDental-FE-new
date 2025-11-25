@@ -49,6 +49,7 @@ import {
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
+import { toast } from '../../services/toastService';
 import isBetween from 'dayjs/plugin/isBetween';
 
 dayjs.extend(timezone);
@@ -1035,7 +1036,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
 
       // ⭐ Validate slot group selection
       if (!selectedSlotGroup || !selectedSlotGroup.slotIds || selectedSlotGroup.slotIds.length === 0) {
-        message.warning('Vui lòng chọn khung giờ khám');
+        message.warning('Vui lòng chọn khung giờ khám', 3000);
         setLoading(false);
         return;
       }
@@ -1112,12 +1113,12 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       const createResponse = await appointmentService.createOfflineAppointment(appointmentData);
 
       if (!createResponse.success || !createResponse.data) {
-        message.error(createResponse.message || 'Không thể tạo lịch hẹn');
+        toast.error('❌ ' + (createResponse.message || 'Không thể tạo lịch hẹn'));
         return;
       }
 
       const appointment = createResponse.data;
-      console.log('✅ Appointment created:', appointment.appointmentCode);
+      console.log(' Appointment created:', appointment.appointmentCode);
 
       // Step 2: Immediately check-in to trigger record creation
       const checkInResponse = await appointmentService.checkInAppointment(
@@ -1126,13 +1127,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       );
 
       if (checkInResponse.success) {
-        message.success({
-          content: `Tạo lịch hẹn và check-in thành công! Mã lịch: ${appointment.appointmentCode}`,
-          duration: 5
-        });
+        toast.success(`Tạo phiếu thành công!`, 5000);
         
-        console.log('✅ Walk-in appointment checked-in successfully');
-        console.log('📋 Record will be auto-created by record-service');
         
         // 🆕 Reset form and reload data
         handleReset();
@@ -1146,10 +1142,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           onSuccess(appointment);
         }
       } else {
-        message.warning({
-          content: `Lịch hẹn đã tạo (${appointment.appointmentCode}) nhưng check-in thất bại. Vui lòng check-in thủ công.`,
-          duration: 5
-        });
+        toast.warning(`Lịch hẹn đã tạo (${appointment.appointmentCode}) nhưng check-in thất bại. Vui lòng check-in thủ công.`, 5000);
         
         // 🆕 Still reset and reload even if check-in failed
         handleReset();
@@ -1161,7 +1154,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     } catch (error) {
       console.error('❌ Create walk-in appointment error:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Có lỗi xảy ra khi tạo lịch hẹn';
-      message.error(errorMsg);
+      toast.error('❌ ' + errorMsg);
     } finally {
       setLoading(false);
     }
@@ -1437,7 +1430,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                                       </Text>
                                       {service.dentistName && (
                                         <Text type="secondary" style={{ fontSize: 12 }}>
-                                          <UserOutlined /> BS: {service.dentistName}
+                                          <UserOutlined /> NS: {service.dentistName}
                                         </Text>
                                       )}
                                       {service.createdDate && (
@@ -1713,7 +1706,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                 {requiresAddonSelection && selectedService && selectedService.serviceAddOns && selectedService.serviceAddOns.length > 0 && (
                   <div style={{ marginTop: 16 }}>
                     <Divider orientation="left" style={{ fontSize: 14, fontWeight: 500 }}>
-                      📋 Chọn gói dịch vụ
+                     Chọn gói dịch vụ
                     </Divider>
                     {treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId) && (
                       <Alert
@@ -1742,6 +1735,9 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                         placeholder="Chọn gói dịch vụ"
                         onChange={handleServiceAddOnChange}
                         value={selectedServiceAddOn?._id}
+                        listHeight={500}
+                        dropdownStyle={{ maxHeight: '700px', overflow: 'auto' }}
+                        optionLabelProp="label"
                       >
                         {selectedService.serviceAddOns
                           .filter(addon => {
@@ -1758,8 +1754,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                             const isRecommended = treatmentIndications.some(ind => ind.serviceAddOnId === addon._id);
                             
                             return (
-                              <Option key={addon._id} value={addon._id}>
-                                <Space direction="vertical" size={0}>
+                              <Option key={addon._id} value={addon._id} label={addon.name}>
+                                <Space direction="vertical" size={0} style={{ width: '100%' }}>
                                   <Space>
                                     <Text strong>{addon.name}</Text>
                                     {isRecommended && (
@@ -1834,6 +1830,9 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                         onChange={handleServiceAddOnChange}
                         value={selectedServiceAddOn?._id}
                         allowClear
+                        listHeight={500}
+                        dropdownStyle={{ maxHeight: '500px', overflow: 'auto' }}
+                        optionLabelProp="label"
                         onClear={() => {
                           setSelectedServiceAddOn(null);
                           if (selectedService) {
@@ -1847,8 +1846,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                           const { activeSchedule, effectivePrice, hasActiveSchedule } = priceInfo;
                           
                           return (
-                            <Option key={addon._id} value={addon._id}>
-                              <Space direction="vertical" size={0}>
+                            <Option key={addon._id} value={addon._id} label={addon.name}>
+                              <Space direction="vertical" size={0} style={{ width: '100%' }}>
                                 <Text strong>{addon.name}</Text>
                                 <Space size="large">
                                   <Space size={4} direction="vertical" align="start">
@@ -2051,7 +2050,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       return (
                         <Option key={dentist._id} value={dentist._id}>
                           <Space>
-                            <Text>BS. {dentist.fullName}</Text>
+                            <Text>NS. {dentist.fullName}</Text>
                             {isExamDentist && (
                               <Tag color="green" icon={<CheckCircleOutlined />}>
                                 Đã khám
@@ -2203,16 +2202,6 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                           );
                         })}
                         
-                        {/* ⭐ Show selected slot group info */}
-                        {selectedSlotGroup && (
-                          <Alert
-                            message="Khung giờ đã chọn"
-                            description={`${selectedSlotGroup.displayTime} (${selectedSlotGroup.slots.length} slot liên tiếp)`}
-                            type="success"
-                            showIcon
-                            style={{ marginTop: 16 }}
-                          />
-                        )}
                       </>
                     )}
 
@@ -2259,16 +2248,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                     }
                     description={
                       <div style={{ marginTop: 8 }}>
-                        <Text type="secondary">
-                          Thời gian dự kiến: {selectedSlotGroup.slots.length} slot × 15 phút = {selectedSlotGroup.slots.length * 15} phút
-                        </Text>
-                        <br />
-                        <Text type="secondary">
-                          Tính theo: {scheduleConfig.depositAmount.toLocaleString('vi-VN')} VNĐ × {selectedSlotGroup.slots.length} slot
-                        </Text>
-                        <br />
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          (Walk-in: Thanh toán bằng tiền mặt sau khi hoàn tất khám)
+                          (Thanh toán bằng tiền mặt sau khi hoàn tất khám)
                         </Text>
                       </div>
                     }
@@ -2286,9 +2267,9 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                         {selectedServiceAddOn && (
                           <Text><strong>Gói:</strong> {selectedServiceAddOn.name}</Text>
                         )}
-                        <Text><strong>Nha sĩ:</strong> BS. {selectedDentist.fullName}</Text>
+                        <Text><strong>Nha sĩ:</strong> NS. {selectedDentist.fullName}</Text>
                         <Text><strong>Ngày:</strong> {selectedDate.format('DD/MM/YYYY')}</Text>
-                        <Text><strong>Giờ khám:</strong> {selectedSlotGroup.displayTime} ({selectedSlotGroup.slots.length} slot)</Text>
+                        <Text><strong>Giờ khám:</strong> {selectedSlotGroup.displayTime}</Text>
                       </Space>
                     }
                     type="success"

@@ -330,7 +330,7 @@ const PatientRecords = () => {
             Đóng
           </Button>
         ]}
-        width={700}
+        width={900}
       >
         {selectedRecord && (
           <Descriptions bordered column={2}>

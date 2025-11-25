@@ -259,27 +259,23 @@ const BookingSelectDentist = () => {
                                   </Tag>
                                 </div>
                               )}
-                              <Space>
-                                <Text>Lịch làm việc:</Text>
-                                {dentist.workingDays && dentist.workingDays.length > 0 ? (
-                                  <Text strong>
-                                    {dentist.workingDays.map(day => {
-                                      const dayMap = {
-                                        'monday': 'T2',
-                                        'tuesday': 'T3',
-                                        'wednesday': 'T4',
-                                        'thursday': 'T5',
-                                        'friday': 'T6',
-                                        'saturday': 'T7',
-                                        'sunday': 'CN'
-                                      };
-                                      return dayMap[day] || day;
-                                    }).join(', ')}
-                                  </Text>
-                                ) : (
-                                  <Text type="secondary">Chưa cập nhật</Text>
-                                )}
-                              </Space>
+                              
+                              <div style={{ marginTop: 12, textAlign: 'right' }}>
+                                <a
+                                  href={`/patient/dentist-detail/${dentist._id}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                  style={{
+                                    color: '#1890ff',
+                                    fontSize: '14px',
+                                    textDecoration: 'none',
+                                    fontWeight: 500
+                                  }}
+                                >
+                                  Xem chi tiết →
+                                </a>
+                              </div>
                             </Space>
                           </Col>
                         </Row>

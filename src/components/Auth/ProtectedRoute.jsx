@@ -42,7 +42,17 @@ const ProtectedRoute = ({ children, roles = [] }) => {
 
   // Check if user is authenticated
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    //  FIX: Don't save "from" location to avoid redirecting to unauthorized routes after re-login
+    // Only save location if it's a safe public route
+    const isSafeRoute = location.pathname.startsWith('/patient') || 
+                       location.pathname === '/dashboard' ||
+                       location.pathname === '/dashboard/profile';
+    
+    return <Navigate 
+      to="/login" 
+      state={isSafeRoute ? { from: location } : null} 
+      replace 
+    />;
   }
 
   // Check if user account is active

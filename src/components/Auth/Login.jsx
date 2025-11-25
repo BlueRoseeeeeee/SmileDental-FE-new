@@ -172,16 +172,20 @@ const Login = () => {
       const userRoles = response.user?.roles || (response.user?.role ? [response.user.role] : []);
       const isPatient = userRoles.includes('patient') && userRoles.length === 1;
       
-      let redirectPath = location.state?.from || '/dashboard';
+      //FIX: Always redirect to default page based on role
+      // không dùng location.state để tránh unauthorized access sau khi chuyển đổi tài khoản
+      let redirectPath = '/dashboard'; // Default for staff
       
-      // 🔄 If patient, redirect to /patient instead of /dashboard
+      // If patient, redirect to /patient
       if (isPatient) {
         redirectPath = '/patient';
-        console.log('🎯 [Login] Patient detected - redirecting to /patient');
+        
+      } else {
+        console.log('Login] Staff → /dashboard');
       }
       
-      console.log('🎯 [Login] Redirecting to:', redirectPath);
-      navigate(redirectPath);
+      console.log('✅ [Login] Redirecting to:', redirectPath);
+      navigate(redirectPath, { replace: true }); // Clear all navigation state
     } catch (error) {
       console.error('❌ [Login] Login failed:', {
         message: error.message,
