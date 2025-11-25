@@ -425,6 +425,17 @@ const PaymentList = () => {
       )
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: (status) => (
+        <Tag color={getStatusColor(status)}>
+          {getStatusText(status)}
+        </Tag>
+      )
+    },
+    {
       title: 'Phương thức',
       dataIndex: 'method',
       key: 'method',
@@ -485,7 +496,7 @@ const PaymentList = () => {
               onClick={() => handleViewDetails(record)}
             />
           </Tooltip>
-          {record.status !== 'completed' && (
+          {['pending', 'processing'].includes(record.status) && (
             <Tooltip title="Thanh toán">
               <Button
                 type="primary"
