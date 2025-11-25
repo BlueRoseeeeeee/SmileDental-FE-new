@@ -31,6 +31,7 @@ import dayjs from 'dayjs';
 import invoiceService from '../../services/invoiceService';
 import InvoiceFormModal from './InvoiceFormModal';
 import InvoiceDetailDrawer from './InvoiceDetailDrawer';
+import { openInvoicePDFInNewTab } from '../../utils/invoicePdfGenerator';
 
 const { RangePicker } = DatePicker;
 const { Search } = Input;
@@ -195,9 +196,26 @@ const InvoiceList = () => {
   };
 
   const handleExportPDF = async (invoice) => {
-    const result = await invoiceService.exportInvoiceToPDF(invoice._id);
-    if (result.success) {
-      console.log('PDF URL:', result.data.pdfUrl);
+    try {
+      // Lấy chi tiết đầy đủ của hóa đơn nếu chưa có
+      let fullInvoice = invoice;
+      
+      if (!invoice.details || invoice.details.length === 0) {
+        message.loading('Đang tải thông tin hóa đơn...', 0);
+        const result = await invoiceService.getInvoiceById(invoice._id);
+        message.destroy();
+        
+        if (result.success && result.data) {
+          fullInvoice = result.data;
+        }
+      }
+      
+      // Tạo và mở PDF trong tab mới
+      openInvoicePDFInNewTab(fullInvoice);
+      message.success('Đã mở PDF trong tab mới');
+    } catch (error) {
+      console.error('Export PDF error:', error);
+      message.error('Không thể xuất PDF. Vui lòng thử lại!');
     }
   };
 
@@ -347,57 +365,57 @@ const InvoiceList = () => {
       fixed: 'right',
       render: (_, record) => {
         const items = [
-          {
-            key: 'view',
-            label: 'Xem chi tiết',
-            icon: <EyeOutlined />,
-            onClick: () => handleView(record)
-          },
-          {
-            key: 'edit',
-            label: 'Chỉnh sửa',
-            icon: <EditOutlined />,
-            onClick: () => handleEdit(record),
-            disabled: record.status === 'paid' || record.status === 'cancelled'
-          },
-          {
-            key: 'print',
-            label: 'In hóa đơn',
-            icon: <PrinterOutlined />,
-            onClick: () => handlePrint(record)
-          },
-          {
-            key: 'pdf',
-            label: 'Xuất PDF',
-            icon: <FilePdfOutlined />,
-            onClick: () => handleExportPDF(record)
-          },
-          {
-            type: 'divider'
-          },
-          {
-            key: 'remind',
-            label: 'Gửi nhắc nhở',
-            icon: <BellOutlined />,
-            onClick: () => handleSendReminder(record),
-            disabled: record.status === 'paid' || record.status === 'cancelled'
-          },
-          {
-            key: 'cancel',
-            label: 'Hủy hóa đơn',
-            icon: <CloseCircleOutlined />,
-            onClick: () => handleCancel(record),
-            disabled: record.status === 'paid' || record.status === 'cancelled',
-            danger: true
-          },
-          {
-            key: 'delete',
-            label: 'Xóa',
-            icon: <DeleteOutlined />,
-            onClick: () => handleDelete(record),
-            disabled: record.status === 'paid' || record.paymentSummary.totalPaid > 0,
-            danger: true
-          }
+          // {
+          //   key: 'view',
+          //   label: 'Xem chi tiết',
+          //   icon: <EyeOutlined />,
+          //   onClick: () => handleView(record)
+          // },
+          // {
+          //   key: 'edit',
+          //   label: 'Chỉnh sửa',
+          //   icon: <EditOutlined />,
+          //   onClick: () => handleEdit(record),
+          //   disabled: record.status === 'paid' || record.status === 'cancelled'
+          // },
+          // {
+          //   key: 'print',
+          //   label: 'In hóa đơn',
+          //   icon: <PrinterOutlined />,
+          //   onClick: () => handlePrint(record)
+          // },
+          // {
+          //   key: 'pdf',
+          //   label: 'Xuất PDF',
+          //   icon: <FilePdfOutlined />,
+          //   onClick: () => handleExportPDF(record)
+          // },
+          // {
+          //   type: 'divider'
+          // },
+          // {
+          //   key: 'remind',
+          //   label: 'Gửi nhắc nhở',
+          //   icon: <BellOutlined />,
+          //   onClick: () => handleSendReminder(record),
+          //   disabled: record.status === 'paid' || record.status === 'cancelled'
+          // },
+          // {
+          //   key: 'cancel',
+          //   label: 'Hủy hóa đơn',
+          //   icon: <CloseCircleOutlined />,
+          //   onClick: () => handleCancel(record),
+          //   disabled: record.status === 'paid' || record.status === 'cancelled',
+          //   danger: true
+          // },
+          // {
+          //   key: 'delete',
+          //   label: 'Xóa',
+          //   icon: <DeleteOutlined />,
+          //   onClick: () => handleDelete(record),
+          //   disabled: record.status === 'paid' || record.paymentSummary.totalPaid > 0,
+          //   danger: true
+          // }
         ];
 
         return (
@@ -407,6 +425,13 @@ const InvoiceList = () => {
                 type="text"
                 icon={<EyeOutlined />}
                 onClick={() => handleView(record)}
+              />
+            </Tooltip>
+            <Tooltip title="Xuất PDF">
+              <Button
+                type="text"
+                icon={<FilePdfOutlined />}
+                onClick={() => handleExportPDF(record)}
               />
             </Tooltip>
             <Dropdown menu={{ items }} trigger={['click']}>
