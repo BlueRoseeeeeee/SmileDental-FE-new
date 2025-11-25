@@ -32,13 +32,14 @@
 
 /* Compact Room Card Styles */
 .room-card-compact {
-  border-radius: 6px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
-  height: 100%;
+  min-height: 380px;
+  max-width: 280px;
+  width: 100%;
   overflow: hidden;
-  font-size: 9px;
-  padding: 4px;
+  font-size: 16px;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -64,7 +65,7 @@
 }
 
 .room-name-compact {
-  font-size: 10px;
+  font-size: 16px;
   font-weight: 600;
   color: #262626;
   margin: 0;
@@ -72,11 +73,11 @@
 }
 
 .current-patient-compact {
-  padding: 3px;
+  padding: 12px;
   background: #e6f4ff;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid #91caff;
-  margin-bottom: 2px;
+  margin-bottom: 8px;
 }
 
 .current-patient-compact h4 {
@@ -89,11 +90,11 @@
 }
 
 .next-patient-compact {
-  padding: 3px;
+  padding: 12px;
   background: #fff7e6;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid #ffd591;
-  margin-bottom: 2px;
+  margin-bottom: 8px;
 }
 
 .next-patient-compact h4 {
@@ -192,7 +193,7 @@
   }
 
   .queue-header h2 {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .current-time-display {
@@ -253,10 +254,10 @@
 
 /* Status Tags */
 .ant-tag {
-  font-size: 8px;
-  padding: 0px 4px;
-  border-radius: 2px;
-  line-height: 1.3;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  line-height: 1.4;
   margin: 0;
 }
 

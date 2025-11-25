@@ -1607,26 +1607,28 @@ const EditUser = () => {
       >
         {previewCertificate && (
           <div>
-            {/* Two Column Layout for Front and Back Images */}
             {(previewCertificate.frontImage || previewCertificate.backImage) && (
               <div style={{ 
                 display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
+                gridTemplateColumns: previewCertificate.backImage ? '1fr 1fr' : '1fr',
                 gap: '20px',
                 alignItems: 'start'
               }}>
-                {/* Front Image Column */}
+                {/* Front Image */}
                 {previewCertificate.frontImage && (
                   <div>
-                    <div style={{ 
-                      fontSize: '16px', 
-                      fontWeight: '500', 
-                      marginBottom: '12px',
-                      color: '#333',
-                      textAlign: 'center'
-                    }}>
-                       Mặt trước
-                    </div>
+                    {/* Chỉ hiển thị label nếu có cả 2 ảnh */}
+                    {previewCertificate.backImage && (
+                      <div style={{ 
+                        fontSize: '16px', 
+                        fontWeight: '500', 
+                        marginBottom: '12px',
+                        color: '#333',
+                        textAlign: 'center'
+                      }}>
+                         Mặt trước
+                      </div>
+                    )}
                     <div style={{ textAlign: 'center' }}>
                       <img 
                         src={previewCertificate.frontImage} 
@@ -1644,18 +1646,21 @@ const EditUser = () => {
                   </div>
                 )}
 
-                {/* Back Image Column */}
+                {/* Back Image */}
                 {previewCertificate.backImage && (
                   <div>
-                    <div style={{ 
-                      fontSize: '16px', 
-                      fontWeight: '500', 
-                      marginBottom: '12px',
-                      color: '#333',
-                      textAlign: 'center'
-                    }}>
-                       Mặt sau
-                    </div>
+                    {/* Chỉ hiển thị label nếu có cả 2 ảnh */}
+                    {previewCertificate.frontImage && (
+                      <div style={{ 
+                        fontSize: '16px', 
+                        fontWeight: '500', 
+                        marginBottom: '12px',
+                        color: '#333',
+                        textAlign: 'center'
+                      }}>
+                         Mặt sau
+                      </div>
+                    )}
                     <div style={{ textAlign: 'center' }}>
                       <img 
                         src={previewCertificate.backImage} 

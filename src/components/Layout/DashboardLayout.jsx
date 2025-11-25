@@ -48,7 +48,8 @@ const DashboardLayout = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    // Clear navigation state to prevent redirect to old routes after re-login
+    navigate('/login', { replace: true, state: null });
   };
 
   const handleRoleSwitch = (role) => {
@@ -213,7 +214,7 @@ const DashboardLayout = () => {
       addMenuItem({
         key: '/dashboard/certificates',
         icon: <FileTextOutlined />,
-        label: 'Chứng chỉ hành nghề',
+        label: 'Bằng cấp & chứng chỉ',
       });
     }
 

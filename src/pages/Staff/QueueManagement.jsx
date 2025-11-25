@@ -274,8 +274,8 @@ const QueueManagement = () => {
             ellipsis 
             style={{ 
               maxWidth: '100%', 
-              fontSize: '11px', 
-              lineHeight: 1.2,
+              fontSize: '15px', 
+              lineHeight: 1.3,
               display: 'block',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -287,10 +287,10 @@ const QueueManagement = () => {
           
           {!isWaiting && (
             <>
-              <Text type="secondary" style={{ fontSize: '9px', lineHeight: 1.3, display: 'block' }}>
+              <Text type="secondary" style={{ fontSize: '14px', lineHeight: 1.4, display: 'block', marginTop: '4px' }}>
                 🕐 {appointment.startTime} - {appointment.endTime}
               </Text>
-              <div style={{ marginTop: '2px' }}>
+              <div style={{ marginTop: '6px' }}>
                 {getStatusTag(appointment.status)}
               </div>
             </>
@@ -308,23 +308,23 @@ const QueueManagement = () => {
     const upcomingCount = (nextPatient ? 1 : 0) + waitingList.length;
 
     return (
-      <Col xs={24} sm={12} md={8} lg={6} xl={4} key={room.subroomId ? `${room.roomId}-${room.subroomId}` : room.roomId}>
+      <Col xs={24} sm={12} md={8} lg={8} xl={6} key={room.subroomId ? `${room.roomId}-${room.subroomId}` : room.roomId}>
         <Card 
           className={`room-card-compact ${hasActivePatient ? 'room-busy' : 'room-empty'}`}
-          bodyStyle={{ padding: '12px' }}
+          bodyStyle={{ padding: '20px' }}
         >
           {/* Room Header - Compact */}
           <div className="room-header-compact">
-            <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 2 }}>
-              <div style={{ lineHeight: 1 }}>
-                <Text style={{ fontSize: '11px', lineHeight: 1.2, display: 'block', fontWeight: 600 }}>
+            <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ lineHeight: 1.3 }}>
+                <Text style={{ fontSize: '16px', lineHeight: 1.3, display: 'block', fontWeight: 600 }}>
                   {room.roomName || 'Phòng khám'}
                   {room.subroomName && ` (${room.subroomName})`}
                 </Text>
                 {hasActivePatient && (
                   <Tag 
                     color="blue" 
-                    style={{ fontSize: '9px', padding: '0 4px', lineHeight: '16px', margin: '2px 0 0 0' }}
+                    style={{ fontSize: '12px', padding: '2px 8px', lineHeight: '20px', margin: '6px 0 0 0' }}
                   >
                     🟢 Đang khám
                   </Tag>
@@ -333,12 +333,12 @@ const QueueManagement = () => {
             </Space>
           </div>
 
-          <Divider style={{ margin: '2px 0' }} />
+          <Divider style={{ margin: '8px 0' }} />
 
           {/* Current Patient - Minimal */}
           {hasActivePatient && (
             <div className="current-patient-compact">
-              <Text type="secondary" style={{ fontSize: '9px', display: 'block', marginBottom: 1 }}>
+              <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: 8, fontWeight: 600 }}>
                 🔵 ĐANG KHÁM
               </Text>
               {renderPatientInfo(room.currentPatient)}
@@ -348,9 +348,9 @@ const QueueManagement = () => {
           {/* Next Patient - Minimal */}
           {nextPatient && (
             <>
-              <Divider style={{ margin: '2px 0' }} dashed />
+              <Divider style={{ margin: '12px 0' }} dashed />
               <div className="next-patient-compact">
-                <Text type="secondary" style={{ fontSize: '9px', display: 'block', marginBottom: 1 }}>
+                <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: 8, fontWeight: 600 }}>
                   TIẾP THEO
                 </Text>
                 {renderPatientInfo(nextPatient)}
@@ -361,7 +361,7 @@ const QueueManagement = () => {
           {/* Waiting Count - Minimized */}
           {waitingList.length > 0 && (
             <>
-              <Divider style={{ margin: '2px 0' }} />
+              <Divider style={{ margin: '12px 0' }} />
               
               {/* Clickable badge */}
               <div
@@ -371,21 +371,21 @@ const QueueManagement = () => {
                 }}
                 style={{ 
                   cursor: 'pointer',
-                  padding: '6px',
+                  padding: '12px',
                   backgroundColor: '#e6f7ff',
-                  borderRadius: '4px',
+                  borderRadius: '6px',
                   textAlign: 'center'
                 }}
                 title="Click để xem danh sách chi tiết"
               >
                 <Text 
                   type="secondary" 
-                  style={{ fontSize: '10px', display: 'block', marginBottom: '2px' }}
+                  style={{ fontSize: '14px', display: 'block', marginBottom: '6px' }}
                 >
                   ⏳ {waitingList.length} BN đang chờ
                 </Text>
                 <Text 
-                  style={{ fontSize: '11px', color: '#1890ff', fontWeight: 500 }}
+                  style={{ fontSize: '15px', color: '#1890ff', fontWeight: 600 }}
                 >
                   👁️ Xem danh sách
                 </Text>
@@ -422,7 +422,7 @@ const QueueManagement = () => {
       {/* Room Grid */}
       <Spin spinning={loading}>
         {queueData.length > 0 ? (
-          <Row gutter={[12, 12]}>
+          <Row gutter={[20, 20]}>
             {queueData.map(room => renderRoomCard(room))}
           </Row>
         ) : (

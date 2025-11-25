@@ -135,24 +135,22 @@ const createAxiosInstance = (serviceName, config) => {
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
 
-        // 🔍 DEBUG: Log 401 error details
-        const token = localStorage.getItem('accessToken');
+        //  IMPORTANT: Bỏ qua 401 từ login/register endpoint (đó là lỗi sai mật khẩu, không phải token hết hạn)
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                              originalRequest.url?.includes('/auth/register') ||
+                              originalRequest.url?.includes('/auth/refresh');
+        
+        if (isAuthEndpoint) {
+          // Đây là lỗi login/register, không phải token hết hạn
+          // Component Login/Register sẽ tự xử lý message lỗi
+          return Promise.reject(error);
+        }
         const refreshToken = localStorage.getItem('refreshToken');
         
-        console.error('🔴 401 Unauthorized Error:', {
-          url: originalRequest.url,
-          method: originalRequest.method,
-          hasAuthHeader: !!originalRequest.headers?.Authorization,
-          hasToken: !!token,
-          hasRefreshToken: !!refreshToken,
-          token: token?.substring(0, 20) + '...',
-          refreshToken: refreshToken?.substring(0, 20) + '...'
-        });
-
         try {
           // Try to refresh token
           if (refreshToken) {
-            console.log('🔄 Attempting to refresh token...');
+            console.log(' Attempting to refresh token...');
             
             // Call refresh token endpoint
             const refreshResponse = await axios.post(
@@ -161,7 +159,7 @@ const createAxiosInstance = (serviceName, config) => {
             );
 
             if (refreshResponse.data?.accessToken) {
-              console.log('✅ Token refresh successful');
+              console.log(' Token refresh successful');
               
               // Save new access token to localStorage
               localStorage.setItem('accessToken', refreshResponse.data.accessToken);
@@ -176,22 +174,23 @@ const createAxiosInstance = (serviceName, config) => {
               return instance(originalRequest);
             }
           } else {
-            console.error('❌ No refresh token found in localStorage');
+            console.error(' No refresh token found in localStorage');
           }
         } catch (refreshError) {
-          console.error('❌ Token refresh failed:', refreshError.response?.data || refreshError.message);
+          console.error(' Token refresh failed:', refreshError.response?.data || refreshError.message);
         }
         
-        // Hiển thị thông báo token hết hạn
-        toast.warning('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 4000);
+        // Chỉ hiển thị thông báo token hết hạn khi thực sự là token hết hạn
+        toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 4000);
+        
+        // Clear tokens và auth data
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('selectedRole');
         
         // Đợi một chút để user thấy thông báo trước khi redirect
         setTimeout(() => {
-          // Clear tokens
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
-          
           // Redirect to login
           window.location.href = '/login';
         }, 2000); // Đợi 2 giây để user thấy thông báo
@@ -199,9 +198,29 @@ const createAxiosInstance = (serviceName, config) => {
         return Promise.reject(error);
       }
 
-      // Handle 403 Forbidden (không có quyền)
+      // Handle 403 Forbidden
       if (error.response?.status === 403) {
-        // Don't logout for 403 - user is authenticated but not authorized
+        // Check nếu vấn để là do hết hạn token chứ không phải là vấn đề không có quyền
+        const message = error.response?.data?.message;
+        if (message === 'Invalid or expired token') {
+          toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại', 4000);
+          
+          // Xoá tokens và auth data trong localStorage
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          localStorage.removeItem('selectedRole');
+          
+          // Redirect đến trang đăng nhập sau khi hiển thị thông báo
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1500);
+          
+          return Promise.reject(error);
+        }
+        
+        // Lỗi 403 thông thường - lỗi do người dùng cố truy cập nhưng không có quyền
+        toast.error('Bạn không có quyền truy cập tài nguyên này.', 4000);
         return Promise.reject(error);
       }
 

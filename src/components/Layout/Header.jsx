@@ -17,6 +17,7 @@ import { COLOR_BRAND_NAME } from '../../utils/common-colors';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
+import smileCareLogo from '../../assets/image/smile-dental-logo.png'
 
 const Header = () => {
   const navigate = useNavigate();
@@ -264,8 +265,8 @@ const Header = () => {
           onClick={() => navigate('/')}
         >
           <img 
-            src="/src/assets/image/smile-dental-logo.png" 
-            alt="SmileDental Logo"
+            src={smileCareLogo}
+            alt="SmileCare Logo"
             style={{
               width: '50px',
               height: '50px',

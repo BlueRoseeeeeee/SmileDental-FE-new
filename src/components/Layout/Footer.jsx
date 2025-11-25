@@ -62,7 +62,6 @@ const companyInfo = {
   name: 'SmileCare Dental',
   address: 'Địa chỉ: Nguyễn Văn Bảo, Gò Vấp, thành phố Hồ Chí Minh',
   email: 'Email: smilecare.dental@gmail.com',
-  workingHours: 'Từ 8:30 tới 18:30 tất cả các ngày trong tuần'
 };
 
 const links = [

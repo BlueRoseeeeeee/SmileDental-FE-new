@@ -1,7 +1,7 @@
 /**
- * @author: Your Name  
+ * @author: HoTram 
  * BulkCreateScheduleModal - Modal tạo lịch cho nhiều phòng cùng lúc
- * Logic phức tạp:
+ * Logic:
  * - Disabled tháng nếu TẤT CẢ phòng đã có lịch tháng đó
  * - Disabled ca nếu TẤT CẢ phòng đã có ca đó trong khoảng thời gian đã chọn
  */
@@ -32,8 +32,13 @@ import {
   LoadingOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
+import viVN from 'antd/locale/vi_VN';
 import { toast } from '../../services/toastService';
 import scheduleService from '../../services/scheduleService';
+
+// Set dayjs locale to Vietnamese
+dayjs.locale('vi');
 
 const { Title, Text } = Typography;
 
@@ -621,6 +626,7 @@ const BulkCreateScheduleModal = ({
                 form.setFieldsValue({ toMonth: null, startDate: null });
               }}
               defaultPickerValue={dayjs()} // 🔥 Mặc định mở ở tháng hiện tại
+              locale={viVN.DatePicker}
             />
           </Form.Item>
 
@@ -645,6 +651,7 @@ const BulkCreateScheduleModal = ({
                   form.setFieldsValue({ startDate: null });
                 }}
                 defaultPickerValue={fromMonth || dayjs()} // 🔥 Mặc định mở ở tháng bắt đầu hoặc tháng hiện tại
+                locale={viVN.DatePicker}
               />
             </Form.Item>
           )}
@@ -687,15 +694,14 @@ const BulkCreateScheduleModal = ({
             <Form.Item
               label={
                 <Space direction="vertical" size={0}>
-                  <Text strong>Chọn ngày bắt đầu tạo lịch</Text>
-                  {startDate && (
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                  <Text strong>Ngày bắt đầu tạo lịch {startDate && (
+                    <span style={{ fontSize: '12px', fontStyle: 'italic', color: 'grey' }}>
                       {fromMonth.isSame(dayjs(), 'month') 
-                        ? '💡 Mặc định: Ngày mai (tháng hiện tại)'
-                        : '💡 Mặc định: Ngày 1 của tháng (Click để thay đổi)'
+                        ? '(Mặc định: Ngày mai (tháng hiện tại))'
+                        : '(Mặc định: Ngày 1 của tháng)'
                       }
-                    </Text>
-                  )}
+                    </span>
+                  )}</Text>
                 </Space>
               }
               name="startDate"
@@ -707,6 +713,8 @@ const BulkCreateScheduleModal = ({
                 placeholder="Chọn ngày bắt đầu"
                 disabledDate={disabledStartDate}
                 onChange={(date) => setStartDate(date)}
+                disabled
+                locale={viVN.DatePicker}
               />
             </Form.Item>
           )}
@@ -825,24 +833,6 @@ const BulkCreateScheduleModal = ({
               </Row>
             </Checkbox.Group>
           </Form.Item>
-
-          {/* Help text */}
-          <Alert
-            message={
-              <ul style={{ margin: 0, paddingLeft: 20, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                <li><strong>Tháng:</strong> Vô hiệu hóa nếu tất cả các phòng đã có lịch tháng đó</li>
-                <li><strong>Ca:</strong> Vô hiệu hóa nếu:
-                  <ul style={{ marginTop: 4 }}>
-                    <li>Tất cả các phòng đã có ca đó, HOẶC</li>
-                    <li>Cấu hình hệ thống/lịch đã tắt ca đó</li>
-                  </ul>
-                </li>
-                <li>Chỉ cần <strong>1 phòng</strong> chưa có ca và ca đang bật là vẫn có thể chọn</li>
-              </ul>
-            }
-            type="info"
-            showIcon
-          />
         </Form>
       )}
 
