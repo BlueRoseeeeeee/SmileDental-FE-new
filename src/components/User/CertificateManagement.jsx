@@ -74,14 +74,30 @@ const CertificateManagement = () => {
 
   const handleUpload = async (values) => {
     try {
+      const file = values.file.file;
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Chỉ chấp nhận file ảnh (JPEG, PNG, WebP) hoặc PDF!');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      const isLt5M = file.size / 1024 / 1024 < 5;
+      if (!isLt5M) {
+        toast.error('Kích thước file không được vượt quá 5MB!');
+        return;
+      }
+
       setUploading(true);
       const formData = new FormData();
-      formData.append('certificate', values.file.file);
+      formData.append('certificate', file);
       if (values.notes) {
         formData.append('notes', values.notes);
       }
 
-      await userService.uploadCertificate(user._id, values.file.file, values.notes);
+      await userService.uploadCertificate(user._id, file, values.notes);
       toast.success('Upload chứng chỉ thành công');
       setUploadModalVisible(false);
       form.resetFields();
@@ -307,6 +323,75 @@ const CertificateManagement = () => {
         </Row>
       )}
 
+      {/* Upload Modal */}
+      <Modal
+        title="Upload chứng chỉ mới"
+        open={uploadModalVisible}
+        onCancel={() => {
+          setUploadModalVisible(false);
+          form.resetFields();
+        }}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleUpload}
+        >
+          <Form.Item
+            name="file"
+            label="Chọn file ảnh chứng chỉ (tối đa 5MB)"
+            rules={[{ required: true, message: 'Vui lòng chọn file!' }]}
+          >
+            <Upload
+              beforeUpload={() => false}
+              accept="image/*,application/pdf"
+              listType="picture-card"
+              maxCount={1}
+            >
+              <div>
+                <UploadOutlined />
+                <div style={{ marginTop: 8 }}>Chọn ảnh/PDF</div>
+                <div style={{ fontSize: '12px', color: '#999' }}>Max 5MB</div>
+              </div>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            name="notes"
+            label="Ghi chú (tùy chọn)"
+          >
+            <TextArea
+              rows={3}
+              placeholder="Nhập ghi chú về chứng chỉ..."
+              maxLength={200}
+              showCount
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button
+                onClick={() => {
+                  setUploadModalVisible(false);
+                  form.resetFields();
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={uploading}
+                style={{ borderRadius: '8px' }}
+              >
+                {uploading ? 'Đang upload...' : 'Upload'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
 
       {/* Edit Notes Modal */}
       <Modal
