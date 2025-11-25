@@ -1110,7 +1110,7 @@ const UserManagement = () => {
                         </Form.Item>
                       </Col>
                     
-                      <Col xs={24} sm={12}>
+                      <Col xs={24} sm={12} style={{ display: 'none' }}>
                         <Form.Item
                           name="isActive"
                           label="Trạng thái"
