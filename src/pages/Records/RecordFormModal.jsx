@@ -1176,7 +1176,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                 </Form.Item>
               </Col>
 
-              <Col span={8}>
+              {/* <Col span={8}>
                 <Form.Item
                   name="priority"
                   label="Độ ưu tiên"
@@ -1189,7 +1189,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                     <Option value="urgent">Khẩn cấp</Option>
                   </Select>
                 </Form.Item>
-              </Col>
+              </Col> */}
 
               <Col span={8}>
                 <Form.Item

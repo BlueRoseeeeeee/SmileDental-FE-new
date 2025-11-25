@@ -350,9 +350,9 @@ const QueueManagement = () => {
             <>
               <Divider style={{ margin: '12px 0' }} dashed />
               <div className="next-patient-compact">
-                <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: 8, fontWeight: 600 }}>
+                {/* <Text type="secondary" style={{ fontSize: '13px', display: 'block', marginBottom: 8, fontWeight: 600 }}>
                   TIẾP THEO
-                </Text>
+                </Text> */}
                 {renderPatientInfo(nextPatient)}
               </div>
             </>
