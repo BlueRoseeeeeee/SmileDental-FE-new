@@ -26,6 +26,7 @@ const QueueDashboard = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedRoomId, setSelectedRoomId] = useState('');
   const [rooms, setRooms] = useState([]);
+  const [showOnlyUpcoming, setShowOnlyUpcoming] = useState(false); // ✅ Filter for upcoming appointments
   
   // Modal states
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -371,6 +372,21 @@ const QueueDashboard = () => {
     return <Badge bg={config.variant}>{config.text}</Badge>;
   };
 
+  // ✅ Check if appointment is happening now, upcoming, or past
+  const getTimeStatus = (startTime, endTime) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    
+    if (now >= start && now <= end) {
+      return 'current'; // Đang diễn ra
+    } else if (now < start) {
+      return 'upcoming'; // Sắp tới
+    } else {
+      return 'past'; // Đã qua
+    }
+  };
+
   if (loading && !queueStatus) {
     return (
       <Container className="mt-4 text-center">
@@ -414,7 +430,7 @@ const QueueDashboard = () => {
             />
           </Form.Group>
         </Col>
-        <Col md={4}>
+        <Col md={3}>
           <Form.Group>
             <Form.Label>Phòng khám</Form.Label>
             <Form.Select
@@ -430,7 +446,19 @@ const QueueDashboard = () => {
             </Form.Select>
           </Form.Group>
         </Col>
-        <Col md={4} className="d-flex align-items-end">
+        <Col md={2}>
+          <Form.Group>
+            <Form.Label>Hiển thị</Form.Label>
+            <Form.Select
+              value={showOnlyUpcoming ? 'upcoming' : 'all'}
+              onChange={(e) => setShowOnlyUpcoming(e.target.value === 'upcoming')}
+            >
+              <option value="all">Tất cả lịch hẹn</option>
+              <option value="upcoming">Chỉ lịch sắp tới</option>
+            </Form.Select>
+          </Form.Group>
+        </Col>
+        <Col md={3} className="d-flex align-items-end">
           <div className="me-3">
             {isConnected ? (
               <Badge bg="success">
@@ -654,69 +682,112 @@ const QueueDashboard = () => {
                         padding: '6px'
                       }}
                     >
-                      {queueStatus.timeSlots.map((slot, index) => (
+                      {(() => {
+                        // ✅ Filter appointments based on showOnlyUpcoming flag
+                        const filteredSlots = showOnlyUpcoming 
+                          ? queueStatus.timeSlots.filter(slot => {
+                              if (slot.type !== 'appointment') return true; // Keep gap slots
+                              const timeStatus = getTimeStatus(slot.startTime, slot.endTime);
+                              // Show current or upcoming appointments, hide past ones
+                              return timeStatus === 'current' || timeStatus === 'upcoming';
+                            })
+                          : queueStatus.timeSlots;
+
+                        if (filteredSlots.length === 0) {
+                          return (
+                            <Alert variant="secondary" className="mb-0">
+                              {showOnlyUpcoming 
+                                ? 'Không có lịch hẹn sắp tới' 
+                                : 'Không có lịch khám trong ngày này'}
+                            </Alert>
+                          );
+                        }
+
+                        return filteredSlots.map((slot, index) => (
                         <div key={index} className="mb-1">
                           {slot.type === 'appointment' ? (
-                            <Card 
-                              className={`
-                                ${slot.status === 'in-progress' ? 'border-primary bg-light' : ''}
-                                ${slot.status === 'completed' ? 'border-success' : ''}
-                                ${slot.status === 'cancelled' ? 'border-danger text-muted' : ''}
-                                ${slot.status === 'pending' ? 'border-warning' : ''}
-                              `}
-                              style={{ marginBottom: '3px' }}
-                            >
-                              <Card.Body style={{ padding: '5px 8px' }}>
-                                <Row className="align-items-center">
-                                  <Col md={2}>
-                                    <div className="text-center">
-                                      <div style={{ fontSize: '11px', marginBottom: 0 }}>
-                                        {slot.queueNumber ? (
-                                          <Badge bg="primary" style={{ fontSize: '10px', padding: '2px 6px' }}>{slot.queueNumber}</Badge>
-                                        ) : (
-                                          <Badge bg="secondary" style={{ fontSize: '10px', padding: '2px 6px' }}>-</Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </Col>
-                                  <Col md={3}>
-                                    <div style={{ fontSize: '10px' }}>
-                                      <FaClock className="me-1 text-muted" style={{ fontSize: '9px' }} />
-                                      <strong>{formatTime(slot.startTime)}</strong>
-                                      {' - '}
-                                      <strong>{formatTime(slot.endTime)}</strong>
-                                    </div>
-                                  </Col>
-                                  <Col md={3}>
-                                    <div>
-                                      <strong style={{ fontSize: '11px' }}>{slot.patientName}</strong>
-                                      {slot.patientPhone && (
-                                        <div className="text-muted" style={{ fontSize: '9px' }}>
-                                          {slot.patientPhone}
+                            (() => {
+                              const timeStatus = getTimeStatus(slot.startTime, slot.endTime);
+                              const isCurrentTime = timeStatus === 'current';
+                              const isPast = timeStatus === 'past';
+                              const isUpcoming = timeStatus === 'upcoming';
+                              
+                              return (
+                                <Card 
+                                  className={`
+                                    ${slot.status === 'in-progress' ? 'border-primary bg-light' : ''}
+                                    ${slot.status === 'completed' ? 'border-success' : ''}
+                                    ${slot.status === 'cancelled' ? 'border-danger text-muted' : ''}
+                                    ${slot.status === 'pending' && isCurrentTime ? 'border-warning bg-warning bg-opacity-10' : ''}
+                                    ${slot.status === 'pending' && isPast ? 'border-secondary' : ''}
+                                    ${slot.status === 'pending' && isUpcoming ? 'border-info' : ''}
+                                  `}
+                                  style={{ marginBottom: '3px' }}
+                                >
+                                  <Card.Body style={{ padding: '5px 8px' }}>
+                                    <Row className="align-items-center">
+                                      <Col md={2}>
+                                        <div className="text-center">
+                                          <div style={{ fontSize: '11px', marginBottom: 0 }}>
+                                            {slot.queueNumber ? (
+                                              <Badge bg="primary" style={{ fontSize: '10px', padding: '2px 6px' }}>{slot.queueNumber}</Badge>
+                                            ) : (
+                                              <Badge bg="secondary" style={{ fontSize: '10px', padding: '2px 6px' }}>-</Badge>
+                                            )}
+                                          </div>
                                         </div>
-                                      )}
-                                    </div>
-                                  </Col>
-                                  <Col md={2}>
-                                    <div style={{ fontSize: '9px' }}>
-                                      {getStatusBadge(slot.status)}
-                                    </div>
-                                  </Col>
-                                  <Col md={2} className="text-end">
-                                    {slot.status === 'pending' && (
-                                      <Button
-                                        variant="outline-danger"
-                                        size="sm"
-                                        onClick={() => openCancelModal(slot.recordId)}
-                                        style={{ fontSize: '10px', padding: '2px 6px' }}
-                                      >
-                                        Hủy
-                                      </Button>
-                                    )}
-                                  </Col>
-                                </Row>
-                              </Card.Body>
-                            </Card>
+                                      </Col>
+                                      <Col md={3}>
+                                        <div style={{ fontSize: '10px' }}>
+                                          <FaClock className="me-1 text-muted" style={{ fontSize: '9px' }} />
+                                          <strong>{formatTime(slot.startTime)}</strong>
+                                          {' - '}
+                                          <strong>{formatTime(slot.endTime)}</strong>
+                                          {/* ✅ Time status indicator */}
+                                          {isCurrentTime && slot.status === 'pending' && (
+                                            <Badge bg="warning" text="dark" className="ms-1" style={{ fontSize: '8px', padding: '1px 4px' }}>
+                                              Đang diễn ra
+                                            </Badge>
+                                          )}
+                                          {isPast && slot.status === 'pending' && (
+                                            <Badge bg="secondary" className="ms-1" style={{ fontSize: '8px', padding: '1px 4px' }}>
+                                              Đã qua giờ
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </Col>
+                                      <Col md={3}>
+                                        <div>
+                                          <strong style={{ fontSize: '11px' }}>{slot.patientName}</strong>
+                                          {slot.patientPhone && (
+                                            <div className="text-muted" style={{ fontSize: '9px' }}>
+                                              {slot.patientPhone}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </Col>
+                                      <Col md={2}>
+                                        <div style={{ fontSize: '9px' }}>
+                                          {getStatusBadge(slot.status)}
+                                        </div>
+                                      </Col>
+                                      <Col md={2} className="text-end">
+                                        {slot.status === 'pending' && (
+                                          <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={() => openCancelModal(slot.recordId)}
+                                            style={{ fontSize: '10px', padding: '2px 6px' }}
+                                          >
+                                            Hủy
+                                          </Button>
+                                        )}
+                                      </Col>
+                                    </Row>
+                                  </Card.Body>
+                                </Card>
+                              );
+                            })()
                           ) : (
                             // Gap slot
                             <div 
@@ -739,7 +810,8 @@ const QueueDashboard = () => {
                             </div>
                           )}
                         </div>
-                      ))}
+                      ));
+                      })()}
                     </div>
                   ) : (
                     <Alert variant="secondary" className="mb-0">

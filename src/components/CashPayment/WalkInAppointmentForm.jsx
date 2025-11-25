@@ -198,19 +198,6 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
 
     setSearchLoading(true);
     try {
-      // 🐛 DEBUG: Check current user role
-      console.log('========== DEBUG LOGIN ROLE ==========');
-      console.log('📋 currentUser:', currentUser);
-      console.log('🎭 currentUser.role:', currentUser.role);
-      console.log('🎭 currentUser.activeRole:', currentUser.activeRole);
-      console.log('🎭 currentUser.roles:', currentUser.roles);
-      console.log('⭐ selectedRole (from localStorage):', selectedRole);
-      console.log('✅ isDentist:', isDentist);
-      console.log('🔍 searchType:', searchType);
-      console.log('🔍 searchValue:', searchValue);
-      console.log('👥 dentistPatients.length:', dentistPatients.length);
-      console.log('======================================');
-      
       console.log('🔍 Searching patients with:', { searchType, searchValue, isDentist });
       
       // 🆕 Nếu là dentist, chỉ tìm trong danh sách bệnh nhân của dentist
@@ -224,7 +211,6 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           return;
         }
         
-        // 🔍 Tìm kiếm theo searchValue trong dentistPatients (đã có sẵn patientName)
         const value = searchValue.toLowerCase().trim();
         
         // ⚠️ Dentist chỉ có thể tìm theo tên (vì API không trả phone/email)
@@ -248,61 +234,113 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           message.success(`Tìm thấy ${results.length} bệnh nhân`);
         }
       } else {
-        // Không phải dentist - tìm kiếm bình thường
-        // 🐛 DEBUG: Log trước khi gọi API
-        console.log('========== BEFORE API CALL ==========');
-        console.log('📋 currentUser:', currentUser);
-        console.log('🎭 currentUser.role:', currentUser.role);
-        console.log('🎭 currentUser.activeRole:', currentUser.activeRole);
-        console.log('✅ isDentist:', isDentist);
-        console.log('🔍 About to call: userService.getAllPatients(1, 100)');
-        console.log('======================================');
+        // 🆕 Tìm kiếm KẾT HỢP: User (có tài khoản) + Appointment (walk-in không tài khoản)
+        const value = searchValue.toLowerCase().trim();
+        let allResults = [];
         
-        const response = await userService.getAllPatients(1, 100);
-        console.log('📋 API Response:', response);
-        
-        if (response && response.users) {
-          const allPatients = response.users || [];
-          console.log(`📊 Total patients from API: ${allPatients.length}`);
+        // 1️⃣ Tìm trong User (auth-service) - có tài khoản
+        try {
+          const userResponse = await userService.getAllPatients(1, 100);
+          console.log('📋 User API Response:', userResponse);
           
-          const results = allPatients.filter(patient => {
-            const value = searchValue.toLowerCase().trim();
-            let match = false;
-            switch (searchType) {
-              case 'phone':
-                match = patient.phone?.includes(value) || patient.phoneNumber?.includes(value);
-                break;
-              case 'email':
-                match = patient.email?.toLowerCase().includes(value);
-                break;
-              case 'name':
-                match = patient.fullName?.toLowerCase().includes(value);
-                break;
-              default:
-                match = false;
-            }
-            if (match) {
-              console.log('✅ Match found:', patient);
-            }
-            return match;
-          });
-
-          console.log(`🎯 Filtered results: ${results.length}`, results);
-          setSearchResults(results);
-          
-          if (results.length === 0) {
-            message.info('Không tìm thấy bệnh nhân. Vui lòng nhập thông tin mới.');
-            setIsNewPatient(true);
-          } else {
-            message.success(`Tìm thấy ${results.length} bệnh nhân`);
+          if (userResponse && userResponse.users) {
+            const userPatients = userResponse.users || [];
+            console.log(`📊 Total patients from User API: ${userPatients.length}`);
+            
+            const userResults = userPatients
+              .filter(patient => {
+                let match = false;
+                switch (searchType) {
+                  case 'phone':
+                    match = patient.phone?.includes(value) || patient.phoneNumber?.includes(value);
+                    break;
+                  case 'email':
+                    match = patient.email?.toLowerCase().includes(value);
+                    break;
+                  case 'name':
+                    match = patient.fullName?.toLowerCase().includes(value);
+                    break;
+                  default:
+                    match = false;
+                }
+                return match;
+              })
+              .map(p => ({ ...p, source: 'user' })); // Tag nguồn là user
+            
+            console.log(`✅ User results: ${userResults.length}`);
+            allResults = [...allResults, ...userResults];
           }
+        } catch (error) {
+          console.error('❌ Error searching users:', error);
+        }
+        
+        // 2️⃣ Tìm trong Appointment (walk-in patients không tài khoản)
+        try {
+          const appointmentResponse = await appointmentService.getAllAppointments({ limit: 500 });
+          console.log('📋 Appointment API Response:', appointmentResponse);
+          
+          if (appointmentResponse && appointmentResponse.data && appointmentResponse.data.appointments) {
+            const appointments = appointmentResponse.data.appointments || [];
+            console.log(`📊 Total appointments: ${appointments.length}`);
+            
+            // Lọc appointment walk-in (không có patientId, có patientInfo)
+            const walkInAppointments = appointments.filter(apt => 
+              !apt.patientId && apt.patientInfo
+            );
+            console.log(`📋 Walk-in appointments: ${walkInAppointments.length}`);
+            
+            // Tìm kiếm theo searchType
+            const appointmentResults = walkInAppointments
+              .filter(apt => {
+                const info = apt.patientInfo;
+                if (!info) return false;
+                
+                let match = false;
+                switch (searchType) {
+                  case 'phone':
+                    match = info.phone?.includes(value);
+                    break;
+                  case 'email':
+                    match = info.email?.toLowerCase().includes(value);
+                    break;
+                  case 'name':
+                    match = info.name?.toLowerCase().includes(value);
+                    break;
+                  default:
+                    match = false;
+                }
+                return match;
+              })
+              .map(apt => ({
+                _id: `guest-${apt._id}`,
+                fullName: apt.patientInfo.name,
+                phone: apt.patientInfo.phone,
+                phoneNumber: apt.patientInfo.phone,
+                email: apt.patientInfo.email,
+                birthYear: apt.patientInfo.birthYear,
+                source: 'appointment', // Tag nguồn là appointment
+                appointmentId: apt._id
+              }));
+            
+            console.log(`✅ Appointment results: ${appointmentResults.length}`);
+            allResults = [...allResults, ...appointmentResults];
+          }
+        } catch (error) {
+          console.error('❌ Error searching appointments:', error);
+        }
+        
+        console.log(`🎯 Total combined results: ${allResults.length}`, allResults);
+        setSearchResults(allResults);
+        
+        if (allResults.length === 0) {
+          message.info('Không tìm thấy bệnh nhân. Vui lòng nhập thông tin mới.');
+          setIsNewPatient(true);
         } else {
-          console.error('❌ API response not successful:', response);
-          message.error('Lỗi khi tải dữ liệu bệnh nhân');
+          message.success(`Tìm thấy ${allResults.length} bệnh nhân (${allResults.filter(r => r.source === 'user').length} có tài khoản, ${allResults.filter(r => r.source === 'appointment').length} walk-in)`);
         }
       }
     } catch (error) {
-      console.error('❌ Error searching patient:', error);
+      console.error('❌ Search error:', error);
       message.error('Lỗi khi tìm kiếm bệnh nhân');
     } finally {
       setSearchLoading(false);
@@ -1475,10 +1513,19 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                             const name = patient.fullName || patient.patientName;
                             const phone = patient.phone || patient.phoneNumber || 'N/A';
                             const email = patient.email || 'N/A';
+                            const source = patient.source; // 'user' or 'appointment'
                             
                             return (
                               <Option key={id} value={id}>
-                                {name} - {phone} - {email}
+                                <Space>
+                                  <span>{name} - {phone} - {email}</span>
+                                  {source === 'appointment' && (
+                                    <Tag color="orange" size="small">Walk-in</Tag>
+                                  )}
+                                  {source === 'user' && (
+                                    <Tag color="green" size="small">Có TK</Tag>
+                                  )}
+                                </Space>
                               </Option>
                             );
                           })}

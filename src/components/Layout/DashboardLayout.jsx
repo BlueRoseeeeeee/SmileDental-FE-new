@@ -225,13 +225,6 @@ const DashboardLayout = () => {
         icon: <CalendarOutlined />,
         label: 'Lịch làm việc',
       });
-      
-      // 🩺 Hồ sơ bệnh án
-      addMenuItem({
-        key: '/dashboard/records',
-        icon: <FileDoneOutlined />,
-        label: 'Hồ sơ bệnh án',
-      });
     }
 
     // ==================== RECEPTIONIST & STAFF ====================
