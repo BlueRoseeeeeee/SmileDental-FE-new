@@ -86,12 +86,17 @@ const PaymentList = () => {
     fetchPayments();
   }, [pagination.current, pagination.pageSize]);
 
-  // Auto-search when filters change
+  // Auto-search when filters change with debounce
   useEffect(() => {
-    if (payments.length > 0 || pagination.current > 1) {
-      setPagination(prev => ({ ...prev, current: 1 }));
-      fetchPayments();
-    }
+    const timer = setTimeout(() => {
+      if (pagination.current !== 1) {
+        setPagination(prev => ({ ...prev, current: 1 }));
+      } else {
+        fetchPayments();
+      }
+    }, 300); // Debounce 300ms
+
+    return () => clearTimeout(timer);
   }, [filters.keyword, filters.status, filters.fromDate, filters.toDate]);
 
   const fetchPayments = async () => {
@@ -110,9 +115,12 @@ const PaymentList = () => {
         }
       });
 
+      console.log('🔍 [Payment List] Fetching payments with params:', params);
+
       const response = await getPayments(params);
       
       if (response.success) {
+        console.log('✅ [Payment List] Received payments:', response.data.payments?.length || 0);
         setPayments(response.data.payments || response.data);
         setPagination(prev => ({
           ...prev,
@@ -165,8 +173,6 @@ const PaymentList = () => {
   const handleReset = () => {
     setFilters({
       status: null,
-      method: null,
-      type: null,
       fromDate: null,
       toDate: null,
       keyword: ''
