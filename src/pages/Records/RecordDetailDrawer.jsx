@@ -99,7 +99,7 @@ const RecordDetailDrawer = ({
         </Space>
       }
       placement="right"
-      width={700}
+      width={850}
       onClose={onClose}
       open={visible}
       extra={
