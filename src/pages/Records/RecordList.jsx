@@ -88,8 +88,7 @@ const RecordList = () => {
     searchKeyword,
     filterType,
     filterStatus,
-    filterDentist,
-    dateRange
+    filterDentist
   ]);
 
   // ❌ Auto refresh disabled - use manual refresh button instead
@@ -115,9 +114,7 @@ const RecordList = () => {
         q: searchKeyword || undefined,
         type: filterType || undefined,
         status: filterStatus || undefined,
-        dentistId: filterDentist || undefined,
-        startDate: dateRange?.[0]?.format('YYYY-MM-DD'),
-        endDate: dateRange?.[1]?.format('YYYY-MM-DD')
+        dentistId: filterDentist || undefined
       };
 
       // Auto-filter by dentist/nurse for their own records
@@ -327,28 +324,38 @@ const RecordList = () => {
     setPagination({ ...pagination, current: 1 });
   };
 
-  //tìm kiếm từ FE luôn, không cần gọi API 
+  // Tìm kiếm tại FE luôn, không dựa vào API (mã HS, tên, SĐT, ngày)
   useEffect(() => {
-    if (!searchKeyword) {
-      setFilteredRecords(records);
-      return;
+    let filtered = [...records];
+
+    if (searchKeyword) {
+      const keyword = searchKeyword.trim().toLowerCase();
+      filtered = filtered.filter((record) => {
+        const recordCode = record.recordCode?.toLowerCase() || '';
+        const patientName = record.patientInfo?.name?.toLowerCase() || '';
+        const patientPhone = (record.patientInfo?.phone || '').toString().toLowerCase();
+
+        return (
+          recordCode.includes(keyword) ||
+          patientName.includes(keyword) ||
+          patientPhone.includes(keyword)
+        );
+      });
     }
 
-    const keyword = searchKeyword.trim().toLowerCase();
-    const filtered = records.filter((record) => {
-      const recordCode = record.recordCode?.toLowerCase() || '';
-      const patientName = record.patientInfo?.name?.toLowerCase() || '';
-      const patientPhone = (record.patientInfo?.phone || '').toString().toLowerCase();
-
-      return (
-        recordCode.includes(keyword) ||
-        patientName.includes(keyword) ||
-        patientPhone.includes(keyword)
-      );
-    });
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      filtered = filtered.filter((record) => {
+        if (!record.date) return false;
+        const recordDate = dayjs(record.date);
+        return (
+          recordDate.isSameOrAfter(dateRange[0], 'day') &&
+          recordDate.isSameOrBefore(dateRange[1], 'day')
+        );
+      });
+    }
 
     setFilteredRecords(filtered);
-  }, [records, searchKeyword]);
+  }, [records, searchKeyword, dateRange]);
 
   // Table columns
   const columns = [
