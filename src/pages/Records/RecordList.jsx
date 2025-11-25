@@ -296,10 +296,410 @@ const RecordList = () => {
     });
   };
 
+  const formatCurrency = (value) => {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) {
+      return '0đ';
+    }
+    return `${Number(value).toLocaleString('vi-VN')}đ`;
+  };
+
+  const generatePrintHTML = (record) => {
+    const formatDate = (value, format = 'DD/MM/YYYY') =>
+      value ? dayjs(value).format(format) : '-';
+
+    const genderLabel =
+      record.patientInfo?.gender === 'male'
+        ? 'Nam'
+        : record.patientInfo?.gender === 'female'
+        ? 'Nữ'
+        : 'Khác';
+
+    const typeLabel = record.type === 'exam' ? 'Khám' : 'Điều trị';
+
+    const statusConfig = {
+      pending: 'Chờ khám',
+      'in-progress': 'Đang khám',
+      completed: 'Hoàn thành',
+      cancelled: 'Đã hủy'
+    };
+
+    const paymentConfig = {
+      unpaid: 'Chưa thanh toán',
+      partial: 'Thanh toán 1 phần',
+      paid: 'Đã thanh toán'
+    };
+
+    const priorityConfig = {
+      urgent: 'Khẩn cấp',
+      high: 'Cao',
+      normal: 'Bình thường',
+      low: 'Thấp'
+    };
+
+    const treatmentRows = record.treatmentIndications?.length
+      ? record.treatmentIndications
+          .map(
+            (item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${item.serviceName || ''}</td>
+          <td>${item.serviceAddOnName || ''}</td>
+          <td>${item.notes || ''}</td>
+          <td>${item.used ? 'Đã thực hiện' : 'Chưa thực hiện'}</td>
+        </tr>
+      `
+          )
+          .join('')
+      : `<tr><td colspan="5" class="empty-row">Chưa có chỉ định điều trị</td></tr>`;
+
+    const additionalServiceRows = record.additionalServices?.length
+      ? record.additionalServices
+          .map(
+            (service, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${service.serviceName || ''}</td>
+          <td>${service.serviceAddOnName || '-'}</td>
+          <td>${service.quantity || 1}</td>
+          <td>${formatCurrency(service.price)}</td>
+          <td>${formatCurrency((service.price || 0) * (service.quantity || 1))}</td>
+        </tr>
+      `
+          )
+          .join('')
+      : `<tr><td colspan="6" class="empty-row">Chưa có dịch vụ bổ sung</td></tr>`;
+
+    const indicationBadges = record.indications?.length
+      ? record.indications
+          .map((text) => `<span class="chip">${text}</span>`)
+          .join('')
+      : '<p class="text-muted">Chưa có chỉ định</p>';
+
+    const prescriptionSection =
+      record.prescription && record.prescription.medicines?.length
+        ? record.prescription.medicines
+            .map(
+              (medicine, idx) => `
+        <div class="prescription-card">
+          <div class="prescription-header">
+            <strong>${idx + 1}. ${medicine.medicineName || ''}</strong>
+            <span>${medicine.unit || ''}</span>
+          </div>
+          <ul>
+            <li><strong>Cách dùng:</strong> ${medicine.dosageInstruction || medicine.dosage || '-'}</li>
+            <li><strong>Số lượng:</strong> ${medicine.quantity || 0} ${medicine.unit || ''}</li>
+            <li><strong>Thời gian dùng:</strong> ${medicine.duration || '-'}</li>
+            ${
+              medicine.note
+                ? `<li><strong>Ghi chú:</strong> ${medicine.note}</li>`
+                : ''
+            }
+          </ul>
+        </div>
+      `
+            )
+            .join('')
+        : '<p class="text-muted">Chưa có đơn thuốc</p>';
+
+    const timelineItems = [
+      { label: 'Tạo hồ sơ', time: formatDate(record.createdAt, 'DD/MM/YYYY HH:mm') },
+      { label: 'Bắt đầu khám', time: formatDate(record.startedAt, 'DD/MM/YYYY HH:mm') },
+      { label: 'Hoàn thành', time: formatDate(record.completedAt, 'DD/MM/YYYY HH:mm') }
+    ]
+      .filter((item) => item.time && item.time !== '-')
+      .map(
+        (item) => `
+      <li>
+        <span class="timeline-dot"></span>
+        <div>
+          <strong>${item.label}</strong>
+          <div>${item.time}</div>
+        </div>
+      </li>
+    `
+      )
+      .join('');
+
+    return `
+      <html lang="vi">
+        <head>
+          <title>Hồ sơ ${record.recordCode || ''}</title>
+          <meta charset="utf-8" />
+          <style>
+            body {
+              font-family: 'Helvetica Neue', Arial, sans-serif;
+              background: #fff;
+              margin: 0;
+              padding: 32px;
+              color: #111;
+            }
+            .print-container {
+              max-width: 900px;
+              margin: 0 auto;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 24px;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 26px;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            }
+            .header p {
+              margin: 4px 0 0;
+              font-size: 15px;
+              color: #555;
+            }
+            .tag-group {
+              margin-top: 12px;
+            }
+            .tag {
+              display: inline-block;
+              padding: 4px 10px;
+              border-radius: 20px;
+              font-size: 13px;
+              margin-right: 6px;
+              background: #f0f0f0;
+            }
+            .section {
+              border: 1px solid #e5e5e5;
+              border-radius: 8px;
+              padding: 16px;
+              margin-bottom: 18px;
+            }
+            .section-title {
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 12px;
+            }
+            .info-grid {
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 8px 16px;
+              font-size: 14px;
+            }
+            .info-grid span {
+              font-weight: 600;
+              color: #333;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 12px;
+            }
+            th, td {
+              border: 1px solid #e2e2e2;
+              padding: 8px;
+              font-size: 13px;
+            }
+            th {
+              background: #f7f7f7;
+            }
+            .chip {
+              display: inline-block;
+              padding: 4px 8px;
+              background: #f0f9ff;
+              color: #1890ff;
+              border-radius: 16px;
+              font-size: 12px;
+              margin: 4px 4px 0 0;
+            }
+            .text-muted {
+              color: #888;
+              font-style: italic;
+            }
+            .prescription-card {
+              border: 1px solid #e2e2e2;
+              border-radius: 6px;
+              padding: 12px;
+              margin-bottom: 12px;
+            }
+            .prescription-header {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 8px;
+            }
+            .timeline {
+              list-style: none;
+              padding: 0;
+              margin: 0;
+            }
+            .timeline li {
+              display: flex;
+              margin-bottom: 12px;
+            }
+            .timeline-dot {
+              width: 10px;
+              height: 10px;
+              border-radius: 50%;
+              background: #1890ff;
+              margin-right: 12px;
+              margin-top: 5px;
+            }
+            .signature {
+              margin-top: 32px;
+              display: flex;
+              justify-content: space-between;
+              text-align: center;
+            }
+            .signature div {
+              width: 45%;
+            }
+            .empty-row {
+              text-align: center;
+              font-style: italic;
+              color: #888;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+              .print-container {
+                padding: 0 16px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="print-container">
+            <div class="header">
+              <h1>HỒ SƠ BỆNH ÁN</h1>
+              <p>Mã hồ sơ: <strong>${record.recordCode || ''}</strong></p>
+              <div class="tag-group">
+                <span class="tag">Loại: ${typeLabel}</span>
+                <span class="tag">Trạng thái: ${statusConfig[record.status] || 'Không xác định'}</span>
+                <span class="tag">Ưu tiên: ${priorityConfig[record.priority] || 'Bình thường'}</span>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">1. Thông tin bệnh nhân</div>
+              <div class="info-grid">
+                <div><span>Họ và tên:</span> ${record.patientInfo?.name || '-'}</div>
+                <div><span>Số điện thoại:</span> ${record.patientInfo?.phone || '-'}</div>
+                <div><span>Năm sinh:</span> ${record.patientInfo?.birthYear || '-'}</div>
+                <div><span>Giới tính:</span> ${genderLabel}</div>
+                <div><span>Địa chỉ:</span> ${record.patientInfo?.address || '-'}</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">2. Thông tin khám</div>
+              <div class="info-grid">
+                <div><span>Ngày khám:</span> ${formatDate(record.date)}</div>
+                <div>
+                  <span>Thời gian dự kiến:</span>
+                      ${record.appointmentStartTime || '-'} - ${record.appointmentEndTime || '-'}
+                </div>
+                <div><span>Nha sĩ phụ trách:</span> ${record.dentistName || '-'}</div>
+                <div><span>Phòng khám:</span> ${record.roomName || '-'}</div>
+                <div><span>Buồng:</span> ${record.subroomName || '-'}</div>
+                <div><span>Kênh đặt:</span> ${record.bookingChannel === 'online' ? 'Đặt online' : 'Đặt tại phòng khám'}</div>
+                <div><span>Dịch vụ chính:</span> ${record.serviceName || '-'}</div>
+                <div><span>Dịch vụ con:</span> ${record.serviceAddOnName || 'Chưa chọn'}</div>
+                <div><span>Chi phí:</span> ${formatCurrency(record.totalCost)}</div>
+                <div><span>Thanh toán:</span> ${paymentConfig[record.paymentStatus] || 'Không xác định'}</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="section-title">3. Chẩn đoán & ghi chú</div>
+              <p><strong>Chẩn đoán:</strong> ${record.diagnosis || 'Chưa có'}</p>
+              <p><strong>Triệu chứng:</strong> ${
+                record.indications && record.indications.length
+                  ? indicationBadges
+                  : '<span class="text-muted">Chưa có</span>'
+              }</p>
+              <p><strong>Ghi chú:</strong> ${record.notes || '<span class="text-muted">Không có</span>'}</p>
+            </div>
+
+            <div class="section">
+              <div class="section-title">4. Chỉ định điều trị</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Dịch vụ</th>
+                    <th>Dịch vụ bổ sung</th>
+                    <th>Ghi chú</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${treatmentRows}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="section">
+              <div class="section-title">5. Dịch vụ bổ sung</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Dịch vụ</th>
+                    <th>Dịch vụ con</th>
+                    <th>Số lượng</th>
+                    <th>Đơn giá</th>
+                    <th>Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${additionalServiceRows}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="section">
+              <div class="section-title">6. Đơn thuốc</div>
+              ${prescriptionSection}
+            </div>
+
+            <div class="signature">
+              <div>
+                <strong>Bệnh nhân</strong>
+                <p>(Ký, ghi rõ họ tên)</p>
+              </div>
+              <div>
+                <strong>Nha sĩ phụ trách</strong>
+                <p>(Ký, ghi rõ họ tên)</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
   // Handle print button
   const handlePrint = (record) => {
-    message.info(`Đang in hồ sơ ${record.recordCode}...`);
-    // TODO: Implement print functionality
+    if (!record) {
+      message.error('Không tìm thấy dữ liệu hồ sơ để in');
+      return;
+    }
+
+    const documentContent = generatePrintHTML(record);
+    const blob = new Blob([documentContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, '_blank', 'width=900,height=1000');
+
+    if (!printWindow) {
+      message.error('Trình duyệt đang chặn cửa sổ in. Vui lòng cho phép pop-up.');
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    const triggerPrint = () => {
+      printWindow.focus();
+      printWindow.print();
+      // Giữ cửa sổ in để người dùng xem lại
+      URL.revokeObjectURL(url);
+    };
+
+    // Đảm bảo nội dung render xong trước khi in
+    printWindow.onload = () => triggerPrint();
   };
 
   // Handle form success
