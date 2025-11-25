@@ -310,7 +310,7 @@ const PrescriptionForm = forwardRef(({ prescription, medicines }, ref) => {
           label="Ghi chú đơn thuốc"
         >
           <TextArea
-            rows={6}
+            rows={5}
             placeholder="Nhập ghi chú chung về đơn thuốc (lưu ý khi dùng thuốc, kiêng kị, v.v.)..."
             maxLength={500}
             showCount
