@@ -567,11 +567,8 @@ const HolidayManagement = () => {
                             onChange={(e) => {
                               const value = e.target.value;
                               setSearchInput(value);
-                              if (value === '') {
-                                setSearchTerm('');
-                              }
+                              setSearchTerm(value);
                             }}
-                            onPressEnter={(e) => handleSearch(e.target.value)}
                             allowClear
                             onClear={() => {
                               setSearchInput('');
@@ -646,11 +643,8 @@ const HolidayManagement = () => {
                             onChange={(e) => {
                               const value = e.target.value;
                               setSearchInput(value);
-                              if (value === '') {
-                                setSearchTerm('');
-                              }
+                              setSearchTerm(value);
                             }}
-                            onPressEnter={(e) => handleSearch(e.target.value)}
                             allowClear
                             onClear={() => {
                               setSearchInput('');

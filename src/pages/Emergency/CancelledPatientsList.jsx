@@ -37,8 +37,6 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import dayClosureService from '../../services/dayClosureService';
-import roomService from '../../services/roomService';
-import userService from '../../services/userService';
 import { toast } from 'react-toastify';
 
 const { Title, Text } = Typography;
@@ -54,8 +52,7 @@ const CancelledPatientsList = () => {
     total: 0
   });
 
-  const [rooms, setRooms] = useState([]);
-  const [dentists, setDentists] = useState([]);
+  const [allPatients, setAllPatients] = useState([]); // Store all patients for filter extraction
   
   const [filters, setFilters] = useState({
     startDate: null,
@@ -72,43 +69,60 @@ const CancelledPatientsList = () => {
   const [invoiceDetail, setInvoiceDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Load rooms and dentists for filters
+  // Load patients on mount
   useEffect(() => {
-    loadRooms();
-    loadDentists();
     loadPatients();
   }, []);
 
-  const loadRooms = async () => {
-    try {
-      const result = await roomService.getActiveRooms();
-      if (result.success) {
-        setRooms(result.data || []);
-      }
-    } catch (error) {
-      console.error('Error loading rooms:', error);
+  // Auto-search when filters change (except initial load)
+  useEffect(() => {
+    if (allPatients.length > 0) {
+      loadPatients(1);
     }
+  }, [filters.startDate, filters.endDate, filters.roomId, filters.dentistId, filters.patientName]);
+
+  // Extract unique rooms from patients data
+  const getUniqueRooms = () => {
+    const roomMap = new Map();
+    allPatients.forEach(patient => {
+      if (patient.roomId && patient.roomName && patient.roomName !== 'Unknown Room') {
+        roomMap.set(patient.roomId, patient.roomName);
+      }
+    });
+    return Array.from(roomMap.entries()).map(([id, name]) => ({ _id: id, name }));
   };
 
-  const loadDentists = async () => {
-    try {
-      const result = await userService.getAllStaff(1, 1000);
-      if (result.success) {
-        // Filter for dentists only
-        const dentistsOnly = (result.data || []).filter(user => 
-          user.roles?.includes('dentist')
-        );
-        setDentists(dentistsOnly);
+  // Extract unique dentists from patients data
+  const getUniqueDentists = () => {
+    const dentistMap = new Map();
+    allPatients.forEach(patient => {
+      if (patient.dentistIds && patient.dentistIds.length > 0) {
+        patient.dentistIds.forEach((dentistId, index) => {
+          const dentistName = patient.dentists.split(', ')[index] || patient.dentists;
+          if (dentistId && dentistName && dentistName !== 'N/A') {
+            dentistMap.set(dentistId, dentistName);
+          }
+        });
       }
-    } catch (error) {
-      console.error('Error loading dentists:', error);
-    }
+    });
+    return Array.from(dentistMap.entries()).map(([id, name]) => ({ _id: id, fullName: name }));
   };
 
   const loadPatients = async (page = 1) => {
     try {
       setLoading(true);
       
+      // Load all patients first (without filters for dropdown extraction)
+      const allResult = await dayClosureService.getAllCancelledPatients({
+        page: 1,
+        limit: 1000 // Get all for filter options
+      });
+      
+      if (allResult.success) {
+        setAllPatients(allResult.data || []);
+      }
+      
+      // Then load filtered patients
       const queryFilters = {
         page,
         limit: pagination.pageSize,
@@ -360,7 +374,7 @@ const CancelledPatientsList = () => {
                 allowClear
                 style={{ width: '100%', marginTop: 8 }}
               >
-                {rooms.map(room => (
+                {getUniqueRooms().map(room => (
                   <Option key={room._id} value={room._id}>
                     {room.name}
                   </Option>
@@ -379,9 +393,9 @@ const CancelledPatientsList = () => {
                 optionFilterProp="children"
                 style={{ width: '100%', marginTop: 8 }}
               >
-                {dentists.map(dentist => (
+                {getUniqueDentists().map(dentist => (
                   <Option key={dentist._id} value={dentist._id}>
-                    {dentist.fullName || dentist.name}
+                    {dentist.fullName}
                   </Option>
                 ))}
               </Select>
@@ -391,10 +405,12 @@ const CancelledPatientsList = () => {
               <Text strong>Tìm bệnh nhân:</Text>
               <Input
                 value={filters.patientName}
-                onChange={(e) => setFilters({ ...filters, patientName: e.target.value })}
+                onChange={(e) => {
+                  setFilters({ ...filters, patientName: e.target.value });
+                }}
                 placeholder="Tìm theo tên, email, hoặc số điện thoại bệnh nhân"
                 prefix={<SearchOutlined />}
-                onPressEnter={handleSearch}
+                allowClear
                 style={{ marginTop: 8 }}
               />
             </Col>
