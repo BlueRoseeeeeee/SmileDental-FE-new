@@ -54,6 +54,7 @@ const { confirm } = Modal;
 
 const RecordList = () => {
   const [records, setRecords] = useState([]);
+  const [filteredRecords, setFilteredRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -325,6 +326,29 @@ const RecordList = () => {
     setDateRange(null);
     setPagination({ ...pagination, current: 1 });
   };
+
+  //tìm kiếm từ FE luôn, không cần gọi API 
+  useEffect(() => {
+    if (!searchKeyword) {
+      setFilteredRecords(records);
+      return;
+    }
+
+    const keyword = searchKeyword.trim().toLowerCase();
+    const filtered = records.filter((record) => {
+      const recordCode = record.recordCode?.toLowerCase() || '';
+      const patientName = record.patientInfo?.name?.toLowerCase() || '';
+      const patientPhone = (record.patientInfo?.phone || '').toString().toLowerCase();
+
+      return (
+        recordCode.includes(keyword) ||
+        patientName.includes(keyword) ||
+        patientPhone.includes(keyword)
+      );
+    });
+
+    setFilteredRecords(filtered);
+  }, [records, searchKeyword]);
 
   // Table columns
   const columns = [
@@ -667,7 +691,7 @@ const RecordList = () => {
         {/* Table */}
         <Table
           columns={columns}
-          dataSource={records}
+          dataSource={filteredRecords}
           rowKey="_id"
           loading={loading}
           pagination={{
