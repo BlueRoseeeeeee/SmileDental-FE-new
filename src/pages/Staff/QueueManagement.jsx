@@ -142,7 +142,7 @@ const QueueManagement = () => {
       'in-progress': { color: 'blue', text: 'Đang khám', icon: <CheckCircleOutlined /> },
       'checked-in': { color: 'gold', text: 'Chờ khám', icon: <FieldTimeOutlined /> },
       'completed': { color: 'success', text: 'Hoàn thành', icon: <CheckCircleOutlined /> },
-      'confirmed': { color: 'default', text: 'Đã đặt lịch', icon: <ClockCircleOutlined /> }
+      'confirmed': { color: 'default', text: 'Chưa check-in', icon: <ClockCircleOutlined /> }
     };
     
     const config = statusConfig[status] || { color: 'default', text: status, icon: null };
