@@ -226,9 +226,9 @@ const BookingChannelStatistics = () => {
                   }}
                   style={{ width: '100%' }}
                 >
-                <Select.Option value="day">📅 Theo ngày</Select.Option>
-                <Select.Option value="month">📆 Theo tháng</Select.Option>
-                <Select.Option value="year">🗓️ Theo năm</Select.Option>
+                <Select.Option value="day">Theo ngày</Select.Option>
+                <Select.Option value="month">Theo tháng</Select.Option>
+                <Select.Option value="year">Theo năm</Select.Option>
                 </Select>
               </Col>
             </Row>

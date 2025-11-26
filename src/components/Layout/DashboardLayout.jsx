@@ -180,10 +180,10 @@ const DashboardLayout = () => {
         icon: <BarChartOutlined />,
         label: 'Thống kê & Báo cáo',
         children: [
-          { key: '/dashboard/statistics/revenue', label: '💰 Thống kê Doanh thu', icon: <DollarOutlined /> },
-          { key: '/dashboard/statistics/booking-channels', label: '📱 Thống kê Online/Offline', icon: <CalendarOutlined /> },
-          { key: '/dashboard/statistics/clinic-utilization', label: '📊 Hiệu suất Phòng khám', icon: <LineChartOutlined /> },
-          { key: '/dashboard/statistics/appointment-status', label: '📋 Trạng thái Lịch hẹn', icon: <CheckCircleOutlined /> },
+          { key: '/dashboard/statistics/revenue', label: 'Thống kê Doanh thu', icon: <DollarOutlined /> },
+          { key: '/dashboard/statistics/booking-channels', label: 'Thống kê Online/Offline', icon: <CalendarOutlined /> },
+          { key: '/dashboard/statistics/clinic-utilization', label: 'Hiệu suất Phòng khám', icon: <LineChartOutlined /> },
+          { key: '/dashboard/statistics/appointment-status', label: 'Trạng thái Lịch hẹn', icon: <CheckCircleOutlined /> },
         ]
       });
     }
