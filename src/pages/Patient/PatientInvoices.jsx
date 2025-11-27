@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import invoiceService from '../../services/invoiceService';
+import { openInvoicePDFInNewTab } from '../../utils/invoicePdfGenerator';
 import dayjs from 'dayjs';
 import './PatientInvoices.css';
 
@@ -81,6 +82,13 @@ const PatientInvoices = () => {
 
   const filterInvoices = () => {
     let filtered = [...invoices];
+
+    // ✅ Filter by current user's patientId (CRITICAL FIX)
+    if (user?._id) {
+      filtered = filtered.filter(inv => 
+        inv.patientId === user._id || inv.patientId?._id === user._id
+      );
+    }
 
     // Filter by status
     if (statusFilter !== 'all') {
@@ -155,14 +163,21 @@ const PatientInvoices = () => {
 
   const handleDownloadPDF = async (invoiceId) => {
     try {
-      setLoading(true);
-      await invoiceService.downloadInvoicePDF(invoiceId);
-      message.success('Đang tải xuống hóa đơn...');
+      // Lấy chi tiết đầy đủ của hóa đơn
+      message.loading('Đang tải thông tin hóa đơn...', 0);
+      const result = await invoiceService.getInvoiceById(invoiceId);
+      message.destroy();
+      
+      if (result.success && result.data) {
+        // Tạo và mở PDF trong tab mới
+        openInvoicePDFInNewTab(result.data);
+        message.success('Đã mở PDF trong tab mới');
+      } else {
+        throw new Error('Không thể tải thông tin hóa đơn');
+      }
     } catch (error) {
-      console.error('Download invoice error:', error);
-      message.error('Không thể tải xuống hóa đơn');
-    } finally {
-      setLoading(false);
+      console.error('Export PDF error:', error);
+      message.error('Không thể xuất PDF. Vui lòng thử lại!');
     }
   };
 
@@ -384,11 +399,8 @@ const PatientInvoices = () => {
               <Descriptions.Item label="Bệnh nhân" span={2}>
                 {selectedInvoice.patientInfo?.name}
               </Descriptions.Item>
-              <Descriptions.Item label="Điện thoại">
+              <Descriptions.Item label="Điện thoại" span={2}>
                 {selectedInvoice.patientInfo?.phone}
-              </Descriptions.Item>
-              <Descriptions.Item label="Email">
-                {selectedInvoice.patientInfo?.email || 'N/A'}
               </Descriptions.Item>
               <Descriptions.Item label="Nha sĩ" span={2}>
                 {selectedInvoice.dentistInfo?.name || 'N/A'}
