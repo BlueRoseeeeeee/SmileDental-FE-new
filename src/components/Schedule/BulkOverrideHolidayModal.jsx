@@ -560,12 +560,16 @@ const BulkOverrideHolidayModal = ({
                         {['morning', 'afternoon', 'evening'].map(shift => {
                           // Check xem ca này đã tạo cho TẤT CẢ phòng chưa
                           const roomsWithShift = selectedHolidayInfo?.shiftStatus?.[shift] || [];
-                          const isFullyBooked = roomsWithShift.length === selectedRoomIds.length;
                           
                           // 🆕 Phân loại phòng
                           const roomsInHoliday = selectedHolidayInfo?.rooms || []; // Phòng có ngày nghỉ này
                           const roomsWithActiveShift = selectedHolidayInfo?.shiftConfig?.[shift] || []; // Phòng có ngày nghỉ VÀ ca bật
-                          const roomsWithoutHoliday = selectedRoomIds.filter(id => !roomsInHoliday.includes(id)); // Phòng KHÔNG có ngày nghỉ (có lịch bình thường)
+                          const roomsWithScheduleInMonth = selectedHolidayInfo?.roomsWithSchedule || []; // Phòng có lịch trong tháng
+                          
+                          // Phòng KHÔNG có ngày nghỉ NHƯNG có lịch bình thường trong tháng
+                          const roomsWithNormalSchedule = selectedRoomIds.filter(
+                            id => !roomsInHoliday.includes(id) && roomsWithScheduleInMonth.includes(id)
+                          );
                           
                           // Phòng CÓ ngày nghỉ NHƯNG ca bị tắt
                           const roomsWithHolidayButShiftDisabled = roomsInHoliday.filter(id => !roomsWithActiveShift.includes(id));
@@ -573,23 +577,27 @@ const BulkOverrideHolidayModal = ({
                           // Phòng cần tạo override = Phòng có ngày nghỉ VÀ ca bật VÀ chưa tạo
                           const roomsNeedOverride = roomsWithActiveShift.filter(id => !roomsWithShift.includes(id));
                           
-                          // Disable nếu: đã tạo hết HOẶC (tất cả phòng có ngày nghỉ đều tắt ca này VÀ không có phòng nào cần tạo)
-                          const allRoomsWithHolidayHaveShiftDisabled = roomsInHoliday.length > 0 && roomsWithActiveShift.length === 0;
-                          const shouldDisable = isFullyBooked || (allRoomsWithHolidayHaveShiftDisabled && roomsWithoutHoliday.length === 0);
+                          // ✅ Disable khi TẤT CẢ rooms đều: (đã tạo override) HOẶC (có lịch bình thường) HOẶC (có holiday nhưng ca tắt)
+                          const roomsCovered = new Set([
+                            ...roomsWithShift, // Đã tạo override
+                            ...roomsWithNormalSchedule, // Có lịch bình thường (không có holiday ngày này)
+                            ...roomsWithHolidayButShiftDisabled // Có holiday nhưng ca tắt (không cần tạo)
+                          ]);
+                          const shouldDisable = roomsCovered.size === selectedRoomIds.length;
                           
                           const roomsNeedShift = roomsNeedOverride.length;
-                          const roomsHaveNormalSchedule = roomsWithoutHoliday.length;
+                          const roomsHaveNormalSchedule = roomsWithNormalSchedule.length;
                           
                           // 🔍 Debug log
                           console.log(`🔍 Shift ${shift} for date ${selectedDate}:`, {
                             roomsInHoliday,
                             roomsWithActiveShift,
-                            roomsWithoutHoliday,
+                            roomsWithNormalSchedule,
                             roomsWithHolidayButShiftDisabled,
                             roomsNeedOverride,
-                            roomsHaveNormalSchedule,
-                            shouldDisable,
-                            isFullyBooked
+                            roomsWithShift,
+                            roomsCovered: Array.from(roomsCovered),
+                            shouldDisable
                           });
                           
                           return (
@@ -618,9 +626,9 @@ const BulkOverrideHolidayModal = ({
                                       {SHIFT_NAMES[shift]}
                                     </Text>
                                   </Checkbox>
-                                  {isFullyBooked ? (
+                                  {shouldDisable ? (
                                     <Text type="success" style={{ fontSize: 12 }}>
-                                      ✓ Đã tạo hết
+                                      ✓ Tất cả phòng đã OK
                                     </Text>
                                   ) : (
                                     <>
