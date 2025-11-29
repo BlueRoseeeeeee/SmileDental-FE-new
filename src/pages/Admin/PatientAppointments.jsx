@@ -379,7 +379,7 @@ const PatientAppointments = () => {
               Check-in
             </Button>
           )}
-          {record.status === 'in-progress' && (
+          {/* {record.status === 'in-progress' && (
             <Button 
               type="primary" 
               icon={<CheckCircleOutlined />} 
@@ -390,7 +390,7 @@ const PatientAppointments = () => {
             >
               Hoàn thành
             </Button>
-          )}
+          )} */}
           {record.status !== 'completed' && record.status !== 'cancelled' && (
             <Button 
               danger

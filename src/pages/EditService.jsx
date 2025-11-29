@@ -36,7 +36,7 @@ import {
   DownOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { servicesService, toast as toastService } from '../services';
+import { servicesService, scheduleConfigService, toast as toastService } from '../services';
 import TinyMCE from '../components/TinyMCE/TinyMCE';
 
 const { Title, Text } = Typography;
@@ -103,6 +103,7 @@ const EditService = () => {
     if (serviceId) {
       fetchServiceDetails();
       fetchRoomTypes();
+      loadScheduleConfig();
     }
   }, [serviceId]);
 
@@ -176,6 +177,24 @@ const EditService = () => {
       navigate('/dashboard/services');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ Load schedule config
+  const loadScheduleConfig = async () => {
+    try {
+      if (location.state?.scheduleConfig) {
+        console.log('✅ Using scheduleConfig from location.state');
+        return;
+      }
+
+      console.log('📥 Loading scheduleConfig from API...');
+      const response = await scheduleConfigService.getConfig();
+      setScheduleConfig(response.config);
+      console.log('✅ Loaded scheduleConfig:', response.config);
+    } catch (error) {
+      console.error('❌ Error loading scheduleConfig:', error);
+      toastService.error('Không thể tải cấu hình lịch hẹn');
     }
   };
 
@@ -486,6 +505,31 @@ const EditService = () => {
       const values = await priceScheduleForm.validateFields();
       setScheduleLoading(true);
 
+      // ✅ Validation với schedule config (BẮT BUỘC)
+      if (!scheduleConfig) {
+        toastService.error('Không thể lấy cấu hình lịch hẹn. Vui lòng tải lại trang!');
+        setScheduleLoading(false);
+        return;
+      }
+
+      const { unitDuration, depositAmount } = scheduleConfig;
+      const durationMinutes = selectedAddOnForPrice?.durationMinutes || 0;
+
+      // ✅ Validate: x = ceil(Thời gian / unitDuration) * depositAmount, x <= Giá mới
+      const x = Math.ceil(durationMinutes / unitDuration) * depositAmount;
+      
+      if (x > values.price) {
+        toastService.error(
+          `Tiền cọc tối thiểu (${x.toLocaleString('vi-VN')} VNĐ) vượt quá giá mới (${values.price.toLocaleString('vi-VN')} VNĐ). ` +
+          `\nCông thức: ${durationMinutes} phút ÷ ${unitDuration} phút = ${Math.ceil(durationMinutes / unitDuration)} slot × ${depositAmount.toLocaleString('vi-VN')} VNĐ/slot = ${x.toLocaleString('vi-VN')} VNĐ. ` +
+          `\nVui lòng tăng giá lịch hoặc giảm thời gian ước tính của tùy chọn này!`
+        );
+        setScheduleLoading(false);
+        return;
+      }
+
+      console.log(`✅ Price schedule validation passed: ${durationMinutes}min ÷ ${unitDuration}min = ${Math.ceil(durationMinutes / unitDuration)} slots × ${depositAmount.toLocaleString('vi-VN')} VNĐ = ${x.toLocaleString('vi-VN')} VNĐ <= ${values.price.toLocaleString('vi-VN')} VNĐ`);
+
       const scheduleData = {
         price: values.price,
         startDate: values.startDate?.toISOString(),
@@ -548,7 +592,9 @@ const EditService = () => {
       // Refresh service data and update selectedAddOnForPrice
       await fetchServiceDetails();
       
-      const updatedService = await servicesService.getServiceById(serviceId);
+      const updatedServiceResponse = await servicesService.getServiceById(serviceId);
+      // Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const updatedService = updatedServiceResponse?.data || updatedServiceResponse;
       const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
       if (updatedAddOn) {
         setSelectedAddOnForPrice(updatedAddOn);
@@ -571,7 +617,9 @@ const EditService = () => {
       // Refresh service data and update selectedAddOnForPrice
       await fetchServiceDetails();
       
-      const updatedService = await servicesService.getServiceById(serviceId);
+      const updatedServiceResponse = await servicesService.getServiceById(serviceId);
+      // Tương thích với cả wrapper object { success, data } và service object trực tiếp
+      const updatedService = updatedServiceResponse?.data || updatedServiceResponse;
       const updatedAddOn = updatedService.serviceAddOns?.find(a => a._id === selectedAddOnForPrice._id);
       if (updatedAddOn) {
         setSelectedAddOnForPrice(updatedAddOn);
@@ -1412,7 +1460,7 @@ const EditService = () => {
             />
           </Form.Item>
 
-          <Form.Item
+          {/* <Form.Item
             name="isActive"
             label="Trạng thái"
             valuePropName="checked"
@@ -1421,7 +1469,7 @@ const EditService = () => {
               checkedChildren="Đang áp dụng" 
               unCheckedChildren="Tạm ngưng" 
             />
-          </Form.Item>
+          </Form.Item> */}
         </Form>
       </Modal>
 

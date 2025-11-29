@@ -729,27 +729,38 @@ const BulkCreateScheduleModal = ({
               style={{ width: '100%' }}
               value={selectedShifts}
               onChange={setSelectedShifts}
+              disabled={!fromMonth || !toMonth || loadingBulkInfo}
             >
               <Row gutter={[16, 16]}>
                 <Col span={8}>
                   <Space direction="vertical" style={{ width: '100%' }} size={4}>
                     <Checkbox
                       value="morning"
-                      disabled={!availableShifts.morning}
+                      disabled={!fromMonth || !toMonth || loadingBulkInfo || !availableShifts.morning}
                     >
                       <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
                         {SHIFT_NAMES.morning}
                       </Text>
-                      {!availableShifts.morning && (
+                      {(!fromMonth || !toMonth) ? (
+                        <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
+                          (Chọn tháng trước)
+                        </Text>
+                      ) : !availableShifts.morning && (
                         <Text 
-                          type={bulkInfo?.shiftUnavailableReasons?.morning === 'disabled' ? 'warning' : 'secondary'} 
+                          type={bulkInfo?.shiftUnavailableReasons?.morning === 'disabled' ? 'warning' : bulkInfo?.shiftUnavailableReasons?.morning === 'partial' ? 'danger' : 'secondary'} 
                           style={{ fontSize: '12px', marginLeft: 4 }}
                         >
-                          {bulkInfo?.shiftUnavailableReasons?.morning === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                          {bulkInfo?.shiftUnavailableReasons?.morning === 'complete' 
+                            ? '(Đầy đủ)' 
+                            : bulkInfo?.shiftUnavailableReasons?.morning === 'partial'
+                              ? '(Thiếu)'
+                              : bulkInfo?.shiftUnavailableReasons?.morning === 'disabled' 
+                                ? '(Đang tắt)' 
+                                : '(Chưa có lịch)'}
                         </Text>
                       )}
                     </Checkbox>
-                    {bulkInfo && (
+                    {bulkInfo && fromMonth && toMonth && (
                       <Button 
                         type="link" 
                         size="small" 
@@ -768,21 +779,31 @@ const BulkCreateScheduleModal = ({
                   <Space direction="vertical" style={{ width: '100%' }} size={4}>
                     <Checkbox
                       value="afternoon"
-                      disabled={!availableShifts.afternoon}
+                      disabled={!fromMonth || !toMonth || loadingBulkInfo || !availableShifts.afternoon}
                     >
                       <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
                         {SHIFT_NAMES.afternoon}
                       </Text>
-                      {!availableShifts.afternoon && (
+                      {(!fromMonth || !toMonth) ? (
+                        <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
+                          (Chọn tháng trước)
+                        </Text>
+                      ) : !availableShifts.afternoon && (
                         <Text 
-                          type={bulkInfo?.shiftUnavailableReasons?.afternoon === 'disabled' ? 'warning' : 'secondary'} 
+                          type={bulkInfo?.shiftUnavailableReasons?.afternoon === 'disabled' ? 'warning' : bulkInfo?.shiftUnavailableReasons?.afternoon === 'partial' ? 'danger' : 'secondary'} 
                           style={{ fontSize: '12px', marginLeft: 4 }}
                         >
-                          {bulkInfo?.shiftUnavailableReasons?.afternoon === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                          {bulkInfo?.shiftUnavailableReasons?.afternoon === 'complete' 
+                            ? '(Đầy đủ)' 
+                            : bulkInfo?.shiftUnavailableReasons?.afternoon === 'partial'
+                              ? '(Thiếu)'
+                              : bulkInfo?.shiftUnavailableReasons?.afternoon === 'disabled' 
+                                ? '(Đang tắt)' 
+                                : '(Chưa có lịch)'}
                         </Text>
                       )}
                     </Checkbox>
-                    {bulkInfo && (
+                    {bulkInfo && fromMonth && toMonth && (
                       <Button 
                         type="link" 
                         size="small" 
@@ -801,21 +822,31 @@ const BulkCreateScheduleModal = ({
                   <Space direction="vertical" style={{ width: '100%' }} size={4}>
                     <Checkbox
                       value="evening"
-                      disabled={!availableShifts.evening}
+                      disabled={!fromMonth || !toMonth || loadingBulkInfo || !availableShifts.evening}
                     >
                       <Text style={{ fontSize: '14px', padding: '4px 8px' }}>
                         {SHIFT_NAMES.evening}
                       </Text>
-                      {!availableShifts.evening && (
+                      {(!fromMonth || !toMonth) ? (
+                        <Text type="secondary" style={{ fontSize: '12px', marginLeft: 4 }}>
+                          (Chọn tháng trước)
+                        </Text>
+                      ) : !availableShifts.evening && (
                         <Text 
-                          type={bulkInfo?.shiftUnavailableReasons?.evening === 'disabled' ? 'warning' : 'secondary'} 
+                          type={bulkInfo?.shiftUnavailableReasons?.evening === 'disabled' ? 'warning' : bulkInfo?.shiftUnavailableReasons?.evening === 'partial' ? 'danger' : 'secondary'} 
                           style={{ fontSize: '12px', marginLeft: 4 }}
                         >
-                          {bulkInfo?.shiftUnavailableReasons?.evening === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                          {bulkInfo?.shiftUnavailableReasons?.evening === 'complete' 
+                            ? '(Đầy đủ)' 
+                            : bulkInfo?.shiftUnavailableReasons?.evening === 'partial'
+                              ? '(Thiếu)'
+                              : bulkInfo?.shiftUnavailableReasons?.evening === 'disabled' 
+                                ? '(Đang tắt)' 
+                                : '(Chưa có lịch)'}
                         </Text>
                       )}
                     </Checkbox>
-                    {bulkInfo && (
+                    {bulkInfo && fromMonth && toMonth && (
                       <Button 
                         type="link" 
                         size="small" 
@@ -841,7 +872,7 @@ const BulkCreateScheduleModal = ({
         title={
           <Space>
             <CalendarOutlined />
-            <span>Chi tiết {SHIFT_NAMES[selectedShiftForDetail]} - {fromMonth && toMonth ? `${fromMonth.format('MM/YYYY')} → ${toMonth.format('MM/YYYY')}` : ''}</span>
+            <span>Chi tiết {SHIFT_NAMES[selectedShiftForDetail]} - {fromMonth && toMonth ? `${fromMonth.format('MM/YYYY').replace(/\/(\d{4})/, '/$1')} → ${toMonth.format('MM/YYYY').replace(/\/(\d{4})/, '/$1')}` : ''}</span>
           </Space>
         }
         open={shiftDetailModalVisible}
@@ -866,6 +897,8 @@ const BulkCreateScheduleModal = ({
                       <Tag color="success" icon={<CheckCircleOutlined />}>Có thể tạo</Tag>
                     ) : bulkInfo.shiftUnavailableReasons[selectedShiftForDetail] === 'complete' ? (
                       <Tag color="default">Đã đầy đủ</Tag>
+                    ) : bulkInfo.shiftUnavailableReasons[selectedShiftForDetail] === 'partial' ? (
+                      <Tag color="orange" icon={<WarningOutlined />}>Thiếu</Tag>
                     ) : (
                       <Tag color="warning" icon={<WarningOutlined />}>Đang tắt</Tag>
                     )}
@@ -874,7 +907,9 @@ const BulkCreateScheduleModal = ({
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       {bulkInfo.shiftUnavailableReasons[selectedShiftForDetail] === 'complete' 
                         ? 'Tất cả phòng đã có ca này trong khoảng thời gian đã chọn'
-                        : 'Ca này đang bị tắt trong cấu hình hệ thống hoặc lịch'}
+                        : bulkInfo.shiftUnavailableReasons[selectedShiftForDetail] === 'partial'
+                          ? 'Một số phòng/buồng đã có ca, một số chưa có hoặc đang tắt'
+                          : 'Ca này đang bị tắt trong cấu hình hệ thống hoặc lịch'}
                     </Text>
                   )}
                 </Space>
@@ -898,6 +933,9 @@ const BulkCreateScheduleModal = ({
                 room.monthsAnalysis.forEach(monthAnalysis => {
                   const shiftStatus = monthAnalysis.shiftStatus[selectedShiftForDetail];
                   
+                  // 🆕 Lấy chi tiết từng buồng nếu có
+                  const subRoomsInfo = monthAnalysis.subRoomsDetail || [];
+                  
                   if (monthAnalysis.hasSchedule) {
                     if (shiftStatus.allHave) {
                       hasScheduleWithShift = true;
@@ -905,7 +943,8 @@ const BulkCreateScheduleModal = ({
                         month: monthAnalysis.month,
                         year: monthAnalysis.year,
                         status: 'complete',
-                        label: 'Đã có'
+                        label: 'Đã có',
+                        subRoomsInfo // 🆕 Thêm thông tin buồng
                       });
                     } else if (shiftStatus.anyActive) {
                       hasScheduleWithoutShift = true;
@@ -913,7 +952,8 @@ const BulkCreateScheduleModal = ({
                         month: monthAnalysis.month,
                         year: monthAnalysis.year,
                         status: 'missing',
-                        label: 'Chưa tạo'
+                        label: 'Chưa tạo',
+                        subRoomsInfo // 🆕 Thêm thông tin buồng
                       });
                     } else {
                       hasShiftDisabled = true;
@@ -921,7 +961,8 @@ const BulkCreateScheduleModal = ({
                         month: monthAnalysis.month,
                         year: monthAnalysis.year,
                         status: 'disabled',
-                        label: 'Đang tắt'
+                        label: 'Đang tắt',
+                        subRoomsInfo // 🆕 Thêm thông tin buồng
                       });
                     }
                   } else {
@@ -932,14 +973,16 @@ const BulkCreateScheduleModal = ({
                         month: monthAnalysis.month,
                         year: monthAnalysis.year,
                         status: 'no-schedule-active',
-                        label: 'Chưa có lịch (Config bật)'
+                        label: 'Chưa có lịch (Config bật)',
+                        subRoomsInfo // 🆕 Thêm thông tin buồng
                       });
                     } else {
                       monthDetails.push({
                         month: monthAnalysis.month,
                         year: monthAnalysis.year,
                         status: 'no-schedule-disabled',
-                        label: 'Chưa có lịch (Config tắt)'
+                        label: 'Chưa có lịch (Config tắt)',
+                        subRoomsInfo // 🆕 Thêm thông tin buồng
                       });
                     }
                   }
@@ -967,23 +1010,109 @@ const BulkCreateScheduleModal = ({
                       <div style={{ paddingLeft: 16 }}>
                         <Row gutter={[8, 8]}>
                           {monthDetails.map((detail, idx) => (
-                            <Col key={idx} span={8}>
-                              <Space size={4} style={{ fontSize: 12 }}>
-                                <Text type="secondary">{detail.month}/{detail.year}:</Text>
-                                {detail.status === 'complete' && (
-                                  <Tag color="success" style={{ margin: 0, fontSize: 11 }}>✓ {detail.label}</Tag>
-                                )}
-                                {detail.status === 'missing' && (
-                                  <Tag color="warning" style={{ margin: 0, fontSize: 11 }}>⚠ {detail.label}</Tag>
-                                )}
-                                {detail.status === 'disabled' && (
-                                  <Tag color="error" style={{ margin: 0, fontSize: 11 }}>✗ {detail.label}</Tag>
-                                )}
-                                {detail.status === 'no-schedule-active' && (
-                                  <Tag color="cyan" style={{ margin: 0, fontSize: 11 }}>○ {detail.label}</Tag>
-                                )}
-                                {detail.status === 'no-schedule-disabled' && (
-                                  <Tag color="default" style={{ margin: 0, fontSize: 11 }}>○ {detail.label}</Tag>
+                            <Col key={idx} span={24}>
+                              <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                                <Space size={4} style={{ fontSize: 12 }}>
+                                  <Text type="secondary">{detail.month}/{detail.year}:</Text>
+                                  {detail.status === 'complete' && (
+                                    <Tag color="success" style={{ margin: 0, fontSize: 11 }}>✓ {detail.label}</Tag>
+                                  )}
+                                  {detail.status === 'missing' && (
+                                    <Tag color="warning" style={{ margin: 0, fontSize: 11 }}>⚠ {detail.label}</Tag>
+                                  )}
+                                  {detail.status === 'disabled' && (
+                                    <Tag color="error" style={{ margin: 0, fontSize: 11 }}>✗ {detail.label}</Tag>
+                                  )}
+                                  {detail.status === 'no-schedule-active' && (
+                                    <Tag color="cyan" style={{ margin: 0, fontSize: 11 }}>○ {detail.label}</Tag>
+                                  )}
+                                  {detail.status === 'no-schedule-disabled' && (
+                                    <Tag color="default" style={{ margin: 0, fontSize: 11 }}>○ {detail.label}</Tag>
+                                  )}
+                                </Space>
+                                
+                                {/* 🔥 Hiển thị chi tiết TẤT CẢ buồng (kể cả buồng tắt) */}
+                                {detail.subRoomsInfo && detail.subRoomsInfo.length > 0 && (
+                                  <div style={{ paddingLeft: 16, fontSize: 11, marginTop: 4 }}>
+                                    {detail.subRoomsInfo.map((subRoom, subIdx) => {
+                                      const subRoomShiftStatus = subRoom.shiftStatus?.[selectedShiftForDetail];
+                                      
+                                      // 🔥 Xác định trạng thái buồng - CHỈ DÙNG isActiveInSchedule (isActiveSubRoom từ schedule)
+                                      let statusTag;
+                                      let statusText = '';
+                                      let statusColor = 'default';
+                                      
+                                      // 1. Buồng chưa có schedule
+                                      if (!subRoom.hasSchedule || subRoom.hasSchedule === false) {
+                                        statusTag = '○ Chưa có lịch';
+                                        statusText = `Buồng "${subRoom.subRoomName}" chưa có lịch cho tháng ${detail.month}/${detail.year}`;
+                                        statusColor = 'cyan';
+                                      } 
+                                      // 2. Schedule bị tắt (Schedule.isActive=false)
+                                      else if (subRoom.isScheduleActive === false) {
+                                        statusTag = '🔒 Lịch tắt';
+                                        statusText = `Schedule của buồng "${subRoom.subRoomName}" bị tắt (Schedule.isActive=false)`;
+                                        statusColor = 'default';
+                                      }
+                                      // 3. Buồng bị tắt trong Schedule (isActiveSubRoom=false) - ƯU TIÊN TRẠNG THÁI NÀY
+                                      else if (subRoom.isActiveInSchedule === false) {
+                                        statusTag = '🔒 Buồng tắt (Schedule)';
+                                        statusText = `Buồng "${subRoom.subRoomName}" bị tắt trong lịch (isActiveSubRoom=false)`;
+                                        statusColor = 'default';
+                                      }
+                                      // 4. Ca đã tạo slots và đang hoạt động
+                                      else if (subRoomShiftStatus?.hasShift === true) {
+                                        statusTag = '✓ Đã có';
+                                        statusText = `Ca ${selectedShiftForDetail} đã được tạo slots và đang hoạt động cho buồng "${subRoom.subRoomName}"`;
+                                        statusColor = 'success';
+                                      } 
+                                      // 5. Ca đã generate nhưng bị tắt
+                                      else if (subRoomShiftStatus?.isGenerated === true && subRoomShiftStatus?.isActive === false) {
+                                        statusTag = '✗ Ca tắt (Đã tạo)';
+                                        statusText = `Ca ${selectedShiftForDetail} đã tạo slots nhưng đã bị tắt (isActive=false)`;
+                                        statusColor = 'error';
+                                      }
+                                      // 6. Ca đang bật nhưng chưa tạo slots
+                                      else if (subRoomShiftStatus?.isActive === true && subRoomShiftStatus?.isGenerated === false) {
+                                        statusTag = '⚠ Chưa tạo';
+                                        statusText = `Ca ${selectedShiftForDetail} đang bật nhưng chưa tạo slots cho buồng "${subRoom.subRoomName}"`;
+                                        statusColor = 'warning';
+                                      } 
+                                      // 7. Ca bị tắt và chưa tạo
+                                      else if (subRoomShiftStatus?.isActive === false) {
+                                        statusTag = '✗ Ca tắt';
+                                        statusText = `Ca ${selectedShiftForDetail} bị tắt trong lịch của buồng "${subRoom.subRoomName}"`;
+                                        statusColor = 'error';
+                                      }
+                                      // 8. Trường hợp khác (fallback)
+                                      else {
+                                        statusTag = '? Không xác định';
+                                        statusText = `Không xác định được trạng thái của buồng "${subRoom.subRoomName}"`;
+                                        statusColor = 'default';
+                                      }
+                                      
+                                      return (
+                                        <div key={subIdx} style={{ marginBottom: 4 }} title={statusText}>
+                                          <Space size={4}>
+                                            <Text 
+                                              type="secondary" 
+                                              style={{ 
+                                                fontSize: 11, 
+                                                fontWeight: 500,
+                                                minWidth: 100,
+                                                display: 'inline-block'
+                                              }}
+                                            >
+                                              └ {subRoom.subRoomName}:
+                                            </Text>
+                                            <Tag color={statusColor} style={{ margin: 0, fontSize: 10 }}>
+                                              {statusTag}
+                                            </Tag>
+                                          </Space>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 )}
                               </Space>
                             </Col>
@@ -1001,11 +1130,27 @@ const BulkCreateScheduleModal = ({
               message="Chú thích"
               description={
                 <Space direction="vertical" size={4}>
+                  <Text strong>Trạng thái phòng/ca:</Text>
                   <div><Tag color="success">✓ Đã có</Tag> = Ca đã được tạo slots trong tháng này</div>
                   <div><Tag color="warning">⚠ Chưa tạo</Tag> = Có lịch nhưng chưa tạo ca này (ca đang bật)</div>
                   <div><Tag color="error">✗ Đang tắt</Tag> = Ca bị tắt trong schedule (isActive=false)</div>
                   <div><Tag color="cyan">○ Chưa có lịch (Config bật)</Tag> = Chưa có schedule, config global bật ca</div>
                   <div><Tag color="default">○ Chưa có lịch (Config tắt)</Tag> = Chưa có schedule, config global tắt ca</div>
+                  
+                  <Text strong style={{ marginTop: 12, display: 'block' }}>Trạng thái buồng con (theo thứ tự ưu tiên):</Text>
+                  <div style={{ paddingLeft: 8 }}>
+                    <div><Tag color="cyan">○ Chưa có lịch</Tag> = Buồng chưa có lịch cho tháng này</div>
+                    <div><Tag color="default">🔒 Lịch tắt</Tag> = Schedule bị tắt (Schedule.isActive=false)</div>
+                    <div><Tag color="default">🔒 Buồng tắt (Schedule)</Tag> = Buồng bị tắt trong lịch của tháng này (isActiveSubRoom=false)</div>
+                    <div><Tag color="success">✓ Đã có</Tag> = Ca đã tạo slots và đang hoạt động</div>
+                    <div><Tag color="error">✗ Ca tắt (Đã tạo)</Tag> = Ca đã tạo slots nhưng bị tắt</div>
+                    <div><Tag color="warning">⚠ Chưa tạo</Tag> = Ca đang bật nhưng chưa tạo slots</div>
+                    <div><Tag color="error">✗ Ca tắt</Tag> = Ca bị tắt và chưa tạo slots</div>
+                  </div>
+                  
+                  <Text type="secondary" style={{ marginTop: 8, display: 'block', fontSize: 11, fontStyle: 'italic' }}>
+                    💡 Trạng thái buồng chỉ dựa trên isActiveSubRoom trong schedule của tháng đó, không dùng config phòng
+                  </Text>
                 </Space>
               }
               type="info"

@@ -38,19 +38,36 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
     afternoonActive: true,
     eveningActive: true
   });
+  
+  // State để theo dõi thời gian các ca
+  const [timeValues, setTimeValues] = useState({
+    morningStart: null,
+    morningEnd: null,
+    afternoonStart: null,
+    afternoonEnd: null,
+    eveningStart: null,
+    eveningEnd: null
+  });
 
   useEffect(() => {
     if (config) {
+      const morningStart = config.morningShift?.startTime ? dayjs(config.morningShift.startTime, 'HH:mm') : null;
+      const morningEnd = config.morningShift?.endTime ? dayjs(config.morningShift.endTime, 'HH:mm') : null;
+      const afternoonStart = config.afternoonShift?.startTime ? dayjs(config.afternoonShift.startTime, 'HH:mm') : null;
+      const afternoonEnd = config.afternoonShift?.endTime ? dayjs(config.afternoonShift.endTime, 'HH:mm') : null;
+      const eveningStart = config.eveningShift?.startTime ? dayjs(config.eveningShift.startTime, 'HH:mm') : null;
+      const eveningEnd = config.eveningShift?.endTime ? dayjs(config.eveningShift.endTime, 'HH:mm') : null;
+      
       const formData = {
         ...config,
-        morningStartTime: config.morningShift?.startTime ? dayjs(config.morningShift.startTime, 'HH:mm') : null,
-        morningEndTime: config.morningShift?.endTime ? dayjs(config.morningShift.endTime, 'HH:mm') : null,
+        morningStartTime: morningStart,
+        morningEndTime: morningEnd,
         morningActive: config.morningShift?.isActive || false,
-        afternoonStartTime: config.afternoonShift?.startTime ? dayjs(config.afternoonShift.startTime, 'HH:mm') : null,
-        afternoonEndTime: config.afternoonShift?.endTime ? dayjs(config.afternoonShift.endTime, 'HH:mm') : null,
+        afternoonStartTime: afternoonStart,
+        afternoonEndTime: afternoonEnd,
         afternoonActive: config.afternoonShift?.isActive || false,
-        eveningStartTime: config.eveningShift?.startTime ? dayjs(config.eveningShift.startTime, 'HH:mm') : null,
-        eveningEndTime: config.eveningShift?.endTime ? dayjs(config.eveningShift.endTime, 'HH:mm') : null,
+        eveningStartTime: eveningStart,
+        eveningEndTime: eveningEnd,
         eveningActive: config.eveningShift?.isActive || false,
       };
       form.setFieldsValue(formData);
@@ -60,6 +77,16 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
         morningActive: config.morningShift?.isActive || false,
         afternoonActive: config.afternoonShift?.isActive || false,
         eveningActive: config.eveningShift?.isActive || false,
+      });
+      
+      // Sync time values
+      setTimeValues({
+        morningStart,
+        morningEnd,
+        afternoonStart,
+        afternoonEnd,
+        eveningStart,
+        eveningEnd
       });
     }
   }, [config, form]);
@@ -104,16 +131,23 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
 
   const handleReset = () => {
     if (config) {
+      const morningStart = config.morningShift?.startTime ? dayjs(config.morningShift.startTime, 'HH:mm') : null;
+      const morningEnd = config.morningShift?.endTime ? dayjs(config.morningShift.endTime, 'HH:mm') : null;
+      const afternoonStart = config.afternoonShift?.startTime ? dayjs(config.afternoonShift.startTime, 'HH:mm') : null;
+      const afternoonEnd = config.afternoonShift?.endTime ? dayjs(config.afternoonShift.endTime, 'HH:mm') : null;
+      const eveningStart = config.eveningShift?.startTime ? dayjs(config.eveningShift.startTime, 'HH:mm') : null;
+      const eveningEnd = config.eveningShift?.endTime ? dayjs(config.eveningShift.endTime, 'HH:mm') : null;
+      
       const formData = {
         ...config,
-        morningStartTime: config.morningShift?.startTime ? dayjs(config.morningShift.startTime, 'HH:mm') : null,
-        morningEndTime: config.morningShift?.endTime ? dayjs(config.morningShift.endTime, 'HH:mm') : null,
+        morningStartTime: morningStart,
+        morningEndTime: morningEnd,
         morningActive: config.morningShift?.isActive || false,
-        afternoonStartTime: config.afternoonShift?.startTime ? dayjs(config.afternoonShift.startTime, 'HH:mm') : null,
-        afternoonEndTime: config.afternoonShift?.endTime ? dayjs(config.afternoonShift.endTime, 'HH:mm') : null,
+        afternoonStartTime: afternoonStart,
+        afternoonEndTime: afternoonEnd,
         afternoonActive: config.afternoonShift?.isActive || false,
-        eveningStartTime: config.eveningShift?.startTime ? dayjs(config.eveningShift.startTime, 'HH:mm') : null,
-        eveningEndTime: config.eveningShift?.endTime ? dayjs(config.eveningShift.endTime, 'HH:mm') : null,
+        eveningStartTime: eveningStart,
+        eveningEndTime: eveningEnd,
         eveningActive: config.eveningShift?.isActive || false,
       };
       form.setFieldsValue(formData);
@@ -123,6 +157,16 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
         morningActive: config.morningShift?.isActive || false,
         afternoonActive: config.afternoonShift?.isActive || false,
         eveningActive: config.eveningShift?.isActive || false,
+      });
+      
+      // Reset time values
+      setTimeValues({
+        morningStart,
+        morningEnd,
+        afternoonStart,
+        afternoonEnd,
+        eveningStart,
+        eveningEnd
       });
     }
   };
@@ -141,6 +185,104 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
   const handleCancel = () => {
     setIsEditing(false);
     handleReset();
+  };
+
+  // ✅ Hàm disable giờ - Giờ kết thúc phải > giờ bắt đầu (disable các giờ <= giờ bắt đầu)
+  const disableEndTime = (startTime) => {
+    if (!startTime) return {};
+    
+    return {
+      disabledHours: () => {
+        const hours = [];
+        for (let i = 0; i < startTime.hour(); i++) {
+          hours.push(i);
+        }
+        return hours;
+      },
+      disabledMinutes: (selectedHour) => {
+        if (selectedHour < startTime.hour()) {
+          // Disable tất cả phút nếu giờ < giờ bắt đầu
+          return Array.from({ length: 60 }, (_, i) => i);
+        }
+        if (selectedHour === startTime.hour()) {
+          // Disable các phút <= phút bắt đầu (cho phép từ phút bắt đầu + 1)
+          const minutes = [];
+          for (let i = 0; i <= startTime.minute(); i++) {
+            minutes.push(i);
+          }
+          return minutes;
+        }
+        return [];
+      }
+    };
+  };
+
+  // ✅ Hàm disable giờ cho ca chiều - phải > giờ kết thúc ca sáng
+  const disableAfternoonTime = (morningEnd) => {
+    if (!morningEnd) return {};
+    
+    return {
+      disabledHours: () => {
+        const hours = [];
+        // Disable các giờ < giờ kết thúc ca sáng
+        for (let i = 0; i < morningEnd.hour(); i++) {
+          hours.push(i);
+        }
+        return hours;
+      },
+      disabledMinutes: (selectedHour) => {
+        if (selectedHour < morningEnd.hour()) {
+          return Array.from({ length: 60 }, (_, i) => i);
+        }
+        if (selectedHour === morningEnd.hour()) {
+          // Disable các phút <= phút kết thúc ca sáng (cho phép từ phút + 1)
+          const minutes = [];
+          for (let i = 0; i <= morningEnd.minute(); i++) {
+            minutes.push(i);
+          }
+          return minutes;
+        }
+        return [];
+      }
+    };
+  };
+
+  // ✅ Hàm disable giờ cho ca tối - phải > giờ kết thúc ca chiều
+  const disableEveningTime = (afternoonEnd) => {
+    if (!afternoonEnd) return {};
+    
+    return {
+      disabledHours: () => {
+        const hours = [];
+        // Disable các giờ < giờ kết thúc ca chiều
+        for (let i = 0; i < afternoonEnd.hour(); i++) {
+          hours.push(i);
+        }
+        return hours;
+      },
+      disabledMinutes: (selectedHour) => {
+        if (selectedHour < afternoonEnd.hour()) {
+          return Array.from({ length: 60 }, (_, i) => i);
+        }
+        if (selectedHour === afternoonEnd.hour()) {
+          // Disable các phút <= phút kết thúc ca chiều (cho phép từ phút + 1)
+          const minutes = [];
+          for (let i = 0; i <= afternoonEnd.minute(); i++) {
+            minutes.push(i);
+          }
+          return minutes;
+        }
+        return [];
+      }
+    };
+  };
+
+  // ✅ Handle thay đổi thời gian
+  const handleTimeChange = (field, value) => {
+    setTimeValues(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   return (
@@ -227,6 +369,7 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
                   disabled={!isEditing}
+                  onChange={(value) => handleTimeChange('morningStart', value)}
                 />
               </Form.Item>
             </Col>
@@ -241,6 +384,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
                   disabled={!isEditing}
+                  disabledTime={() => disableEndTime(timeValues.morningStart)}
+                  onChange={(value) => handleTimeChange('morningEnd', value)}
                 />
               </Form.Item>
             </Col>
@@ -289,6 +434,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
                   disabled={!isEditing}
+                  disabledTime={() => disableAfternoonTime(timeValues.morningEnd)}
+                  onChange={(value) => handleTimeChange('afternoonStart', value)}
                 />
               </Form.Item>
             </Col>
@@ -303,6 +450,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
                   disabled={!isEditing}
+                  disabledTime={() => disableEndTime(timeValues.afternoonStart)}
+                  onChange={(value) => handleTimeChange('afternoonEnd', value)}
                 />
               </Form.Item>
             </Col>
@@ -351,6 +500,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
                   disabled={!isEditing}
+                  disabledTime={() => disableEveningTime(timeValues.afternoonEnd)}
+                  onChange={(value) => handleTimeChange('eveningStart', value)}
                 />
               </Form.Item>
             </Col>
@@ -365,6 +516,8 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
                   disabled={!isEditing}
+                  disabledTime={() => disableEndTime(timeValues.eveningStart)}
+                  onChange={(value) => handleTimeChange('eveningEnd', value)}
                 />
               </Form.Item>
             </Col>

@@ -17,7 +17,6 @@ import {
   Tag,
   Row,
   Col,
-  message,
   Spin,
   Button,
   List
@@ -30,6 +29,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import scheduleService from '../../services/scheduleService';
+import { toast } from '../../services/toastService';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -87,11 +87,16 @@ const BulkOverrideHolidayModal = ({
       //   dateStr: { 
       //     date, holidayName, rooms: [], 
       //     shiftStatus: { morning: [], afternoon: [], evening: [] },
-      //     shiftConfig: { morning: [], afternoon: [], evening: [] }
+      //     shiftConfig: { morning: [], afternoon: [], evening: [] },
+      //     roomsWithSchedule: [] // 🆕 Danh sách roomId có lịch trong tháng này
       //   } 
       // }
       // shiftStatus[shift] = array of roomIds đã tạo slots cho ca đó
       // shiftConfig[shift] = array of roomIds có ca đó ĐANG BẬT (isActive=true)
+      // roomsWithSchedule = array of roomIds có lịch trong tháng (bất kể có ngày nghỉ hay không)
+
+      // 🆕 Track rooms có lịch trong tháng
+      const roomsWithScheduleInMonth = new Set();
 
       // Fetch schedule shifts cho từng phòng
       for (const roomId of selectedRoomIds) {
@@ -105,6 +110,9 @@ const BulkOverrideHolidayModal = ({
 
           if (response.success && response.data.schedules && response.data.schedules.length > 0) {
             const schedules = response.data.schedules;
+            
+            // 🆕 Room này có lịch trong tháng
+            roomsWithScheduleInMonth.add(roomId);
             
             // Track shift status per room (để tránh trùng lặp từ nhiều subroom)
             const roomShiftStatus = {}; // { dateStr: { morning: bool, afternoon: bool, evening: bool } }
@@ -133,7 +141,8 @@ const BulkOverrideHolidayModal = ({
                       morning: [],
                       afternoon: [],
                       evening: []
-                    }
+                    },
+                    roomsWithSchedule: [] // 🆕 Track rooms có lịch trong tháng
                   };
                 }
                 
@@ -214,6 +223,13 @@ const BulkOverrideHolidayModal = ({
         }
       }
 
+      // 🆕 Gán roomsWithSchedule cho tất cả ngày trong holidayMap
+      Object.keys(holidayMap).forEach(dateStr => {
+        holidayMap[dateStr].roomsWithSchedule = Array.from(roomsWithScheduleInMonth);
+      });
+
+      console.log('📋 Rooms có lịch trong tháng:', Array.from(roomsWithScheduleInMonth));
+
       // Convert map to array và filter
       const today = dayjs().startOf('day');
       const totalRoomsSelected = selectedRoomIds.length;
@@ -277,11 +293,11 @@ const BulkOverrideHolidayModal = ({
       })));
       
       if (holidays.length === 0) {
-        message.info(`Không có ngày nghỉ khả dụng cho tháng ${selectedMonth}/${selectedYear}`);
+        toast.info(`Không có ngày nghỉ khả dụng cho tháng ${selectedMonth}/${selectedYear}`);
       }
     } catch (error) {
       console.error('Error fetching holidays:', error);
-      message.error('Lỗi khi lấy danh sách ngày nghỉ');
+      toast.error('Lỗi khi lấy danh sách ngày nghỉ');
     } finally {
       setLoadingHolidays(false);
     }
@@ -292,12 +308,12 @@ const BulkOverrideHolidayModal = ({
       await form.validateFields();
       
       if (!selectedDate) {
-        message.error('Vui lòng chọn ngày nghỉ');
+        toast.error('Vui lòng chọn ngày nghỉ');
         return;
       }
 
       if (selectedShifts.length === 0) {
-        message.error('Vui lòng chọn ít nhất 1 ca');
+        toast.error('Vui lòng chọn ít nhất 1 ca');
         return;
       }
 
@@ -365,15 +381,15 @@ const BulkOverrideHolidayModal = ({
 
       // Show result
       if (successCount > 0) {
-        message.success(`✅ Đã tạo lịch ngày nghỉ cho ${successCount}/${selectedRoomIds.length} phòng`);
+        toast.success(`✅ Đã tạo lịch ngày nghỉ cho ${successCount}/${selectedRoomIds.length} phòng`);
       }
       
       if (skippedCount > 0) {
-        message.info(`ℹ️ ${skippedCount} phòng bị bỏ qua (tất cả ca đã chọn đang bị tắt)`);
+        toast.info(`ℹ️ ${skippedCount} phòng bị bỏ qua (tất cả ca đã chọn đang bị tắt)`);
       }
       
       if (errorCount > 0) {
-        message.warning(`⚠️ ${errorCount} phòng thất bại (có thể đã tạo rồi hoặc lỗi khác)`);
+        toast.warning(`⚠️ ${errorCount} phòng thất bại (có thể đã tạo rồi hoặc lỗi khác)`);
       }
       
       console.log('📊 Kết quả tạo lịch hàng loạt:', {
@@ -393,7 +409,7 @@ const BulkOverrideHolidayModal = ({
       }
     } catch (error) {
       console.error('Error submitting bulk override holiday:', error);
-      message.error('Lỗi khi tạo lịch ngày nghỉ');
+      toast.error('Lỗi khi tạo lịch ngày nghỉ');
     } finally {
       setLoading(false);
     }
@@ -544,28 +560,44 @@ const BulkOverrideHolidayModal = ({
                         {['morning', 'afternoon', 'evening'].map(shift => {
                           // Check xem ca này đã tạo cho TẤT CẢ phòng chưa
                           const roomsWithShift = selectedHolidayInfo?.shiftStatus?.[shift] || [];
-                          const isFullyBooked = roomsWithShift.length === selectedRoomIds.length;
                           
-                          // 🆕 Check xem ca này có đang BẬT ở TẤT CẢ phòng không
-                          const roomsWithActiveShift = selectedHolidayInfo?.shiftConfig?.[shift] || [];
-                          const allRoomsHaveShiftDisabled = roomsWithActiveShift.length === 0; // Không có room nào bật ca này
-                          const someRoomsHaveShiftDisabled = roomsWithActiveShift.length < selectedRoomIds.length && roomsWithActiveShift.length > 0;
+                          // 🆕 Phân loại phòng
+                          const roomsInHoliday = selectedHolidayInfo?.rooms || []; // Phòng có ngày nghỉ này
+                          const roomsWithActiveShift = selectedHolidayInfo?.shiftConfig?.[shift] || []; // Phòng có ngày nghỉ VÀ ca bật
+                          const roomsWithScheduleInMonth = selectedHolidayInfo?.roomsWithSchedule || []; // Phòng có lịch trong tháng
                           
-                          // Disable nếu: đã tạo hết HOẶC tất cả phòng tắt ca này
-                          const shouldDisable = isFullyBooked || allRoomsHaveShiftDisabled;
+                          // Phòng KHÔNG có ngày nghỉ NHƯNG có lịch bình thường trong tháng
+                          const roomsWithNormalSchedule = selectedRoomIds.filter(
+                            id => !roomsInHoliday.includes(id) && roomsWithScheduleInMonth.includes(id)
+                          );
                           
-                          const roomsNeedShift = selectedRoomIds.length - roomsWithShift.length;
-                          const roomsNeedToEnable = selectedRoomIds.length - roomsWithActiveShift.length;
+                          // Phòng CÓ ngày nghỉ NHƯNG ca bị tắt
+                          const roomsWithHolidayButShiftDisabled = roomsInHoliday.filter(id => !roomsWithActiveShift.includes(id));
+                          
+                          // Phòng cần tạo override = Phòng có ngày nghỉ VÀ ca bật VÀ chưa tạo
+                          const roomsNeedOverride = roomsWithActiveShift.filter(id => !roomsWithShift.includes(id));
+                          
+                          // ✅ Disable khi TẤT CẢ rooms đều: (đã tạo override) HOẶC (có lịch bình thường) HOẶC (có holiday nhưng ca tắt)
+                          const roomsCovered = new Set([
+                            ...roomsWithShift, // Đã tạo override
+                            ...roomsWithNormalSchedule, // Có lịch bình thường (không có holiday ngày này)
+                            ...roomsWithHolidayButShiftDisabled // Có holiday nhưng ca tắt (không cần tạo)
+                          ]);
+                          const shouldDisable = roomsCovered.size === selectedRoomIds.length;
+                          
+                          const roomsNeedShift = roomsNeedOverride.length;
+                          const roomsHaveNormalSchedule = roomsWithNormalSchedule.length;
                           
                           // 🔍 Debug log
                           console.log(`🔍 Shift ${shift} for date ${selectedDate}:`, {
+                            roomsInHoliday,
                             roomsWithActiveShift,
-                            activeCount: roomsWithActiveShift.length,
-                            totalRooms: selectedRoomIds.length,
-                            allRoomsHaveShiftDisabled,
-                            someRoomsHaveShiftDisabled,
-                            shouldDisable,
-                            isFullyBooked
+                            roomsWithNormalSchedule,
+                            roomsWithHolidayButShiftDisabled,
+                            roomsNeedOverride,
+                            roomsWithShift,
+                            roomsCovered: Array.from(roomsCovered),
+                            shouldDisable
                           });
                           
                           return (
@@ -594,22 +626,28 @@ const BulkOverrideHolidayModal = ({
                                       {SHIFT_NAMES[shift]}
                                     </Text>
                                   </Checkbox>
-                                  {allRoomsHaveShiftDisabled ? (
-                                    <Text type="danger" style={{ fontSize: 12 }}>
-                                      ❌ Tất cả phòng tắt ca này
-                                    </Text>
-                                  ) : someRoomsHaveShiftDisabled ? (
-                                    <Text type="warning" style={{ fontSize: 12 }}>
-                                      ⚠️ {roomsNeedToEnable} phòng tắt ca này
-                                    </Text>
-                                  ) : isFullyBooked ? (
-                                    <Text type="danger" style={{ fontSize: 12 }}>
-                                      ✓ Đã tạo hết
+                                  {shouldDisable ? (
+                                    <Text type="success" style={{ fontSize: 12 }}>
+                                      ✓ Tất cả phòng đã OK
                                     </Text>
                                   ) : (
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
-                                      {roomsNeedShift} phòng cần tạo
-                                    </Text>
+                                    <>
+                                      {roomsNeedShift > 0 && (
+                                        <Text type="secondary" style={{ fontSize: 12 }}>
+                                          {roomsNeedShift} phòng cần tạo
+                                        </Text>
+                                      )}
+                                      {roomsHaveNormalSchedule > 0 && (
+                                        <Text type="success" style={{ fontSize: 12, display: 'block' }}>
+                                          ✓ {roomsHaveNormalSchedule} phòng có lịch
+                                        </Text>
+                                      )}
+                                      {roomsWithHolidayButShiftDisabled.length > 0 && (
+                                        <Text type="warning" style={{ fontSize: 12, display: 'block' }}>
+                                          ⚠️ {roomsWithHolidayButShiftDisabled.length} phòng tắt ca
+                                        </Text>
+                                      )}
+                                    </>
                                   )}
                                   <Button 
                                     type="link" 
@@ -683,39 +721,64 @@ const BulkOverrideHolidayModal = ({
 
     {/* Modal chi tiết ca */}
     <Modal
-      title={`Chi tiết ca ${selectedShiftForDetail === 'morningShift' ? 'Sáng' : selectedShiftForDetail === 'afternoonShift' ? 'Chiều' : 'Tối'} - ${selectedHolidayInfo?.date ? dayjs(selectedHolidayInfo.date).format('DD/MM/YYYY') : ''}`}
+      title={`Chi tiết ca ${SHIFT_NAMES[selectedShiftForDetail] || 'Không xác định'} - ${selectedHolidayInfo?.date ? dayjs(selectedHolidayInfo.date).format('DD/MM/YYYY') : ''}`}
       open={shiftDetailModalVisible}
       onCancel={() => setShiftDetailModalVisible(false)}
       footer={null}
       width={800}
     >
       {selectedHolidayInfo && selectedShiftForDetail && (() => {
-        // Convert shift key từ 'morningShift' -> 'morning'
-        const shiftKey = selectedShiftForDetail.replace('Shift', '');
+        // selectedShiftForDetail đã là 'morning', 'afternoon', 'evening' rồi
+        const shiftKey = selectedShiftForDetail;
         
         // Lấy danh sách roomId đã tạo override và có config active
         const roomsWithOverride = selectedHolidayInfo.shiftStatus[shiftKey] || [];
         const roomsWithActiveConfig = selectedHolidayInfo.shiftConfig[shiftKey] || [];
+        const roomsWithSchedule = selectedHolidayInfo.roomsWithSchedule || []; // 🆕 Danh sách room CÓ LỊCH trong tháng này
+        const roomsInHoliday = selectedHolidayInfo.rooms || []; // Danh sách room có NGÀY NGHỈ này trong lịch
+        
+        console.log('🔍 Modal Chi tiết ca:', {
+          shiftKey,
+          date: selectedHolidayInfo.date,
+          roomsWithOverride,
+          roomsWithActiveConfig,
+          roomsWithSchedule,
+          roomsInHoliday,
+          selectedRoomIds
+        });
         
         // Map selectedRooms với trạng thái
         const roomDetailData = selectedRooms.map(room => {
           const roomId = room._id;
           const hasOverride = roomsWithOverride.includes(roomId);
           const hasActiveConfig = roomsWithActiveConfig.includes(roomId);
+          const hasScheduleInMonth = roomsWithSchedule.includes(roomId);
+          const hasHoliday = roomsInHoliday.includes(roomId); // Phòng có ngày nghỉ này trong lịch
           
           // Xác định trạng thái
           let status = '';
           let statusColor = '';
           
           if (hasOverride) {
+            // Đã tạo lịch ngày nghỉ (override)
             status = 'Đã tạo';
             statusColor = 'success';
-          } else if (hasActiveConfig) {
+          } else if (!hasScheduleInMonth) {
+            // Chưa có lịch tháng này
+            status = 'Chưa tạo lịch tháng';
+            statusColor = 'default';
+          } else if (!hasHoliday) {
+            // Có lịch tháng này NHƯNG KHÔNG có ngày nghỉ này → Đã có lịch bình thường vào ngày này
+            status = 'Có lịch';
+            statusColor = 'success';
+          } else if (!hasActiveConfig) {
+            // Có ngày nghỉ này NHƯNG ca bị tắt (isActive=false)
+            status = 'Ca bị tắt';
+            statusColor = 'error';
+          } else {
+            // Có ngày nghỉ này, ca đang bật, cần tạo override
             status = 'Chưa tạo';
             statusColor = 'warning';
-          } else {
-            status = 'Đang tắt';
-            statusColor = 'error';
           }
           
           return {

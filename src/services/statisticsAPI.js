@@ -412,7 +412,8 @@ export const getBookingChannelStatistics = async (params = {}) => {
       success: true,
       data: {
         summary: backendData.summary || {},
-        trend: backendData.trends || [],
+        trend: backendData.trends || [], // ⚠️ Backward compatibility (old code uses data.trend)
+        trends: backendData.trends || [], // ✅ Correct property name from backend
         offlineByRole: (backendData.offlineByRole || []).map(item => ({
           role: item.role,
           name: roleNames[item.role] || item.role,

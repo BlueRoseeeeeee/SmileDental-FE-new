@@ -19,8 +19,7 @@ import {
   Tooltip,
   Radio,
   List,
-  Input,
-  message
+  Input
 } from 'antd';
 import {
   CalendarOutlined,
@@ -355,11 +354,11 @@ const CreateScheduleForRoom = () => {
         }));
       } else {
         console.error('❌ API Error:', response.message);
-        message.error(response.message || 'Không thể lấy danh sách phòng');
+        toast.error(response.message || 'Không thể lấy danh sách phòng');
       }
     } catch (error) {
       console.error('❌ Error fetching rooms:', error);
-      message.error('Lỗi khi lấy danh sách phòng: ' + error.message);
+      toast.error('Lỗi khi lấy danh sách phòng: ' + error.message);
     }
     setLoading(false);
   };
@@ -803,7 +802,7 @@ const CreateScheduleForRoom = () => {
     // Nếu chọn tháng HIỆN TẠI → Ngày bắt đầu phải >= TOMORROW
     if (isCurrentMonth) {
       if (startDate.isBefore(tomorrow)) {
-        toast.error('Ngày bắt đầu phải sau ngày hiện tại ít nhất 1 ngày (vì lịch tạo sau 1 ngày)');
+        toast.error(`Ngày bắt đầu phải từ ${tomorrow.format('DD/MM/YYYY')} trở đi (tối thiểu 1 ngày kể từ hôm nay)`);
         return;
       }
     } else {
@@ -872,10 +871,7 @@ const CreateScheduleForRoom = () => {
             }).join(', ');
             
             // Show success message
-            message.success({
-              content: `✅ Đã thêm ca thiếu thành công! ${addedShifts} - ${successResults.length} buồng - Tổng: ${totalAddedSlots} slots`,
-              duration: 5
-            });
+            toast.success(`✅ Đã thêm ca thiếu thành công! ${addedShifts} - ${successResults.length} buồng - Tổng: ${totalAddedSlots} slots`);
             
             // Close modal and reset
             handleCancelModal();
@@ -886,11 +882,11 @@ const CreateScheduleForRoom = () => {
               fetchRooms();
             }, 300);
           } else {
-            message.error(response.message || 'Không thể thêm ca thiếu');
+            toast.error(response.message || 'Không thể thêm ca thiếu');
           }
         } catch (error) {
           console.error('❌ Error adding missing shifts:', error);
-          message.error(error.response?.data?.message || error.message || 'Lỗi khi thêm ca thiếu');
+          toast.error(error.response?.data?.message || error.message || 'Lỗi khi thêm ca thiếu');
         }
         
         setCreatingSchedule(false);
@@ -948,10 +944,7 @@ const CreateScheduleForRoom = () => {
               .join(', ');
             
             // Show success message
-            message.success({
-              content: `✅ Tạo lịch thành công cho ${Object.keys(resultsBySubRoom).length}/${subRoomsToCreate.length} buồng. Tổng: ${totalSlots} slots`,
-              duration: 5
-            });
+            toast.success(`✅ Tạo lịch thành công cho ${Object.keys(resultsBySubRoom).length}/${subRoomsToCreate.length} buồng. Tổng: ${totalSlots} slots`);
             
             // Close modal and refresh room list
             setShowCreateModal(false);
@@ -962,11 +955,11 @@ const CreateScheduleForRoom = () => {
               fetchRooms(); // Reload danh sách phòng để cập nhật trạng thái
             }, 300);
           } else {
-            message.error(response.message || 'Không thể tạo lịch');
+            toast.error(response.message || 'Không thể tạo lịch');
           }
         } catch (error) {
           console.error('Error creating schedules:', error);
-          message.error(error.message || 'Lỗi khi tạo lịch');
+          toast.error(error.message || 'Lỗi khi tạo lịch');
         }
         
         setCreatingSchedule(false);
@@ -1194,7 +1187,7 @@ const CreateScheduleForRoom = () => {
     console.log(`🔍 Filtered ${filteredSchedules.length} schedules for ${month}/${year}`);
     
     if (filteredSchedules.length === 0) {
-      message.warning(`Không tìm thấy lịch tháng ${month}/${year}`);
+      toast.warning(`Không tìm thấy lịch tháng ${month}/${year}`);
       return;
     }
     
@@ -1898,13 +1891,13 @@ const CreateScheduleForRoom = () => {
                         });
                         setSelectedRoomsMap(newMap);
                         
-                        message.success(`Đã chọn tất cả ${allRooms.length} phòng`);
+                        toast.success(`Đã chọn tất cả ${allRooms.length} phòng`);
                       } else {
-                        message.error('Không thể lấy danh sách phòng');
+                        toast.error('Không thể lấy danh sách phòng');
                       }
                     } catch (error) {
                       console.error('Error fetching all rooms:', error);
-                      message.error('Lỗi khi lấy danh sách phòng');
+                      toast.error('Lỗi khi lấy danh sách phòng');
                     } finally {
                       setLoading(false);
                     }
@@ -1924,7 +1917,7 @@ const CreateScheduleForRoom = () => {
                   onClick={() => {
                     setSelectedRoomIds([]);
                     setSelectedRoomsMap({});
-                    message.info('Đã bỏ chọn tất cả');
+                    toast.info('Đã bỏ chọn tất cả');
                   }}
                   disabled={selectedRoomIds.length === 0}
                   size="large"
