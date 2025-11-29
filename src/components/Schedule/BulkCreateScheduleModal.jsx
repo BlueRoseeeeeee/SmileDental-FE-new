@@ -745,7 +745,11 @@ const BulkCreateScheduleModal = ({
                           type={bulkInfo?.shiftUnavailableReasons?.morning === 'disabled' ? 'warning' : 'secondary'} 
                           style={{ fontSize: '12px', marginLeft: 4 }}
                         >
-                          {bulkInfo?.shiftUnavailableReasons?.morning === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                          {bulkInfo?.shiftUnavailableReasons?.morning === 'complete' 
+                            ? '(Đầy đủ)' 
+                            : bulkInfo?.shiftUnavailableReasons?.morning === 'disabled' 
+                              ? '(Đang tắt)' 
+                              : '(Chưa có lịch)'}
                         </Text>
                       )}
                     </Checkbox>
@@ -778,7 +782,11 @@ const BulkCreateScheduleModal = ({
                           type={bulkInfo?.shiftUnavailableReasons?.afternoon === 'disabled' ? 'warning' : 'secondary'} 
                           style={{ fontSize: '12px', marginLeft: 4 }}
                         >
-                          {bulkInfo?.shiftUnavailableReasons?.afternoon === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                          {bulkInfo?.shiftUnavailableReasons?.afternoon === 'complete' 
+                            ? '(Đầy đủ)' 
+                            : bulkInfo?.shiftUnavailableReasons?.afternoon === 'disabled' 
+                              ? '(Đang tắt)' 
+                              : '(Chưa có lịch)'}
                         </Text>
                       )}
                     </Checkbox>
@@ -811,7 +819,11 @@ const BulkCreateScheduleModal = ({
                           type={bulkInfo?.shiftUnavailableReasons?.evening === 'disabled' ? 'warning' : 'secondary'} 
                           style={{ fontSize: '12px', marginLeft: 4 }}
                         >
-                          {bulkInfo?.shiftUnavailableReasons?.evening === 'complete' ? '(Đầy đủ)' : '(Đang tắt)'}
+                          {bulkInfo?.shiftUnavailableReasons?.evening === 'complete' 
+                            ? '(Đầy đủ)' 
+                            : bulkInfo?.shiftUnavailableReasons?.evening === 'disabled' 
+                              ? '(Đang tắt)' 
+                              : '(Chưa có lịch)'}
                         </Text>
                       )}
                     </Checkbox>
