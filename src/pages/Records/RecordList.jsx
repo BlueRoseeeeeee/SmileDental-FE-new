@@ -210,6 +210,10 @@ const RecordList = () => {
       errors.push('Chưa chọn dịch vụ con cho dịch vụ chính');
     }
     
+    if (!record.serviceAddOnPrice || record.serviceAddOnPrice <= 0) {
+      errors.push('Dịch vụ con chính chưa có giá hợp lệ (vui lòng cập nhật lại dịch vụ)');
+    }
+    
     if (errors.length > 0) {
       console.warn('❌ [RecordList] Validation failed:', errors);
       Modal.warning({
@@ -924,6 +928,9 @@ const RecordList = () => {
                   if (!record.serviceAddOnId) {
                     missingFields.push('dịch vụ con');
                   }
+                  if (!record.serviceAddOnPrice || record.serviceAddOnPrice <= 0) {
+                    missingFields.push('giá dịch vụ con');
+                  }
                   
                   if (missingFields.length > 0) {
                     return `Cần cập nhật: ${missingFields.join(', ')}`;
@@ -947,7 +954,9 @@ const RecordList = () => {
                 disabled={
                   !record.diagnosis || 
                   record.diagnosis.trim() === '' || 
-                  !record.serviceAddOnId
+                  !record.serviceAddOnId ||
+                  !record.serviceAddOnPrice ||
+                  record.serviceAddOnPrice <= 0
                 }
               >
                 Hoàn thành

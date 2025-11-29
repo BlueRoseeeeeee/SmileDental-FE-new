@@ -711,10 +711,26 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
             lastModifiedBy: currentUser._id || 'unknown'
           };
         } else {
-          // ✅ Even if no service changes, still send totalCost if there are additional service changes
+          // ✅ Even if no service changes, still send totalCost and serviceAddOn fields
+          // to ensure backend has current values (fixes issue where serviceAddOnPrice = 0 after update)
+          if (!currentAddOn) {
+            message.error('Không tìm thấy thông tin dịch vụ con đã chọn');
+            console.error('❌ currentAddOn not found. currentServiceAddOnId:', currentServiceAddOnId, 'selectedMainServiceAddOns:', selectedMainServiceAddOns);
+            setLoading(false);
+            return;
+          }
+          
+          const effectiveMainPrice = getEffectivePrice(currentAddOn);
+          console.log('ℹ️ Service addon unchanged, but including in update:', currentAddOn.name, effectiveMainPrice, 'x', currentQuantity);
+          
           recordData = {
             diagnosis: values.diagnosis,
             notes: values.notes,
+            serviceAddOnId: currentAddOn._id,
+            serviceAddOnName: currentAddOn.name,
+            serviceAddOnUnit: currentAddOn.unit,
+            serviceAddOnPrice: effectiveMainPrice,
+            quantity: currentQuantity,
             totalCost: calculatedTotalCost, // ✅ Always send totalCost from FE
             treatmentIndications: [], // Will be set below
             lastModifiedBy: currentUser._id || 'unknown'
