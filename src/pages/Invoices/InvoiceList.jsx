@@ -483,13 +483,6 @@ const InvoiceList = () => {
               <Button onClick={handleResetFilters}>
                 Đặt lại
               </Button>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleCreate}
-              >
-                Tạo hóa đơn
-              </Button>
             </Space>
           </Col>
         </Row>

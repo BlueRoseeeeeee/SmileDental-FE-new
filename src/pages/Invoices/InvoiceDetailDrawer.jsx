@@ -23,7 +23,8 @@ import {
   CloseCircleOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DollarOutlined
+  DollarOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import invoiceService from '../../services/invoiceService';
@@ -121,21 +122,32 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
       title: 'Dịch vụ',
       dataIndex: ['serviceInfo', 'name'],
       key: 'service',
-      render: (name, record) => (
-        <div>
-          <div style={{ fontWeight: 500 }}>{name}</div>
-          {record.serviceInfo.code && (
-            <div style={{ fontSize: '12px', color: '#888' }}>
-              Mã: {record.serviceInfo.code}
-            </div>
-          )}
-          {record.toothInfo && (
-            <div style={{ fontSize: '12px', color: '#1890ff' }}>
-              Răng số {record.toothInfo.toothNumber} - {record.toothInfo.position}
-            </div>
-          )}
-        </div>
-      )
+      render: (name, record) => {
+        // Display: serviceName - serviceAddOnName
+        // name = serviceName (e.g., "Khám tổng quát")
+        // description = serviceAddOnName (e.g., "Khám và tư vấn chuyên sâu")
+        const serviceName = record.serviceInfo?.name || name;
+        const serviceAddOnName = record.serviceInfo?.description || '';
+        const displayName = serviceName && serviceAddOnName 
+          ? `${serviceName} - ${serviceAddOnName}`
+          : serviceName || 'N/A';
+        
+        return (
+          <div>
+            <div style={{ fontWeight: 500 }}>{displayName}</div>
+            {record.serviceInfo.code && (
+              <div style={{ fontSize: '12px', color: '#888' }}>
+                Mã: {record.serviceInfo.code}
+              </div>
+            )}
+            {record.toothInfo && (
+              <div style={{ fontSize: '12px', color: '#1890ff' }}>
+                Răng số {record.toothInfo.toothNumber} - {record.toothInfo.position}
+              </div>
+            )}
+          </div>
+        );
+      }
     },
     {
       title: 'Đơn giá',
@@ -143,7 +155,13 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
       key: 'unitPrice',
       align: 'right',
       width: 120,
-      render: (price) => formatCurrency(price)
+      render: (price, record) => {
+        // If has deposit (discountAmount), show original price = unitPrice + discountAmount
+        const originalPrice = record.discountAmount > 0 
+          ? price + record.discountAmount 
+          : price;
+        return formatCurrency(originalPrice);
+      }
     },
     {
       title: 'SL',
@@ -176,6 +194,11 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
     }
   ];
 
+  // 🔥 FIX: Detect deposit and calculate correctly
+  // If subtotal > totalAmount, difference is deposit
+  const subtotalAmount = invoice.subtotal || invoice.totalAmount;
+  const depositAmount = Math.max(0, subtotalAmount - invoice.totalAmount);
+  const actualRemaining = Math.max(0, invoice.totalAmount - invoice.paymentSummary.totalPaid);
   const paymentRate = invoice.totalAmount > 0 
     ? (invoice.paymentSummary.totalPaid / invoice.totalAmount * 100).toFixed(1)
     : 0;
@@ -388,8 +411,8 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
           <Col span={6}>
             <Statistic
               title="Còn nợ"
-              value={invoice.paymentSummary.remainingAmount}
-              valueStyle={{ color: invoice.paymentSummary.remainingAmount > 0 ? '#ff4d4f' : '#52c41a' }}
+              value={actualRemaining}
+              valueStyle={{ color: actualRemaining > 0 ? '#ff4d4f' : '#52c41a' }}
               formatter={(value) => formatCurrency(value)}
               prefix={<ClockCircleOutlined />}
             />
@@ -403,6 +426,26 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
             />
           </Col>
         </Row>
+        
+        {/* Show deposit info if exists */}
+        {depositAmount > 0 && (
+          <div style={{ 
+            marginBottom: 16, 
+            padding: '12px 16px', 
+            background: '#e6f7ff', 
+            border: '1px solid #91d5ff',
+            borderRadius: 4 
+          }}>
+            <Space>
+              <InfoCircleOutlined style={{ color: '#1890ff' }} />
+              <Text>
+                <Text strong>Cọc trước: </Text>
+                <Text type="success" strong>{formatCurrency(depositAmount)}</Text>
+                <Text type="secondary"> (đã trừ vào tổng hóa đơn)</Text>
+              </Text>
+            </Space>
+          </div>
+        )}
         
         {invoice.paymentSummary.lastPaymentDate && (
           <Descriptions column={2} size="small">

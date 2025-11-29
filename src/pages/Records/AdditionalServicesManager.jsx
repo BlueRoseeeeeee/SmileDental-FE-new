@@ -327,7 +327,9 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
   ];
 
   const additionalServices = record?.additionalServices || [];
-  const baseCost = (record?.servicePrice || 0) + (record?.serviceAddOnPrice || 0);
+  // 🔥 FIX: Service chính không có giá riêng, chỉ lấy serviceAddOnPrice
+  // servicePrice là giá base (không dùng), serviceAddOnPrice là giá thực tế của add-on
+  const baseCost = (record?.serviceAddOnPrice || 0); // CHỈ lấy serviceAddOnPrice
   const additionalCost = additionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
   const totalCost = baseCost + additionalCost;
 
@@ -339,18 +341,6 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
           <span>Dịch vụ bổ sung</span>
           <Tag color="blue">{additionalServices.length} dịch vụ</Tag>
         </Space>
-      }
-      extra={
-        record?.status !== 'completed' && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-            size="small"
-          >
-            Thêm dịch vụ
-          </Button>
-        )
       }
       size="small"
     >
