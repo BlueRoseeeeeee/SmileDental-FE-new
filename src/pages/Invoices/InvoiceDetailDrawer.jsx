@@ -155,12 +155,10 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
       key: 'unitPrice',
       align: 'right',
       width: 120,
-      render: (price, record) => {
-        // If has deposit (discountAmount), show original price = unitPrice + discountAmount
-        const originalPrice = record.discountAmount > 0 
-          ? price + record.discountAmount 
-          : price;
-        return formatCurrency(originalPrice);
+      render: (price) => {
+        // unitPrice already contains the ORIGINAL price (before deposit)
+        // No need to add discountAmount
+        return formatCurrency(price);
       }
     },
     {
