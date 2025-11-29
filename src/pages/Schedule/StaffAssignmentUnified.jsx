@@ -5480,8 +5480,8 @@ const StaffAssignmentUnified = () => {
                                         buttonStyle="solid"
                                         style={{ width: '100%' }}
                                       >
-                                        <Radio.Button value="active" style={{ flex: 1, textAlign: 'center' }}>Nhân sự hoạt động</Radio.Button>
-                                        <Radio.Button value="inactive" style={{ flex: 1, textAlign: 'center' }}>Nhân sự nghỉ việc</Radio.Button>
+                                        {/* <Radio.Button value="active" style={{ flex: 1, textAlign: 'center' }}>Nhân sự hoạt động</Radio.Button>
+                                        <Radio.Button value="inactive" style={{ flex: 1, textAlign: 'center' }}>Nhân sự nghỉ việc</Radio.Button> */}
                                       </Radio.Group>
                                       
                                       <Radio.Group 
