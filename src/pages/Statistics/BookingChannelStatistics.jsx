@@ -521,6 +521,186 @@ const BookingChannelStatistics = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* 🆕 Chi tiết dữ liệu theo thời gian */}
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col span={24}>
+          <Card 
+            title={
+              <span>
+                <CalendarOutlined style={{ marginRight: 8 }} />
+                Chi tiết dữ liệu đặt hẹn theo {groupBy === 'day' ? 'ngày' : groupBy === 'month' ? 'tháng' : 'năm'}
+              </span>
+            }
+          >
+            <Table
+              dataSource={data.trends || []}
+              rowKey="date"
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showTotal: (total) => `Tổng ${total} ${groupBy === 'day' ? 'ngày' : groupBy === 'month' ? 'tháng' : 'năm'}`,
+                pageSizeOptions: ['10', '20', '50']
+              }}
+              columns={[
+                {
+                  title: groupBy === 'day' ? 'Ngày' : groupBy === 'month' ? 'Tháng' : 'Năm',
+                  dataIndex: 'date',
+                  key: 'date',
+                  width: 120,
+                  fixed: 'left',
+                  render: (date) => {
+                    if (groupBy === 'day') {
+                      return dayjs(date).format('DD/MM/YYYY');
+                    } else if (groupBy === 'month') {
+                      return dayjs(date).format('MM/YYYY');
+                    }
+                    return date;
+                  },
+                  sorter: (a, b) => new Date(a.date) - new Date(b.date),
+                  defaultSortOrder: 'descend'
+                },
+                {
+                  title: 'Online',
+                  dataIndex: 'online',
+                  key: 'online',
+                  align: 'right',
+                  width: 100,
+                  render: (value) => (
+                    <span style={{ color: COLORS.online, fontWeight: 500 }}>
+                      {formatNumber(value || 0)}
+                    </span>
+                  ),
+                  sorter: (a, b) => (a.online || 0) - (b.online || 0)
+                },
+                {
+                  title: 'Offline',
+                  dataIndex: 'offline',
+                  key: 'offline',
+                  align: 'right',
+                  width: 100,
+                  render: (value) => (
+                    <span style={{ color: COLORS.offline, fontWeight: 500 }}>
+                      {formatNumber(value || 0)}
+                    </span>
+                  ),
+                  sorter: (a, b) => (a.offline || 0) - (b.offline || 0)
+                },
+                {
+                  title: 'Tổng',
+                  key: 'total',
+                  align: 'right',
+                  width: 100,
+                  render: (_, record) => {
+                    const total = (record.online || 0) + (record.offline || 0);
+                    return (
+                      <span style={{ fontWeight: 600, color: '#722ed1' }}>
+                        {formatNumber(total)}
+                      </span>
+                    );
+                  },
+                  sorter: (a, b) => {
+                    const totalA = (a.online || 0) + (a.offline || 0);
+                    const totalB = (b.online || 0) + (b.offline || 0);
+                    return totalA - totalB;
+                  }
+                },
+                {
+                  title: '% Online',
+                  key: 'onlinePercentage',
+                  align: 'right',
+                  width: 150,
+                  render: (_, record) => {
+                    const total = (record.online || 0) + (record.offline || 0);
+                    const percentage = total > 0 ? ((record.online / total) * 100).toFixed(1) : 0;
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <Progress 
+                          percent={parseFloat(percentage)} 
+                          size="small" 
+                          strokeColor={COLORS.online}
+                          format={(percent) => `${percent}%`}
+                          style={{ width: 100, marginRight: 8 }}
+                        />
+                      </div>
+                    );
+                  },
+                  sorter: (a, b) => {
+                    const totalA = (a.online || 0) + (a.offline || 0);
+                    const totalB = (b.online || 0) + (b.offline || 0);
+                    const pctA = totalA > 0 ? (a.online / totalA) * 100 : 0;
+                    const pctB = totalB > 0 ? (b.online / totalB) * 100 : 0;
+                    return pctA - pctB;
+                  }
+                },
+                {
+                  title: '% Offline',
+                  key: 'offlinePercentage',
+                  align: 'right',
+                  width: 150,
+                  render: (_, record) => {
+                    const total = (record.online || 0) + (record.offline || 0);
+                    const percentage = total > 0 ? ((record.offline / total) * 100).toFixed(1) : 0;
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                        <Progress 
+                          percent={parseFloat(percentage)} 
+                          size="small" 
+                          strokeColor={COLORS.offline}
+                          format={(percent) => `${percent}%`}
+                          style={{ width: 100, marginRight: 8 }}
+                        />
+                      </div>
+                    );
+                  },
+                  sorter: (a, b) => {
+                    const totalA = (a.online || 0) + (a.offline || 0);
+                    const totalB = (b.online || 0) + (b.offline || 0);
+                    const pctA = totalA > 0 ? (a.offline / totalA) * 100 : 0;
+                    const pctB = totalB > 0 ? (b.offline / totalB) * 100 : 0;
+                    return pctA - pctB;
+                  }
+                }
+              ]}
+              summary={(pageData) => {
+                let totalOnline = 0;
+                let totalOffline = 0;
+                pageData.forEach(({ online, offline }) => {
+                  totalOnline += online || 0;
+                  totalOffline += offline || 0;
+                });
+                const grandTotal = totalOnline + totalOffline;
+                const onlinePercentage = grandTotal > 0 ? ((totalOnline / grandTotal) * 100).toFixed(1) : 0;
+                const offlinePercentage = grandTotal > 0 ? ((totalOffline / grandTotal) * 100).toFixed(1) : 0;
+
+                return (
+                  <Table.Summary.Row style={{ backgroundColor: '#fafafa', fontWeight: 600 }}>
+                    <Table.Summary.Cell index={0}>
+                      <strong>Tổng cộng</strong>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1} align="right">
+                      <span style={{ color: COLORS.online }}>{formatNumber(totalOnline)}</span>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={2} align="right">
+                      <span style={{ color: COLORS.offline }}>{formatNumber(totalOffline)}</span>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={3} align="right">
+                      <span style={{ color: '#722ed1' }}>{formatNumber(grandTotal)}</span>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={4} align="right">
+                      <Tag color="green">{onlinePercentage}%</Tag>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={5} align="right">
+                      <Tag color="blue">{offlinePercentage}%</Tag>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                );
+              }}
+              scroll={{ x: 800 }}
+            />
+          </Card>
+        </Col>
+      </Row>
       </>
       );
         })()}
