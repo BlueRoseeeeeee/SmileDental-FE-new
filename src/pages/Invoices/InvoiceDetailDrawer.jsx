@@ -23,7 +23,8 @@ import {
   CloseCircleOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  DollarOutlined
+  DollarOutlined,
+  InfoCircleOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import invoiceService from '../../services/invoiceService';
@@ -176,6 +177,11 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
     }
   ];
 
+  // 🔥 FIX: Detect deposit and calculate correctly
+  // If subtotal > totalAmount, difference is deposit
+  const subtotalAmount = invoice.subtotal || invoice.totalAmount;
+  const depositAmount = Math.max(0, subtotalAmount - invoice.totalAmount);
+  const actualRemaining = Math.max(0, invoice.totalAmount - invoice.paymentSummary.totalPaid);
   const paymentRate = invoice.totalAmount > 0 
     ? (invoice.paymentSummary.totalPaid / invoice.totalAmount * 100).toFixed(1)
     : 0;
@@ -388,8 +394,8 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
           <Col span={6}>
             <Statistic
               title="Còn nợ"
-              value={invoice.paymentSummary.remainingAmount}
-              valueStyle={{ color: invoice.paymentSummary.remainingAmount > 0 ? '#ff4d4f' : '#52c41a' }}
+              value={actualRemaining}
+              valueStyle={{ color: actualRemaining > 0 ? '#ff4d4f' : '#52c41a' }}
               formatter={(value) => formatCurrency(value)}
               prefix={<ClockCircleOutlined />}
             />
@@ -403,6 +409,26 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
             />
           </Col>
         </Row>
+        
+        {/* Show deposit info if exists */}
+        {depositAmount > 0 && (
+          <div style={{ 
+            marginBottom: 16, 
+            padding: '12px 16px', 
+            background: '#e6f7ff', 
+            border: '1px solid #91d5ff',
+            borderRadius: 4 
+          }}>
+            <Space>
+              <InfoCircleOutlined style={{ color: '#1890ff' }} />
+              <Text>
+                <Text strong>Cọc trước: </Text>
+                <Text type="success" strong>{formatCurrency(depositAmount)}</Text>
+                <Text type="secondary"> (đã trừ vào tổng hóa đơn)</Text>
+              </Text>
+            </Space>
+          </div>
+        )}
         
         {invoice.paymentSummary.lastPaymentDate && (
           <Descriptions column={2} size="small">
