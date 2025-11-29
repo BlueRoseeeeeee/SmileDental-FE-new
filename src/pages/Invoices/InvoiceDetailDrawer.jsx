@@ -122,21 +122,32 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
       title: 'Dịch vụ',
       dataIndex: ['serviceInfo', 'name'],
       key: 'service',
-      render: (name, record) => (
-        <div>
-          <div style={{ fontWeight: 500 }}>{name}</div>
-          {record.serviceInfo.code && (
-            <div style={{ fontSize: '12px', color: '#888' }}>
-              Mã: {record.serviceInfo.code}
-            </div>
-          )}
-          {record.toothInfo && (
-            <div style={{ fontSize: '12px', color: '#1890ff' }}>
-              Răng số {record.toothInfo.toothNumber} - {record.toothInfo.position}
-            </div>
-          )}
-        </div>
-      )
+      render: (name, record) => {
+        // Display: serviceName - serviceAddOnName
+        // name = serviceName (e.g., "Khám tổng quát")
+        // description = serviceAddOnName (e.g., "Khám và tư vấn chuyên sâu")
+        const serviceName = record.serviceInfo?.name || name;
+        const serviceAddOnName = record.serviceInfo?.description || '';
+        const displayName = serviceName && serviceAddOnName 
+          ? `${serviceName} - ${serviceAddOnName}`
+          : serviceName || 'N/A';
+        
+        return (
+          <div>
+            <div style={{ fontWeight: 500 }}>{displayName}</div>
+            {record.serviceInfo.code && (
+              <div style={{ fontSize: '12px', color: '#888' }}>
+                Mã: {record.serviceInfo.code}
+              </div>
+            )}
+            {record.toothInfo && (
+              <div style={{ fontSize: '12px', color: '#1890ff' }}>
+                Răng số {record.toothInfo.toothNumber} - {record.toothInfo.position}
+              </div>
+            )}
+          </div>
+        );
+      }
     },
     {
       title: 'Đơn giá',
@@ -144,7 +155,13 @@ const InvoiceDetailDrawer = ({ visible, invoice, onClose, onEdit, onPrint, onExp
       key: 'unitPrice',
       align: 'right',
       width: 120,
-      render: (price) => formatCurrency(price)
+      render: (price, record) => {
+        // If has deposit (discountAmount), show original price = unitPrice + discountAmount
+        const originalPrice = record.discountAmount > 0 
+          ? price + record.discountAmount 
+          : price;
+        return formatCurrency(originalPrice);
+      }
     },
     {
       title: 'SL',
