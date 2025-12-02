@@ -1682,7 +1682,17 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                         label="Họ và tên"
                         rules={[
                           { required: true, message: 'Vui lòng nhập họ tên' },
-                          { max: 100, message: 'Tên không quá 100 ký tự' }
+                          { max: 100, message: 'Tên không quá 100 ký tự' },
+                          {
+                            validator: (_, value) => {
+                              if (!value) return Promise.resolve();
+                              const words = value.trim().split(/\s+/);
+                              if (words.length < 2) {
+                                return Promise.reject('Họ tên phải có ít nhất 2 từ');
+                              }
+                              return Promise.resolve();
+                            }
+                          }
                         ]}
                       >
                         <Input 
