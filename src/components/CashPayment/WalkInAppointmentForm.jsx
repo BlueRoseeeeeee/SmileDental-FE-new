@@ -1167,28 +1167,19 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       );
 
       if (checkInResponse.success) {
-        toast.success(`Tạo phiếu thành công!`, 5000);
+        toast.success(`✅ Tạo phiếu thành công! Đang tải lại trang...`, 3000);
         
-        
-        // 🆕 Reset form and reload data
-        handleReset();
-        
-        // 🆕 Reload dentist patients list if dentist role
-        if (isDentist && currentUser._id) {
-          await loadDentistPatients();
-        }
-        
-        if (onSuccess) {
-          onSuccess(appointment);
-        }
+        // 🔄 Reload page after successful creation
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         toast.warning(`Lịch hẹn đã tạo (${appointment.appointmentCode}) nhưng check-in thất bại. Vui lòng check-in thủ công.`, 5000);
         
-        // 🆕 Still reset and reload even if check-in failed
-        handleReset();
-        if (isDentist && currentUser._id) {
-          await loadDentistPatients();
-        }
+        // 🔄 Still reload page
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       }
 
     } catch (error) {
