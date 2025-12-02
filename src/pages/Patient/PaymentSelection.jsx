@@ -305,7 +305,7 @@ const PaymentSelection = () => {
                 <Text strong>Lưu ý quan trọng:</Text>
                 <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20 }}>
                   <li>Sau khi thanh toán thành công, lịch khám của bạn sẽ được xác nhận</li>
-                  <li>Vui lòng hoàn tất thanh toán trong vòng <Text strong style={{ color: '#ff4d4f' }}>15 phút</Text></li>
+                  <li>Vui lòng hoàn tất thanh toán trong vòng <Text strong style={{ color: '#ff4d4f' }}>3 phút</Text></li>
                   <li>Sau 15 phút, đặt khám sẽ tự động hủy và bạn cần đặt lại</li>
                   <li>Thông tin thanh toán được mã hóa và bảo mật tuyệt đối</li>
                 </ul>
