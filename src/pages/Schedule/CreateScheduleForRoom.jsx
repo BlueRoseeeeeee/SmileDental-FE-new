@@ -936,7 +936,7 @@ const CreateScheduleForRoom = () => {
             });
             
             // Show success message
-            toast.success(`✅ Tạo lịch thành công cho ${Object.keys(resultsBySubRoom).length}/${subRoomsToCreate.length} buồng. Tổng: ${totalSlots} slots`);
+            toast.success(`Tạo lịch thành công cho ${Object.keys(resultsBySubRoom).length}/${subRoomsToCreate.length} buồng. Tổng: ${totalSlots} slots`);
             
             // Close modal and refresh room list
             setShowCreateModal(false);
@@ -987,7 +987,7 @@ const CreateScheduleForRoom = () => {
             }).join(', ');
             
             const monthDetails = updatedMonths.map(m => `Tháng ${m.month}/${selectedYear}: +${m.addedSlots} slots`).join(' | ');
-            toast.success(`✅ Đã thêm ca thiếu thành công! ${addedShifts} - ${monthDetails} - Tổng: ${totalAddedSlots} slots`, 5000);
+            toast.success(`Đã thêm ca thiếu thành công! ${addedShifts} - ${monthDetails} - Tổng: ${totalAddedSlots} slots`, 5000);
           } else if (skippedMonths.length > 0 && successMonths.length === 0) {
             // Tất cả tháng đều đã có lịch đầy đủ
             const monthList = skippedMonths.map(m => `Tháng ${m.month}`).join(', ');
@@ -995,7 +995,7 @@ const CreateScheduleForRoom = () => {
           } else if (skippedMonths.length > 0 && successMonths.length > 0) {
             // Một số tháng đã có, một số tạo mới
             const totalNewSlots = successMonths.reduce((sum, m) => sum + (m.slots || 0), 0);
-            toast.success(`✅ Tạo lịch thành công cho ${successMonths.length} tháng! (${skippedMonths.length} tháng đã có lịch) - Tổng slots mới: ${totalNewSlots}`, 5000);
+            toast.success(` Tạo lịch thành công cho ${successMonths.length} tháng! (${skippedMonths.length} tháng đã có lịch) - Tổng slots mới: ${totalNewSlots}`, 5000);
           } else if (successMonths.length > 0) {
             // Chỉ có tháng tạo mới thành công
             const totalNewSlots = successMonths.reduce((sum, m) => sum + (m.slots || 0), 0);
@@ -1005,7 +1005,7 @@ const CreateScheduleForRoom = () => {
             }).join(', ');
             
             const monthList = successMonths.map(m => `Tháng ${m.month}`).join(', ');
-            toast.success(`✅ Tạo lịch thành công! ${createdShifts} - ${successMonths.length} tháng (${monthList}) - Tổng slots: ${totalNewSlots}`, 5000);
+            toast.success(` Tạo lịch thành công! ${createdShifts} - ${successMonths.length} tháng (${monthList}) - Tổng slots: ${totalNewSlots}`, 5000);
           } else {
             toast.success(response.message || 'Tạo lịch thành công!');
           }
@@ -1057,12 +1057,12 @@ const CreateScheduleForRoom = () => {
     setScheduleListActiveFilter('all'); // 🆕 Reset active filter
   };
 
-  // 🆕 Open Edit Schedule Modal
+  //  Open Edit Schedule Modal
   const handleOpenEditModal = (roomId, month, year, scheduleListData) => {
-    console.log('📝 Opening edit modal for room:', roomId, 'month:', month, 'year:', year);
-    console.log('📊 Schedule list data:', scheduleListData);
+    console.log(' Opening edit modal for room:', roomId, 'month:', month, 'year:', year);
+    console.log(' Schedule list data:', scheduleListData);
     
-    // ✅ Filter schedules theo tháng/năm được chọn
+    //  Filter schedules theo tháng/năm được chọn
     const filteredSchedules = scheduleListData?.schedules?.filter(
       s => s.month === month && s.year === year
     ) || [];
