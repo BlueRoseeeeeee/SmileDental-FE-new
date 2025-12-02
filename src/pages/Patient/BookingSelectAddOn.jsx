@@ -55,9 +55,7 @@ const PriceDisplay = ({ addon }) => {
               <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
                 {formatPrice(activeSchedule.price)}
               </Text>
-              <Tag color="red" style={{ margin: 0 }}>
-                Đang giảm giá
-              </Tag>
+              <Text type="secondary">/ {addon.unit}</Text>
             </Space>
             <Space align="center" size={4}>
               <CalendarOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
@@ -350,18 +348,9 @@ const BookingSelectAddOn = () => {
             </h5>
           </div>
           <div style={{padding:'20px'}}>
-            {/* Important Notifications */}
-            {service.type === 'treatment' && (
-              <Alert
-                type="warning"
-                showIcon
-                message="Dịch vụ điều trị yêu cầu phải có chỉ định từ Nha sĩ"
-                description="Vui lòng đặt lịch khám để được Nha sĩ đánh giá và chỉ định gói điều trị phù hợp"
-                style={{ marginBottom: 16 }}
-              />
-            )}
-            
-            {treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId) && (
+            {/* Unified Notification - Single message for all cases */}
+            {service.type === 'treatment' && treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId) ? (
+              // Case 1: Đã có chỉ định
               <Alert
                 type="success"
                 showIcon
@@ -379,15 +368,21 @@ const BookingSelectAddOn = () => {
                 }
                 style={{ marginBottom: 16 }}
               />
-            )}
-            
-            {/* 🆕 Chỉ hiển thị cảnh báo nếu là TREATMENT và không có chỉ định */}
-            {service.type === 'treatment' && treatmentIndications.length === 0 && (
+            ) : service.type === 'treatment' ? (
+              // Case 2: Chưa có chỉ định
               <Alert
                 type="info"
                 showIcon
-                message="Chưa có chỉ định điều trị"
-                description="Bạn cần đặt lịch khám để được Nha sĩ đánh giá và chỉ định gói điều trị phù hợp."
+                message="Dịch vụ điều trị yêu cầu chỉ định từ Nha sĩ"
+                description="Vui lòng đặt lịch khám để được đánh giá và chỉ định gói điều trị phù hợp."
+                style={{ marginBottom: 16 }}
+              />
+            ) : (
+              // Case 3: Dịch vụ exam
+              <Alert
+                type="info"
+                showIcon
+                message="Chọn gói dịch vụ phù hợp với nhu cầu của bạn"
                 style={{ marginBottom: 16 }}
               />
             )}
@@ -395,20 +390,10 @@ const BookingSelectAddOn = () => {
             {/* Service AddOns List */}
             {service.serviceAddOns && service.serviceAddOns.length > 0 ? (
               <div style={{ marginBottom: 32 }}>
-                {canSelectAddOn ? (
+                {/* Chỉ hiển thị guide text khi đã có chỉ định */}
+                {treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId && (
                   <Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 24, fontWeight: 500 }}>
-                    {treatmentIndications.length > 0 && treatmentIndications[0].serviceAddOnId
-                      ? 'Vui lòng xác nhận gói điều trị đã được chỉ định'
-                      : 'Chọn gói dịch vụ phù hợp với nhu cầu của bạn'
-                    }
-                  </Paragraph>
-                ) : (
-                  <Paragraph type="warning" style={{ textAlign: 'center', marginBottom: 24, fontWeight: 500 }}>
-                    {/* 🆕 Thông báo khác nhau cho exam và treatment */}
-                    {service.type === 'treatment'
-                      ? 'Các gói dịch vụ chỉ để tham khảo. Dịch vụ điều trị yêu cầu phải có chỉ định từ Nha sĩ.'
-                      : 'Chọn gói dịch vụ phù hợp với nhu cầu của bạn'
-                    }
+                    Vui lòng xác nhận gói điều trị đã được chỉ định
                   </Paragraph>
                 )}
 
