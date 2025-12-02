@@ -3,7 +3,7 @@
  * @author: HoTram
  */
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Row, 
   Col, 
@@ -20,17 +20,22 @@ import {
 } from '@ant-design/icons';
 import { userService } from '../services';
 import { COLOR_BRAND_NAME } from '../utils/common-colors';
+import { useAuth } from '../contexts/AuthContext';
 
 const { Title, Text } = Typography;
 
 const PublicDentistList = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const [dentists, setDentists] = useState([]);
   const [filteredDentists, setFilteredDentists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
+  
+  const isPatientRoute = location.pathname.startsWith('/patient');
 
   useEffect(() => {
     fetchDentists();
@@ -71,7 +76,11 @@ const PublicDentistList = () => {
   };
 
   const handleDentistClick = (dentistId) => {
-    navigate(`/dentist-detail/${dentistId}`);
+    if (isPatientRoute) {
+      navigate(`/patient/dentist-detail/${dentistId}`);
+    } else {
+      navigate(`/dentist-detail/${dentistId}`);
+    }
   };
 
   // Get current page data
