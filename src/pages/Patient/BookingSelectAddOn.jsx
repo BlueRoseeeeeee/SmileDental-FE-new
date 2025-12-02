@@ -55,9 +55,7 @@ const PriceDisplay = ({ addon }) => {
               <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
                 {formatPrice(activeSchedule.price)}
               </Text>
-              <Tag color="red" style={{ margin: 0 }}>
-                Đang giảm giá
-              </Tag>
+              <Text type="secondary">/ {addon.unit}</Text>
             </Space>
             <Space align="center" size={4}>
               <CalendarOutlined style={{ fontSize: 12, color: '#8c8c8c' }} />
