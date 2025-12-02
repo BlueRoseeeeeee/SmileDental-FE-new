@@ -75,6 +75,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   const [searchLoading, setSearchLoading] = useState(false);
   
   // Patient search
+  const [patientMode, setPatientMode] = useState('existing'); // 🆕 'existing' or 'new' (for dentist)
   const [searchType, setSearchType] = useState('phone'); // phone, email, name
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -615,11 +616,13 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
 
   // Load services from API
   // 🆕 Filter services based on patient's unused services (no API call)
-  const filterServicesByPatient = (unusedSvcs, source = serviceSource) => {
+  const filterServicesByPatient = (unusedSvcs, source = serviceSource, mode = patientMode) => {
     console.log('🔧 [filterServices] Starting filter...');
     console.log('🔧 [filterServices] allServices count:', allServices.length);
     console.log('🔧 [filterServices] unusedSvcs:', unusedSvcs);
     console.log('🔧 [filterServices] selectedPatient:', selectedPatient);
+    console.log('🔧 [filterServices] patientMode (param):', mode);
+    console.log('🔧 [filterServices] isDentist:', isDentist);
     console.log('🔧 [filterServices] serviceSource:', source);
     
     if (allServices.length === 0) {
@@ -644,7 +647,14 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       return hasActiveAddons;
     });
     
-    // 🆕 Filter by source (normal or recommended)
+    // 🆕 DENTIST NEW PATIENT MODE: Hiển thị TẤT CẢ services (không filter gì cả)
+    if (isDentist && mode === 'new') {
+      console.log(`🌟 [filterServices] DENTIST NEW PATIENT MODE: Showing ALL ${filtered.length} services`);
+      setServices(filtered);
+      return;
+    }
+    
+    // 🆕 Filter by source (normal or recommended) - chỉ áp dụng khi KHÔNG phải dentist new patient mode
     if (source === 'recommended' && unusedSvcs.length > 0) {
       // Chỉ hiển thị dịch vụ được chỉ định
       const recommendedIds = new Set(unusedSvcs.map(s => s.serviceId.toString()));
@@ -873,6 +883,26 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     
     if (!service) return;
     
+    // 🆕 DENTIST NEW PATIENT MODE: Tự động set dentist = currentUser, load working dates
+    if (isDentist && patientMode === 'new') {
+      setSelectedDentist(currentUser); // Auto-set dentist
+      console.log('🌟 [Dentist New Patient] Auto-set dentist to currentUser:', currentUser.fullName);
+      
+      if (service.serviceAddOns && service.serviceAddOns.length > 0) {
+        // Service có addon → Chờ chọn addon rồi mới load working dates
+        console.log('⏳ [Dentist New Patient] Service has addons, waiting for addon selection');
+        setRequiresAddonSelection(true);
+      } else {
+        // Service không có addon → Load working dates ngay
+        const serviceDuration = service.durationMinutes || 15;
+        console.log('🔄 [Dentist New Patient] Loading working dates for currentUser, duration:', serviceDuration);
+        fetchWorkingDates(currentUser._id, serviceDuration, service._id).catch(err => {
+          console.error('Error loading working dates:', err);
+        });
+      }
+      return; // Exit early, không chạy logic bên dưới
+    }
+    
     // 🆕 Load exam dentist if service is from indication
     if (isServiceFromIndication(service._id)) {
       const recordId = getRecordIdForService(service._id);
@@ -882,7 +912,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       }
     }
     
-    // 🔥 LOGIC ĐÚNG:
+    // 🔥 LOGIC ĐÚNG (cho non-dentist hoặc dentist existing patient):
     if (service.serviceAddOns && service.serviceAddOns.length > 0) {
       // Service CÓ addons
       
@@ -957,9 +987,19 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
       slotGroup: undefined
     });
     
-    // 🆕 Load dentists after selecting addon
-    if (addon) {
-      const addonDuration = addon.durationMinutes || 15;
+    if (!addon) return;
+    
+    const addonDuration = addon.durationMinutes || 15;
+    
+    // 🆕 DENTIST NEW PATIENT MODE: Load working dates cho currentUser
+    if (isDentist && patientMode === 'new') {
+      console.log('🔄 [Dentist New Patient] Addon selected:', addon.name, '| Loading working dates for currentUser, duration:', addonDuration);
+      setSelectedDentist(currentUser); // Re-set dentist
+      fetchWorkingDates(currentUser._id, addonDuration, selectedService._id).catch(err => {
+        console.error('Error loading working dates:', err);
+      });
+    } else {
+      // Non-dentist hoặc dentist existing patient: Load dentists list
       console.log('🔄 Addon selected:', addon.name, '| Loading dentists with duration:', addonDuration);
       loadDentists(addonDuration, selectedService._id);
     }
@@ -1188,42 +1228,50 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
   const handleNext = async () => {
     if (currentStep === 0) {
       try {
-        // 🆕 Dentist chỉ cần chọn bệnh nhân, không cần điền form
+        // 🆕 Dentist có 2 modes
         if (isDentist) {
-          if (!selectedPatient) {
-            message.warning('Vui lòng chọn bệnh nhân từ danh sách');
-            return;
-          }
-          
-          // Auto-select first service indication
-          if (unusedServices.length > 0) {
-            const firstService = unusedServices[0];
-            
-            // Find full service object from allServices
-            const fullService = allServices.find(s => s._id === firstService.serviceId);
-            if (fullService) {
-              setSelectedService(fullService);
-              setExamRecordId(firstService.recordId);
-              console.log('✅ Auto-selected service:', fullService.name);
-              
-              // If has addon indication, auto-select it
-              if (firstService.serviceAddOnId && fullService.serviceAddOns) {
-                const addon = fullService.serviceAddOns.find(a => a._id === firstService.serviceAddOnId);
-                if (addon) {
-                  setSelectedServiceAddOn(addon);
-                  console.log('✅ Auto-selected addon:', addon.name);
-                }
-              }
-              
-              // Load working dates for dentist
-              const serviceDuration = firstService.serviceAddOnDuration || fullService.durationMinutes || 15;
-              fetchWorkingDates(currentUser._id, serviceDuration, fullService._id).catch(err => {
-                console.error('Error loading working dates:', err);
-              });
+          if (patientMode === 'existing') {
+            // Mode 1: Bệnh nhân có chỉ định
+            if (!selectedPatient) {
+              message.warning('Vui lòng chọn bệnh nhân từ danh sách');
+              return;
             }
+            
+            // Auto-select first service indication
+            if (unusedServices.length > 0) {
+              const firstService = unusedServices[0];
+              
+              // Find full service object from allServices
+              const fullService = allServices.find(s => s._id === firstService.serviceId);
+              if (fullService) {
+                setSelectedService(fullService);
+                setExamRecordId(firstService.recordId);
+                console.log('✅ Auto-selected service:', fullService.name);
+                
+                // If has addon indication, auto-select it
+                if (firstService.serviceAddOnId && fullService.serviceAddOns) {
+                  const addon = fullService.serviceAddOns.find(a => a._id === firstService.serviceAddOnId);
+                  if (addon) {
+                    setSelectedServiceAddOn(addon);
+                    console.log('✅ Auto-selected addon:', addon.name);
+                  }
+                }
+                
+                // Load working dates for dentist
+                const serviceDuration = firstService.serviceAddOnDuration || fullService.durationMinutes || 15;
+                fetchWorkingDates(currentUser._id, serviceDuration, fullService._id).catch(err => {
+                  console.error('Error loading working dates:', err);
+                });
+              }
+            }
+            
+            setCurrentStep(1); // Skip to date/time selection
+          } else {
+            // Mode 2: Bệnh nhân không tài khoản - validate form và chuyển sang chọn service
+            await form.validateFields(['patientName', 'patientPhone', 'patientBirthYear']);
+            console.log('✅ [Dentist New Patient] Patient info validated, moving to service selection');
+            setCurrentStep(1);
           }
-          
-          setCurrentStep(1); // Skip to date/time selection
         } else {
           // Non-dentist: validate form fields
           await form.validateFields(['patientName', 'patientPhone', 'patientBirthYear']);
@@ -1246,7 +1294,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
         return;
       }
       // ⭐ Không cần kiểm tra serviceAddOn nữa
-      if (!selectedDentist) {
+      // 🆕 Dentist new patient mode: Không cần chọn dentist (đã auto-set = currentUser)
+      if (!(isDentist && patientMode === 'new') && !selectedDentist) {
         message.warning('Vui lòng chọn nha sĩ');
         return;
       }
@@ -1262,9 +1311,15 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
     <>
       <Card title="Tạo lịch hẹn cho bệnh nhân Walk-in" style={{ maxWidth: 1200, margin: '0 auto' }}>
         <Steps current={currentStep} style={{ marginBottom: 24 }}>
-          {isDentist ? (
+          {isDentist && patientMode === 'existing' ? (
             <>
               <Step title="Bệnh nhân & Dịch vụ" icon={<UserOutlined />} />
+              <Step title="Ngày & Giờ" icon={<CalendarOutlined />} />
+            </>
+          ) : isDentist && patientMode === 'new' ? (
+            <>
+              <Step title="Bệnh nhân" icon={<UserOutlined />} />
+              <Step title="Dịch vụ" icon={<MedicineBoxOutlined />} />
               <Step title="Ngày & Giờ" icon={<CalendarOutlined />} />
             </>
           ) : (
@@ -1281,10 +1336,74 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           <div style={{ display: currentStep === 0 ? 'block' : 'none' }}>
             {currentStep === 0 && (
             <>
-              <Card title={<Space><SearchOutlined />{isDentist ? 'Chọn bệnh nhân có chỉ định' : 'Tìm kiếm bệnh nhân'}</Space>} style={{ marginBottom: 16 }}>
-                {/* 🆕 Dentist mode: Hiển thị danh sách bệnh nhân có chỉ định */}
-                {isDentist ? (
+              {/* 🆕 DENTIST ONLY: Chọn giữa bệnh nhân có chỉ định vs bệnh nhân mới */}
+              {isDentist && (
+                <Card style={{ marginBottom: 16, backgroundColor: '#f0f5ff', borderColor: '#1890ff' }}>
+                  <Title level={5} style={{ marginBottom: 16 }}>
+                    <UserAddOutlined /> Loại bệnh nhân
+                  </Title>
+                  <Radio.Group
+                    value={patientMode}
+                    onChange={(e) => {
+                      const newMode = e.target.value;
+                      setPatientMode(newMode);
+                      
+                      // Reset patient selection
+                      setSelectedPatient(null);
+                      setIsNewPatient(newMode === 'new');
+                      setSearchResults([]);
+                      form.resetFields(['searchValue']);
+                      
+                      // Reset services when switching modes
+                      setTreatmentIndications([]);
+                      
+                      // 🆕 Call filterServicesByPatient với newMode để apply filter logic đúng
+                      if (newMode === 'new') {
+                        // Mode new: Hiển thị tất cả services (filter sẽ chỉ loại bỏ services có addon không active)
+                        filterServicesByPatient([], 'all', newMode); // ⭐ Truyền newMode vào
+                      } else {
+                        // Mode existing: Reset services, đợi chọn bệnh nhân
+                        setServices([]);
+                      }
+                      
+                      console.log(`🔄 Patient mode changed to: ${newMode}`);
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Radio value="existing">
+                        <Space direction="vertical" size={0}>
+                          <Text strong>Bệnh nhân có chỉ định</Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Chọn từ danh sách bệnh nhân đã khám có chỉ định điều trị
+                          </Text>
+                        </Space>
+                      </Radio>
+                      <Radio value="new">
+                        <Space direction="vertical" size={0}>
+                          <Text strong>Bệnh nhân không tài khoản</Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            Nhập thông tin bệnh nhân mới, có thể đặt bất kỳ dịch vụ nào
+                          </Text>
+                        </Space>
+                      </Radio>
+                    </Space>
+                  </Radio.Group>
+                </Card>
+              )}
+
+              <Card title={<Space><SearchOutlined />{isDentist ? (patientMode === 'existing' ? 'Chọn bệnh nhân có chỉ định' : 'Nhập thông tin bệnh nhân mới') : 'Tìm kiếm bệnh nhân'}</Space>} style={{ marginBottom: 16 }}>
+                {/* 🆕 Dentist mode: patient mode = 'new' → Chỉ hiển thị label, không có search */}
+                {isDentist && patientMode === 'new' ? (
+                  <Alert
+                    message="Bệnh nhân không tài khoản"
+                    description="Nhập thông tin bệnh nhân mới ở form bên dưới, có thể đặt bất kỳ dịch vụ nào."
+                    type="info"
+                    showIcon
+                  />
+                ) : isDentist && patientMode === 'existing' ? (
                   <>
+                    {/* 🆕 Dentist mode: Hiển thị danh sách bệnh nhân có chỉ định */}
                     <Alert
                       message="Chế độ nha sĩ"
                       description={`Hiển thị ${dentistPatients.length} bệnh nhân có chỉ định chưa sử dụng từ hồ sơ khám của bạn.`}
@@ -1550,8 +1669,11 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                 />
               )}
 
-              {/* ⭐ Chỉ hiển thị form thông tin bệnh nhân cho non-dentist hoặc khi chưa chọn bệnh nhân */}
-              {!isDentist && (
+              {/* ⭐ Form thông tin bệnh nhân - hiển thị cho:
+                  - Non-dentist (admin/manager/receptionist) luôn hiển thị
+                  - Dentist khi patientMode='new' (bệnh nhân mới)
+              */}
+              {(!isDentist || (isDentist && patientMode === 'new')) && (
                 <Card title={<Space><UserOutlined />Thông tin bệnh nhân</Space>}>
                   <Row gutter={16}>
                     <Col span={12}>
@@ -1565,7 +1687,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       >
                         <Input 
                           placeholder="Nguyễn Văn A" 
-                          disabled={!!selectedPatient}
+                          disabled={!!selectedPatient && patientMode !== 'new'}
                           onChange={(e) => setNewPatientInfo({...newPatientInfo, name: e.target.value})}
                         />
                       </Form.Item>
@@ -1581,7 +1703,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                       >
                         <Input 
                           placeholder="0912345678" 
-                          disabled={!!selectedPatient}
+                          disabled={!!selectedPatient && patientMode !== 'new'}
                           onChange={(e) => setNewPatientInfo({...newPatientInfo, phone: e.target.value})}
                         />
                       </Form.Item>
@@ -1634,7 +1756,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
           </div>
 
           {/* Step 1: Service and Dentist Selection */}
-          {!isDentist && (
+          {/* 🆕 Hiển thị cho: non-dentist HOẶC dentist new patient mode */}
+          {(!isDentist || (isDentist && patientMode === 'new')) && (
             <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
             {currentStep === 1 && (
             <>
@@ -2001,6 +2124,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                 )}
               </Card>
 
+              {/* 🆕 Chỉ hiển thị Card chọn nha sĩ cho non-dentist (dentist new patient tự động dùng currentUser) */}
+              {!(isDentist && patientMode === 'new') && (
               <Card title={<Space><UserOutlined />Chọn nha sĩ</Space>}>
                 {!selectedService && (
                   <Alert
@@ -2068,14 +2193,16 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                   </Select>
                 </Form.Item>
               </Card>
+              )}
             </>
             )}
             </div>
           )}
 
-          {/* Step 2: Date and Time Slot Selection (Step 1 for dentist) */}
-          <div style={{ display: (isDentist ? currentStep === 1 : currentStep === 2) ? 'block' : 'none' }}>
-          {(isDentist ? currentStep === 1 : currentStep === 2) && (
+          {/* Step 2: Date and Time Slot Selection */}
+          {/* Dentist existing patient: step 1, Dentist new patient: step 2, Non-dentist: step 2 */}
+          <div style={{ display: ((isDentist && patientMode === 'existing' && currentStep === 1) || (isDentist && patientMode === 'new' && currentStep === 2) || (!isDentist && currentStep === 2)) ? 'block' : 'none' }}>
+          {((isDentist && patientMode === 'existing' && currentStep === 1) || (isDentist && patientMode === 'new' && currentStep === 2) || (!isDentist && currentStep === 2)) && (
             <>
               <Card title={<Space><CalendarOutlined />Chọn ngày khám</Space>} style={{ marginBottom: 16 }}>
                 {!selectedDentist && (
@@ -2290,8 +2417,8 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
                 </Button>
               )}
               
-              {/* Dentist has 2 steps (0,1), others have 3 steps (0,1,2) */}
-              {(isDentist ? currentStep < 1 : currentStep < 2) ? (
+              {/* Step count: Dentist existing patient = 2 steps (0,1), Dentist new patient = 3 steps (0,1,2), Non-dentist = 3 steps (0,1,2) */}
+              {((isDentist && patientMode === 'existing' && currentStep < 1) || (isDentist && patientMode === 'new' && currentStep < 2) || (!isDentist && currentStep < 2)) ? (
                 <Button type="primary" onClick={handleNext}>
                   Tiếp tục
                 </Button>
