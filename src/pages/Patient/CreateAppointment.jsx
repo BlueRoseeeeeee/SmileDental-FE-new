@@ -24,7 +24,6 @@ import utc from 'dayjs/plugin/utc';
 import appointmentService from '../../services/appointmentService.js';
 import scheduleConfigService from '../../services/scheduleConfigService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { getPriceScheduleInfo } from '../../utils/priceScheduleUtils';
 import './CreateAppointment.css';
 import { toast } from 'react-toastify';
 
@@ -415,7 +414,7 @@ const CreateAppointment = () => {
                 type="info"
                 showIcon
                 message="Thanh toán trực tuyến"
-                description="Sau khi xác nhận, bạn sẽ được chuyển đến trang chọn phương thức thanh toán (Visa/MasterCard). Vui lòng hoàn tất thanh toán trong 15 phút."
+                description="Sau khi xác nhận, bạn sẽ được chuyển đến trang chọn phương thức thanh toán (Visa/MasterCard). Vui lòng hoàn tất thanh toán trong 3 phút."
                 style={{ marginBottom: 24 }}
               />
 
