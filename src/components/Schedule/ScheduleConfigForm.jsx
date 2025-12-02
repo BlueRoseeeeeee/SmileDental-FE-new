@@ -277,12 +277,128 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
     };
   };
 
+  // ✅ Hàm disable giờ kết thúc ca sáng - phải > giờ bắt đầu ca sáng VÀ < giờ bắt đầu ca chiều
+  const disableMorningEndTime = (morningStart, afternoonStart) => {
+    if (!morningStart) return {};
+    
+    return {
+      disabledHours: () => {
+        const hours = [];
+        // Disable các giờ < giờ bắt đầu ca sáng
+        for (let i = 0; i < morningStart.hour(); i++) {
+          hours.push(i);
+        }
+        // Nếu có giờ bắt đầu ca chiều, disable các giờ > giờ đó
+        if (afternoonStart) {
+          for (let i = afternoonStart.hour() + 1; i <= 23; i++) {
+            hours.push(i);
+          }
+        }
+        return hours;
+      },
+      disabledMinutes: (selectedHour) => {
+        // Nếu giờ < giờ bắt đầu ca sáng
+        if (selectedHour < morningStart.hour()) {
+          return Array.from({ length: 60 }, (_, i) => i);
+        }
+        // Nếu giờ = giờ bắt đầu ca sáng
+        if (selectedHour === morningStart.hour()) {
+          const minutes = [];
+          for (let i = 0; i <= morningStart.minute(); i++) {
+            minutes.push(i);
+          }
+          return minutes;
+        }
+        // Nếu có giờ bắt đầu ca chiều và giờ = giờ đó
+        if (afternoonStart && selectedHour === afternoonStart.hour()) {
+          // Disable các phút >= phút bắt đầu ca chiều (cho phép tối đa đến phút trước đó)
+          const minutes = [];
+          for (let i = afternoonStart.minute(); i <= 59; i++) {
+            minutes.push(i);
+          }
+          return minutes;
+        }
+        return [];
+      }
+    };
+  };
+
+  // ✅ Hàm disable giờ kết thúc ca chiều - phải > giờ bắt đầu ca chiều VÀ < giờ bắt đầu ca tối
+  const disableAfternoonEndTime = (afternoonStart, eveningStart) => {
+    if (!afternoonStart) return {};
+    
+    return {
+      disabledHours: () => {
+        const hours = [];
+        // Disable các giờ < giờ bắt đầu ca chiều
+        for (let i = 0; i < afternoonStart.hour(); i++) {
+          hours.push(i);
+        }
+        // Nếu có giờ bắt đầu ca tối, disable các giờ > giờ đó
+        if (eveningStart) {
+          for (let i = eveningStart.hour() + 1; i <= 23; i++) {
+            hours.push(i);
+          }
+        }
+        return hours;
+      },
+      disabledMinutes: (selectedHour) => {
+        // Nếu giờ < giờ bắt đầu ca chiều
+        if (selectedHour < afternoonStart.hour()) {
+          return Array.from({ length: 60 }, (_, i) => i);
+        }
+        // Nếu giờ = giờ bắt đầu ca chiều
+        if (selectedHour === afternoonStart.hour()) {
+          const minutes = [];
+          for (let i = 0; i <= afternoonStart.minute(); i++) {
+            minutes.push(i);
+          }
+          return minutes;
+        }
+        // Nếu có giờ bắt đầu ca tối và giờ = giờ đó
+        if (eveningStart && selectedHour === eveningStart.hour()) {
+          // Disable các phút >= phút bắt đầu ca tối (cho phép tối đa đến phút trước đó)
+          const minutes = [];
+          for (let i = eveningStart.minute(); i <= 59; i++) {
+            minutes.push(i);
+          }
+          return minutes;
+        }
+        return [];
+      }
+    };
+  };
+
   // ✅ Handle thay đổi thời gian
   const handleTimeChange = (field, value) => {
-    setTimeValues(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Reset thời gian kết thúc khi thay đổi thời gian bắt đầu
+    if (field === 'morningStart') {
+      form.setFieldValue('morningEndTime', null);
+      setTimeValues(prev => ({
+        ...prev,
+        morningStart: value,
+        morningEnd: null
+      }));
+    } else if (field === 'afternoonStart') {
+      form.setFieldValue('afternoonEndTime', null);
+      setTimeValues(prev => ({
+        ...prev,
+        afternoonStart: value,
+        afternoonEnd: null
+      }));
+    } else if (field === 'eveningStart') {
+      form.setFieldValue('eveningEndTime', null);
+      setTimeValues(prev => ({
+        ...prev,
+        eveningStart: value,
+        eveningEnd: null
+      }));
+    } else {
+      setTimeValues(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   return (
@@ -377,14 +493,36 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
               <Form.Item 
                 name="morningEndTime" 
                 label="Giờ kết thúc"
-                rules={[{ required: true, message: 'Vui lòng chọn giờ kết thúc' }]}
+                rules={[
+                  { required: true, message: 'Vui lòng chọn giờ kết thúc' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      
+                      const startTime = getFieldValue('morningStartTime');
+                      const afternoonStart = getFieldValue('afternoonStartTime');
+                      
+                      // Kiểm tra phải > giờ bắt đầu ca sáng
+                      if (startTime && value.isBefore(startTime)) {
+                        return Promise.reject(new Error('Giờ kết thúc phải sau giờ bắt đầu'));
+                      }
+                      
+                      // Kiểm tra phải < giờ bắt đầu ca chiều (nếu có)
+                      if (afternoonStart && (value.isAfter(afternoonStart) || value.isSame(afternoonStart))) {
+                        return Promise.reject(new Error(`Giờ kết thúc phải trước ${afternoonStart.format('HH:mm')}`));
+                      }
+                      
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
               >
                 <TimePicker 
                   format="HH:mm" 
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
                   disabled={!isEditing}
-                  disabledTime={() => disableEndTime(timeValues.morningStart)}
+                  disabledTime={() => disableMorningEndTime(timeValues.morningStart, timeValues.afternoonStart)}
                   onChange={(value) => handleTimeChange('morningEnd', value)}
                 />
               </Form.Item>
@@ -443,14 +581,36 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
               <Form.Item 
                 name="afternoonEndTime" 
                 label="Giờ kết thúc"
-                rules={[{ required: true, message: 'Vui lòng chọn giờ kết thúc' }]}
+                rules={[
+                  { required: true, message: 'Vui lòng chọn giờ kết thúc' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      
+                      const startTime = getFieldValue('afternoonStartTime');
+                      const eveningStart = getFieldValue('eveningStartTime');
+                      
+                      // Kiểm tra phải > giờ bắt đầu ca chiều
+                      if (startTime && value.isBefore(startTime)) {
+                        return Promise.reject(new Error('Giờ kết thúc phải sau giờ bắt đầu'));
+                      }
+                      
+                      // Kiểm tra phải < giờ bắt đầu ca tối (nếu có)
+                      if (eveningStart && (value.isAfter(eveningStart) || value.isSame(eveningStart))) {
+                        return Promise.reject(new Error(`Giờ kết thúc phải trước ${eveningStart.format('HH:mm')}`));
+                      }
+                      
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
               >
                 <TimePicker 
                   format="HH:mm" 
                   style={{ width: '100%' }}
                   placeholder="Chọn giờ"
                   disabled={!isEditing}
-                  disabledTime={() => disableEndTime(timeValues.afternoonStart)}
+                  disabledTime={() => disableAfternoonEndTime(timeValues.afternoonStart, timeValues.eveningStart)}
                   onChange={(value) => handleTimeChange('afternoonEnd', value)}
                 />
               </Form.Item>
@@ -509,7 +669,23 @@ const ScheduleConfigForm = ({ config, onUpdate, loading }) => {
               <Form.Item 
                 name="eveningEndTime" 
                 label="Giờ kết thúc"
-                rules={[{ required: true, message: 'Vui lòng chọn giờ kết thúc' }]}
+                rules={[
+                  { required: true, message: 'Vui lòng chọn giờ kết thúc' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value) return Promise.resolve();
+                      
+                      const startTime = getFieldValue('eveningStartTime');
+                      
+                      // Kiểm tra phải > giờ bắt đầu ca tối
+                      if (startTime && value.isBefore(startTime)) {
+                        return Promise.reject(new Error('Giờ kết thúc phải sau giờ bắt đầu'));
+                      }
+                      
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
               >
                 <TimePicker 
                   format="HH:mm" 

@@ -33,7 +33,7 @@ import {
   WarningOutlined,
   EnvironmentOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom'; // Unused
 import { toast } from '../../services/toastService';
 import roomService from '../../services/roomService';
 import scheduleService from '../../services/scheduleService';
@@ -135,7 +135,7 @@ const getActiveShiftKeys = (meta) => {
 };
 
 const CreateScheduleForRoom = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Unused
   
   // States
   const [rooms, setRooms] = useState([]);
@@ -166,7 +166,7 @@ const CreateScheduleForRoom = () => {
   const [endDate, setEndDate] = useState(null);
   const [partialStartDate, setPartialStartDate] = useState(null); // 🆕 Ngày bắt đầu tạo lịch (cho tạo thiếu)
   const [isEditingExistingSchedule, setIsEditingExistingSchedule] = useState(false);
-  const [existingScheduleId, setExistingScheduleId] = useState(null);
+  const [_existingScheduleId, setExistingScheduleId] = useState(null);
   const [shiftMeta, setShiftMeta] = useState({}); // ⚠️ Sẽ được load từ backend
   const [slotDuration, setSlotDuration] = useState(DEFAULT_SLOT_DURATION);
   const [configLoading, setConfigLoading] = useState(false);
@@ -601,7 +601,6 @@ const CreateScheduleForRoom = () => {
       
       // Use suggested start date from API
       const suggestedStart = scheduleListData?.summary?.suggestedStartDate;
-      const startDateToUse = suggestedStart ? dayjs(suggestedStart) : dayjs().add(1, 'day');
       
       // 🆕 Tìm tháng CHƯA CÓ LỊCH từ THÁNG HIỆN TẠI trở về sau (trong khoảng 6 tháng)
       const today = dayjs().startOf('day');
@@ -780,7 +779,6 @@ const CreateScheduleForRoom = () => {
     // Validate: Không được chọn năm/tháng trong quá khứ
     const currentYear = dayjs().year();
     const currentMonth = dayjs().month() + 1;
-    const currentDate = dayjs().startOf('day');
     const today = dayjs().startOf('day');
     const tomorrow = today.add(1, 'day');
     
@@ -905,7 +903,6 @@ const CreateScheduleForRoom = () => {
         
         console.log(`🏥 Tạo lịch mới cho ${subRoomsToCreate.length} buồng được chọn:`, subRoomsToCreate.map(sr => sr.name));
         
-        // 🆕 Call API once with all selected subroom IDs
         try {
           const response = await scheduleService.generateRoomSchedule({
             roomId: selectedRoom._id,
@@ -938,11 +935,6 @@ const CreateScheduleForRoom = () => {
               }
             });
             
-            const successSubRooms = subRoomsToCreate
-              .filter(sr => resultsBySubRoom[sr._id]?.status === 'success')
-              .map(sr => sr.name)
-              .join(', ');
-            
             // Show success message
             toast.success(`✅ Tạo lịch thành công cho ${Object.keys(resultsBySubRoom).length}/${subRoomsToCreate.length} buồng. Tổng: ${totalSlots} slots`);
             
@@ -959,59 +951,15 @@ const CreateScheduleForRoom = () => {
           }
         } catch (error) {
           console.error('Error creating schedules:', error);
-          toast.error(error.message || 'Lỗi khi tạo lịch');
+          toast.error(error.response?.data?.message || error.message || 'Lỗi khi tạo lịch');
         }
         
         setCreatingSchedule(false);
         return;
       }
       
-      // OLD LOOP CODE - Disabled
-      if (false) {
-        const results = [];
-        let successCount = 0;
-        
-        // 🆕 Chỉ tạo cho các subrooms được chọn (selectedSubRoomIds)
-        const subRoomsToCreate = selectedRoom.subRooms.filter(sr => 
-          selectedSubRoomIds.includes(sr._id)
-        );
-        
-        console.log(`🏥 Tạo lịch cho ${subRoomsToCreate.length} buồng được chọn:`, subRoomsToCreate.map(sr => sr.name));
-        
-        for (const subRoom of subRoomsToCreate) {
-          try {
-            const response = await scheduleService.generateRoomSchedule({
-              roomId: selectedRoom._id,
-              subRoomId: subRoom._id,
-              fromMonth,
-              toMonth,
-              fromYear: selectedYear,
-              toYear: toYear,
-              startDate: startDate.format('YYYY-MM-DD'),
-              partialStartDate: partialStartDate ? partialStartDate.format('YYYY-MM-DD') : null, // 🆕
-              shifts: selectedShifts
-            });
-
-            if (response.success) {
-              results.push({ subRoom: subRoom.name, status: 'success' });
-              successCount++;
-            } else {
-              results.push({ subRoom: subRoom.name, status: 'failed', message: response.message });
-            }
-          } catch (error) {
-            results.push({ subRoom: subRoom.name, status: 'error', message: error.message });
-          }
-        }
-        
-        // 🆕 Cập nhật message hiển thị
-        const notSelectedCount = selectedRoom.subRooms.length - subRoomsToCreate.length;
-        
-        toast.success(
-          `Tạo lịch thành công cho ${successCount}/${subRoomsToCreate.length} buồng được chọn` +
-          (notSelectedCount > 0 ? ` (${notSelectedCount} buồng không được chọn)` : '')
-        );
-      } else {
-        // Phòng không có buồng HOẶC đang edit existing
+      // Phòng không có buồng HOẶC đang edit existing
+      try {
         const response = await scheduleService.generateRoomSchedule({
           roomId: selectedRoom._id,
           subRoomId: selectedSubRoom?._id,
@@ -1038,66 +986,16 @@ const CreateScheduleForRoom = () => {
               return shiftNames[s] || s;
             }).join(', ');
             
-            Modal.success({
-              title: '✅ Đã thêm ca thiếu thành công!',
-              content: (
-                <div>
-                  <Text strong style={{ fontSize: 16, color: '#52c41a' }}>
-                    Đã thêm {addedShifts}
-                  </Text>
-                  <br />
-                  <br />
-                  {updatedMonths.map((m, idx) => (
-                    <div key={idx} style={{ marginBottom: 12 }}>
-                      <Text strong>📅 Tháng {m.month}/{selectedYear}:</Text>
-                      <br />
-                      <Text type="secondary">{m.message}</Text>
-                      <br />
-                      <Text strong style={{ color: '#1890ff' }}>
-                        Đã tạo thêm {m.addedSlots} slots
-                      </Text>
-                    </div>
-                  ))}
-                  <Divider style={{ margin: '12px 0' }} />
-                  <Text type="secondary">
-                    Tổng cộng: <Text strong>{totalAddedSlots}</Text> slots mới
-                  </Text>
-                </div>
-              )
-            });
+            const monthDetails = updatedMonths.map(m => `Tháng ${m.month}/${selectedYear}: +${m.addedSlots} slots`).join(' | ');
+            toast.success(`✅ Đã thêm ca thiếu thành công! ${addedShifts} - ${monthDetails} - Tổng: ${totalAddedSlots} slots`, 5000);
           } else if (skippedMonths.length > 0 && successMonths.length === 0) {
             // Tất cả tháng đều đã có lịch đầy đủ
-            Modal.info({
-              title: 'Lịch đã tồn tại đầy đủ',
-              content: (
-                <div>
-                  {skippedMonths.map((m, idx) => (
-                    <div key={idx} style={{ marginBottom: 8 }}>
-                      <Text strong>Tháng {m.month}:</Text>
-                      <br />
-                      <Text>{m.existingScheduleInfo?.message || 'Đã có lịch'}</Text>
-                    </div>
-                  ))}
-                </div>
-              )
-            });
+            const monthList = skippedMonths.map(m => `Tháng ${m.month}`).join(', ');
+            toast.info(`Lịch đã tồn tại đầy đủ cho ${monthList}`, 4000);
           } else if (skippedMonths.length > 0 && successMonths.length > 0) {
             // Một số tháng đã có, một số tạo mới
             const totalNewSlots = successMonths.reduce((sum, m) => sum + (m.slots || 0), 0);
-            Modal.success({
-              title: '✅ Tạo lịch thành công!',
-              content: (
-                <div>
-                  <Text>Đã tạo lịch cho <Text strong>{successMonths.length}</Text> tháng</Text>
-                  <br />
-                  <Text type="secondary">{skippedMonths.length} tháng đã có lịch trước đó</Text>
-                  <Divider style={{ margin: '12px 0' }} />
-                  <Text strong style={{ color: '#1890ff' }}>
-                    Tổng slots mới: {totalNewSlots}
-                  </Text>
-                </div>
-              )
-            });
+            toast.success(`✅ Tạo lịch thành công cho ${successMonths.length} tháng! (${skippedMonths.length} tháng đã có lịch) - Tổng slots mới: ${totalNewSlots}`, 5000);
           } else if (successMonths.length > 0) {
             // Chỉ có tháng tạo mới thành công
             const totalNewSlots = successMonths.reduce((sum, m) => sum + (m.slots || 0), 0);
@@ -1106,42 +1004,27 @@ const CreateScheduleForRoom = () => {
               return shiftNames[s] || s;
             }).join(', ');
             
-            Modal.success({
-              title: '✅ Tạo lịch thành công!',
-              content: (
-                <div>
-                  <Text strong style={{ fontSize: 16, color: '#52c41a' }}>
-                    Đã tạo {createdShifts}
-                  </Text>
-                  <br />
-                  <br />
-                  <Text>Tạo lịch cho <Text strong>{successMonths.length}</Text> tháng</Text>
-                  <br />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {successMonths.map(m => `Tháng ${m.month}`).join(', ')}
-                  </Text>
-                  <Divider style={{ margin: '12px 0' }} />
-                  <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
-                    Tổng slots: {totalNewSlots}
-                  </Text>
-                </div>
-              )
-            });
+            const monthList = successMonths.map(m => `Tháng ${m.month}`).join(', ');
+            toast.success(`✅ Tạo lịch thành công! ${createdShifts} - ${successMonths.length} tháng (${monthList}) - Tổng slots: ${totalNewSlots}`, 5000);
           } else {
             toast.success(response.message || 'Tạo lịch thành công!');
           }
         } else {
           toast.error(response.message || 'Lỗi khi tạo lịch');
         }
+        
+        // FIX: Đóng modal trước, sau đó refresh room list
+        setShowCreateModal(false);
+        
+        // Thêm delay nhỏ để đảm bảo modal đã đóng và state đã reset
+        setTimeout(() => {
+          fetchRooms(); // Refresh list
+        }, 300);
+      } catch (error) {
+        toast.error('Lỗi khi tạo lịch: ' + error.message);
+      } finally {
+        setCreatingSchedule(false);
       }
-      
-      // FIX: Đóng modal trước, sau đó refresh room list
-      setShowCreateModal(false);
-      
-      // Thêm delay nhỏ để đảm bảo modal đã đóng và state đã reset
-      setTimeout(() => {
-        fetchRooms(); // Refresh list
-      }, 300);
     } catch (error) {
       toast.error('Lỗi khi tạo lịch: ' + error.message);
     } finally {
@@ -1160,7 +1043,7 @@ const CreateScheduleForRoom = () => {
     setSelectedSubRooms([]);
     setScheduleListData(null);
     setIsEditingExistingSchedule(false);
-    setExistingScheduleId(null);
+    // setExistingScheduleId(null); // Unused
     setStartDate(null);
     setEndDate(null);
     setFromMonth(dayjs().month() + 1);
@@ -3394,39 +3277,6 @@ const CreateScheduleForRoom = () => {
                         // 1. isActive === true trong shiftConfig (ca đang bật)
                         // 2. CÓ ÍT NHẤT 1 buồng (trong danh sách đã chọn) có ca active NHƯNG chưa generate
                         
-                        let selectedSubRoomStatuses = subRoomShiftStatus;
-                        if (selectedSubRoomIds.length > 0) {
-                          // Chỉ check các buồng được chọn
-                          selectedSubRoomStatuses = subRoomShiftStatus.filter(sr =>
-                            selectedSubRoomIds.includes(sr.subRoomId.toString())
-                          );
-                        }
-                        
-                        // ✅ Ca có thể chọn = ca đang bật (isActive) VÀ có ít nhất 1 buồng chưa tạo ca đó
-                        const canSelectMorning = morningActive && (
-                          selectedSubRoomStatuses.length === 0 
-                            ? initialMissingShifts.includes('morning')
-                            : selectedSubRoomStatuses.some(sr => 
-                                sr.shifts.morning === true && sr.generatedShifts.morning === false
-                              )
-                        );
-                        
-                        const canSelectAfternoon = afternoonActive && (
-                          selectedSubRoomStatuses.length === 0
-                            ? initialMissingShifts.includes('afternoon')
-                            : selectedSubRoomStatuses.some(sr => 
-                                sr.shifts.afternoon === true && sr.generatedShifts.afternoon === false
-                              )
-                        );
-                        
-                        const canSelectEvening = eveningActive && (
-                          selectedSubRoomStatuses.length === 0
-                            ? initialMissingShifts.includes('evening')
-                            : selectedSubRoomStatuses.some(sr => 
-                                sr.shifts.evening === true && sr.generatedShifts.evening === false
-                              )
-                        );
-                        
                         return (
                           <>
                             <Checkbox 
@@ -3561,7 +3411,6 @@ const CreateScheduleForRoom = () => {
                   const maxYear = maxAllowedDate.year();
                   const maxMonth = maxAllowedDate.month() + 1; // 1-12
                   
-                  const selectedMonthDate = dayjs().year(selectedYear).month(m - 1);
                   const isAfterMaxDate = selectedYear > maxYear || (selectedYear === maxYear && m > maxMonth);
                   
                   // Disable nếu là tháng trong quá khứ
@@ -4173,7 +4022,7 @@ const CreateScheduleForRoom = () => {
       <BulkOverrideHolidayModal
         visible={showBulkOverrideHolidayModal}
         onCancel={() => setShowBulkOverrideHolidayModal(false)}
-        onSuccess={(results) => {
+        onSuccess={() => {
           // Refresh rooms sau khi tạo thành công
           fetchRooms();
           setShowBulkOverrideHolidayModal(false);
