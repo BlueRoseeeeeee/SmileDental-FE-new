@@ -233,9 +233,12 @@ const Footer = () => {
           {/* Links */}
           <Col xs={24} sm={12} md={6}>
             <Title level={4} style={footerStyles.title}>
-              GIỚI THIỆU
+              THÔNG TIN
             </Title>
             <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <Text style={footerStyles.link} onClick={() => window.location.href = '/about'}>
+                Giới thiệu
+              </Text>
               {links.map((link, index) => (
                 <Text key={index} style={footerStyles.link}>
                   {link}
