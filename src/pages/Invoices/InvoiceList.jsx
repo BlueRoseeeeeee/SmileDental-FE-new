@@ -322,13 +322,6 @@ const InvoiceList = () => {
       )
     },
     {
-      title: 'Nha sĩ',
-      dataIndex: ['dentistInfo', 'name'],
-      key: 'dentist',
-      width: 130,
-      ellipsis: true
-    },
-    {
       title: 'Ngày tạo',
       dataIndex: 'issueDate',
       key: 'issueDate',
