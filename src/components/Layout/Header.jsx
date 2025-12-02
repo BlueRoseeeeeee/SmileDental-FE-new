@@ -113,6 +113,10 @@ const Header = () => {
           key: '/about',
           label: 'Giới thiệu'
         },
+        {
+          key: '/dentists',
+          label: 'Đội ngũ nha sĩ'
+        },
         servicesMenuItem
       ];
     }

@@ -40,6 +40,7 @@ import EditServiceAddOn from './pages/EditServiceAddOn.jsx';
 import PublicServiceAddOnDetail from './pages/PublicServiceAddOnDetail.jsx';
 import PublicServiceAddOns from './pages/PublicServiceAddOns.jsx';
 import PublicDentistDetail from './pages/PublicDentistDetail.jsx';
+import PublicDentistList from './pages/PublicDentistList.jsx';
 
 // Admin - Patient Appointments Management
 import AdminPatientAppointments from './pages/Admin/PatientAppointments.jsx';
@@ -260,6 +261,11 @@ function App() {
             </HomepageLayout>
           } />
           
+          <Route path="/dentists" element={
+            <HomepageLayout>
+              <PublicDentistList />
+            </HomepageLayout>
+          } />
           <Route path="/dentist-detail/:id" element={
             <HomepageLayout>
               <PublicDentistDetail />
@@ -273,7 +279,8 @@ function App() {
             {/* Patient About Page */}
             <Route path="about" element={<About />} />
             
-            {/* Patient Dentist Detail */}
+            {/* Patient Dentist Pages */}
+            <Route path="dentists" element={<PublicDentistList />} />
             <Route path="dentist-detail/:id" element={<PublicDentistDetail />} />
             
             {/* Patient Service Routes */}
