@@ -18,9 +18,10 @@ const chatbotService = {
       }
       
       // Otherwise, use regular chat endpoint
+      // ✅ userId sẽ được backend lấy từ JWT token (req.user.userId)
+      // Không cần gửi userId trong body nữa vì backend đã có optionalAuth middleware
       const response = await api.post(`${CHATBOT_API_URL}/chat`, {
-        message,
-        userId: localStorage.getItem('userId') || 'anonymous'
+        message
       });
       return response.data;
     } catch (error) {

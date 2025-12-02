@@ -84,6 +84,7 @@ export const authService = {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('userId', user._id || user.id); // ✅ Lưu userId riêng cho chatbot service
       
        // Nếu người dùng chỉ có 1 role -> tự động lưu role đó vào localStorage.
        // Nếu người dùng có nhiều role -> chờ người dùng chọn (xử lý tại Login.jsx).
@@ -123,6 +124,7 @@ export const authService = {
     localStorage.removeItem('authToken'); // Remove authToken if exists
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('userId'); // ✅ Clear userId on logout
     localStorage.removeItem('rememberLogin');
     localStorage.removeItem('selectedRole'); // ✅ Clear selected role on logout
     

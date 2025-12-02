@@ -131,17 +131,56 @@ const ChatBox = () => {
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      messageApi.error('Kích thước ảnh tối đa 5MB');
+      messageApi.error('Kích thước file ảnh tối đa 5MB');
       return;
     }
 
-    setSelectedImage(file);
-    
-    // Show preview before sending
+    // Validate image dimensions (min 200x200px)
+    const img = new Image();
     const reader = new FileReader();
+    
     reader.onload = (e) => {
-      setImagePreview(e.target.result);
+      img.onload = () => {
+        // Check minimum dimensions
+        if (img.width < 200 || img.height < 200) {
+          messageApi.error('Ảnh quá nhỏ. Kích thước tối thiểu: 200x200 pixels');
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          return;
+        }
+
+        // Check maximum dimensions
+        if (img.width > 4096 || img.height > 4096) {
+          messageApi.error('Ảnh quá lớn. Kích thước tối đa: 4096x4096 pixels');
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          return;
+        }
+
+        // All validations passed - set image
+        setSelectedImage(file);
+        setImagePreview(e.target.result);
+      };
+      
+      img.onerror = () => {
+        messageApi.error('Không thể đọc file ảnh. Vui lòng chọn ảnh hợp lệ');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      };
+      
+      img.src = e.target.result;
     };
+    
+    reader.onerror = () => {
+      messageApi.error('Không thể đọc file ảnh');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+    
     reader.readAsDataURL(file);
   };
 
