@@ -299,34 +299,13 @@ const CreateAppointment = () => {
                       const priceInfo = getPriceScheduleForDate(item, selectedDate);
                       const { basePrice, activeSchedule } = priceInfo;
 
-                      if (activeSchedule) {
-                        // Has active schedule - show both base price (strikethrough) and schedule price
-                        return (
-                          <Space direction="vertical" size={4}>
-                            <Space size={8}>
-                              <Text delete type="secondary" style={{ fontSize: 14 }}>
-                                {basePrice.toLocaleString('vi-VN')} VNĐ
-                              </Text>
-                              <Text strong style={{ fontSize: 16, color: '#ff4d4f' }}>
-                                {activeSchedule.price.toLocaleString('vi-VN')} VNĐ
-                              </Text>
-                              {selectedServiceAddOn && <Text type="secondary">/ {selectedServiceAddOn.unit}</Text>}
-                              <Tag color="red" style={{ margin: 0 }}>Giảm giá</Tag>
-                            </Space>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              ({dayjs(activeSchedule.startDate).format('DD/MM/YYYY')} - {dayjs(activeSchedule.endDate).format('DD/MM/YYYY')})
-                            </Text>
-                          </Space>
-                        );
-                      } else {
-                        // No active schedule - show base price only
-                        return (
-                          <Text strong style={{ fontSize: 15 }}>
-                            {basePrice.toLocaleString('vi-VN')} VNĐ
-                            {selectedServiceAddOn && <Text type="secondary"> / {selectedServiceAddOn.unit}</Text>}
-                          </Text>
-                        );
-                      }
+                      const finalPrice = activeSchedule ? activeSchedule.price : basePrice;
+                      return (
+                        <Text strong style={{ fontSize: 15 }}>
+                          {finalPrice.toLocaleString('vi-VN')} VNĐ
+                          {selectedServiceAddOn && <Text type="secondary"> / {selectedServiceAddOn.unit}</Text>}
+                        </Text>
+                      );
                     })()}
                   </Descriptions.Item>
                   {selectedServiceAddOn && (
