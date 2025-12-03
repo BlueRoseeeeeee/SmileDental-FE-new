@@ -343,13 +343,13 @@ const CancelledPatients = () => {
       width: 150,
       render: (dentists) => dentists || 'N/A'
     },
-    {
-      title: 'Y Tá',
-      dataIndex: 'nurses',
-      key: 'nurses',
-      width: 150,
-      render: (nurses) => nurses || 'N/A'
-    },
+    // {
+    //   title: 'Y Tá',
+    //   dataIndex: 'nurses',
+    //   key: 'nurses',
+    //   width: 150,
+    //   render: (nurses) => nurses || 'N/A'
+    // },
     {
       title: 'Thanh Toán',
       key: 'payment',
