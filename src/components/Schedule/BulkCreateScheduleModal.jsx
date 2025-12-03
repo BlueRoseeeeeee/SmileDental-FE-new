@@ -1126,7 +1126,7 @@ const BulkCreateScheduleModal = ({
             />
 
             {/* Legend */}
-            <Alert
+            {/* <Alert
               message="Chú thích"
               description={
                 <Space direction="vertical" size={4}>
@@ -1155,7 +1155,7 @@ const BulkCreateScheduleModal = ({
               }
               type="info"
               showIcon
-            />
+            /> */}
           </Space>
         )}
       </Modal>

@@ -450,7 +450,7 @@ const ChatBox = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={selectedImage ? "Mô tả thêm về ảnh (tùy chọn)..." : "Nhập tin nhắn của bạn..."}
+                placeholder={selectedImage ? "Mô tả thêm về ảnh (tùy chọn)..." : "Nhập câu hỏi ..."}
                 autoSize={{ minRows: 1, maxRows: 3 }}
                 disabled={loading || typing}
                 style={{ flex: 1 }}

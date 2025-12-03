@@ -156,8 +156,9 @@ const PatientAppointments = () => {
     }
     
     const timeDiff = appointmentDateTime - now;
-    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours
+    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     
+    // Must be >= 24 hours before appointment time
     return timeDiff >= oneDayInMs;
   };
 

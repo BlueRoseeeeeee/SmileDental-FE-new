@@ -77,9 +77,9 @@ const PatientLayout = () => {
       onClick: () => navigate('/patient')
     },
     {
-      key: '/patient/about',
-      label: 'Giới thiệu',
-      onClick: () => navigate('/patient/about')
+      key: '/patient/dentists',
+      label: 'Đội ngũ nha sĩ',
+      onClick: () => navigate('/patient/dentists')
     },
     // Thêm menu Dịch vụ với dropdown
     {
@@ -156,8 +156,8 @@ const PatientLayout = () => {
     if (path === '/patient/invoices') {
       return '/patient/invoices';
     }
-    if (path === '/patient/about') {
-      return '/patient/about';
+    if (path === '/patient/dentists') {
+      return '/patient/dentists';
     }
     // Xử lý cho services menu
     if (path.startsWith('/patient/services/pl/')) {

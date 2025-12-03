@@ -40,6 +40,18 @@ export const userService = {
     return response.data;
   },
 
+  // Get users with filters - Used in PublicDentistList.jsx
+  getUsers: async (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    if (filters.role) queryParams.append('role', filters.role);
+    if (filters.isActive !== undefined) queryParams.append('isActive', filters.isActive);
+    if (filters.page) queryParams.append('page', filters.page);
+    if (filters.limit) queryParams.append('limit', filters.limit);
+    
+    const response = await userApi.get(`/user/all-staff?${queryParams.toString()}`);
+    return response.data;
+  },
+
   getUserById: async (userId) => {
     const response = await userApi.get(`/user/${userId}`);
     return response.data;
