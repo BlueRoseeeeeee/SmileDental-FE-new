@@ -119,7 +119,16 @@ const CancelledPatientsList = () => {
       });
       
       if (allResult.success) {
-        setAllPatients(allResult.data || []);
+        // ✅ Group by appointmentId to remove duplicates
+        const uniquePatients = [];
+        const seenIds = new Set();
+        (allResult.data || []).forEach(patient => {
+          if (!seenIds.has(patient.appointmentId)) {
+            seenIds.add(patient.appointmentId);
+            uniquePatients.push(patient);
+          }
+        });
+        setAllPatients(uniquePatients);
       }
       
       // Then load filtered patients
@@ -136,11 +145,21 @@ const CancelledPatientsList = () => {
       const result = await dayClosureService.getAllCancelledPatients(queryFilters);
       
       if (result.success) {
-        setPatients(result.data);
+        // ✅ Group by appointmentId to remove duplicates
+        const uniqueFiltered = [];
+        const seenFilteredIds = new Set();
+        (result.data || []).forEach(patient => {
+          if (!seenFilteredIds.has(patient.appointmentId)) {
+            seenFilteredIds.add(patient.appointmentId);
+            uniqueFiltered.push(patient);
+          }
+        });
+        
+        setPatients(uniqueFiltered);
         setPagination({
           current: result.pagination.page,
           pageSize: result.pagination.limit,
-          total: result.pagination.total
+          total: uniqueFiltered.length // Update total based on unique count
         });
       } else {
         toast.error(result.message || 'Không thể tải dữ liệu');
@@ -230,14 +249,20 @@ const CancelledPatientsList = () => {
       key: 'cancelledDateTime',
       width: 130,
       sorter: (a, b) => new Date(a.cancelledAt) - new Date(b.cancelledAt),
-      render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong><CalendarOutlined /> {record.formattedCancelledDate}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            <ClockCircleOutlined /> {record.formattedCancelledTime}
-          </Text>
-        </Space>
-      )
+      render: (_, record) => {
+        // ✅ Convert UTC to Vietnam timezone (UTC+7)
+        const cancelledDate = record.cancelledAt ? dayjs(record.cancelledAt) : null;
+        return (
+          <Space direction="vertical" size={0}>
+            <Text strong>
+              <CalendarOutlined /> {cancelledDate ? cancelledDate.format('DD/MM/YYYY') : 'N/A'}
+            </Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              <ClockCircleOutlined /> {cancelledDate ? cancelledDate.format('HH:mm') : 'N/A'}
+            </Text>
+          </Space>
+        );
+      }
     },
     {
       title: 'Bệnh nhân',

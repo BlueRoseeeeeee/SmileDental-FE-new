@@ -505,7 +505,17 @@ const EditService = () => {
       const values = await priceScheduleForm.validateFields();
       setScheduleLoading(true);
 
-      // ✅ Validation với schedule config (BẮT BUỘC)
+      // ✅ Validation 1: Giá áp dụng phải khác giá gốc
+      const basePrice = selectedAddOnForPrice?.price;
+      if (values.price === basePrice) {
+        toastService.error(
+          `Giá áp dụng (${values.price.toLocaleString('vi-VN')} VNĐ) phải khác giá gốc (${basePrice.toLocaleString('vi-VN')} VNĐ)!`
+        );
+        setScheduleLoading(false);
+        return;
+      }
+
+      // ✅ Validation 2: Schedule config (BẮT BUỘC)
       if (!scheduleConfig) {
         toastService.error('Không thể lấy cấu hình lịch hẹn. Vui lòng tải lại trang!');
         setScheduleLoading(false);
@@ -515,7 +525,7 @@ const EditService = () => {
       const { unitDuration, depositAmount } = scheduleConfig;
       const durationMinutes = selectedAddOnForPrice?.durationMinutes || 0;
 
-      // ✅ Validate: x = ceil(Thời gian / unitDuration) * depositAmount, x <= Giá mới
+      // ✅ Validation 3: x = ceil(Thời gian / unitDuration) * depositAmount, x <= Giá mới
       const x = Math.ceil(durationMinutes / unitDuration) * depositAmount;
       
       if (x > values.price) {
@@ -901,16 +911,51 @@ const EditService = () => {
                 ),
               },
               {
-                title: 'Giá',
+                title: 'Giá gốc',
                 dataIndex: 'price',
-                key: 'price',
-                render: (price, record) => {
-                  const displayPrice = record.effectivePrice || record.basePrice;
+                key: 'basePrice',
+                render: (price) => (
+                  <Text style={{ color: '#8c8c8c' }}>
+                    {formatPrice(price)}
+                  </Text>
+                ),
+              },
+              {
+                title: 'Giá hiện tại',
+                key: 'effectivePrice',
+                render: (_, record) => {
+                  // ✅ Lấy giá từ priceSchedules nếu có và đang trong khoảng thời gian hiệu lực
+                  const now = dayjs(); // Current time in Vietnam (dayjs auto-detects local timezone)
+                  
+                  // Find active schedule that is currently valid (startDate <= now <= endDate)
+                  const currentSchedule = record.priceSchedules?.find(s => {
+                    if (!s.isActive) return false;
+                    
+                    // Parse dates in Vietnam timezone
+                    const startDate = s.startDate ? dayjs(s.startDate) : null;
+                    const endDate = s.endDate ? dayjs(s.endDate) : null;
+                    
+                    // Check if current time is within the schedule range
+                    const isAfterStart = !startDate || now.isAfter(startDate) || now.isSame(startDate, 'day');
+                    const isBeforeEnd = !endDate || now.isBefore(endDate) || now.isSame(endDate, 'day');
+                    
+                    return isAfterStart && isBeforeEnd;
+                  });
+                  
+                  const displayPrice = currentSchedule?.price || record.price;
+                  const isDiscounted = currentSchedule?.price && currentSchedule.price < record.price;
                   
                   return (
-                    <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
-                      {formatPrice(displayPrice)}
-                    </Text>
+                    <Space direction="vertical" size={0}>
+                      <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
+                        {formatPrice(displayPrice)}
+                      </Text>
+                      {isDiscounted && (
+                        <Tag color="red" style={{ fontSize: 11 }}>
+                          Giảm giá
+                        </Tag>
+                      )}
+                    </Space>
                   );
                 },
               },
