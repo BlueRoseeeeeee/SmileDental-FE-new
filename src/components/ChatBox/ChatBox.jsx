@@ -375,7 +375,6 @@ const ChatBox = () => {
                   <li>Dịch vụ nha khoa</li>
                   <li>Giá cả và chi phí</li>
                   <li>Đặt lịch khám</li>
-                  <li>Danh sách nha sĩ</li>
                   <li>Tư vấn răng miệng</li>
                 </ul>
               </div>
