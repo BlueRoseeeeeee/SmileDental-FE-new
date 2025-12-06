@@ -251,18 +251,18 @@ const CancelledPatients = () => {
         </Space>
       )
     },
-    {
-      title: 'Người Thực Hiện',
-      dataIndex: ['closedBy', 'userName'],
-      key: 'closedBy',
-      width: 150,
-      render: (text, record) => (
-        <Space direction="vertical" size={0}>
-          <Text strong>{text || 'N/A'}</Text>
-          <Tag color="blue">{record.closedBy?.userRole || 'admin'}</Tag>
-        </Space>
-      )
-    },
+    // {
+    //   title: 'Người Thực Hiện',
+    //   dataIndex: ['closedBy', 'userName'],
+    //   key: 'closedBy',
+    //   width: 150,
+    //   render: (text, record) => (
+    //     <Space direction="vertical" size={0}>
+    //       <Text strong>{text || 'N/A'}</Text>
+    //       <Tag color="blue">{record.closedBy?.userRole || 'admin'}</Tag>
+    //     </Space>
+    //   )
+    // },
     {
       title: 'Trạng Thái',
       dataIndex: 'status',
