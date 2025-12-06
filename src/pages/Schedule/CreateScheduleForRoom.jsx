@@ -3404,14 +3404,14 @@ const CreateScheduleForRoom = () => {
                   const currentYear = today.year();
                   const currentMonth = today.month() + 1; // 1-12
                   
-                  // 🔥 Giới hạn: Chỉ cho chọn tháng trong khoảng 6 tháng KỂ TỪ THÁNG HIỆN TẠI
-                  // Ví dụ: Tháng hiện tại là 11/2025 → Chỉ được chọn đến tháng 5/2026 (12,1,2,3,4,5)
+                  // 🔥 Giới hạn: Chỉ cho chọn tháng trong khoảng 6 tháng SAU THÁNG HIỆN TẠI
+                  // Ví dụ: Tháng hiện tại là 12/2025 → Được chọn đến tháng 6/2026 (1,2,3,4,5,6/2026 = 6 tháng sau)
                   const currentMonthDate = dayjs().year(currentYear).month(currentMonth - 1).startOf('month');
                   const maxAllowedDate = currentMonthDate.add(6, 'months'); // +6 tháng từ tháng hiện tại
                   const maxYear = maxAllowedDate.year();
                   const maxMonth = maxAllowedDate.month() + 1; // 1-12
                   
-                  const isAfterMaxDate = selectedYear > maxYear || (selectedYear === maxYear && m > maxMonth);
+                  const isAfterMaxDate = selectedYear > maxYear || (selectedYear === maxYear && m >= maxMonth);
                   
                   // Disable nếu là tháng trong quá khứ
                   const isPastMonth = selectedYear === currentYear && m < currentMonth;
@@ -3532,7 +3532,7 @@ const CreateScheduleForRoom = () => {
                   const currentYear = today.year();
                   const currentMonth = today.month() + 1; // 1-12
                   
-                  // 🔥 Giới hạn: Chỉ cho chọn tháng trong khoảng 6 tháng KỂ TỪ THÁNG HIỆN TẠI
+                  // 🔥 Giới hạn: Chỉ cho chọn tháng trong khoảng 6 tháng SAU THÁNG HIỆN TẠI
                   const currentMonthDate = dayjs().year(currentYear).month(currentMonth - 1).startOf('month');
                   const maxAllowedDate = currentMonthDate.add(6, 'months');
                   const maxYear = maxAllowedDate.year();
@@ -3548,8 +3548,8 @@ const CreateScheduleForRoom = () => {
                   for (let m = startMonth; m <= 12; m++) {
                     const yearToCheck = effectiveToYear;
                     
-                    // Kiểm tra vượt quá 6 tháng
-                    const isAfterMaxDate = yearToCheck > maxYear || (yearToCheck === maxYear && m > maxMonth);
+                    // Kiểm tra vượt quá 6 tháng SAU tháng hiện tại
+                    const isAfterMaxDate = yearToCheck > maxYear || (yearToCheck === maxYear && m >= maxMonth);
                     
                     // Disable nếu tháng đã có lịch
                     const hasSchedule = isMonthScheduled(m, yearToCheck);

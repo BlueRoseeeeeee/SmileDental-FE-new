@@ -262,12 +262,12 @@ const BulkCreateScheduleModal = ({
     return false;
   }, []);
 
-  // 🔥 Available months (đã filter 7 tháng) - PHẢI ĐỊNH NGHĨA TRƯỚC disabledFromMonth và disabledToMonth
+  // 🔥 Available months (đã filter 6 tháng) - PHẢI ĐỊNH NGHĨA TRƯỚC disabledFromMonth và disabledToMonth
   const availableMonths = useMemo(() => {
     if (!bulkInfo || !bulkInfo.availableMonths) return [];
     
-    // 🆕 Giới hạn: Chỉ hiển thị các tháng trong khoảng 7 tháng từ hiện tại
-    const maxDate = dayjs().add(7, 'months');
+    // 🆕 Giới hạn: Chỉ hiển thị các tháng trong khoảng 6 tháng từ tháng kế tiếp
+    const maxDate = dayjs().add(6, 'months').endOf('month');
     
     return bulkInfo.availableMonths
       .filter(m => {
