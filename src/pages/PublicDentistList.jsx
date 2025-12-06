@@ -116,7 +116,8 @@ const PublicDentistList = () => {
     <div style={{
       backgroundColor: '#f8f9fa',
       minHeight: '100vh',
-      padding: '40px 20px'
+      padding: '40px 20px',
+      marginTop: '-40px'
     }}>
       <div style={{ 
         maxWidth: '900px',
