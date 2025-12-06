@@ -121,7 +121,7 @@ const PatientAppointments = () => {
 
   const getStatusTag = (status) => {
     const statusConfig = {
-      pending: { color: 'gold', text: 'Chờ xác nhận' },
+      // pending: { color: 'gold', text: 'Chờ xác nhận' },
       confirmed: { color: 'blue', text: 'Đã xác nhận' },
       'checked-in': { color: 'cyan', text: 'Đã check-in' },
       completed: { color: 'green', text: 'Hoàn thành' },
@@ -303,7 +303,7 @@ const PatientAppointments = () => {
               onClear={() => setStatusFilter('all')}
             >
               <Option value="all">Tất cả trạng thái</Option>
-              <Option value="pending">Chờ xác nhận</Option>
+              {/* <Option value="pending">Chờ xác nhận</Option> */}
               <Option value="confirmed">Đã xác nhận</Option>
               <Option value="checked-in">Đã check-in</Option>
               <Option value="in-progress">Đang khám</Option>
