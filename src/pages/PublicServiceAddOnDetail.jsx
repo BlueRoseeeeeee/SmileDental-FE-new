@@ -298,68 +298,6 @@ const PublicServiceAddOnDetail = () => {
               </div>
               
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              
-              {/* Book Button */}
-              <Button
-                size="large"
-                style={{
-                  width: '100%',
-                  height: '60px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(90deg, rgb(49, 59, 121) 0%, rgb(69, 79, 141) 50%, rgb(49, 59, 121) 100%)',
-                  backgroundSize: '300% 100%',
-                  border: 'none',
-                  color: 'white',
-                  fontSize: '18px',
-                  fontWeight: '700',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: '0 6px 20px rgba(49, 59, 121, 0.4)',
-                  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  padding: '20px 32px'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-4px) scale(1.02)';
-                  e.target.style.boxShadow = '0 12px 30px rgba(49, 59, 121, 0.6)';
-                  e.target.style.backgroundPosition = '100% 0';
-                  e.target.style.filter = 'brightness(1.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0) scale(1)';
-                  e.target.style.boxShadow = '0 6px 20px rgba(49, 59, 121, 0.4)';
-                  e.target.style.backgroundPosition = '0% 0';
-                  e.target.style.filter = 'brightness(1)';
-                }}
-                onClick={(e) => {
-                  // Hiệu ứng click - gradient chạy nhanh
-                  e.target.style.backgroundPosition = '100% 0';
-                  setTimeout(() => {
-                    e.target.style.backgroundPosition = '0% 0';
-                  }, 300);
-                }}
-              >
-                <span style={{ 
-                  position: 'relative', 
-                  zIndex: 2,
-                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}>
-                  <CalendarOutlined />
-                  Đặt lịch ngay
-                </span>
-              </Button>
-            </div>
           </div>
         </Col>
       </Row>
