@@ -89,11 +89,27 @@ const CancelledPatients = () => {
       
       const queryFilters = {
         page,
-        limit: pagination.pageSize,
-        ...(filters.startDate && { startDate: filters.startDate.format('YYYY-MM-DD') }),
-        ...(filters.endDate && { endDate: filters.endDate.format('YYYY-MM-DD') }),
-        ...(filters.status !== 'all' && { status: filters.status })
+        limit: pagination.pageSize
       };
+
+      // Convert Vietnam date to UTC date range for filtering
+      if (filters.startDate) {
+        // Start of day in Vietnam = UTC time minus 7 hours
+        // Example: 2025-12-07 00:00 VN = 2025-12-06 17:00 UTC
+        const startUTC = filters.startDate.clone().startOf('day').subtract(7, 'hours');
+        queryFilters.startDate = startUTC.toISOString();
+      }
+
+      if (filters.endDate) {
+        // End of day in Vietnam = UTC time minus 7 hours
+        // Example: 2025-12-07 23:59 VN = 2025-12-07 16:59 UTC
+        const endUTC = filters.endDate.clone().endOf('day').subtract(7, 'hours');
+        queryFilters.endDate = endUTC.toISOString();
+      }
+
+      if (filters.status !== 'all') {
+        queryFilters.status = filters.status;
+      }
 
       const result = await dayClosureService.getDayClosures(queryFilters);
       
@@ -201,7 +217,8 @@ const CancelledPatients = () => {
       title: 'Ngày Đóng Cửa',
       dataIndex: 'formattedDate',
       key: 'date',
-      width: 120,
+      width: 140,
+      fixed: 'left',
       render: (text, record) => (
         <Space direction="vertical" size={0}>
           <Text strong>{text}</Text>
@@ -215,34 +232,34 @@ const CancelledPatients = () => {
       title: 'Lý Do',
       dataIndex: 'reason',
       key: 'reason',
-      ellipsis: true,
-      width: 250
+      ellipsis: { showTitle: true },
+      width: 200
     },
     {
       title: 'Thống Kê',
       key: 'stats',
-      width: 200,
+      width: 180,
       render: (_, record) => (
-        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-          <Space size={8}>
+        <Space direction="vertical" size={2} style={{ width: '100%' }}>
+          <Space size={4} style={{ fontSize: 12 }}>
             <HomeOutlined style={{ color: '#1890ff' }} />
             <Text style={{ fontSize: 12 }}>
               {record.stats?.affectedRoomsCount || 0} phòng
             </Text>
           </Space>
-          <Space size={8}>
+          <Space size={4} style={{ fontSize: 12 }}>
             <CalendarOutlined style={{ color: '#52c41a' }} />
             <Text style={{ fontSize: 12 }}>
               {record.stats?.totalSlotsDisabled || 0} slots
             </Text>
           </Space>
-          <Space size={8}>
+          <Space size={4} style={{ fontSize: 12 }}>
             <UserOutlined style={{ color: '#fa8c16' }} />
             <Text style={{ fontSize: 12 }}>
-              {record.totalPatients || 0} bệnh nhân
+              {record.totalPatients || 0} BN
             </Text>
           </Space>
-          <Space size={8}>
+          <Space size={4} style={{ fontSize: 12 }}>
             <MailOutlined style={{ color: '#722ed1' }} />
             <Text style={{ fontSize: 12 }}>
               {record.stats?.emailsSentCount || 0} emails
@@ -251,48 +268,42 @@ const CancelledPatients = () => {
         </Space>
       )
     },
-    // {
-    //   title: 'Người Thực Hiện',
-    //   dataIndex: ['closedBy', 'userName'],
-    //   key: 'closedBy',
-    //   width: 150,
-    //   render: (text, record) => (
-    //     <Space direction="vertical" size={0}>
-    //       <Text strong>{text || 'N/A'}</Text>
-    //       <Tag color="blue">{record.closedBy?.userRole || 'admin'}</Tag>
-    //     </Space>
-    //   )
-    // },
     {
       title: 'Trạng Thái',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 100,
       render: (status) => {
         const statusConfig = {
           active: { color: 'red', text: 'Đang đóng' },
-          partially_restored: { color: 'orange', text: 'Phục hồi một phần' },
-          fully_restored: { color: 'green', text: 'Đã mở lại' }
+          partially_restored: { color: 'orange', text: 'Một phần' },
+          fully_restored: { color: 'green', text: 'Đã mở' }
         };
         const config = statusConfig[status] || statusConfig.active;
         return <Tag color={config.color}>{config.text}</Tag>;
       }
     },
     {
-      title: 'Thời Gian Tạo',
+      title: 'Thời Gian',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 150,
-      render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm')
+      width: 140,
+      render: (date) => (
+        <Space direction="vertical" size={0}>
+          <Text style={{ fontSize: 12 }}>{dayjs(date).format('DD/MM/YYYY')}</Text>
+          <Text type="secondary" style={{ fontSize: 11 }}>{dayjs(date).format('HH:mm')}</Text>
+        </Space>
+      )
     },
     {
       title: 'Thao Tác',
       key: 'actions',
-      width: 120,
+      width: 100,
       fixed: 'right',
       render: (_, record) => (
         <Button
           type="primary"
+          size="small"
           icon={<EyeOutlined />}
           onClick={() => loadClosureDetails(record._id)}
         >
@@ -307,14 +318,14 @@ const CancelledPatients = () => {
     {
       title: 'Bệnh Nhân',
       key: 'patient',
-      width: 200,
+      width: 180,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{record.patientName}</Text>
+          <Text strong style={{ fontSize: 13 }}>{record.patientName}</Text>
           {record.patientPhone && (
             <Space size={4}>
-              <PhoneOutlined style={{ fontSize: 12 }} />
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <PhoneOutlined style={{ fontSize: 11 }} />
+              <Text type="secondary" style={{ fontSize: 11 }}>
                 {record.patientPhone}
               </Text>
             </Space>
@@ -325,14 +336,14 @@ const CancelledPatients = () => {
     {
       title: 'Thời Gian Hẹn',
       key: 'appointment',
-      width: 150,
+      width: 130,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
+        <Space direction="vertical" size={2}>
           <Space size={4}>
-            <ClockCircleOutlined />
-            <Text>{record.appointmentTime}</Text>
+            <ClockCircleOutlined style={{ fontSize: 12 }} />
+            <Text style={{ fontSize: 12 }}>{record.appointmentTime}</Text>
           </Space>
-          <Tag color="blue">{record.shiftName}</Tag>
+          <Tag color="blue" style={{ fontSize: 11 }}>{record.shiftName}</Tag>
         </Space>
       )
     },
@@ -340,8 +351,9 @@ const CancelledPatients = () => {
       title: 'Nha Sĩ',
       dataIndex: 'dentists',
       key: 'dentists',
-      width: 150,
-      render: (dentists) => dentists || 'N/A'
+      width: 140,
+      ellipsis: { showTitle: true },
+      render: (dentists) => <Text style={{ fontSize: 12 }}>{dentists || 'N/A'}</Text>
     },
     // {
     //   title: 'Y Tá',
@@ -353,7 +365,7 @@ const CancelledPatients = () => {
     {
       title: 'Thanh Toán',
       key: 'payment',
-      width: 140,
+      width: 110,
       align: 'center',
       render: (_, record) => {
         const paymentId = record.paymentInfo?.paymentId;
@@ -366,13 +378,14 @@ const CancelledPatients = () => {
               icon={<DollarOutlined />}
               onClick={() => loadPaymentDetails(paymentId)}
               title="Xem chi tiết thanh toán"
+              style={{ padding: 0 }}
             >
-              Xem chi tiết
+              Chi tiết
             </Button>
           );
         } else {
           return (
-            <Tag color="default" icon={<ClockCircleOutlined />}>
+            <Tag color="default" icon={<ClockCircleOutlined />} style={{ fontSize: 11 }}>
               Chưa khám
             </Tag>
           );
@@ -382,7 +395,7 @@ const CancelledPatients = () => {
     {
       title: 'Hóa Đơn',
       key: 'invoice',
-      width: 140,
+      width: 110,
       align: 'center',
       render: (_, record) => {
         const invoiceId = record.invoiceInfo?.invoiceId;
@@ -395,13 +408,14 @@ const CancelledPatients = () => {
               icon={<FileTextOutlined />}
               onClick={() => loadInvoiceDetails(invoiceId)}
               title="Xem chi tiết hóa đơn"
+              style={{ padding: 0 }}
             >
-              Xem chi tiết
+              Chi tiết
             </Button>
           );
         } else {
           return (
-            <Tag color="default" icon={<ClockCircleOutlined />}>
+            <Tag color="default" icon={<ClockCircleOutlined />} style={{ fontSize: 11 }}>
               Chưa khám
             </Tag>
           );
@@ -411,12 +425,12 @@ const CancelledPatients = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '16px', maxWidth: '100%', overflow: 'hidden' }}>
       <Card>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Title level={3}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <Title level={3} style={{ margin: 0 }}>
               <CloseCircleOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />
               Lịch Sử Đóng Cửa Khẩn Cấp
             </Title>
@@ -429,9 +443,9 @@ const CancelledPatients = () => {
           </div>
 
           {/* Filters */}
-          <Row gutter={16}>
-            <Col span={12}>
-              <Space>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Space wrap>
                 <Text strong>Khoảng thời gian:</Text>
                 <RangePicker
                   value={[filters.startDate, filters.endDate]}
@@ -444,11 +458,12 @@ const CancelledPatients = () => {
                   }}
                   format="DD/MM/YYYY"
                   placeholder={['Từ ngày', 'Đến ngày']}
+                  style={{ maxWidth: '100%' }}
                 />
               </Space>
             </Col>
-            <Col span={12}>
-              <Space>
+            <Col xs={24} md={12}>
+              <Space wrap>
                 <Button
                   type="primary"
                   icon={<SearchOutlined />}
@@ -469,21 +484,25 @@ const CancelledPatients = () => {
           </Row>
 
           {/* Table */}
-          <Table
-            columns={columns}
-            dataSource={closures}
-            rowKey="_id"
-            loading={loading}
-            pagination={{
-              ...pagination,
-              showSizeChanger: true,
-              showTotal: (total) => `Tổng ${total} bản ghi`
-            }}
-            onChange={(newPagination) => {
-              loadClosures(newPagination.current);
-            }}
-            scroll={{ x: 1400 }}
-          />
+          <div style={{ overflowX: 'auto' }}>
+            <Table
+              columns={columns}
+              dataSource={closures}
+              rowKey="_id"
+              loading={loading}
+              pagination={{
+                ...pagination,
+                showSizeChanger: true,
+                showTotal: (total) => `Tổng ${total} bản ghi`,
+                responsive: true
+              }}
+              onChange={(newPagination) => {
+                loadClosures(newPagination.current);
+              }}
+              scroll={{ x: 1200 }}
+              size="middle"
+            />
+          </div>
         </Space>
       </Card>
 
@@ -505,8 +524,9 @@ const CancelledPatients = () => {
             Đóng
           </Button>
         ]}
-        width={1200}
-        style={{ top: 20 }}
+        width="90%"
+        style={{ top: 20, maxWidth: 1400 }}
+        bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
       >
         {detailModal.loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -540,29 +560,29 @@ const CancelledPatients = () => {
             </Card>
 
             {/* Statistics */}
-            <Row gutter={16}>
-              <Col span={8}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={8}>
                 <Statistic
                   title="Tổng Slots Bị Tắt"
                   value={detailModal.data.stats?.totalSlotsDisabled || 0}
                   prefix={<CalendarOutlined />}
-                  valueStyle={{ color: '#52c41a' }}
+                  valueStyle={{ color: '#52c41a', fontSize: '20px' }}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={8}>
                 <Statistic
                   title="Bệnh Nhân Bị Hủy"
                   value={detailModal.data.stats?.appointmentsCancelledCount || 0}
                   prefix={<UserOutlined />}
-                  valueStyle={{ color: '#fa8c16' }}
+                  valueStyle={{ color: '#fa8c16', fontSize: '20px' }}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={8}>
                 <Statistic
                   title="Email Đã Gửi"
                   value={detailModal.data.stats?.emailsSentCount || 0}
                   prefix={<MailOutlined />}
-                  valueStyle={{ color: '#722ed1' }}
+                  valueStyle={{ color: '#722ed1', fontSize: '20px' }}
                 />
               </Col>
             </Row>
@@ -578,14 +598,16 @@ const CancelledPatients = () => {
               size="small"
             >
               {detailModal.patients.length > 0 ? (
-                <Table
-                  columns={patientColumns}
-                  dataSource={detailModal.patients}
-                  rowKey="appointmentId"
-                  pagination={{ pageSize: 10 }}
-                  size="small"
-                  scroll={{ x: 1200 }}
-                />
+                <div style={{ overflowX: 'auto' }}>
+                  <Table
+                    columns={patientColumns}
+                    dataSource={detailModal.patients}
+                    rowKey="appointmentId"
+                    pagination={{ pageSize: 10, responsive: true }}
+                    size="small"
+                    scroll={{ x: 800 }}
+                  />
+                </div>
               ) : (
                 <Empty description="Không có bệnh nhân nào bị hủy" />
               )}
@@ -614,7 +636,8 @@ const CancelledPatients = () => {
             Đóng
           </Button>
         ]}
-        width={800}
+        width="90%"
+        style={{ maxWidth: 800 }}
       >
         {paymentModal.loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -678,7 +701,9 @@ const CancelledPatients = () => {
             Đóng
           </Button>
         ]}
-        width={1000}
+        width="90%"
+        style={{ maxWidth: 1200 }}
+        bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
       >
         {invoiceModal.loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -718,93 +743,97 @@ const CancelledPatients = () => {
                 <Divider orientation="left">
                   <Text strong style={{ fontSize: 16 }}>Chi tiết dịch vụ</Text>
                 </Divider>
-                <Table
-                  dataSource={invoiceModal.details}
-                  rowKey={(record) => record._id || record.id}
-                  pagination={false}
-                  size="small"
-                  columns={[
-                    {
-                      title: 'Dịch vụ',
-                      dataIndex: ['serviceInfo', 'name'],
-                      key: 'serviceName',
-                      render: (text, record) => (
-                        <Space direction="vertical" size={0}>
-                          <Text strong>{text || 'N/A'}</Text>
-                          {record.serviceInfo?.description && (
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              {record.serviceInfo.description}
-                            </Text>
-                          )}
-                        </Space>
-                      )
-                    },
-                    {
-                      title: 'Loại',
-                      dataIndex: ['serviceInfo', 'type'],
-                      key: 'type',
-                      width: 120,
-                      render: (type) => (
-                        <Tag color="blue">
-                          {type === 'filling' ? 'Trám răng' :
-                           type === 'cleaning' ? 'Vệ sinh' :
-                           type === 'extraction' ? 'Nhổ răng' :
-                           type === 'root_canal' ? 'Nội nha' :
-                           type === 'orthodontics' ? 'Chỉnh nha' :
-                           type}
-                        </Tag>
-                      )
-                    },
-                    {
-                      title: 'Số lượng',
-                      dataIndex: 'quantity',
-                      key: 'quantity',
-                      width: 80,
-                      align: 'center',
-                      render: (qty) => <Text>{qty || 1}</Text>
-                    },
-                    {
-                      title: 'Đơn giá',
-                      dataIndex: 'unitPrice',
-                      key: 'unitPrice',
-                      width: 120,
-                      align: 'right',
-                      render: (price) => (
-                        <Text>{price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
-                      )
-                    },
-                    {
-                      title: 'Thành tiền',
-                      dataIndex: 'totalPrice',
-                      key: 'totalPrice',
-                      width: 120,
-                      align: 'right',
-                      render: (total) => (
-                        <Text strong style={{ color: '#52c41a' }}>
-                          {total?.toLocaleString('vi-VN') || '0'} VNĐ
-                        </Text>
-                      )
-                    },
-                    {
-                      title: 'Trạng thái',
-                      dataIndex: 'status',
-                      key: 'status',
-                      width: 100,
-                      render: (status) => (
-                        <Tag color={
-                          status === 'completed' ? 'green' :
-                          status === 'pending' ? 'orange' :
-                          status === 'cancelled' ? 'red' : 'default'
-                        }>
-                          {status === 'completed' ? 'Hoàn thành' :
-                           status === 'pending' ? 'Chờ xử lý' :
-                           status === 'cancelled' ? 'Đã hủy' :
-                           status}
-                        </Tag>
-                      )
-                    }
-                  ]}
-                />
+                <div style={{ overflowX: 'auto' }}>
+                  <Table
+                    dataSource={invoiceModal.details}
+                    rowKey={(record) => record._id || record.id}
+                    pagination={false}
+                    size="small"
+                    scroll={{ x: 900 }}
+                    columns={[
+                      {
+                        title: 'Dịch vụ',
+                        dataIndex: ['serviceInfo', 'name'],
+                        key: 'serviceName',
+                        width: 200,
+                        render: (text, record) => (
+                          <Space direction="vertical" size={0}>
+                            <Text strong style={{ fontSize: 13 }}>{text || 'N/A'}</Text>
+                            {record.serviceInfo?.description && (
+                              <Text type="secondary" style={{ fontSize: 11 }} ellipsis>
+                                {record.serviceInfo.description}
+                              </Text>
+                            )}
+                          </Space>
+                        )
+                      },
+                      {
+                        title: 'Loại',
+                        dataIndex: ['serviceInfo', 'type'],
+                        key: 'type',
+                        width: 120,
+                        render: (type) => (
+                          <Tag color="blue" style={{ fontSize: 11 }}>
+                            {type === 'filling' ? 'Trám răng' :
+                             type === 'cleaning' ? 'Vệ sinh' :
+                             type === 'extraction' ? 'Nhổ răng' :
+                             type === 'root_canal' ? 'Nội nha' :
+                             type === 'orthodontics' ? 'Chỉnh nha' :
+                             type}
+                          </Tag>
+                        )
+                      },
+                      {
+                        title: 'SL',
+                        dataIndex: 'quantity',
+                        key: 'quantity',
+                        width: 60,
+                        align: 'center',
+                        render: (qty) => <Text style={{ fontSize: 12 }}>{qty || 1}</Text>
+                      },
+                      {
+                        title: 'Đơn giá',
+                        dataIndex: 'unitPrice',
+                        key: 'unitPrice',
+                        width: 110,
+                        align: 'right',
+                        render: (price) => (
+                          <Text style={{ fontSize: 12 }}>{price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
+                        )
+                      },
+                      {
+                        title: 'Thành tiền',
+                        dataIndex: 'totalPrice',
+                        key: 'totalPrice',
+                        width: 120,
+                        align: 'right',
+                        render: (total) => (
+                          <Text strong style={{ color: '#52c41a', fontSize: 13 }}>
+                            {total?.toLocaleString('vi-VN') || '0'} VNĐ
+                          </Text>
+                        )
+                      },
+                      {
+                        title: 'Trạng thái',
+                        dataIndex: 'status',
+                        key: 'status',
+                        width: 100,
+                        render: (status) => (
+                          <Tag color={
+                            status === 'completed' ? 'green' :
+                            status === 'pending' ? 'orange' :
+                            status === 'cancelled' ? 'red' : 'default'
+                          } style={{ fontSize: 11 }}>
+                            {status === 'completed' ? 'Hoàn thành' :
+                             status === 'pending' ? 'Chờ xử lý' :
+                             status === 'cancelled' ? 'Đã hủy' :
+                             status}
+                          </Tag>
+                        )
+                      }
+                    ]}
+                  />
+                </div>
               </div>
             )}
           </Space>
