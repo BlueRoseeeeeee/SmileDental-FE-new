@@ -478,7 +478,7 @@ const CancelledPatients = () => {
                 >
                   <Select.Option value="all">Tất cả</Select.Option>
                   <Select.Option value="active">Đang đóng</Select.Option>
-                  <Select.Option value="partially_restored">Phục hồi một phần</Select.Option>
+                  {/* <Select.Option value="partially_restored">Phục hồi một phần</Select.Option> */}
                   <Select.Option value="fully_restored">Đã mở lại</Select.Option>
                 </Select>
               </Space>
@@ -556,7 +556,7 @@ const CancelledPatients = () => {
                 </Descriptions.Item>
                 <Descriptions.Item label="Trạng thái">
                   {detailModal.data.status === 'active' && <Tag color="red">Đang đóng</Tag>}
-                  {detailModal.data.status === 'partially_restored' && <Tag color="orange">Phục hồi một phần</Tag>}
+                  {/* {detailModal.data.status === 'partially_restored' && <Tag color="orange">Phục hồi một phần</Tag>} */}
                   {detailModal.data.status === 'fully_restored' && <Tag color="green">Đã mở lại</Tag>}
                 </Descriptions.Item>
                 <Descriptions.Item label="Lý do" span={2}>
