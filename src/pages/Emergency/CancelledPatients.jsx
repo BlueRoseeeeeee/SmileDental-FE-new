@@ -92,19 +92,13 @@ const CancelledPatients = () => {
         limit: pagination.pageSize
       };
 
-      // Convert Vietnam date to UTC date range for filtering
+      // Send dates in YYYY-MM-DD format (no timezone conversion needed)
       if (filters.startDate) {
-        // Start of day in Vietnam = UTC time minus 7 hours
-        // Example: 2025-12-07 00:00 VN = 2025-12-06 17:00 UTC
-        const startUTC = filters.startDate.clone().startOf('day').subtract(7, 'hours');
-        queryFilters.startDate = startUTC.toISOString();
+        queryFilters.startDate = filters.startDate.format('YYYY-MM-DD');
       }
 
       if (filters.endDate) {
-        // End of day in Vietnam = UTC time minus 7 hours
-        // Example: 2025-12-07 23:59 VN = 2025-12-07 16:59 UTC
-        const endUTC = filters.endDate.clone().endOf('day').subtract(7, 'hours');
-        queryFilters.endDate = endUTC.toISOString();
+        queryFilters.endDate = filters.endDate.format('YYYY-MM-DD');
       }
 
       if (filters.status !== 'all') {
@@ -209,6 +203,7 @@ const CancelledPatients = () => {
 
   useEffect(() => {
     loadClosures();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Columns for main table

@@ -159,7 +159,7 @@ const CancelledPatientsList = () => {
         setPagination({
           current: result.pagination.page,
           pageSize: result.pagination.limit,
-          total: uniqueFiltered.length // Update total based on unique count
+          total: result.pagination.total // Use total from backend, not current page count
         });
       } else {
         toast.error(result.message || 'Không thể tải dữ liệu');
@@ -283,15 +283,18 @@ const CancelledPatientsList = () => {
       title: 'Lịch hẹn gốc',
       key: 'appointment',
       width: 140,
-      render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          <Text><CalendarOutlined /> {dayjs(record.appointmentDate).format('DD/MM/YYYY')}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            <ClockCircleOutlined /> {record.appointmentTime}
-          </Text>
-          <Tag color="blue" style={{ marginTop: 4 }}>{record.shiftName}</Tag>
-        </Space>
-      )
+      render: (_, record) => {
+        const apptDate = record.appointmentDate ? dayjs(record.appointmentDate) : null;
+        return (
+          <Space direction="vertical" size={0}>
+            <Text><CalendarOutlined /> {apptDate ? apptDate.format('DD/MM/YYYY') : 'N/A'}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              <ClockCircleOutlined /> {record.appointmentTime || 'N/A'}
+            </Text>
+            <Tag color="blue" style={{ marginTop: 4 }}>{record.shiftName || 'N/A'}</Tag>
+          </Space>
+        );
+      }
     },
     {
       title: 'Nha sĩ',
@@ -374,7 +377,7 @@ const CancelledPatientsList = () => {
           {/* Filters */}
           <Row gutter={[16, 16]}>
             <Col span={8}>
-              <Text strong>Khoảng thời gian:</Text>
+              <Text strong>Ngày hẹn (lịch gốc):</Text>
               <RangePicker
                 value={[filters.startDate, filters.endDate]}
                 onChange={(dates) => {
@@ -388,6 +391,9 @@ const CancelledPatientsList = () => {
                 placeholder={['Từ ngày', 'Đến ngày']}
                 style={{ width: '100%', marginTop: 8 }}
               />
+              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
+                Lọc theo ngày hẹn ban đầu của bệnh nhân
+              </Text>
             </Col>
 
             <Col span={8}>
