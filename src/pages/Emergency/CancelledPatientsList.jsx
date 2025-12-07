@@ -447,18 +447,9 @@ const CancelledPatientsList = () => {
             </Col>
 
             <Col span={8} style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <Space style={{ marginTop: 8 }}>
-                <Button
-                  type="primary"
-                  icon={<SearchOutlined />}
-                  onClick={handleSearch}
-                >
-                  Tìm kiếm
-                </Button>
-                <Button onClick={handleReset}>
-                  Xóa bộ lọc
-                </Button>
-              </Space>
+              <Button onClick={handleReset} style={{ marginTop: 8 }}>
+                Xóa bộ lọc
+              </Button>
             </Col>
           </Row>
 

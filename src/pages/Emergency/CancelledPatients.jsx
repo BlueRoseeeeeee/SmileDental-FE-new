@@ -20,7 +20,8 @@ import {
   Collapse,
   Empty,
   Spin,
-  Divider
+  Divider,
+  Select
 } from 'antd';
 import {
   CalendarOutlined,
@@ -205,6 +206,14 @@ const CancelledPatients = () => {
     loadClosures();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-search when filters change
+  useEffect(() => {
+    if (closures.length > 0) {
+      loadClosures(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.startDate, filters.endDate, filters.status]);
 
   // Columns for main table
   const columns = [
@@ -439,8 +448,8 @@ const CancelledPatients = () => {
 
           {/* Filters */}
           <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <Space wrap>
+            <Col xs={24} sm={12} md={10}>
+              <Space direction="vertical" size={4} style={{ width: '100%' }}>
                 <Text strong>Khoảng thời gian:</Text>
                 <RangePicker
                   value={[filters.startDate, filters.endDate]}
@@ -453,19 +462,27 @@ const CancelledPatients = () => {
                   }}
                   format="DD/MM/YYYY"
                   placeholder={['Từ ngày', 'Đến ngày']}
-                  style={{ maxWidth: '100%' }}
+                  style={{ width: '100%' }}
                 />
               </Space>
             </Col>
-            <Col xs={24} md={12}>
-              <Space wrap>
-                <Button
-                  type="primary"
-                  icon={<SearchOutlined />}
-                  onClick={() => loadClosures(1)}
+            <Col xs={24} sm={12} md={6}>
+              <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                <Text strong>Trạng thái:</Text>
+                <Select
+                  value={filters.status}
+                  onChange={(value) => setFilters({ ...filters, status: value })}
+                  style={{ width: '100%' }}
                 >
-                  Tìm kiếm
-                </Button>
+                  <Select.Option value="all">Tất cả</Select.Option>
+                  <Select.Option value="active">Đang đóng</Select.Option>
+                  <Select.Option value="partially_restored">Phục hồi một phần</Select.Option>
+                  <Select.Option value="fully_restored">Đã mở lại</Select.Option>
+                </Select>
+              </Space>
+            </Col>
+            <Col xs={24} sm={24} md={8}>
+              <Space wrap style={{ marginTop: 24 }}>
                 <Button
                   onClick={() => {
                     setFilters({ startDate: null, endDate: null, status: 'all' });
