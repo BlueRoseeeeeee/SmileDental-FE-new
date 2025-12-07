@@ -1874,23 +1874,25 @@ const CreateScheduleForRoom = () => {
                         Tạo lịch tất cả
                       </Button>
                       
-                      <Button
-                        type="default"
-                        icon={<CalendarOutlined />}
-                        onClick={() => {
-                          setShowBulkOverrideHolidayModal(true);
-                        }}
-                        size="large"
-                        style={{ 
-                          borderRadius: 8,
-                          fontWeight: 600,
-                          height: 42,
-                          borderColor: '#ff7875',
-                          color: '#ff7875'
-                        }}
-                      >
-                        Tạo lịch ngày nghỉ
-                      </Button>
+                      <Tooltip title="Cho phép phòng khám mở cửa vào ngày nghỉ/ lễ hệ thống" placement="top">
+                        <Button
+                          type="default"
+                          icon={<CalendarOutlined />}
+                          onClick={() => {
+                            setShowBulkOverrideHolidayModal(true);
+                          }}
+                          size="large"
+                          style={{ 
+                            borderRadius: 8,
+                            fontWeight: 600,
+                            height: 42,
+                            borderColor: '#ff7875',
+                            color: '#ff7875'
+                          }}
+                        >
+                          Tạo lịch ngày nghỉ
+                        </Button>
+                      </Tooltip>
                     </Space>
                   </Space>
                 </Card>
