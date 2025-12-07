@@ -67,6 +67,7 @@ const PatientAppointments = () => {
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   useEffect(() => {
     fetchAllAppointments();
@@ -266,6 +267,28 @@ const PatientAppointments = () => {
       message.error(error.response?.data?.message || 'Không thể hủy lịch hẹn');
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleRejectCancellation = async () => {
+    try {
+      setRejecting(true);
+      
+      console.log('🔍 [Reject] Appointment ID:', appointmentToCancel._id);
+      console.log('🔍 [Reject] Token:', localStorage.getItem('accessToken') ? 'Exists' : 'Missing');
+      
+      await appointmentService.rejectCancellation(appointmentToCancel._id);
+      message.success('Đã từ chối yêu cầu hủy lịch, lịch hẹn về lại trạng thái "Đã xác nhận"');
+      setCancelModalVisible(false);
+      setAppointmentToCancel(null);
+      setCancelReason('');
+      fetchAllAppointments();
+    } catch (error) {
+      console.error('Error rejecting cancellation:', error);
+      console.error('Error response:', error.response);
+      message.error(error.response?.data?.message || 'Không thể từ chối yêu cầu hủy lịch');
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -592,24 +615,74 @@ const PatientAppointments = () => {
         title={
           <Space>
             <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-            <span>Xác nhận hủy lịch hẹn</span>
+            <span>{appointmentToCancel?.status === 'pending-cancellation' ? 'Xử lý yêu cầu hủy lịch' : 'Xác nhận hủy lịch hẹn'}</span>
           </Space>
         }
         open={cancelModalVisible}
         onCancel={() => {
-          if (!cancelling) {
+          if (!cancelling && !rejecting) {
             setCancelModalVisible(false);
             setAppointmentToCancel(null);
             setCancelReason('');
           }
         }}
-        onOk={handleConfirmCancel}
-        okText="Xác nhận hủy"
-        cancelText="Đóng"
-        okButtonProps={{ danger: true, loading: cancelling }}
-        cancelButtonProps={{ disabled: cancelling }}
+        footer={
+          appointmentToCancel?.status === 'pending-cancellation' ? [
+            <Button 
+              key="close"
+              onClick={() => {
+                setCancelModalVisible(false);
+                setAppointmentToCancel(null);
+                setCancelReason('');
+              }}
+              disabled={cancelling || rejecting}
+            >
+              Đóng
+            </Button>,
+            <Button 
+              key="reject"
+              type="primary"
+              onClick={handleRejectCancellation}
+              loading={rejecting}
+              disabled={cancelling}
+            >
+              Từ chối hủy
+            </Button>,
+            <Button 
+              key="approve"
+              danger
+              type="primary"
+              onClick={handleConfirmCancel}
+              loading={cancelling}
+              disabled={rejecting}
+            >
+              Chấp nhận hủy
+            </Button>
+          ] : [
+            <Button 
+              key="close"
+              onClick={() => {
+                setCancelModalVisible(false);
+                setAppointmentToCancel(null);
+                setCancelReason('');
+              }}
+              disabled={cancelling}
+            >
+              Đóng
+            </Button>,
+            <Button 
+              key="confirm"
+              danger
+              type="primary"
+              onClick={handleConfirmCancel}
+              loading={cancelling}
+            >
+              Xác nhận hủy
+            </Button>
+          ]
+        }
         width={600}
-        closable={!cancelling}
+        closable={!cancelling && !rejecting}
         maskClosable={false}
       >
         {appointmentToCancel && (
@@ -650,12 +723,16 @@ const PatientAppointments = () => {
             {/* Warning */}
             <div style={{ 
               padding: '12px', 
-              background: '#fff7e6', 
-              border: '1px solid #ffd591',
+              background: appointmentToCancel.status === 'pending-cancellation' ? '#e6f7ff' : '#fff7e6', 
+              border: appointmentToCancel.status === 'pending-cancellation' ? '1px solid #91d5ff' : '1px solid #ffd591',
               borderRadius: '4px',
-              color: '#d46b08'
+              color: appointmentToCancel.status === 'pending-cancellation' ? '#0050b3' : '#d46b08'
             }}>
-              <ExclamationCircleOutlined /> <strong>Lưu ý:</strong> Hành động này sẽ hủy lịch hẹn và gửi email thông báo đến bệnh nhân.
+              <ExclamationCircleOutlined /> <strong>Lưu ý:</strong> {
+                appointmentToCancel.status === 'pending-cancellation' 
+                  ? 'Bạn có thể "Chấp nhận hủy" để hủy lịch hẹn này, hoặc "Từ chối hủy" để giữ lại lịch hẹn với trạng thái "Đã xác nhận".'
+                  : 'Hành động này sẽ hủy lịch hẹn và gửi email thông báo đến bệnh nhân.'
+              }
             </div>
           </Space>
         )}

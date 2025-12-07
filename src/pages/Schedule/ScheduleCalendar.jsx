@@ -1232,8 +1232,8 @@ const ScheduleCalendar = () => {
 
   // 🆕 Handle Emergency Day Closure
   const handleEmergencyDayClosure = (date) => {
-    if (!user || user.role !== 'admin') {
-      toast.error('Chỉ admin mới có quyền tắt toàn bộ lịch trong ngày');
+    if (!user || !(hasRole('admin') || hasRole('manager'))) {
+      toast.error('Chỉ admin và quản lý mới có quyền tắt toàn bộ lịch trong ngày');
       return;
     }
 
@@ -1280,8 +1280,8 @@ const ScheduleCalendar = () => {
 
   // 🆕 Handle Emergency Day Enable (Reactivate)
   const handleEmergencyDayEnable = (date) => {
-    if (!user || user.role !== 'admin') {
-      toast.error('Chỉ admin mới có quyền bật lại toàn bộ lịch trong ngày');
+    if (!user || !(hasRole('admin') || hasRole('manager'))) {
+      toast.error('Chỉ admin và quản lý mới có quyền bật lại toàn bộ lịch trong ngày');
       return;
     }
 

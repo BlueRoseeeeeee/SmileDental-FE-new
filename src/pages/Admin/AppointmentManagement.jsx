@@ -286,7 +286,7 @@ const AppointmentManagement = () => {
   // Get status text
   const getStatusText = (status) => {
     const texts = {
-      pending: 'Chờ xác nhận',
+      // pending: 'Chờ xác nhận',
       confirmed: 'Đã xác nhận',
       'checked-in': 'Đã check-in',
       'in-progress': 'Đang khám',
@@ -581,7 +581,7 @@ const AppointmentManagement = () => {
               onChange={setStatusFilter}
             >
               <Option value="all">Tất cả trạng thái</Option>
-              <Option value="pending">Chờ xác nhận</Option>
+              {/* <Option value="pending">Chờ xác nhận</Option> */}
               <Option value="confirmed">Đã xác nhận</Option>
               <Option value="checked-in">Đã check-in</Option>
               <Option value="in-progress">Đang khám</Option>

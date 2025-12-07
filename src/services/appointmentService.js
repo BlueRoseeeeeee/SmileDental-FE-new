@@ -237,6 +237,14 @@ const appointmentService = {
     return response.data;
   },
 
+  // Admin/Manager/Receptionist reject cancellation request
+  rejectCancellation: async (appointmentId, reason) => {
+    const response = await appointmentApi.post(`/appointments/${appointmentId}/reject-cancellation`, {
+      reason: reason
+    });
+    return response.data;
+  },
+
   // Patient request cancellation (must be >=1 day before appointment)
   requestCancellation: async (appointmentId, reason) => {
     const response = await appointmentApi.post(`/appointments/${appointmentId}/request-cancellation`, {
