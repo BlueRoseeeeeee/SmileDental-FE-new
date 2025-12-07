@@ -69,16 +69,14 @@ const CancelledPatientsList = () => {
   const [invoiceDetail, setInvoiceDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Load patients on mount
+  // Load ALL patients once on mount for dropdown options
   useEffect(() => {
-    loadPatients();
+    loadAllPatientsForFilters();
   }, []);
 
-  // Auto-search when filters change (except initial load)
+  // Load filtered patients on mount and when filters change
   useEffect(() => {
-    if (allPatients.length > 0) {
-      loadPatients(1);
-    }
+    loadFilteredPatients(1);
   }, [filters.startDate, filters.endDate, filters.roomId, filters.dentistId, filters.patientName]);
 
   // Extract unique rooms from patients data
@@ -108,18 +106,16 @@ const CancelledPatientsList = () => {
     return Array.from(dentistMap.entries()).map(([id, name]) => ({ _id: id, fullName: name }));
   };
 
-  const loadPatients = async (page = 1) => {
+  const loadAllPatientsForFilters = async () => {
     try {
-      setLoading(true);
-      
-      // Load all patients first (without filters for dropdown extraction)
+      // Load all patients once for dropdown filter options
       const allResult = await dayClosureService.getAllCancelledPatients({
         page: 1,
-        limit: 1000 // Get all for filter options
+        limit: 1000
       });
       
       if (allResult.success) {
-        // ✅ Group by appointmentId to remove duplicates
+        // Remove duplicates by appointmentId
         const uniquePatients = [];
         const seenIds = new Set();
         (allResult.data || []).forEach(patient => {
@@ -130,8 +126,15 @@ const CancelledPatientsList = () => {
         });
         setAllPatients(uniquePatients);
       }
+    } catch (error) {
+      console.error('Error loading all patients for filters:', error);
+    }
+  };
+
+  const loadFilteredPatients = async (page = 1) => {
+    try {
+      setLoading(true);
       
-      // Then load filtered patients
       const queryFilters = {
         page,
         limit: pagination.pageSize,
@@ -145,7 +148,7 @@ const CancelledPatientsList = () => {
       const result = await dayClosureService.getAllCancelledPatients(queryFilters);
       
       if (result.success) {
-        // ✅ Group by appointmentId to remove duplicates
+        // Remove duplicates by appointmentId
         const uniqueFiltered = [];
         const seenFilteredIds = new Set();
         (result.data || []).forEach(patient => {
@@ -159,7 +162,7 @@ const CancelledPatientsList = () => {
         setPagination({
           current: result.pagination.page,
           pageSize: result.pagination.limit,
-          total: result.pagination.total // Use total from backend, not current page count
+          total: result.pagination.total
         });
       } else {
         toast.error(result.message || 'Không thể tải dữ liệu');
@@ -170,6 +173,10 @@ const CancelledPatientsList = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadPatients = async (page = 1) => {
+    await loadFilteredPatients(page);
   };
 
   const handleSearch = () => {
@@ -280,11 +287,12 @@ const CancelledPatientsList = () => {
       )
     },
     {
-      title: 'Lịch hẹn gốc',
+      title: 'Ngày hẹn (lịch gốc)',
       key: 'appointment',
       width: 140,
       render: (_, record) => {
-        const apptDate = record.appointmentDate ? dayjs(record.appointmentDate) : null;
+        // Use appointmentDateVN for Vietnam timezone (UTC+7)
+        const apptDate = record.appointmentDateVN ? dayjs(record.appointmentDateVN) : null;
         return (
           <Space direction="vertical" size={0}>
             <Text><CalendarOutlined /> {apptDate ? apptDate.format('DD/MM/YYYY') : 'N/A'}</Text>
@@ -392,7 +400,7 @@ const CancelledPatientsList = () => {
                 style={{ width: '100%', marginTop: 8 }}
               />
               <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
-                Lọc theo ngày hẹn ban đầu của bệnh nhân
+                Lọc theo ngày hẹn (giờ Việt Nam) - appointmentDateVN
               </Text>
             </Col>
 

@@ -207,9 +207,11 @@ const CancelledPatients = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-search when filters change
+  // Auto-search when filters change - always reload regardless of current data
   useEffect(() => {
-    if (closures.length > 0) {
+    // Skip on initial mount (handled by first useEffect)
+    const hasFilters = filters.startDate || filters.endDate || filters.status !== 'all';
+    if (hasFilters || closures.length > 0) {
       loadClosures(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
