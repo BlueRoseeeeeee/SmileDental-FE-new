@@ -1056,7 +1056,7 @@ const BulkCreateScheduleModal = ({
                                       }
                                       // 3. Buồng bị tắt trong Schedule (isActiveSubRoom=false) - ƯU TIÊN TRẠNG THÁI NÀY
                                       else if (subRoom.isActiveInSchedule === false) {
-                                        statusTag = '🔒 Buồng tắt (Schedule)';
+                                        statusTag = '🔒 Buồng tắt ';
                                         statusText = `Buồng "${subRoom.subRoomName}" bị tắt trong lịch (isActiveSubRoom=false)`;
                                         statusColor = 'default';
                                       }
