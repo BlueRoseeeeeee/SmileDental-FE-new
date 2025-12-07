@@ -37,10 +37,12 @@ import {
   ManOutlined,
   WomanOutlined,
   TeamOutlined,
-  EditOutlined
+  EditOutlined,
+  KeyOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import userService from '../../services/userService';
+import { toast } from '../../services/toastService';
 
 const { Title, Text } = Typography;
 
@@ -58,6 +60,12 @@ const PatientManagement = () => {
   const [toggleModalVisible, setToggleModalVisible] = useState(false);
   const [patientToToggle, setPatientToToggle] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
+  
+  // Reset password states
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [selectedPatientForReset, setSelectedPatientForReset] = useState(null);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [defaultPassword, setDefaultPassword] = useState('');
 
   useEffect(() => {
     fetchPatients();
@@ -200,6 +208,43 @@ const PatientManagement = () => {
     setPatientToToggle(null);
   };
 
+  // Handle show reset password modal
+  const handleResetPassword = (patient) => {
+    setSelectedPatientForReset(patient);
+    setShowResetPasswordModal(true);
+  };
+
+  // Handle confirm reset password
+  const handleConfirmResetPassword = async () => {
+    if (!selectedPatientForReset) return;
+    
+    try {
+      setResetPasswordLoading(true);
+      const response = await userService.resetUserPassword(selectedPatientForReset._id);
+      
+      setDefaultPassword(response.defaultPassword);
+      
+      toast.success(`Đã reset mật khẩu cho "${selectedPatientForReset.fullName}" thành công!`);
+      
+      // Reload patients để cập nhật isFirstLogin status
+      fetchPatients();
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error(error.response?.data?.message || 'Reset mật khẩu thất bại');
+      setShowResetPasswordModal(false);
+      setSelectedPatientForReset(null);
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  // Handle close reset password modal
+  const handleCloseResetPasswordModal = () => {
+    setShowResetPasswordModal(false);
+    setSelectedPatientForReset(null);
+    setDefaultPassword('');
+  };
+
   const getGenderTag = (gender, large = false) => {
     const style = large ? { fontSize: '12px', padding: '8px 16px', lineHeight: '1.5' } : {};
     
@@ -311,6 +356,14 @@ const PatientManagement = () => {
               checked={record.isActive}
               size="small"
               onChange={() => showToggleModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Reset mật khẩu">
+            <Button
+              type="link"
+              icon={<KeyOutlined />}
+              onClick={() => handleResetPassword(record)}
+              style={{ color: '#faad14' }}
             />
           </Tooltip>
           <Button
@@ -620,6 +673,106 @@ const PatientManagement = () => {
                 </Space>
               </div>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        title="Reset mật khẩu về mặc định"
+        open={showResetPasswordModal}
+        onOk={defaultPassword ? handleCloseResetPasswordModal : handleConfirmResetPassword}
+        onCancel={handleCloseResetPasswordModal}
+        confirmLoading={resetPasswordLoading}
+        okText={defaultPassword ? "Đóng" : "Reset mật khẩu"}
+        cancelText={defaultPassword ? null : "Hủy bỏ"}
+        okType={defaultPassword ? "primary" : "danger"}
+        centered
+        width={550}
+        cancelButtonProps={{ style: { display: defaultPassword ? 'none' : 'inline-block' } }}
+      >
+        {selectedPatientForReset && !defaultPassword && (
+          <div>
+            <p style={{ fontSize: '16px', lineHeight: '1.6' }}>
+              Bạn có chắc chắn muốn <strong style={{ color: '#faad14' }}>reset mật khẩu</strong> cho bệnh nhân{' '}
+              <strong>{selectedPatientForReset.email} | {selectedPatientForReset.fullName}</strong>
+              ?
+            </p>
+            
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: '#fffbe6', 
+              borderLeft: '4px solid #faad14',
+              borderRadius: '6px',
+              marginTop: '16px'
+            }}>
+              <p style={{ margin: 0, color: '#d48806', fontWeight: '500' }}>
+                 <strong>Lưu ý:</strong>
+              </p>
+              <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: '#d48806' }}>
+                <li>Mật khẩu sẽ được reset về giá trị mặc định</li>
+                <li>Mật khẩu mặc định cho bệnh nhân: <strong>12345678</strong></li>
+                <li>Bệnh nhân sẽ được yêu cầu đổi mật khẩu khi đăng nhập lần tiếp theo</li>
+              </ul>
+            </div>
+          </div>
+        )}
+        
+        {defaultPassword && (
+          <div>
+            <div style={{ 
+              padding: '20px', 
+              backgroundColor: '#f6ffed', 
+              borderLeft: '4px solid #52c41a',
+              borderRadius: '6px',
+              marginBottom: '16px'
+            }}>
+              <p style={{ margin: 0, color: '#389e0d', fontWeight: '500', fontSize: '16px' }}>
+                ✓ Reset mật khẩu thành công!
+              </p>
+            </div>
+            
+            <div style={{
+              padding: '20px',
+              backgroundColor: '#fff7e6',
+              border: '2px dashed #faad14',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#595959' }}>
+                Mật khẩu mặc định của <strong>{selectedPatientForReset.fullName}</strong>:
+              </p>
+              <p style={{ 
+                margin: 0, 
+                fontSize: '24px', 
+                fontWeight: 'bold',
+                color: '#fa8c16',
+                letterSpacing: '2px',
+                fontFamily: 'monospace'
+              }}>
+                {defaultPassword}
+              </p>
+              <Button
+                type="link"
+                onClick={() => {
+                  navigator.clipboard.writeText(defaultPassword);
+                  toast.success('Đã copy mật khẩu vào clipboard!');
+                }}
+                style={{ marginTop: '12px' }}
+              >
+                📋 Copy mật khẩu
+              </Button>
+            </div>
+            
+            <p style={{ 
+              marginTop: '16px', 
+              fontSize: '13px', 
+              color: '#8c8c8c', 
+              textAlign: 'center',
+              marginBottom: 0
+            }}>
+              💡 Vui lòng thông báo mật khẩu này cho bệnh nhân
+            </p>
           </div>
         )}
       </Modal>
