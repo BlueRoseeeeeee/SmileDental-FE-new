@@ -203,6 +203,11 @@ const RecordDetailDrawer = ({
           <Descriptions.Item label="Dịch vụ" span={2}>
             <Text strong>{record.serviceName}</Text>
           </Descriptions.Item>
+          {record.serviceAddOnName && (
+            <Descriptions.Item label="Gói dịch vụ" span={2}>
+              <Text strong>{record.serviceAddOnName}</Text>
+            </Descriptions.Item>
+          )}
           <Descriptions.Item label="Nha sĩ" span={2}>
             {record.dentistName}
           </Descriptions.Item>

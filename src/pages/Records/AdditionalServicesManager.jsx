@@ -335,8 +335,20 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
         borderRadius: 4 
       }}>
         <Space direction="vertical" style={{ width: '100%' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <Text>Dịch vụ ban đầu:</Text>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <Text>Dịch vụ ban đầu:</Text>
+                <div>
+                  <Text strong>{record?.serviceName || '-'}</Text>
+                  {record?.serviceAddOnName && (
+                    <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>
+                      ↳ {record.serviceAddOnName}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
             <Text>{baseCost.toLocaleString('vi-VN')}đ</Text>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
