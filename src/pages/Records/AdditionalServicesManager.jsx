@@ -295,36 +295,7 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
       key: 'notes',
       ellipsis: true
     },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 120,
-      align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          />
-          <Popconfirm
-            title="Xóa dịch vụ này?"
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button
-              type="text"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
-        </Space>
-      )
-    }
-  ];
+    ];
 
   const additionalServices = record?.additionalServices || [];
   // 🔥 FIX: Service chính không có giá riêng, chỉ lấy serviceAddOnPrice

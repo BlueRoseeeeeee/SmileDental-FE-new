@@ -99,7 +99,7 @@ const RecordDetailDrawer = ({
         </Space>
       }
       placement="right"
-      width={850}
+      width={1000}
       onClose={onClose}
       open={visible}
       extra={
@@ -223,11 +223,6 @@ const RecordDetailDrawer = ({
               </Tag>
             </Descriptions.Item>
           )}
-          <Descriptions.Item label="Chi phí" span={2}>
-            <Text strong style={{ color: '#faad14', fontSize: 16 }}>
-              {record.totalCost.toLocaleString('vi-VN')}đ
-            </Text>
-          </Descriptions.Item>
         </Descriptions>
       </Card>
 
