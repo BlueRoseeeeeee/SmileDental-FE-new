@@ -1252,19 +1252,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
           className='custom-textarea'
         />
       </Form.Item>
-
-      <Form.Item
-        name="notes"
-        label="Ghi chú"
-      >
-        <TextArea
-          rows={4}
-          placeholder="Nhập ghi chú về bệnh nhân..."
-          maxLength={1000}
-          showCount
-          className='custom-textarea'
-        />
-      </Form.Item>
     </div>
   );
 
