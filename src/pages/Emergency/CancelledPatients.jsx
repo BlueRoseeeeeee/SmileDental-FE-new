@@ -223,13 +223,21 @@ const CancelledPatients = () => {
       title: 'Ngày Đóng Cửa',
       dataIndex: 'formattedDate',
       key: 'date',
-      width: 140,
+      width: 160,
       fixed: 'left',
       render: (text, record) => (
         <Space direction="vertical" size={0}>
-          <Text strong>{text}</Text>
+          <Text strong>
+            {text}
+            {record.formattedDateTo && record.formattedDateTo !== text && (
+              <> - {record.formattedDateTo}</>
+            )}
+          </Text>
           <Text type="secondary" style={{ fontSize: 12 }}>
             {dayjs(record.date).format('dddd')}
+            {record.dateTo && dayjs(record.dateTo).format('YYYY-MM-DD') !== dayjs(record.date).format('YYYY-MM-DD') && (
+              <> - {dayjs(record.dateTo).format('dddd')}</>
+            )}
           </Text>
         </Space>
       )
@@ -552,7 +560,12 @@ const CancelledPatients = () => {
             <Card size="small" style={{ background: '#f5f5f5' }}>
               <Descriptions column={2} bordered size="small">
                 <Descriptions.Item label="Ngày đóng cửa">
-                  <Text strong>{detailModal.data.formattedDate}</Text>
+                  <Text strong>
+                    {detailModal.data.formattedDate}
+                    {detailModal.data.formattedDateTo && detailModal.data.formattedDateTo !== detailModal.data.formattedDate && (
+                      <> - {detailModal.data.formattedDateTo}</>
+                    )}
+                  </Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Trạng thái">
                   {detailModal.data.status === 'active' && <Tag color="red">Đang đóng</Tag>}
