@@ -1357,7 +1357,7 @@ const EditScheduleModal = ({
                     )}
                     
                     {/* Ghi chú */}
-                    <div>
+                    {/* <div>
                       <div style={{ marginBottom: 4, fontWeight: 500 }}>Ghi chú:</div>
                       <Input.TextArea
                         value={overrideNote}
@@ -1365,7 +1365,7 @@ const EditScheduleModal = ({
                         placeholder="Lý do tạo lịch override (VD: Khám khẩn cấp, Yêu cầu đặc biệt...)"
                         rows={2}
                       />
-                    </div>
+                    </div> */}
                     
                     {/* Nút tạo override */}
                     <Button
