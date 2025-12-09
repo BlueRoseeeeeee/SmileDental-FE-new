@@ -1024,15 +1024,6 @@ const RecordList = () => {
             <Title level={4} style={{ margin: 0 }}>Danh sách hồ sơ bệnh án</Title>
           </Space>
         }
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleCreate}
-          >
-            Tạo hồ sơ mới
-          </Button>
-        }
       >
         {/* Filters */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
