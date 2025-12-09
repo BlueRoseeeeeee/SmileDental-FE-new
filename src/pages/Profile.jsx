@@ -44,6 +44,10 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
 
+  // ✅ Check if current user can edit profile (only admin and manager)
+  const selectedRole = localStorage.getItem('selectedRole');
+  const canEditProfile = selectedRole === 'admin' || selectedRole === 'manager';
+
   // Handle start editing
   const handleStartEdit = () => {
     form.setFieldsValue({
@@ -216,13 +220,16 @@ const Profile = () => {
             title="Thông tin cá nhân"
             extra={
               !isEditing ? (
-                <Button 
-                  type="primary" 
-                  icon={<EditOutlined />}
-                  onClick={handleStartEdit}
-                >
-                  Chỉnh sửa
-                </Button>
+                // ✅ Only show Edit button for admin and manager
+                canEditProfile && (
+                  <Button 
+                    type="primary" 
+                    icon={<EditOutlined />}
+                    onClick={handleStartEdit}
+                  >
+                    Chỉnh sửa
+                  </Button>
+                )
               ) : (
                 <Space>
                   <Button 
