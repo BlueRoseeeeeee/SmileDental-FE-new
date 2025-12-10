@@ -48,6 +48,66 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Panel } = Collapse;
 
+/**
+ * 🆕 Group patients by appointmentId and merge time ranges
+ * Slots with same appointmentId will be grouped into 1 row
+ * Time will show: startTime (earliest) - endTime (latest)
+ */
+const groupPatientsByAppointment = (patients) => {
+  const appointmentMap = new Map();
+  
+  for (const patient of patients) {
+    const appointmentId = patient.appointmentId?.toString();
+    
+    if (!appointmentId) {
+      // No appointmentId - keep as separate entry
+      appointmentMap.set(`no-appt-${Math.random()}`, { ...patient, slotsCount: 1 });
+      continue;
+    }
+    
+    if (appointmentMap.has(appointmentId)) {
+      // Merge: update time range and increment slotsCount
+      const existing = appointmentMap.get(appointmentId);
+      existing.slotsCount = (existing.slotsCount || 1) + 1;
+      
+      // Parse time from "HH:mm - HH:mm" format to get start and end
+      const currentTimeRange = patient.appointmentTime || '';
+      const [currentStart, currentEnd] = currentTimeRange.split(' - ').map(t => t?.trim() || '');
+      
+      // Update earliest start time
+      if (currentStart && (!existing._earliestStart || currentStart < existing._earliestStart)) {
+        existing._earliestStart = currentStart;
+      }
+      // Update latest end time
+      if (currentEnd && (!existing._latestEnd || currentEnd > existing._latestEnd)) {
+        existing._latestEnd = currentEnd;
+      }
+    } else {
+      // First entry for this appointment
+      const timeRange = patient.appointmentTime || '';
+      const [start, end] = timeRange.split(' - ').map(t => t?.trim() || '');
+      
+      appointmentMap.set(appointmentId, {
+        ...patient,
+        slotsCount: 1,
+        _earliestStart: start,
+        _latestEnd: end
+      });
+    }
+  }
+  
+  // Convert Map to Array and format merged time
+  return Array.from(appointmentMap.values()).map(patient => {
+    // Format merged time: "earliest - latest"
+    if (patient._earliestStart && patient._latestEnd) {
+      patient.appointmentTime = `${patient._earliestStart} - ${patient._latestEnd}`;
+    }
+    delete patient._earliestStart;
+    delete patient._latestEnd;
+    return patient;
+  });
+};
+
 const CancelledPatients = () => {
   const [loading, setLoading] = useState(false);
   const [closures, setClosures] = useState([]);
@@ -137,11 +197,15 @@ const CancelledPatients = () => {
       ]);
 
       if (detailResult.success && patientsResult.success) {
+        // 🆕 Group patients by appointmentId for display
+        const rawPatients = patientsResult.data.patients || [];
+        const groupedPatients = groupPatientsByAppointment(rawPatients);
+        
         setDetailModal({
           visible: true,
           loading: false,
           data: detailResult.data,
-          patients: patientsResult.data.patients || []
+          patients: groupedPatients
         });
       } else {
         toast.error('Không thể tải chi tiết');
@@ -357,7 +421,12 @@ const CancelledPatients = () => {
             <ClockCircleOutlined style={{ fontSize: 12 }} />
             <Text style={{ fontSize: 12 }}>{record.appointmentTime}</Text>
           </Space>
-          <Tag color="blue" style={{ fontSize: 11 }}>{record.shiftName}</Tag>
+          <Space size={4}>
+            <Tag color="blue" style={{ fontSize: 11 }}>{record.shiftName}</Tag>
+            {record.slotsCount > 1 && (
+              <Tag color="purple" style={{ fontSize: 10 }}>{record.slotsCount} slots</Tag>
+            )}
+          </Space>
         </Space>
       )
     },
