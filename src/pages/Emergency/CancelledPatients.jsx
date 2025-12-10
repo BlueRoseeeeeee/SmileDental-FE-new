@@ -108,6 +108,20 @@ const groupPatientsByAppointment = (patients) => {
   });
 };
 
+/**
+ * 🆕 Count unique patients (by appointmentId) from cancelledAppointments array
+ * Same appointmentId = 1 patient (even if multiple slots)
+ */
+const countUniquePatients = (cancelledAppointments) => {
+  if (!cancelledAppointments || !Array.isArray(cancelledAppointments)) return 0;
+  const uniqueIds = new Set(
+    cancelledAppointments
+      .map(a => a.appointmentId?.toString())
+      .filter(Boolean)
+  );
+  return uniqueIds.size;
+};
+
 const CancelledPatients = () => {
   const [loading, setLoading] = useState(false);
   const [closures, setClosures] = useState([]);
@@ -334,7 +348,7 @@ const CancelledPatients = () => {
           <Space size={4} style={{ fontSize: 12 }}>
             <UserOutlined style={{ color: '#fa8c16' }} />
             <Text style={{ fontSize: 12 }}>
-              {record.totalPatients || 0} BN
+              {countUniquePatients(record.cancelledAppointments)} BN
             </Text>
           </Space>
           <Space size={4} style={{ fontSize: 12 }}>
@@ -668,7 +682,7 @@ const CancelledPatients = () => {
               <Col xs={24} sm={8}>
                 <Statistic
                   title="Bệnh Nhân Bị Hủy"
-                  value={detailModal.data.stats?.appointmentsCancelledCount || 0}
+                  value={detailModal.patients.length}
                   prefix={<UserOutlined />}
                   valueStyle={{ color: '#fa8c16', fontSize: '20px' }}
                 />
