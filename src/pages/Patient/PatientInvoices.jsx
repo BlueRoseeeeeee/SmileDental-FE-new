@@ -299,11 +299,9 @@ const PatientInvoices = () => {
               style={{ width: '100%' }}
             >
               <Option value="all">Tất cả trạng thái</Option>
-              <Option value="pending">Chờ thanh toán</Option>
               <Option value="paid">Đã thanh toán</Option>
-              <Option value="partial_paid">Thanh toán 1 phần</Option>
-              <Option value="overdue">Quá hạn</Option>
               <Option value="cancelled">Đã hủy</Option>
+              
             </Select>
           </Col>
           

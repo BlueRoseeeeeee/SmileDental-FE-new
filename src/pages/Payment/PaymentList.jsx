@@ -408,15 +408,14 @@ const PaymentList = () => {
       title: 'Mã thanh toán',
       dataIndex: 'paymentCode',
       key: 'paymentCode',
-      width: 120,
-      fixed: 'left',
+      width: 180,
       render: (code) => <strong style={{ fontSize: '13px' }}>{code}</strong>
     },
     {
       title: 'Bệnh nhân',
       dataIndex: ['patientInfo', 'name'],
       key: 'patientName',
-      width: 150,
+      width: 180,
       render: (name, record) => (
         <div>
           <div style={{ fontWeight: 500, marginBottom: 2 }}>{name}</div>
@@ -424,22 +423,13 @@ const PaymentList = () => {
         </div>
       )
     },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {getStatusText(status)}
-        </Tag>
-      )
-    },
+    
     {
       title: 'Phương thức',
       dataIndex: 'method',
       key: 'method',
-      width: 100,
+      width: 120,
+      align: 'center',
       render: (method) => {
         if (!method) {
           return <Tag color="default">Chưa chọn</Tag>;
@@ -455,7 +445,7 @@ const PaymentList = () => {
       title: 'Số tiền',
       dataIndex: 'finalAmount',
       key: 'finalAmount',
-      width: 130,
+      width: 150,
       align: 'right',
       render: (amount, record) => (
         <div>
@@ -476,17 +466,30 @@ const PaymentList = () => {
       )
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      align: 'center',
+      render: (status) => (
+        <Tag color={getStatusColor(status)}>
+          {getStatusText(status)}
+        </Tag>
+      )
+    },
+    {
       title: 'Ngày thanh toán',
       dataIndex: 'processedAt',
       key: 'processedAt',
-      width: 130,
+      width: 160,
+      align: 'center',
       render: (date) => dayjs(date).format('DD/MM/YYYY HH:mm')
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
-      fixed: 'right',
+      width: 150,
+      align: 'center',
       render: (_, record) => (
         <Space>
           <Tooltip title="Xem chi tiết">
@@ -576,9 +579,7 @@ const PaymentList = () => {
                 <Option value="pending">Chờ xử lý</Option>
                 <Option value="processing">Đang xử lý</Option>
                 <Option value="completed">Hoàn thành</Option>
-                <Option value="failed">Thất bại</Option>
                 <Option value="cancelled">Đã hủy</Option>
-                <Option value="refunded">Đã hoàn tiền</Option>
               </Select>
             </Col>
             <Col xs={24} sm={24} md={10}>
@@ -615,8 +616,9 @@ const PaymentList = () => {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
-          scroll={{ x: 800 }}
+          scroll={{ x: 1100 }}
           size="small"
+          style={{ marginTop: 16 }}
         />
       </Card>
 
@@ -842,12 +844,11 @@ const PaymentList = () => {
                   </Space>
 
                   <div>
-                    <span style={{ fontWeight: 500 }}>Số tiền nhận từ bệnh nhân:</span>
+                    <span style={{ fontWeight: 500 }}>Số tiền phải thanh toán:</span>
                     <InputNumber
                       style={{ width: '100%', marginTop: 8 }}
-                      value={cashPaidAmount}
-                      min={processingPayment.finalAmount || 0}
-                      step={10000}
+                      value={processingPayment.finalAmount}
+                      disabled={true}
                       formatter={(value) => {
                         if (value === null || value === undefined || value === '') {
                           return '₫ ';
@@ -855,7 +856,6 @@ const PaymentList = () => {
                         return `₫ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                       }}
                       parser={(value) => (value ? value.replace(/₫\s?|,/g, '') : '')}
-                      onChange={(value) => setCashPaidAmount(Number(value) || 0)}
                     />
                   </div>
 
@@ -876,17 +876,6 @@ const PaymentList = () => {
                     <span>Tổng tiền cần thanh toán:</span>
                     <strong>{processingPayment.finalAmount?.toLocaleString('vi-VN')} đ</strong>
                   </Space>
-                  <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                    <span>Khách đưa:</span>
-                    <strong>{cashPaidAmount?.toLocaleString('vi-VN')} đ</strong>
-                  </Space>
-
-                  {cashPaidAmount > (processingPayment.finalAmount || 0) && (
-                    <Space style={{ width: '100%', justifyContent: 'space-between', color: '#52c41a' }}>
-                      <span>Tiền thừa:</span>
-                      <strong>{(cashPaidAmount - (processingPayment.finalAmount || 0))?.toLocaleString('vi-VN')} đ</strong>
-                    </Space>
-                  )}
                 </Space>
               </Card>
             )}
