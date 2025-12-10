@@ -178,7 +178,7 @@ const DashboardLayout = () => {
       addMenuItem({
         key: 'statistics',
         icon: <BarChartOutlined />,
-        label: 'Thống kê & Báo cáo',
+        label: 'Thống kê',
         children: [
           { key: '/dashboard/statistics/revenue', label: 'Doanh thu', icon: <DollarOutlined /> },
           { key: '/dashboard/statistics/booking-channels', label: 'Lịch hẹn Online/Offline', icon: <CalendarOutlined /> },
