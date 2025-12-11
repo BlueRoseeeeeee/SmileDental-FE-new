@@ -174,6 +174,10 @@ const CreateAppointment = () => {
     }
   }, [navigate, user, form]);
 
+  const handleBack = () => {
+    navigate('/patient/booking/select-time');
+  };
+
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
@@ -400,14 +404,14 @@ const CreateAppointment = () => {
               {/* Actions */}
               <div style={{ textAlign: 'center' }}>
                 <Space size="large">
-                  {/* <Button 
+                  <Button 
                     size="large" 
                     icon={<ArrowLeftOutlined />}
                     onClick={handleBack} 
                     style={{ borderRadius: 6 }}
                   >
                     Quay lại
-                  </Button> */}
+                  </Button>
                   <Button 
                     type="primary" 
                     size="large"
