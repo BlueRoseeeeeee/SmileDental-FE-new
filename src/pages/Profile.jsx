@@ -72,11 +72,14 @@ const Profile = () => {
       const values = await form.validateFields();
       setLoading(true);
 
-      // Only send editable fields: email and phone
+      // ✅ Send all editable fields (except employee code)
       // ✅ Convert phone → phoneNumber to match backend
       const updateData = {
+        fullName: values.fullName,
         email: values.email,
         phoneNumber: values.phone, // phone → phoneNumber
+        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null,
+        gender: values.gender,
       };
 
       const response = await userService.updateProfile(updateData);
@@ -84,9 +87,12 @@ const Profile = () => {
       // ✅ Update local user state with updated data
       const updatedUser = {
         ...user,
+        fullName: values.fullName,
         email: values.email,
         phone: values.phone,
-        phoneNumber: values.phone
+        phoneNumber: values.phone,
+        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : user?.dateOfBirth,
+        gender: values.gender,
       };
       updateUser(updatedUser);
       
@@ -472,27 +478,22 @@ const Profile = () => {
                       </Title>
                     </Col>
 
-                    {/* Họ tên - DISABLED */}
+                    {/* Họ tên - EDITABLE */}
                     <Col xs={24} sm={12}>
                       <Form.Item
                         label="Họ và tên"
                         name="fullName"
+                        rules={[
+                          { required: true, message: 'Vui lòng nhập họ và tên!' },
+                          { min: 2, message: 'Họ tên phải có ít nhất 2 ký tự!' }
+                        ]}
                       >
                         <Input 
                           prefix={<UserOutlined />}
-                          placeholder="Họ và tên"
+                          placeholder="Nhập họ và tên"
                           size="large"
-                          disabled
-                          style={{ 
-                            backgroundColor: '#f5f5f5',
-                            color: '#8c8c8c',
-                            cursor: 'not-allowed'
-                          }}
                         />
                       </Form.Item>
-                      <Text type="secondary" style={{ fontSize: '12px', marginTop: '-16px', display: 'block' }}>
-                        Họ tên không thể thay đổi
-                      </Text>
                     </Col>
 
                     {/* Email */}
@@ -534,44 +535,42 @@ const Profile = () => {
                       </Form.Item>
                     </Col>
 
-                    {/* Ngày sinh - DISABLED */}
+                    {/* Ngày sinh - EDITABLE */}
                     <Col xs={24} sm={12}>
                       <Form.Item
                         label="Ngày sinh"
                         name="dateOfBirth"
+                        rules={[
+                          { required: true, message: 'Vui lòng chọn ngày sinh!' }
+                        ]}
                       >
                         <DatePicker
-                          placeholder="Ngày sinh"
+                          placeholder="Chọn ngày sinh"
                           format="DD/MM/YYYY"
                           style={{ width: '100%' }}
                           size="large"
-                          disabled
                         />
                       </Form.Item>
-                      <Text type="secondary" style={{ fontSize: '12px', marginTop: '-16px', display: 'block' }}>
-                        Ngày sinh không thể thay đổi
-                      </Text>
                     </Col>
 
-                    {/* Giới tính - DISABLED */}
+                    {/* Giới tính - EDITABLE */}
                     <Col xs={24} sm={12}>
                       <Form.Item
                         label="Giới tính"
                         name="gender"
+                        rules={[
+                          { required: true, message: 'Vui lòng chọn giới tính!' }
+                        ]}
                       >
                         <Select 
-                          placeholder="Giới tính"
+                          placeholder="Chọn giới tính"
                           size="large"
-                          disabled
                         >
                           <Option value="male">Nam</Option>
                           <Option value="female">Nữ</Option>
                           <Option value="other">Khác</Option>
                         </Select>
                       </Form.Item>
-                      <Text type="secondary" style={{ fontSize: '12px', marginTop: '-16px', display: 'block' }}>
-                        Giới tính không thể thay đổi
-                      </Text>
                     </Col>
 
                     {/* Mã nhân viên (readonly) */}
