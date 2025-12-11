@@ -240,6 +240,7 @@ const DashboardLayout = () => {
           { key: '/dashboard/queue-receptionist', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
           { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
           { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
+          { key: '/dashboard/cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined /> },
         ]
       });
       
