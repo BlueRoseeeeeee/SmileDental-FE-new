@@ -489,16 +489,22 @@ const BookingSelectAddOn = () => {
                 Quay lại
               </Button>
               
-              {/* Chỉ hiển thị button "Bỏ qua/Tiếp theo" nếu KHÔNG có chỉ định addon cụ thể */}
-              {!(treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId)) && (
+              {/* 
+                Chỉ hiển thị button "Tiếp theo" nếu:
+                - KHÔNG có chỉ định addon cụ thể (treatment với chỉ định)
+                - VÀ canSelectAddOn = false (chưa login hoặc không đủ điều kiện chọn addon)
+                - Nút "Bỏ qua" đã bị loại bỏ hoàn toàn
+              */}
+              {!(treatmentIndications.length > 0 && treatmentIndications.some(ind => ind.serviceAddOnId)) && 
+               !canSelectAddOn && (
                 <Button
                   size='large'
-                  type={canSelectAddOn ? 'default' : 'primary'}
+                  type='primary'
                   icon={<ArrowRightOutlined />}
                   onClick={handleSkipAddon}
                   style={{marginLeft:10, borderRadius: 6}}
                 >
-                  {canSelectAddOn ? 'Bỏ qua' : 'Tiếp theo'}
+                  Tiếp theo
                 </Button>
               )}
             </div>
