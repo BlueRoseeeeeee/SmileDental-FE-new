@@ -2852,6 +2852,10 @@ const StaffAssignmentUnified = () => {
     const dateStr = slotModalData.date.format('YYYY-MM-DD');
     updateShiftSelection(dateStr, slotModalData.shiftName, slotModalData.slots, selectedIndividualSlots);
 
+    // 🆕 Reset selected dentists/nurses để tránh cache khi chọn slot mới
+    setSelectedDentists([]);
+    setSelectedNurses([]);
+
     toast.success(`Đã chọn ${selectedIndividualSlots.length} slot để phân công`);
     setShowSlotSelectionModal(false);
     setSelectedIndividualSlots([]);
@@ -2885,6 +2889,9 @@ const StaffAssignmentUnified = () => {
       setSelectedSlotsForAssignment(prev => 
         prev.filter(entry => entry.slotKey !== createSlotKey(dateStr, shiftName))
       );
+      // 🆕 Reset selected dentists/nurses khi bỏ chọn ca
+      setSelectedDentists([]);
+      setSelectedNurses([]);
       toast.info(`Đã bỏ chọn ca ${shiftName}`);
       return;
     }
@@ -2897,7 +2904,10 @@ const StaffAssignmentUnified = () => {
       return;
     }
 
-  updateShiftSelection(dateStr, shiftName, slots, slots.map(resolveSlotId).filter(Boolean));
+    updateShiftSelection(dateStr, shiftName, slots, slots.map(resolveSlotId).filter(Boolean));
+    // 🆕 Reset selected dentists/nurses khi chọn ca mới
+    setSelectedDentists([]);
+    setSelectedNurses([]);
     toast.success(`Đã chọn ca ${shiftName} (${slots.length} slot)`);
   };
 
