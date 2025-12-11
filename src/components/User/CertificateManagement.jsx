@@ -264,29 +264,7 @@ const CertificateManagement = () => {
                     onClick={() => handlePreview(certificate)}
                   >
                     Xem
-                  </Button>,
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => handleEditNotes(certificate)}
-                  >
-                    Sửa
-                  </Button>,
-                  <Popconfirm
-                    title="Xóa chứng chỉ"
-                    description="Bạn có chắc chắn muốn xóa chứng chỉ này?"
-                    onConfirm={() => handleDelete(certificate._id)}
-                    okText="Xóa"
-                    cancelText="Hủy"
-                  >
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                    >
-                      Xóa
-                    </Button>
-                  </Popconfirm>
+                  </Button>
                 ]}
               >
                 {/* Tên chứng chỉ */}
