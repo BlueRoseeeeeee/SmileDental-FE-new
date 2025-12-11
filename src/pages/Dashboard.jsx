@@ -16,7 +16,12 @@ import {
   TeamOutlined,
   DollarOutlined,
   EnvironmentOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  LineChartOutlined,
+  CheckCircleOutlined,
+  UserSwitchOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -65,36 +70,62 @@ const Dashboard = () => {
   const getQuickActions = () => {
     if (role === 'admin' || role === 'manager') {
       return [
-        { key: 'users', label: 'Quản lý nhân sự', icon: <TeamOutlined />, path: '/dashboard/users', color: '#1890ff' },
-        { key: 'rooms', label: 'Quản lý phòng', icon: <EnvironmentOutlined />, path: '/dashboard/rooms', color: '#52c41a' },
-        { key: 'services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined />, path: '/dashboard/services', color: '#fa8c16' },
-        { key: 'statistics', label: 'Thống kê', icon: <BarChartOutlined />, path: '/dashboard/statistics/revenue', color: '#722ed1' },
-        { key: 'patients', label: 'Bệnh nhân', icon: <HeartOutlined />, path: '/dashboard/patients', color: '#eb2f96' },
-        { key: 'payments', label: 'Thanh toán', icon: <DollarOutlined />, path: '/dashboard/payments', color: '#13c2c2' },
-        { key: 'invoices', label: 'Hóa đơn', icon: <FileTextOutlined />, path: '/dashboard/invoices', color: '#fa541c' },
-        { key: 'schedules', label: 'Lịch làm việc', icon: <CalendarOutlined />, path: '/dashboard/schedules/calendar', color: '#2f54eb' },
+        // Hệ thống & Nhân sự
+        { key: 'schedules-config', label: 'Cấu hình hệ thống', icon: <SettingOutlined />, path: '/dashboard/schedules', color: '#1890ff' },
+        { key: 'users', label: 'Quản lý nhân sự', icon: <UserSwitchOutlined />, path: '/dashboard/users', color: '#52c41a' },
+        { key: 'staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined />, path: '/dashboard/schedules/staff-assignment', color: '#fa8c16' },
+        { key: 'rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined />, path: '/dashboard/rooms', color: '#722ed1' },
+        { key: 'services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined />, path: '/dashboard/services', color: '#eb2f96' },
+        // Lịch & Vận hành
+        { key: 'schedules', label: 'Lịch làm việc tổng', icon: <CalendarOutlined />, path: '/dashboard/schedules/calendar', color: '#13c2c2' },
+        { key: 'create-for-room', label: 'Tạo lịch cho phòng', icon: <CalendarOutlined />, path: '/dashboard/schedules/create-for-room', color: '#2f54eb' },
+        { key: 'holidays', label: 'Quản lý ngày nghỉ', icon: <CalendarOutlined />, path: '/dashboard/schedules/holidays', color: '#fa541c' },
+        { key: 'day-closures', label: 'Đóng cửa khẩn cấp', icon: <CloseCircleOutlined />, path: '/dashboard/day-closures', color: '#f5222d' },
+        // Khám & Điều trị
+        { key: 'walk-in', label: 'Lịch Walk-in', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#1890ff' },
+        { key: 'queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined />, path: '/dashboard/queue', color: '#52c41a' },
+        { key: 'patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined />, path: '/dashboard/patients', color: '#fa8c16' },
+        { key: 'records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined />, path: '/dashboard/records', color: '#722ed1' },
+        { key: 'appointments', label: 'Lịch hẹn khám', icon: <CalendarOutlined />, path: '/dashboard/patient-appointments-receptionist', color: '#eb2f96' },
+        { key: 'cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined />, path: '/dashboard/cancelled-patients', color: '#595959' },
+        { key: 'medicine', label: 'Danh mục thuốc', icon: <MedicineBoxOutlined />, path: '/dashboard/medicine', color: '#13c2c2' },
+        // Dịch vụ & Tài chính
+        { key: 'invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined />, path: '/dashboard/invoices', color: '#fa541c' },
+        { key: 'payments', label: 'Quản lý thanh toán', icon: <DollarOutlined />, path: '/dashboard/payments', color: '#2f54eb' },
+        // Thống kê
+        { key: 'statistics-revenue', label: 'Thống kê doanh thu', icon: <DollarOutlined />, path: '/dashboard/statistics/revenue', color: '#52c41a' },
+        { key: 'statistics-booking', label: 'Lịch hẹn Online/Offline', icon: <CalendarOutlined />, path: '/dashboard/statistics/booking-channels', color: '#1890ff' },
+        { key: 'statistics-clinic', label: 'Hiệu suất Phòng khám', icon: <LineChartOutlined />, path: '/dashboard/statistics/clinic-utilization', color: '#722ed1' },
+        { key: 'statistics-status', label: 'Trạng thái Lịch hẹn', icon: <CheckCircleOutlined />, path: '/dashboard/statistics/appointment-status', color: '#eb2f96' },
       ];
     } else if (role === 'dentist') {
       return [
         { key: 'schedules', label: 'Lịch làm việc', icon: <CalendarOutlined />, path: '/dashboard/schedules/calendar', color: '#1890ff' },
         { key: 'walk-in', label: 'Lịch Walk-in', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#52c41a' },
         { key: 'records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined />, path: '/dashboard/records', color: '#fa8c16' },
-        { key: 'certificates', label: 'Chứng chỉ', icon: <FileTextOutlined />, path: '/dashboard/certificates', color: '#722ed1' },
+        { key: 'certificates', label: 'Bằng cấp & Chứng chỉ', icon: <FileTextOutlined />, path: '/dashboard/certificates', color: '#722ed1' },
+        { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined />, path: '/dashboard/profile', color: '#eb2f96' },
       ];
     } else if (role === 'receptionist' || role === 'staff') {
       return [
+        // Khám & Điều trị
         { key: 'walk-in', label: 'Lịch Walk-in', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#1890ff' },
-        { key: 'patients', label: 'Bệnh nhân', icon: <HeartOutlined />, path: '/dashboard/patients', color: '#52c41a' },
+        { key: 'queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined />, path: '/dashboard/queue-receptionist', color: '#52c41a' },
         { key: 'appointments', label: 'Lịch hẹn khám', icon: <CalendarOutlined />, path: '/dashboard/patient-appointments-receptionist', color: '#fa8c16' },
-        { key: 'invoices', label: 'Hóa đơn', icon: <FileTextOutlined />, path: '/dashboard/invoices', color: '#722ed1' },
-        { key: 'payments', label: 'Thanh toán', icon: <DollarOutlined />, path: '/dashboard/payments', color: '#13c2c2' },
+        { key: 'patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined />, path: '/dashboard/patients', color: '#722ed1' },
+        { key: 'cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined />, path: '/dashboard/cancelled-patients', color: '#595959' },
+        // Dịch vụ & Tài chính
+        { key: 'invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined />, path: '/dashboard/invoices', color: '#eb2f96' },
+        { key: 'payments', label: 'Quản lý thanh toán', icon: <DollarOutlined />, path: '/dashboard/payments', color: '#13c2c2' },
+        { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined />, path: '/dashboard/profile', color: '#2f54eb' },
       ];
     } else if (role === 'nurse') {
       return [
         { key: 'schedules', label: 'Lịch làm việc', icon: <CalendarOutlined />, path: '/dashboard/schedules/calendar', color: '#1890ff' },
-        { key: 'records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined />, path: '/dashboard/records', color: '#52c41a' },
+        { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined />, path: '/dashboard/profile', color: '#52c41a' },
       ];
     } else {
+      // Patient role
       return [
         { key: 'dentists', label: 'Danh sách nha sĩ', icon: <TeamOutlined />, path: '/dentists', color: '#1890ff' },
         { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined />, path: '/dashboard/profile', color: '#52c41a' },
