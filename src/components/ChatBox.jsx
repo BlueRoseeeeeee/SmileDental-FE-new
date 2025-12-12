@@ -100,10 +100,26 @@ const ChatBox = () => {
           
           // Store booking data in localStorage (same as normal booking flow)
           localStorage.setItem('booking_service', JSON.stringify(response.bookingData.service));
-          localStorage.setItem('booking_serviceAddOn', JSON.stringify(response.bookingData.serviceAddOn));
+          
+          // Only store serviceAddOn if it exists (user selected addon)
+          if (response.bookingData.serviceAddOn) {
+            localStorage.setItem('booking_serviceAddOn', JSON.stringify(response.bookingData.serviceAddOn));
+            localStorage.setItem('booking_serviceAddOn_userSelected', response.bookingData.serviceAddOnUserSelected ? 'true' : 'false');
+          } else {
+            localStorage.removeItem('booking_serviceAddOn');
+            localStorage.removeItem('booking_serviceAddOn_userSelected');
+          }
+          
           localStorage.setItem('booking_dentist', JSON.stringify(response.bookingData.dentist));
           localStorage.setItem('booking_date', response.bookingData.date);
           localStorage.setItem('booking_slotGroup', JSON.stringify(response.bookingData.slotGroup));
+          
+          // Store examRecordId if exists (for recommended services)
+          if (response.bookingData.examRecordId) {
+            localStorage.setItem('booking_examRecordId', response.bookingData.examRecordId);
+          } else {
+            localStorage.removeItem('booking_examRecordId');
+          }
           
           // Show notification and redirect after 2 seconds
           antMessage.success({

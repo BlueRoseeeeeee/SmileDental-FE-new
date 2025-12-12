@@ -372,7 +372,7 @@ const CreateAppointment = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text strong>💰 Tiền cọc (phải thanh toán):</Text>
                     <h5 strong style={{ fontSize: 24, color: 'red', fontWeight:'bold' }}>
-                      {(selectedSlotGroup?.slots.length * scheduleConfig.depositAmount).toLocaleString('vi-VN')} VNĐ
+                      {((selectedSlotGroup?.slotIds?.length || selectedSlotGroup?.slots?.length || 1) * scheduleConfig.depositAmount).toLocaleString('vi-VN')} VNĐ
                     </h5>
                   </div>
                 }
