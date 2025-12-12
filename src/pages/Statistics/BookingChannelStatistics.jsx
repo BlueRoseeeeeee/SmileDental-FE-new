@@ -473,7 +473,7 @@ const BookingChannelStatistics = () => {
       </Row>
 
       {/* Top Staff Table */}
-      <Row gutter={[16, 16]}>
+      {/* <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card title={
             <span>
@@ -489,7 +489,7 @@ const BookingChannelStatistics = () => {
             />
           </Card>
         </Col>
-      </Row>
+      </Row> */}
 
       {/* Completion Rate Comparison */}
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
