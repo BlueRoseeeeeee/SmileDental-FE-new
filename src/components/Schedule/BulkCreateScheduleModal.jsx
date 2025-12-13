@@ -909,7 +909,7 @@ const BulkCreateScheduleModal = ({
                         ? 'Tất cả phòng đã có ca này trong khoảng thời gian đã chọn'
                         : bulkInfo.shiftUnavailableReasons[selectedShiftForDetail] === 'partial'
                           ? 'Một số phòng/buồng đã có ca, một số chưa có hoặc đang tắt'
-                          : 'Ca này đang bị tắt trong cấu hình hệ thống hoặc lịch'}
+                          : 'Ca này đang bị tắt trong Cấu hình phòng khám hoặc lịch'}
                     </Text>
                   )}
                 </Space>

@@ -208,7 +208,7 @@ const CreateScheduleForRoom = () => {
       
       // ⚠️ Bắt buộc phải có config từ backend
       if (!response?.success || !response?.data) {
-        toast.error('Chưa có cấu hình hệ thống. Vui lòng vào Cài đặt → Cấu hình ca làm việc để khởi tạo trước khi tạo lịch.');
+        toast.error('Chưa có Cấu hình phòng khám. Vui lòng vào Cài đặt → Cấu hình ca làm việc để khởi tạo trước khi tạo lịch.');
         setConfigLoading(false);
         setShowCreateModal(false); // Đóng modal
         return null;
@@ -226,7 +226,7 @@ const CreateScheduleForRoom = () => {
       return built;
     } catch (error) {
       console.error('Error loading schedule config:', error);
-      toast.error('Không thể lấy cấu hình ca làm việc. Vui lòng kiểm tra kết nối hoặc khởi tạo cấu hình hệ thống.');
+      toast.error('Không thể lấy cấu hình ca làm việc. Vui lòng kiểm tra kết nối hoặc khởi tạo Cấu hình phòng khám.');
       setConfigLoading(false);
       setShowCreateModal(false); // Đóng modal
       return null;

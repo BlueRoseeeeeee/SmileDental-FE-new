@@ -71,7 +71,7 @@ const Dashboard = () => {
     if (role === 'admin' || role === 'manager') {
       return [
         // Hệ thống & Nhân sự
-        { key: 'schedules-config', label: 'Cấu hình hệ thống', icon: <SettingOutlined />, path: '/dashboard/schedules', color: '#1890ff' },
+        { key: 'schedules-config', label: 'Cấu hình phòng khám', icon: <SettingOutlined />, path: '/dashboard/schedules', color: '#1890ff' },
         { key: 'users', label: 'Quản lý nhân sự', icon: <UserSwitchOutlined />, path: '/dashboard/users', color: '#52c41a' },
         { key: 'staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined />, path: '/dashboard/schedules/staff-assignment', color: '#fa8c16' },
         { key: 'rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined />, path: '/dashboard/rooms', color: '#722ed1' },

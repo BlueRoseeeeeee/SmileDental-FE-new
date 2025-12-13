@@ -1,6 +1,6 @@
 /**
  * @author: HoTram
- * Schedule Config - Trang cấu hình hệ thống lịch làm việc
+ * Schedule Config - Trang Cấu hình phòng khám lịch làm việc
  */
 import React, { useState, useEffect } from 'react';
 import { Card, Alert, Spin, Button, Space, Typography } from 'antd';
@@ -31,7 +31,7 @@ const ScheduleConfig = () => {
       }
     } catch (error) {
       console.error('Error checking config:', error);
-      toast.error('Không thể kiểm tra cấu hình hệ thống');
+      toast.error('Không thể kiểm tra Cấu hình phòng khám');
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ const ScheduleConfig = () => {
       setConfig(response.data);
     } catch (error) {
       console.error('Error loading config:', error);
-      toast.error('Không thể tải cấu hình hệ thống');
+      toast.error('Không thể tải Cấu hình phòng khám');
     }
   };
 
@@ -136,7 +136,7 @@ const ScheduleConfig = () => {
                 marginBottom: '16px' 
               }} 
             />
-            <Title level={3}>Chưa có cấu hình hệ thống</Title>
+            <Title level={3}>Chưa có Cấu hình phòng khám</Title>
             <Text type="secondary" style={{ display: 'block', marginBottom: '24px' }}>
               Hệ thống chưa được cấu hình lần đầu. Vui lòng khởi tạo cấu hình để sử dụng các tính năng lịch làm việc.
             </Text>
@@ -147,7 +147,7 @@ const ScheduleConfig = () => {
               onClick={handleInitializeConfig}
               loading={loading}
             >
-              Khởi tạo cấu hình hệ thống
+              Khởi tạo Cấu hình phòng khám
             </Button>
           </div>
         </Card>
@@ -160,7 +160,7 @@ const ScheduleConfig = () => {
       <div style={{ marginBottom: '24px' }}>
         <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
           <SettingOutlined style={{ marginRight: '8px' }} />
-          Cấu hình Hệ thống
+          Cấu hình phòng khám
         </Title>
         <Text type="secondary">
           Quản lý cấu hình ca làm việc

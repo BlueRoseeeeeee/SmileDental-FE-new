@@ -188,7 +188,7 @@ const AddService = () => {
 
       // ✅ Validation với schedule config (BẮT BUỘC)
       if (!scheduleConfig) {
-        toastService.error('Không thể lấy cấu hình lịch hẹn. Vui lòng đảm bảo đã cấu hình hệ thống trước!');
+        toastService.error('Không thể lấy cấu hình lịch hẹn. Vui lòng đảm bảo đã Cấu hình phòng khám trước!');
         return;
       }
 

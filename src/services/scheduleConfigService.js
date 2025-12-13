@@ -1,6 +1,6 @@
 /**
  * @author: HoTram
- * Schedule Config Service - Quản lý cấu hình hệ thống và ngày nghỉ lễ
+ * Schedule Config Service - Quản lý Cấu hình phòng khám và ngày nghỉ lễ
  */
 import { scheduleApi } from './apiFactory.js';
 
@@ -17,13 +17,13 @@ const scheduleConfigService = {
     return response.data;
   },
 
-  // Lấy cấu hình hệ thống
+  // Lấy Cấu hình phòng khám
   getConfig: async () => {
     const response = await scheduleApi.get('/schedule/config');
     return response.data;
   },
 
-  // Cập nhật cấu hình hệ thống (chỉ manager/admin)
+  // Cập nhật Cấu hình phòng khám (chỉ manager/admin)
   updateConfig: async (configData) => {
     const response = await scheduleApi.patch('/schedule/config', configData);
     return response.data;
