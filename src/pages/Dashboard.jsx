@@ -70,10 +70,10 @@ const Dashboard = () => {
   const getQuickActions = () => {
     if (role === 'admin' || role === 'manager') {
       return [
-        // Hệ thống & Nhân sự
+        // Hệ thống & nhân viên
         { key: 'schedules-config', label: 'Cấu hình phòng khám', icon: <SettingOutlined />, path: '/dashboard/schedules', color: '#1890ff' },
-        { key: 'users', label: 'Quản lý nhân sự', icon: <UserSwitchOutlined />, path: '/dashboard/users', color: '#52c41a' },
-        { key: 'staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined />, path: '/dashboard/schedules/staff-assignment', color: '#fa8c16' },
+        { key: 'users', label: 'Quản lý nhân viên', icon: <UserSwitchOutlined />, path: '/dashboard/users', color: '#52c41a' },
+        { key: 'staff-assignment', label: 'Phân công nhân viên', icon: <CalendarOutlined />, path: '/dashboard/schedules/staff-assignment', color: '#fa8c16' },
         { key: 'rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined />, path: '/dashboard/rooms', color: '#722ed1' },
         { key: 'services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined />, path: '/dashboard/services', color: '#eb2f96' },
         // Lịch & Vận hành

@@ -292,10 +292,10 @@ const StaffAssignment = () => {
           </div>
           <div>
             <Title level={3} style={{ margin: 0, color: '#fff', fontWeight: 700 }}>
-              Quản lý Phân công Nhân sự
+              Quản lý Phân công nhân viên
             </Title>
             <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 }}>
-              Phân công nhân sự vào slots làm việc
+              Phân công nhân viên vào slots làm việc
             </Text>
           </div>
         </Space>

@@ -1,29 +1,29 @@
 /**
  * @author: HoTram
- * Slot Service - Quản lý ca làm việc và phân công nhân sự
+ * Slot Service - Quản lý ca làm việc và phân công nhân viên
  */
 import { scheduleApi } from './apiFactory.js';
 
 const slotService = {
-  // Phân công nhân sự vào slot theo lịch (chỉ manager/admin)
+  // Phân công nhân viên vào slot theo lịch (chỉ manager/admin)
   assignStaffToSlots: async (assignmentData) => {
     const response = await scheduleApi.post('/slot/assign-staff', assignmentData);
     return response.data;
   },
 
-  // Tái phân công nhân sự cho slot đã được phân công (chỉ manager/admin)
+  // Tái phân công nhân viên cho slot đã được phân công (chỉ manager/admin)
   reassignStaffToSlots: async (reassignmentData) => {
     const response = await scheduleApi.post('/slot/reassign-staff', reassignmentData);
     return response.data;
   },
 
-  // 🆕 Xóa nhân sự khỏi slot (chỉ manager/admin)
+  // 🆕 Xóa nhân viên khỏi slot (chỉ manager/admin)
   removeStaffFromSlots: async (removalData) => {
     const response = await scheduleApi.post('/slot/remove-staff', removalData);
     return response.data;
   },
 
-  // Cập nhật nhân sự cho slot (chỉ manager/admin)
+  // Cập nhật nhân viên cho slot (chỉ manager/admin)
   updateSlotStaff: async (updateData) => {
     const response = await scheduleApi.patch('/slot/staff', updateData);
     return response.data;
@@ -158,7 +158,7 @@ const slotService = {
     return response.data;
   },
 
-  // 🆕 Kiểm tra nhân sự có lịch làm việc không
+  // 🆕 Kiểm tra nhân viên có lịch làm việc không
   checkStaffHasSchedule: async (staffIds, role) => {
     const response = await scheduleApi.post('/slot/check-has-schedule', {
       staffIds,

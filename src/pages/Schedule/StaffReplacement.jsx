@@ -1,7 +1,7 @@
 /**
  * @author: TrungNghia & HoTram
- * Component: Thay thế nhân sự - Xem lịch làm việc và thay thế
- * Flow: Chọn nhân sự → Xem lịch → Chọn slot cần thay → Chọn nhân sự thay thế
+ * Component: Thay thế nhân viên - Xem lịch làm việc và thay thế
+ * Flow: Chọn nhân viên → Xem lịch → Chọn slot cần thay → Chọn nhân viên thay thế
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -87,7 +87,7 @@ const StaffReplacement = () => {
       if (response.success) {
         setStaffList(response.data || []);
       } else {
-        toast.error('Không thể tải danh sách nhân sự');
+        toast.error('Không thể tải danh sách nhân viên');
       }
     } catch (error) {
       toast.error('Lỗi: ' + error.message);
@@ -149,7 +149,7 @@ const StaffReplacement = () => {
         setReplacementStaffList(response.data.staff || []);
       }
     } catch (error) {
-      toast.error('Không thể tải danh sách nhân sự thay thế');
+      toast.error('Không thể tải danh sách nhân viên thay thế');
     } finally {
       setLoadingReplacementStaff(false);
     }
@@ -167,13 +167,13 @@ const StaffReplacement = () => {
       });
 
       if (response.success) {
-        toast.success(response.message || 'Thay thế nhân sự thành công');
+        toast.success(response.message || 'Thay thế nhân viên thành công');
         setShowReplacementModal(false);
         setShowDetailModal(false);
         setSelectedSlots([]);
         setReplaceAllFromDate(false);
       } else {
-        toast.error(response.message || 'Lỗi khi thay thế nhân sự');
+        toast.error(response.message || 'Lỗi khi thay thế nhân viên');
       }
     } catch (error) {
       toast.error('Lỗi: ' + error.message);
@@ -198,7 +198,7 @@ const StaffReplacement = () => {
   // Columns for staff list
   const staffColumns = [
     {
-      title: 'Nhân sự',
+      title: 'nhân viên',
       key: 'staff',
       render: (_, record) => (
         <Space>
@@ -316,7 +316,7 @@ const StaffReplacement = () => {
               Quay lại
             </Button>
             <Title level={3} style={{ margin: 0 }}>
-              <SwapOutlined /> Thay thế nhân sự
+              <SwapOutlined /> Thay thế nhân viên
             </Title>
           </Space>
         </Col>
@@ -346,12 +346,12 @@ const StaffReplacement = () => {
 
       {/* Info Alert */}
       <Alert
-        message="Hướng dẫn thay thế nhân sự"
+        message="Hướng dẫn thay thế nhân viên"
         description={
           <ul style={{ margin: 0, paddingLeft: 20 }}>
-            <li>Chọn nhân sự cần thay thế và xem lịch làm việc</li>
+            <li>Chọn nhân viên cần thay thế và xem lịch làm việc</li>
             <li>Chọn các slot cần thay thế hoặc chọn "Thay thế tất cả từ ngày X"</li>
-            <li>Chọn nhân sự thay thế (hệ thống sẽ hiển thị trùng lịch nếu có)</li>
+            <li>Chọn nhân viên thay thế (hệ thống sẽ hiển thị trùng lịch nếu có)</li>
             <li>Xác nhận thay thế</li>
           </ul>
         }
@@ -369,7 +369,7 @@ const StaffReplacement = () => {
           rowKey="_id"
           pagination={{ 
             showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} nhân sự`
+            showTotal: (total) => `Tổng ${total} nhân viên`
           }}
         />
       </Card>
@@ -500,7 +500,7 @@ const StaffReplacement = () => {
         title={
           <Space>
             <SwapOutlined style={{ color: '#1890ff' }} />
-            <span>Chọn nhân sự thay thế</span>
+            <span>Chọn nhân viên thay thế</span>
           </Space>
         }
         open={showReplacementModal}

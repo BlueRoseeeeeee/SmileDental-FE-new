@@ -1,6 +1,6 @@
 /**
  * @author: TrungNghia & HoTram
- * Component: Assign Staff Form - Phân công/chỉnh sửa nhân sự cho slot
+ * Component: Assign Staff Form - Phân công/chỉnh sửa nhân viên cho slot
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -118,7 +118,7 @@ const AssignStaffForm = () => {
       });
 
       if (response.success) {
-        toast.success('Phân công nhân sự thành công!');
+        toast.success('Phân công nhân viên thành công!');
         navigate(returnPath || '/dashboard/schedules/staff-assignment');
       } else {
         toast.error(response.message || 'Lỗi khi phân công');
@@ -143,7 +143,7 @@ const AssignStaffForm = () => {
               Quay lại
             </Button>
             <Title level={3} style={{ margin: 0 }}>
-              Phân công nhân sự
+              Phân công nhân viên
             </Title>
           </Space>
         </Col>
@@ -196,7 +196,7 @@ const AssignStaffForm = () => {
       </Card>
 
       {/* Assignment Form */}
-      <Card title="Chọn nhân sự" loading={loading}>
+      <Card title="Chọn nhân viên" loading={loading}>
         <Alert
           type="info"
           showIcon

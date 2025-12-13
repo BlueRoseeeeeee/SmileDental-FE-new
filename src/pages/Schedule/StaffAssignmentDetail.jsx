@@ -284,7 +284,7 @@ const StaffAssignmentDetail = () => {
               Quay lại
             </Button>
             <Title level={3} style={{ margin: 0 }}>
-              Phân công nhân sự - {room.roomName}
+              Phân công nhân viên - {room.roomName}
             </Title>
           </Space>
         </Col>
@@ -355,7 +355,7 @@ const StaffAssignmentDetail = () => {
           type="info"
           showIcon
           message="Hướng dẫn"
-          description="Click vào ngày để xem chi tiết và phân công nhân sự. Chỉ có thể phân công cho các ngày từ hôm nay trở đi."
+          description="Click vào ngày để xem chi tiết và phân công nhân viên. Chỉ có thể phân công cho các ngày từ hôm nay trở đi."
           style={{ marginBottom: 16 }}
         />
         <Calendar

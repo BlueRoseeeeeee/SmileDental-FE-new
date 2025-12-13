@@ -122,7 +122,7 @@ const scheduleService = {
     return response.data;
   },
 
-  // Phân công nhân sự cho 1 slot
+  // Phân công nhân viên cho 1 slot
   assignStaffToSlot: async ({ slotId, dentistId, nurseId }) => {
     try {
       const response = await scheduleApi.patch(`/schedule/staff-assignment/slots/${slotId}/assign`, {
@@ -138,7 +138,7 @@ const scheduleService = {
     }
   },
 
-  // Phân công nhân sự hàng loạt
+  // Phân công nhân viên hàng loạt
   bulkAssignStaff: async ({ slotIds, dentistId, nurseId }) => {
     try {
       const response = await scheduleApi.post('/schedule/staff-assignment/slots/bulk-assign', {
@@ -170,7 +170,7 @@ const scheduleService = {
     }
   },
 
-  // 🆕 Lấy danh sách nhân sự với conflict checking cho ca
+  // 🆕 Lấy danh sách nhân viên với conflict checking cho ca
   getStaffAvailabilityForShift: async ({ roomId, subRoomId, shiftName, month, year }) => {
     try {
       const response = await scheduleApi.get('/schedule/staff-availability', {
@@ -185,7 +185,7 @@ const scheduleService = {
     }
   },
 
-  // 🆕 Lấy lịch làm việc của nhân sự
+  // 🆕 Lấy lịch làm việc của nhân viên
   getStaffSchedule: async ({ staffId, fromDate, toDate }) => {
     try {
       const response = await scheduleApi.get('/schedule/staff-schedule', {
@@ -213,7 +213,7 @@ const scheduleService = {
     }
   },
 
-  // 🆕 Lấy danh sách nhân sự có thể thay thế (với conflict checking)
+  // 🆕 Lấy danh sách nhân viên có thể thay thế (với conflict checking)
   getAvailableReplacementStaff: async ({ originalStaffId, role, slots, fromDate }) => {
     try {
       const response = await scheduleApi.post('/schedule/replacement-staff', {
@@ -231,7 +231,7 @@ const scheduleService = {
     }
   },
 
-  // 🆕 Thay thế nhân sự
+  // 🆕 Thay thế nhân viên
   replaceStaff: async ({ originalStaffId, replacementStaffId, slots, fromDate, replaceAll }) => {
     try {
       const response = await scheduleApi.post('/schedule/replace-staff', {

@@ -1,7 +1,7 @@
 /**
  * @author: TrungNghia & HoTram
- * Component: Phân công nhân sự - Giao diện thống nhất với tạo lịch
- * Flow: Chọn phòng → Chọn ca → Hiển thị danh sách nhân sự + conflict checking
+ * Component: Phân công nhân viên - Giao diện thống nhất với tạo lịch
+ * Flow: Chọn phòng → Chọn ca → Hiển thị danh sách nhân viên + conflict checking
  */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
@@ -830,8 +830,8 @@ const StaffAssignmentUnified = () => {
   const [maxDentists, setMaxDentists] = useState(1);
   const [maxNurses, setMaxNurses] = useState(1);
   
-  // States cho Workflow 2: Thay thế theo nhân sự
-  const [allStaff, setAllStaff] = useState([]); // Toàn bộ danh sách nhân sự
+  // States cho Workflow 2: Thay thế theo nhân viên
+  const [allStaff, setAllStaff] = useState([]); // Toàn bộ danh sách nhân viên
   const [loadingAllStaff, setLoadingAllStaff] = useState(false);
   const [staffAssignmentFilter, setStaffAssignmentFilter] = useState('has-schedule'); // 'all', 'has-schedule', 'no-schedule'
   const [staffRoleFilter, setStaffRoleFilter] = useState('all'); // 'all', 'dentist', 'nurse'
@@ -852,7 +852,7 @@ const StaffAssignmentUnified = () => {
   // Calendar view states for Workflow 2 - Tương tự như phòng
   const [currentMonthForStaff, setCurrentMonthForStaff] = useState(dayjs().startOf('month'));
   const [currentPageForStaff, setCurrentPageForStaff] = useState(0); // 0 = tháng hiện tại
-  const [staffCalendarData, setStaffCalendarData] = useState(null); // Lịch theo tháng của nhân sự
+  const [staffCalendarData, setStaffCalendarData] = useState(null); // Lịch theo tháng của nhân viên
   const [selectedSlotsForReplacement, setSelectedSlotsForReplacement] = useState([]); // [{ slotKey, date, shiftName, slotIds, totalSlots, slots }]
   const [availableShiftKeysStaff, setAvailableShiftKeysStaff] = useState([]);
   const [selectedShiftFiltersStaff, setSelectedShiftFiltersStaff] = useState([]);
@@ -1366,10 +1366,10 @@ const StaffAssignmentUnified = () => {
         
         setStaffScheduleMap(scheduleMap);
       } else {
-        toast.error(response.message || 'Lỗi khi tải danh sách nhân sự');
+        toast.error(response.message || 'Lỗi khi tải danh sách nhân viên');
       }
     } catch (error) {
-      toast.error('Lỗi khi tải danh sách nhân sự: ' + error.message);
+      toast.error('Lỗi khi tải danh sách nhân viên: ' + error.message);
     } finally {
       setLoadingAllStaff(false);
     }
@@ -1401,7 +1401,7 @@ const StaffAssignmentUnified = () => {
     setSelectedSlotsForReplacement([]); // Clear selections
     setSelectedShiftFiltersStaff([]); // Reset shift filters
     
-    // ⭐ Reset month state khi chọn nhân sự mới
+    // ⭐ Reset month state khi chọn nhân viên mới
     setMonthStateForStaff({});
     
     await fetchStaffCalendar(staff._id, role, 0);
@@ -1468,7 +1468,7 @@ const StaffAssignmentUnified = () => {
         setAvailableShiftKeysStaff(shiftNames);
         setSelectedShiftFiltersStaff([]); // DON'T auto-select - let user choose
       } else {
-        toast.warning('Nhân sự này chưa có lịch làm việc trong tháng này');
+        toast.warning('nhân viên này chưa có lịch làm việc trong tháng này');
         setAvailableShiftKeysStaff([]);
         setSelectedShiftFiltersStaff([]);
       }
@@ -2194,7 +2194,7 @@ const StaffAssignmentUnified = () => {
           `📋 Chi tiết:\n` +
           (roleConflictDetails.asDentist.length > 0 ? `• Nha sỹ: ${roleConflictDetails.asDentist.length} slot\n` : '') +
           (roleConflictDetails.asNurse.length > 0 ? `• Y tá: ${roleConflictDetails.asNurse.length} slot\n` : '') +
-          `\n⚠️ Vui lòng chọn các slot mà nhân sự chỉ làm 1 vị trí duy nhất.`;
+          `\n⚠️ Vui lòng chọn các slot mà nhân viên chỉ làm 1 vị trí duy nhất.`;
         
         toast.error(errorMessage, { duration: 6000 });
         setLoadingReplacementStaff(false);
@@ -2213,7 +2213,7 @@ const StaffAssignmentUnified = () => {
       const response = await userService.getAllStaff(1, 1000);
       
       if (!response.success) {
-        toast.error('Không thể tải danh sách nhân sự');
+        toast.error('Không thể tải danh sách nhân viên');
         return;
       }
 
@@ -2269,7 +2269,7 @@ const StaffAssignmentUnified = () => {
       setSelectedReplacementStaff(null); // Clear selection to force user to reselect
       
       const noConflictCount = enrichedStaff.filter(s => s.conflicts.length === 0).length;
-      toast.success(`Đã tải ${enrichedStaff.length} nhân sự (${noConflictCount} không trùng lịch)`);
+      toast.success(`Đã tải ${enrichedStaff.length} nhân viên (${noConflictCount} không trùng lịch)`);
       
       console.log('✅ fetchReplacementStaff SUCCESS', { 
         totalStaff: enrichedStaff.length,
@@ -2278,7 +2278,7 @@ const StaffAssignmentUnified = () => {
       
     } catch (error) {
       console.error('❌ Error fetching replacement staff:', error);
-      toast.error('Lỗi khi tải danh sách nhân sự thay thế: ' + error.message);
+      toast.error('Lỗi khi tải danh sách nhân viên thay thế: ' + error.message);
     } finally {
       console.log('🔄 Setting loadingReplacementStaff = FALSE');
       setLoadingReplacementStaff(false);
@@ -2389,7 +2389,7 @@ const StaffAssignmentUnified = () => {
       const slotIds = Array.from(slotIdSet);
       
       if (slotIds.length === 0) {
-        toast.error('Không tìm thấy slot ID để xóa nhân sự');
+        toast.error('Không tìm thấy slot ID để xóa nhân viên');
         return;
       }
 
@@ -2404,7 +2404,7 @@ const StaffAssignmentUnified = () => {
       console.log('✅ API Response:', response);
 
       if (response.success) {
-        toast.success(`Đã xóa nhân sự khỏi ${response.data.modifiedCount} slot!`);
+        toast.success(`Đã xóa nhân viên khỏi ${response.data.modifiedCount} slot!`);
         
         console.log('🔄 Refreshing calendar data...');
         // Clear slot details cache to force refresh
@@ -2425,18 +2425,18 @@ const StaffAssignmentUnified = () => {
         
         console.log('✅ All selections cleared');
       } else {
-        toast.error(response.message || 'Xóa nhân sự thất bại');
+        toast.error(response.message || 'Xóa nhân viên thất bại');
       }
     } catch (error) {
       console.error('Error removing staff:', error);
-      toast.error('Lỗi khi xóa nhân sự: ' + (error.response?.data?.message || error.message));
+      toast.error('Lỗi khi xóa nhân viên: ' + (error.response?.data?.message || error.message));
     }
   };
 
   // Handle confirm replacement
   const handleConfirmReplacement = async () => {
     if (!selectedReplacementStaff) {
-      toast.warning('Vui lòng chọn nhân sự thay thế');
+      toast.warning('Vui lòng chọn nhân viên thay thế');
       return;
     }
     
@@ -2514,13 +2514,13 @@ const StaffAssignmentUnified = () => {
         setReplacementStaffList([]);
         setSelectedStaffForReplacement(null);
         setStaffCalendarData(null);
-        // Force refresh danh sách nhân sự ngay lập tức
+        // Force refresh danh sách nhân viên ngay lập tức
         await fetchAllStaff();
       } else {
-        throw new Error(response?.message || 'Không thể thay thế nhân sự');
+        throw new Error(response?.message || 'Không thể thay thế nhân viên');
       }
     } catch (error) {
-      toast.error('Lỗi khi thay thế nhân sự: ' + error.message);
+      toast.error('Lỗi khi thay thế nhân viên: ' + error.message);
     }
   };
 
@@ -3143,7 +3143,7 @@ const StaffAssignmentUnified = () => {
       const response = await userService.getAllStaff(1, 1000);
 
       if (!response.success) {
-        toast.error('Không thể tải danh sách nhân sự');
+        toast.error('Không thể tải danh sách nhân viên');
         return;
       }
 
@@ -3212,7 +3212,7 @@ const StaffAssignmentUnified = () => {
       setSelectedNurses(prev => prev.slice(0, maxNurses));
     } catch (error) {
       console.error('❌ Error in proceedToAssignStaff:', error);
-      toast.error('Lỗi khi tải danh sách nhân sự: ' + error.message);
+      toast.error('Lỗi khi tải danh sách nhân viên: ' + error.message);
     } finally {
       setLoadingStaff(false);
     }
@@ -3254,7 +3254,7 @@ const StaffAssignmentUnified = () => {
       const slotIds = Array.from(slotIdSet);
       
       if (slotIds.length === 0) {
-        toast.error('Không tìm thấy slot ID để xóa nhân sự');
+        toast.error('Không tìm thấy slot ID để xóa nhân viên');
         return;
       }
 
@@ -3269,7 +3269,7 @@ const StaffAssignmentUnified = () => {
       console.log('✅ API Response:', response);
 
       if (response.success) {
-        toast.success(`Đã xóa nhân sự khỏi ${response.data.modifiedCount} slot!`);
+        toast.success(`Đã xóa nhân viên khỏi ${response.data.modifiedCount} slot!`);
         
         console.log('🔄 Refreshing calendar data...');
         // Clear slot details cache to force refresh
@@ -3289,11 +3289,11 @@ const StaffAssignmentUnified = () => {
         
         console.log('✅ All selections cleared');
       } else {
-        toast.error(response.message || 'Xóa nhân sự thất bại');
+        toast.error(response.message || 'Xóa nhân viên thất bại');
       }
     } catch (error) {
       console.error('Error removing staff:', error);
-      toast.error('Lỗi khi xóa nhân sự: ' + (error.response?.data?.message || error.message));
+      toast.error('Lỗi khi xóa nhân viên: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -3305,12 +3305,12 @@ const StaffAssignmentUnified = () => {
     console.log('🩺 selectedNurses:', selectedNurses);
     
     if (selectedDentists.length === 0 && selectedNurses.length === 0) {
-      toast.warning('Vui lòng chọn ít nhất 1 nhân sự (nha sĩ hoặc Y tá)');
+      toast.warning('Vui lòng chọn ít nhất 1 nhân viên (nha sĩ hoặc Y tá)');
       return;
     }
 
     if (selectedDentists.length > maxDentists || selectedNurses.length > maxNurses) {
-      toast.warning('Vui lòng kiểm tra lại số lượng nhân sự được phép phân công cho phòng này');
+      toast.warning('Vui lòng kiểm tra lại số lượng nhân viên được phép phân công cho phòng này');
       return;
     }
     
@@ -3403,7 +3403,7 @@ const StaffAssignmentUnified = () => {
       
     } catch (error) {
       console.error('❌ Error assigning staff:', error);
-      toast.error('Lỗi khi phân công nhân sự: ' + (error.response?.data?.message || error.message));
+      toast.error('Lỗi khi phân công nhân viên: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -3559,7 +3559,7 @@ const StaffAssignmentUnified = () => {
                 style={{ padding: '4px 8px' }}
               />
               <Title level={3} style={{ margin: 0 }}>
-                <TeamOutlined /> Phân công nhân sự
+                <TeamOutlined /> Phân công nhân viên
               </Title>
             </Space>
           </Col>
@@ -3757,7 +3757,7 @@ const StaffAssignmentUnified = () => {
             {/* {roomCalendarData && roomCalendarData?.shiftOverview && Object.keys(roomCalendarData.shiftOverview).length > 0 && selectedShiftFilters.length === 0 && availableShiftKeys.length > 0 && (
               <Alert
                 message="Vui lòng chọn ca làm việc"
-                description="Bạn cần chọn ít nhất một ca làm việc (Ca Sáng, Ca Chiều, Ca Tối) để có thể phân công nhân sự."
+                description="Bạn cần chọn ít nhất một ca làm việc (Ca Sáng, Ca Chiều, Ca Tối) để có thể phân công nhân viên."
                 type="info"
                 showIcon
               />
@@ -4084,11 +4084,11 @@ const StaffAssignmentUnified = () => {
                 {/* Staff Selection Section - Auto-shown when slots selected */}
                 {loadingStaff ? (
                   <div style={{ textAlign: 'center', padding: 40 }}>
-                    <Spin size="large" tip="Đang tải danh sách nhân sự..." />
+                    <Spin size="large" tip="Đang tải danh sách nhân viên..." />
                   </div>
                 ) : staffList.length > 0 ? (
                   <>
-                    <Divider>Chọn nhân sự</Divider>
+                    <Divider>Chọn nhân viên</Divider>
                     
                     {/* Selected Slots Info */}
                     <Alert
@@ -4440,7 +4440,7 @@ const StaffAssignmentUnified = () => {
                     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                       {/* Remove Staff Button - chỉ hiển thị khi có slot đã phân công */}
                       {fullyAssignedSlotCount > 0 && (
-                        <Tooltip title={totalSelectedSlotCount === 0 ? 'Vui lòng chọn ít nhất 1 slot' : 'Xóa tất cả nhân sự đã phân công khỏi các slot đã chọn'}>
+                        <Tooltip title={totalSelectedSlotCount === 0 ? 'Vui lòng chọn ít nhất 1 slot' : 'Xóa tất cả nhân viên đã phân công khỏi các slot đã chọn'}>
                           <Button 
                             danger
                             size="large"
@@ -4452,7 +4452,7 @@ const StaffAssignmentUnified = () => {
                             }}
                             disabled={totalSelectedSlotCount === 0}
                           >
-                            Xóa nhân sự khỏi {fullyAssignedSlotCount} slot đã phân công
+                            Xóa nhân viên khỏi {fullyAssignedSlotCount} slot đã phân công
                           </Button>
                         </Tooltip>
                       )}
@@ -4462,7 +4462,7 @@ const StaffAssignmentUnified = () => {
                         title={
                           !canConfirmAssignment
                             ? allSlotsFullyAssigned
-                              ? 'Vui lòng chọn ít nhất 1 nhân sự để cập nhật'
+                              ? 'Vui lòng chọn ít nhất 1 nhân viên để cập nhật'
                               : (() => {
                                   const requiresDentist = maxDentists > 0;
                                   const requiresNurse = maxNurses > 0;
@@ -4473,7 +4473,7 @@ const StaffAssignmentUnified = () => {
                                   } else if (requiresNurse) {
                                     return 'Vui lòng chọn ít nhất 1 y tá để phân công';
                                   }
-                                  return 'Vui lòng chọn nhân sự để phân công';
+                                  return 'Vui lòng chọn nhân viên để phân công';
                                 })()
                             : ''
                         }
@@ -4848,7 +4848,7 @@ const StaffAssignmentUnified = () => {
             label: (
               <span>
                 <SwapOutlined />
-                {' '}Thay thế theo Nhân sự
+                {' '}Thay thế theo nhân viên
               </span>
             ),
             children: (
@@ -4859,7 +4859,7 @@ const StaffAssignmentUnified = () => {
                     <Input
                       allowClear
                       value={staffSearchValue}
-                      placeholder="Tìm nhân sự..."
+                      placeholder="Tìm nhân viên..."
                       prefix={<SearchOutlined />}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -4899,8 +4899,8 @@ const StaffAssignmentUnified = () => {
                         onChange={(e) => setStaffActiveFilter(e.target.value)}
                         buttonStyle="solid"
                       >
-                        <Radio.Button value="active">Nhân sự hoạt động</Radio.Button>
-                        <Radio.Button value="inactive">Nhân sự nghỉ việc</Radio.Button>
+                        <Radio.Button value="active">nhân viên hoạt động</Radio.Button>
+                        <Radio.Button value="inactive">nhân viên nghỉ việc</Radio.Button>
                       </Radio.Group>
                       
                       <Button
@@ -4919,7 +4919,7 @@ const StaffAssignmentUnified = () => {
                   <Table
                     columns={[
                       {
-                        title: 'Nhân sự',
+                        title: 'nhân viên',
                         key: 'staff',
                         render: (_, record) => (
                           <Space>
@@ -4969,7 +4969,7 @@ const StaffAssignmentUnified = () => {
                           const hasNoSchedule = hasSchedule === false;
                           
                           return (
-                            <Tooltip title={hasNoSchedule ? 'Nhân sự chưa có lịch làm việc' : ''}>
+                            <Tooltip title={hasNoSchedule ? 'nhân viên chưa có lịch làm việc' : ''}>
                               <Button
                                 type="primary"
                                 icon={<SearchOutlined />}
@@ -4988,7 +4988,7 @@ const StaffAssignmentUnified = () => {
                     rowKey="_id"
                     pagination={staffSearchTerm ? false : {
                       showSizeChanger: true,
-                      showTotal: (total) => `Tổng ${total} nhân sự`
+                      showTotal: (total) => `Tổng ${total} nhân viên`
                     }}
                   />
                 </Card>
@@ -4999,7 +4999,7 @@ const StaffAssignmentUnified = () => {
                     <Space>
                       <CalendarOutlined style={{ color: '#1890ff' }} />
                       <span style={{ color: '#000' }}>
-                        Lịch làm việc của: {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn nhân sự'}
+                        Lịch làm việc của: {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn nhân viên'}
                         {selectedRoleForViewing && (
                           <Tag color={getRoleTagColor(selectedRoleForViewing)} style={{ marginLeft: 8, fontSize: 12 }}>
                             {getRoleLabel(selectedRoleForViewing)}
@@ -5025,7 +5025,7 @@ const StaffAssignmentUnified = () => {
                   {loadingStaffSchedule ? (
                     <div style={{ textAlign: 'center', padding: 40 }}>
                       <Spin size="large" />
-                      <div style={{ marginTop: 16 }}>Đang tải lịch nhân sự...</div>
+                      <div style={{ marginTop: 16 }}>Đang tải lịch nhân viên...</div>
                     </div>
                   ) : !staffCalendarData ? (
                     <Empty description="Không có dữ liệu lịch" />
@@ -5062,7 +5062,7 @@ const StaffAssignmentUnified = () => {
                       {/* Staff Info Card */}
                       <Card size="small" style={{ backgroundColor: '#f5f5f5' }}>
                         <Space direction="vertical" size={0}>
-                          <Text><strong>Nhân sự:</strong> {selectedStaffForReplacement?.displayName || 'Chưa cập nhật'}</Text>
+                          <Text><strong>nhân viên:</strong> {selectedStaffForReplacement?.displayName || 'Chưa cập nhật'}</Text>
                           <Text><strong>Vai trò:</strong> {getRoleLabel(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}</Text>
                           {selectedStaffForReplacement?.employeeCode && (
                             <Text><strong>Mã NV:</strong> {selectedStaffForReplacement.employeeCode}</Text>
@@ -5152,7 +5152,7 @@ const StaffAssignmentUnified = () => {
                         {availableShiftKeysStaff.length === 0 ? (
                           <Alert
                             message="Không có dữ liệu lịch"
-                            description="Nhân sự này chưa có lịch làm việc được tạo cho tháng này."
+                            description="nhân viên này chưa có lịch làm việc được tạo cho tháng này."
                             type="warning"
                             showIcon
                           />
@@ -5446,18 +5446,18 @@ const StaffAssignmentUnified = () => {
                         <>
                           {loadingReplacementStaff ? (
                             <div style={{ textAlign: 'center', padding: 40 }}>
-                              <Spin size="large" tip="Đang tải danh sách nhân sự..." />
+                              <Spin size="large" tip="Đang tải danh sách nhân viên..." />
                             </div>
                           ) : replacementStaffList.length > 0 ? (
                             <>
-                              <Divider>Chọn nhân sự thay thế</Divider>
+                              <Divider>Chọn nhân viên thay thế</Divider>
                               
                               <Row gutter={16}>
                                 <Col span={12}>
                                   <Card size="small" title="Thông tin thay thế">
                                     <Space direction="vertical" style={{ width: '100%' }}>
                                       <Text><strong>Số slot đã chọn:</strong> {totalSelectedSlotCountForStaff}</Text>
-                                      <Text><strong>Nhân sự hiện tại:</strong> {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn'}</Text>
+                                      <Text><strong>nhân viên hiện tại:</strong> {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn'}</Text>
                                       <Text><strong>Vai trò:</strong> <Tag style={{fontSize:12}} color={getRoleTagColor(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}>
                                         {getRoleLabel(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}
                                       </Tag></Text>
@@ -5466,11 +5466,11 @@ const StaffAssignmentUnified = () => {
                                 </Col>
                                 
                                 <Col span={12}>
-                                  <Card size="small" title="Chọn nhân sự mới">
+                                  <Card size="small" title="Chọn nhân viên mới">
                                     <Space direction="vertical" style={{ width: '100%' }}>
                                       {/* <Input
                                         prefix={<SearchOutlined />}
-                                        placeholder="Tìm nhân sự..."
+                                        placeholder="Tìm nhân viên..."
                                         value={replacementStaffSearchValue}
                                         onChange={(e) => {
                                           setReplacementStaffSearchValue(e.target.value);
@@ -5479,7 +5479,7 @@ const StaffAssignmentUnified = () => {
                                         allowClear
                                       /> */}
                                       
-                                      {/* 🆕 Filter trạng thái nhân sự */}
+                                      {/* 🆕 Filter trạng thái nhân viên */}
                                       <Radio.Group 
                                         value={replacementStaffActiveFilter} 
                                         onChange={(e) => {
@@ -5490,8 +5490,8 @@ const StaffAssignmentUnified = () => {
                                         buttonStyle="solid"
                                         style={{ width: '100%' }}
                                       >
-                                        {/* <Radio.Button value="active" style={{ flex: 1, textAlign: 'center' }}>Nhân sự hoạt động</Radio.Button>
-                                        <Radio.Button value="inactive" style={{ flex: 1, textAlign: 'center' }}>Nhân sự nghỉ việc</Radio.Button> */}
+                                        {/* <Radio.Button value="active" style={{ flex: 1, textAlign: 'center' }}>nhân viên hoạt động</Radio.Button>
+                                        <Radio.Button value="inactive" style={{ flex: 1, textAlign: 'center' }}>nhân viên nghỉ việc</Radio.Button> */}
                                       </Radio.Group>
                                       
                                       <Radio.Group 
@@ -5512,7 +5512,7 @@ const StaffAssignmentUnified = () => {
                                       
                                       <Select
                                         style={{ width: '100%' }}
-                                        placeholder="Chọn nhân sự thay thế"
+                                        placeholder="Chọn nhân viên thay thế"
                                         value={selectedReplacementStaff?._id}
                                         onChange={(staffId) => {
                                           const staff = replacementStaffList.find(s => s._id === staffId);
@@ -5602,7 +5602,7 @@ const StaffAssignmentUnified = () => {
                                           disabled={totalSelectedSlotCountForStaff === 0}
                                           icon={<DeleteOutlined />}
                                         >
-                                          Xóa nhân sự khỏi {assignedSlotCountForStaff} slot đã phân công
+                                          Xóa nhân viên khỏi {assignedSlotCountForStaff} slot đã phân công
                                         </Button>
                                       )}
 
@@ -5643,12 +5643,12 @@ const StaffAssignmentUnified = () => {
                   {pendingStaffForRoleSelection && (
                     <Space direction="vertical" style={{ width: '100%' }} size="large">
                       <div>
-                        <Text strong>Nhân sự: </Text>
+                        <Text strong>nhân viên: </Text>
                         <Text>{pendingStaffForRoleSelection.displayName || pendingStaffForRoleSelection.fullName}</Text>
                       </div>
                       
                       <div>
-                        <Text strong>Nhân sự này có nhiều vai trò. Vui lòng chọn vai trò để xem lịch làm việc:</Text>
+                        <Text strong>nhân viên này có nhiều vai trò. Vui lòng chọn vai trò để xem lịch làm việc:</Text>
                       </div>
                       
                       <Space direction="vertical" style={{ width: '100%' }} size="middle">

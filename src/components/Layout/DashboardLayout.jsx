@@ -120,15 +120,15 @@ const DashboardLayout = () => {
 
     // ==================== ADMIN & MANAGER ====================
     if (hasRole('admin') || hasRole('manager')) {
-      // 🧩 I. HỆ THỐNG & NHÂN SỰ
+      // 🧩 I. HỆ THỐNG & nhân viên
       addMenuItem({
         key: 'system-staff',
         icon: <TeamOutlined />,
-        label: 'Hệ thống & Nhân sự',
+        label: 'Hệ thống & Nhân viên',
         children: [
           { key: '/dashboard/schedules', label: 'Cấu hình phòng khám', icon: <SettingOutlined /> },
-          { key: '/dashboard/users', label: 'Quản lý nhân sự', icon: <UserSwitchOutlined /> },
-          { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân sự', icon: <CalendarOutlined /> },
+          { key: '/dashboard/users', label: 'Quản lý nhân viên', icon: <UserSwitchOutlined /> },
+          { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân viên', icon: <CalendarOutlined /> },
           { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
           { key: '/dashboard/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
         ]
