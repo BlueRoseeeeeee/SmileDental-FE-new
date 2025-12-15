@@ -175,6 +175,51 @@ const CancelledPatientsList = () => {
     }
   };
 
+  // Load with custom pageSize (used when user changes page size)
+  const loadFilteredPatientsWithPageSize = async (page = 1, pageSize = 50) => {
+    try {
+      setLoading(true);
+      
+      const queryFilters = {
+        page,
+        limit: pageSize,
+        ...(filters.startDate && { startDate: filters.startDate.format('YYYY-MM-DD') }),
+        ...(filters.endDate && { endDate: filters.endDate.format('YYYY-MM-DD') }),
+        ...(filters.roomId && { roomId: filters.roomId }),
+        ...(filters.dentistId && { dentistId: filters.dentistId }),
+        ...(filters.patientName && { patientName: filters.patientName })
+      };
+
+      const result = await dayClosureService.getAllCancelledPatients(queryFilters);
+      
+      if (result.success) {
+        // Remove duplicates by appointmentId
+        const uniqueFiltered = [];
+        const seenFilteredIds = new Set();
+        (result.data || []).forEach(patient => {
+          if (!seenFilteredIds.has(patient.appointmentId)) {
+            seenFilteredIds.add(patient.appointmentId);
+            uniqueFiltered.push(patient);
+          }
+        });
+        
+        setPatients(uniqueFiltered);
+        setPagination({
+          current: result.pagination.page,
+          pageSize: result.pagination.limit,
+          total: result.pagination.total
+        });
+      } else {
+        toast.error(result.message || 'Không thể tải dữ liệu');
+      }
+    } catch (error) {
+      console.error('Error loading patients:', error);
+      toast.error(error.response?.data?.message || 'Lỗi khi tải danh sách bệnh nhân');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadPatients = async (page = 1) => {
     await loadFilteredPatients(page);
   };
@@ -489,7 +534,18 @@ const CancelledPatientsList = () => {
               pageSizeOptions: ['20', '50', '100', '200']
             }}
             onChange={(newPagination) => {
-              loadPatients(newPagination.current);
+              // Update pageSize if changed
+              if (newPagination.pageSize !== pagination.pageSize) {
+                setPagination(prev => ({
+                  ...prev,
+                  pageSize: newPagination.pageSize,
+                  current: 1 // Reset to page 1 when pageSize changes
+                }));
+                // Load with new pageSize - need to pass it directly since state update is async
+                loadFilteredPatientsWithPageSize(1, newPagination.pageSize);
+              } else {
+                loadPatients(newPagination.current);
+              }
             }}
             scroll={{ x: 900 }}
             size="small"
@@ -522,7 +578,7 @@ const CancelledPatientsList = () => {
         ) : paymentDetail ? (
           <Descriptions bordered column={2}>
             <Descriptions.Item label="Mã thanh toán" span={2}>
-              <Text strong copyable>{paymentDetail._id}</Text>
+              <Text strong copyable>{paymentDetail.paymentCode || paymentDetail._id}</Text>
             </Descriptions.Item>
             <Descriptions.Item label="Số tiền">
               <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
@@ -587,7 +643,7 @@ const CancelledPatientsList = () => {
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             <Descriptions bordered column={2}>
               <Descriptions.Item label="Mã hóa đơn" span={2}>
-                <Text strong copyable>{invoiceDetail._id}</Text>
+                <Text strong copyable>{invoiceDetail.invoiceNumber || invoiceDetail._id}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Tổng tiền">
                 <Text strong style={{ color: '#52c41a', fontSize: 16 }}>
