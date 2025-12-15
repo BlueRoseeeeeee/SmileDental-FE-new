@@ -87,7 +87,7 @@ const Dashboard = () => {
         { key: 'patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined />, path: '/dashboard/patients', color: '#fa8c16' },
         { key: 'records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined />, path: '/dashboard/records', color: '#722ed1' },
         { key: 'appointments', label: 'Lịch hẹn khám', icon: <CalendarOutlined />, path: '/dashboard/patient-appointments-receptionist', color: '#eb2f96' },
-        { key: 'cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined />, path: '/dashboard/cancelled-patients', color: '#595959' },
+        { key: 'cancelled-patients', label: 'Bệnh nhân bị hủy phiếu', icon: <UserOutlined />, path: '/dashboard/cancelled-patients', color: '#595959' },
         { key: 'medicine', label: 'Danh mục thuốc', icon: <MedicineBoxOutlined />, path: '/dashboard/medicine', color: '#13c2c2' },
         // Dịch vụ & Tài chính
         { key: 'invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined />, path: '/dashboard/invoices', color: '#fa541c' },
@@ -113,7 +113,7 @@ const Dashboard = () => {
         { key: 'queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined />, path: '/dashboard/queue-receptionist', color: '#52c41a' },
         { key: 'appointments', label: 'Lịch hẹn khám', icon: <CalendarOutlined />, path: '/dashboard/patient-appointments-receptionist', color: '#fa8c16' },
         { key: 'patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined />, path: '/dashboard/patients', color: '#722ed1' },
-        { key: 'cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined />, path: '/dashboard/cancelled-patients', color: '#595959' },
+        { key: 'cancelled-patients', label: 'Bệnh nhân bị hủy phiếu', icon: <UserOutlined />, path: '/dashboard/cancelled-patients', color: '#595959' },
         // Dịch vụ & Tài chính
         { key: 'invoices', label: 'Quản lý hóa đơn', icon: <FileTextOutlined />, path: '/dashboard/invoices', color: '#eb2f96' },
         { key: 'payments', label: 'Quản lý thanh toán', icon: <DollarOutlined />, path: '/dashboard/payments', color: '#13c2c2' },

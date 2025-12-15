@@ -1,6 +1,6 @@
 /**
  * CancelledPatientsList.jsx
- * Danh sách bệnh nhân bị hủy lịch với filter chi tiết
+ * Danh sách bệnh nhân bị hủy phiếu với filter chi tiết
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -360,28 +360,6 @@ const CancelledPatientsList = () => {
           <Text><MedicineBoxOutlined /> {text}</Text>
         </Tooltip>
       )
-    },
-    {
-      title: 'Thanh toán',
-      key: 'payment',
-      width: 90,
-      align: 'center',
-      render: (_, record) => {
-        if (record.paymentId) {
-          return (
-            <Button 
-              type="link" 
-              size="small" 
-              icon={<DollarOutlined />}
-              onClick={() => handleViewPayment(record.paymentId)}
-            >
-              Xem
-            </Button>
-          );
-        } else {
-          return <Text type="secondary">Chưa có</Text>;
-        }
-      }
     },
     {
       title: 'Hóa đơn',

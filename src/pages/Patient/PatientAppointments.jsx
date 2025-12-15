@@ -174,7 +174,7 @@ const PatientAppointments = () => {
       const reason = cancelForm.getFieldValue('reason');
       
       if (!reason || reason.trim().length === 0) {
-        message.error('Vui lòng nhập lý do hủy lịch khám');
+        message.error('Vui lòng nhập lý do hủy phiếu khám');
         return;
       }
       
@@ -189,7 +189,7 @@ const PatientAppointments = () => {
       );
       
       if (response.success) {
-        message.success('Đã gửi yêu cầu hủy lịch khám. Vui lòng chờ xác nhận từ phòng khám.');
+        message.success('Đã gửi yêu cầu hủy phiếu khám. Vui lòng chờ xác nhận từ phòng khám.');
         setCancelModalVisible(false);
         setAppointmentToCancel(null);
         cancelForm.resetFields();
@@ -393,7 +393,7 @@ const PatientAppointments = () => {
 
       {/* Cancel Request Modal */}
       <Modal
-        title={<><StopOutlined /> Yêu cầu hủy lịch khám</>}
+        title={<><StopOutlined /> Yêu cầu hủy phiếu khám</>}
         open={cancelModalVisible}
         onCancel={() => {
           setCancelModalVisible(false);
@@ -409,7 +409,7 @@ const PatientAppointments = () => {
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             {/* Appointment Info */}
             <div>
-              <Text>Bạn đang yêu cầu hủy lịch khám:</Text>
+              <Text>Bạn đang yêu cầu hủy phiếu khám:</Text>
               <div style={{ marginTop: 8, lineHeight: '1.8' }}>
                 <div><strong>Ngày:</strong> {dayjs(appointmentToCancel.date).format('DD/MM/YYYY')}</div>
                 <div><strong>Giờ:</strong> {appointmentToCancel.time}</div>
@@ -426,7 +426,7 @@ const PatientAppointments = () => {
                 value={cancelForm.getFieldValue('reason')}
                 onChange={(e) => cancelForm.setFieldsValue({ reason: e.target.value })}
                 rows={4}
-                placeholder="Vui lòng cho chúng tôi biết lý do bạn muốn hủy lịch khám..."
+                placeholder="Vui lòng cho chúng tôi biết lý do bạn muốn hủy phiếu khám..."
                 maxLength={500}
                 showCount
                 style={{ marginTop: 8 }}
@@ -440,7 +440,7 @@ const PatientAppointments = () => {
               showIcon
               icon={<ExclamationCircleOutlined />}
               message="Lưu ý"
-              description="Yêu cầu hủy lịch sẽ được gửi đến phòng khám để xem xét. Bạn sẽ nhận được thông báo khi yêu cầu được xử lý."
+              description="Yêu cầu hủy phiếu sẽ được gửi đến phòng khám để xem xét. Bạn sẽ nhận được thông báo khi yêu cầu được xử lý."
             />
           </Space>
         )}

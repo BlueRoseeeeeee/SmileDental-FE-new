@@ -256,7 +256,7 @@ const PatientAppointments = () => {
       console.log('🔍 [Cancel] Token:', localStorage.getItem('accessToken') ? 'Exists' : 'Missing');
       
       await appointmentService.adminCancelAppointment(appointmentToCancel._id, finalReason);
-      message.success('Đã hủy lịch hẹn thành công');
+      message.success('Đã hủy phiếu hẹn thành công');
       setCancelModalVisible(false);
       setAppointmentToCancel(null);
       setCancelReason('');
@@ -264,7 +264,7 @@ const PatientAppointments = () => {
     } catch (error) {
       console.error('Error cancelling appointment:', error);
       console.error('Error response:', error.response);
-      message.error(error.response?.data?.message || 'Không thể hủy lịch hẹn');
+      message.error(error.response?.data?.message || 'Không thể hủy phiếu hẹn');
     } finally {
       setCancelling(false);
     }
@@ -278,7 +278,7 @@ const PatientAppointments = () => {
       console.log('🔍 [Reject] Token:', localStorage.getItem('accessToken') ? 'Exists' : 'Missing');
       
       await appointmentService.rejectCancellation(appointmentToCancel._id);
-      message.success('Đã từ chối yêu cầu hủy lịch, lịch hẹn về lại trạng thái "Đã xác nhận"');
+      message.success('Đã từ chối yêu cầu hủy phiếu, lịch hẹn về lại trạng thái "Đã xác nhận"');
       setCancelModalVisible(false);
       setAppointmentToCancel(null);
       setCancelReason('');
@@ -286,7 +286,7 @@ const PatientAppointments = () => {
     } catch (error) {
       console.error('Error rejecting cancellation:', error);
       console.error('Error response:', error.response);
-      message.error(error.response?.data?.message || 'Không thể từ chối yêu cầu hủy lịch');
+      message.error(error.response?.data?.message || 'Không thể từ chối yêu cầu hủy phiếu');
     } finally {
       setRejecting(false);
     }
@@ -423,7 +423,7 @@ const PatientAppointments = () => {
               block
               style={{ height: 24, fontSize: 11 }}
             >
-              Hủy lịch
+              Hủy phiếu
             </Button>
           )}
         </Space>
@@ -435,7 +435,7 @@ const PatientAppointments = () => {
     <div className="patient-appointments-container" style={{ padding: '24px' }}>
       <Card>
         <Title level={3}>
-          <CalendarOutlined /> Quản Lý Lịch Khám Bệnh Nhân
+          <CalendarOutlined /> Quản Lý Phiếu Hẹn Khám Bệnh Nhân
         </Title>
         
         <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: 16 }}>
@@ -615,7 +615,7 @@ const PatientAppointments = () => {
         title={
           <Space>
             <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
-            <span>{appointmentToCancel?.status === 'pending-cancellation' ? 'Xử lý yêu cầu hủy lịch' : 'Xác nhận hủy lịch hẹn'}</span>
+            <span>{appointmentToCancel?.status === 'pending-cancellation' ? 'Xử lý yêu cầu hủy phiếu' : 'Xác nhận hủy phiếu hẹn'}</span>
           </Space>
         }
         open={cancelModalVisible}
@@ -689,7 +689,7 @@ const PatientAppointments = () => {
           <Space direction="vertical" style={{ width: '100%' }} size="large">
             {/* Appointment Info */}
             <div>
-              <p style={{ marginBottom: 8 }}>Bạn có chắc chắn muốn hủy lịch hẹn:</p>
+              <p style={{ marginBottom: 8 }}>Bạn có chắc chắn muốn hủy phiếu hẹn:</p>
               <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
                 <p style={{ margin: '4px 0' }}><strong>Mã lịch hẹn:</strong> {appointmentToCancel.appointmentCode}</p>
                 <p style={{ margin: '4px 0' }}><strong>Bệnh nhân:</strong> {appointmentToCancel.patientInfo?.name}</p>
@@ -730,8 +730,8 @@ const PatientAppointments = () => {
             }}>
               <ExclamationCircleOutlined /> <strong>Lưu ý:</strong> {
                 appointmentToCancel.status === 'pending-cancellation' 
-                  ? 'Bạn có thể "Chấp nhận hủy" để hủy lịch hẹn này, hoặc "Từ chối hủy" để giữ lại lịch hẹn với trạng thái "Đã xác nhận".'
-                  : 'Hành động này sẽ hủy lịch hẹn và gửi email thông báo đến bệnh nhân.'
+                  ? 'Bạn có thể "Chấp nhận hủy" để hủy phiếu hẹn này, hoặc "Từ chối hủy" để giữ lại lịch hẹn với trạng thái "Đã xác nhận".'
+                  : 'Hành động này sẽ hủy phiếu hẹn và gửi email thông báo đến bệnh nhân.'
               }
             </div>
           </Space>

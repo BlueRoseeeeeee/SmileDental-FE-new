@@ -2765,7 +2765,7 @@ const ScheduleCalendar = () => {
             description={
               <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
                 <li><strong>Tắt TẤT CẢ slots của TẤT CẢ phòng khám</strong> trong ngày đã chọn</li>
-                <li>Hệ thống sẽ tự động gửi email thông báo hủy lịch cho tất cả bệnh nhân, nha sĩ và y tá liên quan.</li>
+                <li>Hệ thống sẽ tự động gửi email thông báo hủy phiếu cho tất cả bệnh nhân, nha sĩ và y tá liên quan.</li>
               </ul>
             }
           />

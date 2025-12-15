@@ -247,7 +247,7 @@ const AppointmentManagement = () => {
             selectedAppointment._id,
             values.cancelReason
           );
-          message.success('Hủy lịch hẹn thành công!');
+          message.success('Hủy phiếu hẹn thành công!');
           break;
       }
 
@@ -264,7 +264,7 @@ const AppointmentManagement = () => {
     const texts = {
       'check-in': 'Check-in',
       'complete': 'Hoàn thành',
-      'cancel': 'Hủy lịch hẹn'
+      'cancel': 'Hủy phiếu hẹn'
     };
     return texts[type] || type;
   };
@@ -446,7 +446,7 @@ const AppointmentManagement = () => {
           )}
           
           {canCancel(record) && (
-            <Tooltip title="Hủy lịch hẹn">
+            <Tooltip title="Hủy phiếu hẹn">
               <Button
                 danger
                 size="small"
@@ -786,7 +786,7 @@ const AppointmentManagement = () => {
           {actionType === 'cancel' && (
             <>
               <p>
-                Bạn có chắc chắn muốn hủy lịch hẹn cho bệnh nhân{' '}
+                Bạn có chắc chắn muốn hủy phiếu hẹn cho bệnh nhân{' '}
                 <Text strong>{selectedAppointment?.patientInfo?.name}</Text>?
               </p>
               <Form.Item
@@ -794,7 +794,7 @@ const AppointmentManagement = () => {
                 label="Lý do hủy"
                 rules={[{ required: true, message: 'Vui lòng nhập lý do hủy!' }]}
               >
-                <TextArea rows={4} placeholder="Nhập lý do hủy lịch hẹn..." />
+                <TextArea rows={4} placeholder="Nhập lý do hủy phiếu hẹn..." />
               </Form.Item>
             </>
           )}

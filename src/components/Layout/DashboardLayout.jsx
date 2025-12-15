@@ -157,8 +157,8 @@ const DashboardLayout = () => {
           { key: '/dashboard/queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
           { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
           { key: '/dashboard/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
-          { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
-          { key: '/dashboard/cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined /> },
+          { key: '/dashboard/patient-appointments-receptionist', label: 'Phiếu hẹn', icon: <CalendarOutlined /> },
+          { key: '/dashboard/cancelled-patients', label: 'Bệnh nhân bị hủy phiếu', icon: <UserOutlined /> },
           { key: '/dashboard/medicine', label: 'Danh mục thuốc', icon: <MedicineBoxOutlined /> },
         ]
       });
@@ -240,7 +240,7 @@ const DashboardLayout = () => {
           { key: '/dashboard/queue-receptionist', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
           { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
           { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
-          { key: '/dashboard/cancelled-patients', label: 'Bệnh nhân bị hủy lịch', icon: <UserOutlined /> },
+          { key: '/dashboard/cancelled-patients', label: 'Bệnh nhân bị hủy phiếu', icon: <UserOutlined /> },
         ]
       });
       
