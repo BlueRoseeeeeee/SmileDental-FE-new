@@ -94,7 +94,7 @@ const Dashboard = () => {
         { key: 'payments', label: 'Quản lý thanh toán', icon: <DollarOutlined />, path: '/dashboard/payments', color: '#2f54eb' },
         // Thống kê
         { key: 'statistics-revenue', label: 'Thống kê doanh thu', icon: <DollarOutlined />, path: '/dashboard/statistics/revenue', color: '#52c41a' },
-        { key: 'statistics-booking', label: 'Lịch hẹn Online/Offline', icon: <CalendarOutlined />, path: '/dashboard/statistics/booking-channels', color: '#1890ff' },
+        { key: 'statistics-booking', label: 'Phiếu hẹn Online/Offline', icon: <CalendarOutlined />, path: '/dashboard/statistics/booking-channels', color: '#1890ff' },
         { key: 'statistics-clinic', label: 'Hiệu suất Phòng khám', icon: <LineChartOutlined />, path: '/dashboard/statistics/clinic-utilization', color: '#722ed1' },
         { key: 'statistics-status', label: 'Trạng thái Lịch hẹn', icon: <CheckCircleOutlined />, path: '/dashboard/statistics/appointment-status', color: '#eb2f96' },
       ];

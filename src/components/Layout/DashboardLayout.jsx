@@ -181,7 +181,7 @@ const DashboardLayout = () => {
         label: 'Thống kê',
         children: [
           { key: '/dashboard/statistics/revenue', label: 'Doanh thu', icon: <DollarOutlined /> },
-          { key: '/dashboard/statistics/booking-channels', label: 'Lịch hẹn Online/Offline', icon: <CalendarOutlined /> },
+          { key: '/dashboard/statistics/booking-channels', label: 'Phiếu hẹn Online/Offline', icon: <CalendarOutlined /> },
           { key: '/dashboard/statistics/clinic-utilization', label: 'Hiệu suất Phòng khám', icon: <LineChartOutlined /> },
           { key: '/dashboard/statistics/appointment-status', label: 'Trạng thái Lịch hẹn', icon: <CheckCircleOutlined /> },
         ]
