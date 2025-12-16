@@ -153,7 +153,7 @@ const DashboardLayout = () => {
         icon: <MedicineBoxOutlined />,
         label: 'Khám & Điều trị',
         children: [
-          { key: '/dashboard/walk-in-appointments', label: 'Lịch Walk-in', icon: <UserAddOutlined /> },
+          { key: '/dashboard/walk-in-appointments', label: 'Phiếu hẹn trực tiếp', icon: <UserAddOutlined /> },
           { key: '/dashboard/queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
           { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },
           { key: '/dashboard/records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined /> },
@@ -201,7 +201,7 @@ const DashboardLayout = () => {
       addMenuItem({
         key: '/dashboard/walk-in-appointments',
         icon: <UserAddOutlined />,
-        label: 'Lịch Walk-in',
+        label: 'Phiếu hẹn trực tiếp (Walk-in)',
       });
       
       // 🩺 Hồ sơ bệnh án
@@ -236,7 +236,7 @@ const DashboardLayout = () => {
         icon: <MedicineBoxOutlined />,
         label: 'Khám & Điều trị',
         children: [
-          { key: '/dashboard/walk-in-appointments', label: 'Lịch Walk-in', icon: <UserAddOutlined /> },
+          { key: '/dashboard/walk-in-appointments', label: 'Phiếu hẹn trực tiếp (Walk-in)', icon: <UserAddOutlined /> },
           { key: '/dashboard/queue-receptionist', label: 'Hàng đợi khám', icon: <ClockCircleOutlined /> },
           { key: '/dashboard/patient-appointments-receptionist', label: 'Lịch hẹn khám', icon: <CalendarOutlined /> },
           { key: '/dashboard/patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined /> },

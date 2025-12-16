@@ -393,7 +393,7 @@ const CancelledPatientsList = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Title level={3}>
               <UserOutlined style={{ marginRight: 8, color: '#fa8c16' }} />
-              Bệnh Nhân Bị Hủy Lịch
+              Bệnh Nhân Bị Hủy Phiếu
             </Title>
             <Button
               icon={<ReloadOutlined />}

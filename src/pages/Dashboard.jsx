@@ -82,7 +82,7 @@ const Dashboard = () => {
         { key: 'holidays', label: 'Quản lý ngày nghỉ', icon: <CalendarOutlined />, path: '/dashboard/schedules/holidays', color: '#fa541c' },
         { key: 'day-closures', label: 'Đóng cửa khẩn cấp', icon: <CloseCircleOutlined />, path: '/dashboard/day-closures', color: '#f5222d' },
         // Khám & Điều trị
-        { key: 'walk-in', label: 'Lịch Walk-in', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#1890ff' },
+        { key: 'walk-in', label: 'Phiếu hẹn trực tiếp (Walk-in)', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#1890ff' },
         { key: 'queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined />, path: '/dashboard/queue', color: '#52c41a' },
         { key: 'patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined />, path: '/dashboard/patients', color: '#fa8c16' },
         { key: 'records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined />, path: '/dashboard/records', color: '#722ed1' },
@@ -101,7 +101,7 @@ const Dashboard = () => {
     } else if (role === 'dentist') {
       return [
         { key: 'schedules', label: 'Lịch làm việc', icon: <CalendarOutlined />, path: '/dashboard/schedules/calendar', color: '#1890ff' },
-        { key: 'walk-in', label: 'Lịch Walk-in', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#52c41a' },
+        { key: 'walk-in', label: 'Phiếu hẹn trực tiếp (Walk-in)', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#52c41a' },
         { key: 'records', label: 'Hồ sơ bệnh án', icon: <FileDoneOutlined />, path: '/dashboard/records', color: '#fa8c16' },
         { key: 'certificates', label: 'Bằng cấp & Chứng chỉ', icon: <FileTextOutlined />, path: '/dashboard/certificates', color: '#722ed1' },
         { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined />, path: '/dashboard/profile', color: '#eb2f96' },
@@ -109,7 +109,7 @@ const Dashboard = () => {
     } else if (role === 'receptionist' || role === 'staff') {
       return [
         // Khám & Điều trị
-        { key: 'walk-in', label: 'Lịch Walk-in', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#1890ff' },
+        { key: 'walk-in', label: 'Phiếu hẹn trực tiếp (Walk-in)', icon: <UserAddOutlined />, path: '/dashboard/walk-in-appointments', color: '#1890ff' },
         { key: 'queue', label: 'Hàng đợi khám', icon: <ClockCircleOutlined />, path: '/dashboard/queue-receptionist', color: '#52c41a' },
         { key: 'appointments', label: 'Lịch hẹn khám', icon: <CalendarOutlined />, path: '/dashboard/patient-appointments-receptionist', color: '#fa8c16' },
         { key: 'patients', label: 'Danh sách bệnh nhân', icon: <HeartOutlined />, path: '/dashboard/patients', color: '#722ed1' },

@@ -1300,7 +1300,7 @@ const WalkInAppointmentForm = ({ onSuccess }) => {
 
   return (
     <>
-      <Card title="Tạo lịch hẹn cho bệnh nhân Walk-in" style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <Card title="Tạo phiếu hẹn trực tiếp cho bệnh nhân" style={{ maxWidth: 1200, margin: '0 auto' }}>
         <Steps current={currentStep} style={{ marginBottom: 24 }}>
           {isDentist && patientMode === 'existing' ? (
             <>
