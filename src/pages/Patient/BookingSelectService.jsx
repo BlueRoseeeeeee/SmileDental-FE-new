@@ -340,7 +340,7 @@ const BookingSelectService = () => {
         <div className="breadcrumb-container-booking-select-service">
         <Space split=">">
           <a href="/patient/booking/select-service">Trang chủ</a>
-          <a href="/patient/booking">Đặt lịch khám</a>
+          <a href="/patient/booking">Đặt phiếu hẹn</a>
           <Text>Chọn dịch vụ</Text>
         </Space>
       </div>

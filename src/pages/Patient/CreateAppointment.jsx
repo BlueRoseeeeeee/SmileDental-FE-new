@@ -254,7 +254,7 @@ const CreateAppointment = () => {
         <div className='breadcrumb-container-booking-appoiment'>
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
-            <a href="/patient/booking">Đặt lịch khám</a>
+            <a href="/patient/booking">Đặt phiếu hẹn</a>
             <a href='/patient/booking/select-service'>Chọn dịch vụ</a>
             <a href='/patient/booking/select-dentist'>Chọn Nha sĩ</a>
             <a href='/patient/booking/select-date'>Chọn ngày khám</a>

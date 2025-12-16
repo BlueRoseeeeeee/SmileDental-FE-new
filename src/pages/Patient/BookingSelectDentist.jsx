@@ -173,7 +173,7 @@ const BookingSelectDentist = () => {
         <div className="breadcrumb-container-booking-select-dentist">
           <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
-            <a href="/patient/booking">Đặt lịch khám</a>
+            <a href="/patient/booking">Đặt phiếu hẹn</a>
             <a href="/patient/booking/select-service">Chọn dịch vụ</a>
             <a href="/patient/booking/select-addon">Chọn gói dịch vụ</a>
             <Text>Chọn nha sĩ</Text>

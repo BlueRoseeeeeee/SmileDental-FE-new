@@ -287,7 +287,7 @@ const PatientAppointments = () => {
     <div className="patient-appointments-container">
       <Card className="appointments-card">
         <Title level={2}>
-          <CalendarOutlined /> Lịch khám của tôi
+          <CalendarOutlined /> Phiếu hẹn của tôi
         </Title>
         <Divider />
 
@@ -337,7 +337,7 @@ const PatientAppointments = () => {
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               >
                 <Button type="primary" href="/patient/booking/select-service">
-                  Đặt lịch khám ngay
+                  Đặt phiếu hẹn ngay
                 </Button>
               </Empty>
             )

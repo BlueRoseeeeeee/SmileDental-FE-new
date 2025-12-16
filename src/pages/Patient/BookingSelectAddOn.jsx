@@ -336,7 +336,7 @@ const BookingSelectAddOn = () => {
         <div className="breadcrumb-container-booking-select-service-addon"> 
         <Space split=">">
             <a href="/patient/booking/select-service">Trang chủ</a>
-            <a href="/patient/booking">Đặt lịch khám</a>
+            <a href="/patient/booking">Đặt phiếu hẹn</a>
             <a href="/patient/booking/select-service">Chọn dịch vụ</a>
             <Text>Chọn gói dịch vụ</Text>
           </Space>

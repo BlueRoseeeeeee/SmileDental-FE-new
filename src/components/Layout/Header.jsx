@@ -374,7 +374,7 @@ const Header = () => {
                   fontWeight: '600'
                 }}
               >
-                Đặt lịch khám
+                Đặt phiếu hẹn
               </Button>
             </Space>
           )}

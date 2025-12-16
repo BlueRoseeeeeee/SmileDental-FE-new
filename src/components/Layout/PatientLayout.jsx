@@ -91,13 +91,13 @@ const PatientLayout = () => {
     {
       key: '/patient/booking/select-service',
       icon: <CalendarOutlined />,
-      label: 'Đặt lịch khám',
+      label: 'Đặt phiếu hẹn',
       onClick: () => navigate('/patient/booking/select-service')
     },
     {
       key: '/patient/appointments',
       icon: <HistoryOutlined />,
-      label: 'Lịch khám của tôi',
+      label: 'Phiếu hẹn của tôi',
       onClick: () => navigate('/patient/appointments')
     },
     {
