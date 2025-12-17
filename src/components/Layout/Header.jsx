@@ -363,19 +363,6 @@ const Header = () => {
               >
                 Đăng nhập
               </Button>
-              <Button 
-                type="primary"
-                icon={<CalendarOutlined />}
-                onClick={() => navigate('/login')}
-                style={{
-                  background: '#2596be',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: '600'
-                }}
-              >
-                Đặt phiếu hẹn
-              </Button>
             </Space>
           )}
 
