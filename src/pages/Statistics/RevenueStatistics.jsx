@@ -788,13 +788,14 @@ const RevenueStatistics = () => {
                       </div>
                     </div>
                   ),
-                  width: 250
+                  width: '50%'
                 },
                 {
                   title: 'Số lượng',
                   dataIndex: 'count',
                   key: 'count',
-                  align: 'right',
+                  align: 'center',
+                  width: '25%',
                   render: (value) => <span style={{ fontWeight: 500, color: '#52c41a' }}>{formatNumber(value)}</span>,
                   sorter: (a, b) => a.count - b.count
                 },
@@ -802,18 +803,11 @@ const RevenueStatistics = () => {
                   title: 'Doanh thu',
                   dataIndex: 'revenue',
                   key: 'revenue',
-                  align: 'right',
+                  align: 'center',
+                  width: '25%',
                   render: (value) => <span style={{ fontWeight: 500, color: '#1890ff' }}>{formatCurrency(value)}</span>,
                   sorter: (a, b) => a.revenue - b.revenue,
                   defaultSortOrder: 'descend'
-                },
-                {
-                  title: 'Giá TB/Dịch vụ',
-                  dataIndex: 'avgRevenue',
-                  key: 'avgRevenue',
-                  align: 'right',
-                  render: (value) => formatCurrency(value),
-                  sorter: (a, b) => a.avgRevenue - b.avgRevenue
                 }
               ]}
               dataSource={data.comparison}
@@ -831,14 +825,11 @@ const RevenueStatistics = () => {
                 return (
                   <Table.Summary.Row style={{ background: '#fafafa', fontWeight: 'bold' }}>
                     <Table.Summary.Cell>Tổng cộng ({pageData.length} dịch vụ)</Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">
+                    <Table.Summary.Cell align="center">
                       <span style={{ color: '#52c41a' }}>{formatNumber(totalCount)}</span>
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">
+                    <Table.Summary.Cell align="center">
                       <span style={{ color: '#1890ff' }}>{formatCurrency(totalRevenue)}</span>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">
-                      {formatCurrency(totalCount > 0 ? totalRevenue / totalCount : 0)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
                 );
