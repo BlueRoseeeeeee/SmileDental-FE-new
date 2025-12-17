@@ -351,7 +351,7 @@ const BookingChannelStatistics = () => {
               </div>
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          {/* <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
                 title="TB Online/ngày"
@@ -365,7 +365,7 @@ const BookingChannelStatistics = () => {
                 Offline: {data.summary.offline.avgPerDay} lượt/ngày
               </div>
             </Card>
-          </Col>
+          </Col> */}
         </Row>
 
       {/* Trend Chart */}
