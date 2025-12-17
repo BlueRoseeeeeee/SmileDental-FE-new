@@ -42,7 +42,8 @@ import {
   PlusOutlined,
   DeleteOutlined,
   ExperimentOutlined,
-  CloseOutlined
+  CloseOutlined,
+  UndoOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
@@ -584,6 +585,19 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   const cancelDeleteAdditionalService = () => {
     console.log('❌ [cancelDeleteAdditionalService] Cancelled');
     setDeleteConfirmModal({ visible: false, serviceItemId: null, serviceName: '' });
+  };
+  
+  // 🆕 Restore a service that was marked for deletion
+  const handleRestoreAdditionalService = (serviceItemId, serviceName) => {
+    console.log('♻️ [handleRestoreAdditionalService] Restoring service:', serviceItemId);
+    
+    setServicesToDelete(prev => {
+      const newList = prev.filter(id => String(id) !== String(serviceItemId));
+      console.log('✅ [handleRestoreAdditionalService] Updated servicesToDelete:', newList);
+      return newList;
+    });
+    
+    message.success(`Đã khôi phục dịch vụ "${serviceName}".`);
   };
 
   // Handle form submit
@@ -1497,11 +1511,14 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
 
         {/* Additional Services Section */}
         {(() => {
-          // Filter out services marked for deletion (convert to string for comparison)
-          const existingServices = (record.additionalServices || []).filter(
+          // Include ALL existing services (including those marked for deletion)
+          const existingServices = (record.additionalServices || []);
+          // Filter out deleted ones for counting active services
+          const activeExistingServices = existingServices.filter(
             svc => !servicesToDelete.some(id => String(id) === String(svc._id))
           );
           const allServices = [...existingServices, ...tempAdditionalServices];
+          const activeServicesCount = activeExistingServices.length + tempAdditionalServices.length;
           
           return (
             <Card 
@@ -1510,7 +1527,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                 <Space>
                   <Text strong>➕ Dịch vụ bổ sung</Text>
                   <Tag color="blue">
-                    {allServices.length} dịch vụ
+                    {activeServicesCount} dịch vụ
                   </Tag>
                   {tempAdditionalServices.length > 0 && (
                     <Tag color="orange">{tempAdditionalServices.length} chưa lưu</Tag>
@@ -1553,44 +1570,67 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                     // Check if this service has been edited
                     const isEdited = editedValues.quantity !== undefined || editedValues.notes !== undefined;
                     
+                    // Check if this service is marked for deletion
+                    const isMarkedForDeletion = servicesToDelete.some(id => String(id) === String(svc._id));
+                    
                     return (
                       <Card
                         key={svc._id || index}
                         size="small"
                         style={{ 
-                          background: svc.isTemporary ? '#fff7e6' : (isEdited ? '#fff1f0' : '#f0f5ff'),
-                          border: svc.isTemporary ? '2px dashed #ffa940' : (isEdited ? '2px solid #ff7875' : '1px solid #d9d9d9')
+                          background: isMarkedForDeletion ? '#fff1f0' : (svc.isTemporary ? '#fff7e6' : (isEdited ? '#fff1f0' : '#f0f5ff')),
+                          border: isMarkedForDeletion ? '2px dashed #ff4d4f' : (svc.isTemporary ? '2px dashed #ffa940' : (isEdited ? '2px solid #ff7875' : '1px solid #d9d9d9')),
+                          opacity: isMarkedForDeletion ? 0.6 : 1
                         }}
                         title={
                           <Space>
-                            <Tag color="blue">{index + 1}</Tag>
-                            <Text strong>{svc.serviceName}</Text>
-                            {svc.isTemporary && (
+                            <Tag color={isMarkedForDeletion ? 'red' : 'blue'}>{index + 1}</Tag>
+                            <Text strong style={{ textDecoration: isMarkedForDeletion ? 'line-through' : 'none' }}>
+                              {svc.serviceName}
+                            </Text>
+                            {isMarkedForDeletion && (
+                              <Tag color="red">Sẽ bị xóa</Tag>
+                            )}
+                            {svc.isTemporary && !isMarkedForDeletion && (
                               <Tag color="orange">Chưa lưu</Tag>
                             )}
-                            {isEdited && !svc.isTemporary && (
+                            {isEdited && !svc.isTemporary && !isMarkedForDeletion && (
                               <Tag color="red">Đã sửa - Chưa lưu</Tag>
                             )}
                           </Space>
                         }
                         extra={
-                          <Button
-                            type="text"
-                            danger
-                            size="small"
-                            icon={<DeleteOutlined />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('🗑️ Delete button clicked for:', svc._id, svc.serviceName, 'isTemporary:', svc.isTemporary);
-                              if (svc.isTemporary) {
-                                handleRemoveTempAdditionalService(svc._id);
-                              } else {
-                                handleRemoveAdditionalService(svc._id, svc.serviceName);
-                              }
-                            }}
-                          >
-                            Xóa
-                          </Button>
+                          isMarkedForDeletion ? (
+                            <Button
+                              type="primary"
+                              size="small"
+                              icon={<UndoOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRestoreAdditionalService(svc._id, svc.serviceName);
+                              }}
+                            >
+                              Khôi phục
+                            </Button>
+                          ) : (
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<DeleteOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('🗑️ Delete button clicked for:', svc._id, svc.serviceName, 'isTemporary:', svc.isTemporary);
+                                if (svc.isTemporary) {
+                                  handleRemoveTempAdditionalService(svc._id);
+                                } else {
+                                  handleRemoveAdditionalService(svc._id, svc.serviceName);
+                                }
+                              }}
+                            >
+                              Xóa
+                            </Button>
+                          )
                         }
                       >
                         <Row gutter={16}>
