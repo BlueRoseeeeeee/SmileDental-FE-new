@@ -68,6 +68,12 @@ const PatientAppointments = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  
+  // 🆕 State for late check-in confirmation modal
+  const [lateCheckInModal, setLateCheckInModal] = useState({
+    visible: false,
+    appointment: null
+  });
 
   useEffect(() => {
     fetchAllAppointments();
@@ -400,6 +406,19 @@ const PatientAppointments = () => {
               style={{ height: 24, fontSize: 11 }}
             >
               Check-in
+            </Button>
+          )}
+          {/* 🆕 Nút Check-in cho trạng thái "không đến" - châm chước cho bệnh nhân đến muộn */}
+          {record.status === 'no-show' && (
+            <Button 
+              type="primary" 
+              icon={<CheckCircleOutlined />} 
+              onClick={() => setLateCheckInModal({ visible: true, appointment: record })}
+              size="small"
+              block
+              style={{ height: 'auto', minHeight: 24, fontSize: 10, backgroundColor: '#faad14', borderColor: '#faad14', padding: '2px 4px', whiteSpace: 'normal', lineHeight: 1.2 }}
+            >
+              Check-in<br/>(Đến muộn)
             </Button>
           )}
           {/* {record.status === 'in-progress' && (
@@ -735,6 +754,29 @@ const PatientAppointments = () => {
               }
             </div>
           </Space>
+        )}
+      </Modal>
+      
+      {/* 🆕 Late Check-in Confirmation Modal */}
+      <Modal
+        title="Xác nhận Check-in cho bệnh nhân đến muộn"
+        open={lateCheckInModal.visible}
+        onOk={async () => {
+          if (lateCheckInModal.appointment) {
+            await handleCheckIn(lateCheckInModal.appointment._id);
+          }
+          setLateCheckInModal({ visible: false, appointment: null });
+        }}
+        onCancel={() => setLateCheckInModal({ visible: false, appointment: null })}
+        okText="Check-in"
+        cancelText="Hủy"
+        okButtonProps={{ type: 'primary', style: { backgroundColor: '#faad14', borderColor: '#faad14' } }}
+      >
+        {lateCheckInModal.appointment && (
+          <div>
+            <p>Bệnh nhân <strong>{lateCheckInModal.appointment.patientName}</strong> đã được đánh dấu "Không đến".</p>
+            <p>Bạn có chắc muốn check-in cho bệnh nhân này không?</p>
+          </div>
         )}
       </Modal>
     </div>
