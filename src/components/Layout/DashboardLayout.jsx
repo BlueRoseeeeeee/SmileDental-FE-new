@@ -128,7 +128,6 @@ const DashboardLayout = () => {
         children: [
           { key: '/dashboard/schedules', label: 'Cấu hình phòng khám', icon: <SettingOutlined /> },
           { key: '/dashboard/users', label: 'Quản lý nhân viên', icon: <UserSwitchOutlined /> },
-          { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân viên', icon: <CalendarOutlined /> },
           { key: '/dashboard/rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined /> },
           { key: '/dashboard/services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined /> },
         ]
@@ -142,6 +141,7 @@ const DashboardLayout = () => {
         children: [
           { key: '/dashboard/schedules/calendar', label: 'Lịch làm việc tổng', icon: <CalendarOutlined /> },
           { key: '/dashboard/schedules/create-for-room', label: 'Tạo lịch cho phòng', icon: <CalendarOutlined /> },
+          { key: '/dashboard/schedules/staff-assignment', label: 'Phân công nhân viên', icon: <TeamOutlined /> },
           { key: '/dashboard/schedules/holidays', label: 'Quản lý ngày nghỉ', icon: <CalendarOutlined /> },
           { key: '/dashboard/day-closures', label: 'Lịch đóng cửa khẩn cấp', icon: <CloseCircleOutlined /> },
         ]

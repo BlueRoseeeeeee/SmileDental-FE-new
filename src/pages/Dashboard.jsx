@@ -73,12 +73,12 @@ const Dashboard = () => {
         // Hệ thống & nhân viên
         { key: 'schedules-config', label: 'Cấu hình phòng khám', icon: <SettingOutlined />, path: '/dashboard/schedules', color: '#1890ff' },
         { key: 'users', label: 'Quản lý nhân viên', icon: <UserSwitchOutlined />, path: '/dashboard/users', color: '#52c41a' },
-        { key: 'staff-assignment', label: 'Phân công nhân viên', icon: <CalendarOutlined />, path: '/dashboard/schedules/staff-assignment', color: '#fa8c16' },
         { key: 'rooms', label: 'Quản lý phòng khám', icon: <EnvironmentOutlined />, path: '/dashboard/rooms', color: '#722ed1' },
         { key: 'services', label: 'Quản lý dịch vụ', icon: <MedicineBoxOutlined />, path: '/dashboard/services', color: '#eb2f96' },
         // Lịch & Vận hành
         { key: 'schedules', label: 'Lịch làm việc tổng', icon: <CalendarOutlined />, path: '/dashboard/schedules/calendar', color: '#13c2c2' },
         { key: 'create-for-room', label: 'Tạo lịch cho phòng', icon: <CalendarOutlined />, path: '/dashboard/schedules/create-for-room', color: '#2f54eb' },
+        { key: 'staff-assignment', label: 'Phân công nhân viên', icon: <TeamOutlined />, path: '/dashboard/schedules/staff-assignment', color: '#fa8c16' },
         { key: 'holidays', label: 'Quản lý ngày nghỉ', icon: <CalendarOutlined />, path: '/dashboard/schedules/holidays', color: '#fa541c' },
         { key: 'day-closures', label: 'Đóng cửa khẩn cấp', icon: <CloseCircleOutlined />, path: '/dashboard/day-closures', color: '#f5222d' },
         // Khám & Điều trị
