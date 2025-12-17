@@ -434,14 +434,14 @@ const RevenueStatistics = () => {
       sorter: (a, b) => a.totalRevenue - b.totalRevenue,
       defaultSortOrder: 'descend'
     },
-    {
-      title: 'Giá TB',
-      dataIndex: 'avgRevenuePerService',
-      key: 'avgRevenuePerService',
-      align: 'right',
-      render: (value) => formatCurrency(value),
-      sorter: (a, b) => a.avgRevenuePerService - b.avgRevenuePerService
-    }
+    // {
+    //   title: 'Giá TB',
+    //   dataIndex: 'avgRevenuePerService',
+    //   key: 'avgRevenuePerService',
+    //   align: 'right',
+    //   render: (value) => formatCurrency(value),
+    //   sorter: (a, b) => a.avgRevenuePerService - b.avgRevenuePerService
+    // }
   ];
 
   // ✅ Define tabItems only when data exists
@@ -559,60 +559,38 @@ const RevenueStatistics = () => {
       ),
       children: (
         <div>
-          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-            <Col xs={24} lg={12}>
-              <Card title="Top 8 dịch vụ theo doanh thu">
-                <ResponsiveContainer width="100%" height={400}>
-                  <PieChart>
-                    <Pie
-                      data={data.revenueByService.slice(0, 8)}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={(entry) => {
-                        const name = entry.serviceName.length > 15 
-                          ? entry.serviceName.substring(0, 15) + '...' 
-                          : entry.serviceName;
-                        const percent = ((entry.totalRevenue / data.revenueByService.slice(0, 8).reduce((sum, s) => sum + s.totalRevenue, 0)) * 100).toFixed(1);
-                        return `${name} (${percent}%)`;
-                      }}
-                      outerRadius={120}
-                      fill="#8884d8"
-                      dataKey="totalRevenue"
-                    >
-                      {data.revenueByService.slice(0, 8).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatCurrency(value)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-            
-            <Col xs={24} lg={12}>
-              <Card title="Top 8 dịch vụ theo số lượng">
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart 
-                    data={[...data.revenueByService].sort((a, b) => b.totalCount - a.totalCount).slice(0, 8)}
-                    layout="horizontal"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis 
-                      type="category" 
-                      dataKey="serviceName" 
-                      width={150}
-                      style={{ fontSize: '11px' }}
-                      tickFormatter={(value) => value.length > 20 ? value.substring(0, 20) + '...' : value}
-                    />
-                    <Tooltip />
-                    <Bar dataKey="totalCount" fill="#52c41a" name="Số lượng" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-          </Row>
+          <Card title="Top dịch vụ theo doanh thu" style={{ marginBottom: 24 }}>
+            <ResponsiveContainer width="100%" height={500}>
+              <PieChart>
+                <Pie
+                  data={data.revenueByService.slice(0, 8)}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  label={(entry) => {
+                    const percent = ((entry.totalRevenue / data.revenueByService.slice(0, 8).reduce((sum, s) => sum + s.totalRevenue, 0)) * 100).toFixed(1);
+                    return `${entry.serviceName} (${percent}%)`;
+                  }}
+                  outerRadius={160}
+                  fill="#8884d8"
+                  dataKey="totalRevenue"
+                >
+                  {data.revenueByService.slice(0, 8).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value, name, props) => [formatCurrency(value), props.payload.serviceName]}
+                />
+                <Legend 
+                  layout="vertical"
+                  align="right"
+                  verticalAlign="middle"
+                  formatter={(value, entry) => entry.payload.serviceName}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </Card>
           
           <Card 
             title={
