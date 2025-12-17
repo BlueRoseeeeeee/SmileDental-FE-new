@@ -158,6 +158,13 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   // 🆕 Inline form state
   const [showAddServiceForm, setShowAddServiceForm] = useState(false);
   
+  // 🆕 Delete confirmation modal state
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
+    visible: false,
+    serviceItemId: null,
+    serviceName: ''
+  });
+  
   // 🆕 Track exam date for price calculation
   const [examDate, setExamDate] = useState(null);
 
@@ -534,35 +541,49 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     setRecordModified(true);
   };
   
-  // 🆕 Handle remove additional service
+  // 🆕 Handle remove additional service - show confirmation modal
   const handleRemoveAdditionalService = (serviceItemId, serviceName) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa dịch vụ',
-      content: `Bạn có chắc muốn xóa dịch vụ "${serviceName}"? Thay đổi sẽ được lưu khi bạn nhấn "Cập nhật".`,
-      okText: 'Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
-      onOk: () => {
-        console.log('🗑️ [handleRemoveAdditionalService] Removing service:', serviceItemId);
-        
-        // ✅ Add to deletion list
-        setServicesToDelete(prev => [...prev, serviceItemId]);
-        
-        // ✅ Remove from editingAdditionalServices if it was being edited
-        setEditingAdditionalServices(prev => {
-          const updated = { ...prev };
-          delete updated[serviceItemId];
-          return updated;
-        });
-        
-        // Mark record as modified
-        setRecordModified(true);
-        
-        message.success('Đã đánh dấu xóa dịch vụ. Nhấn "Cập nhật" để lưu thay đổi.');
-        
-        console.log('✅ [handleRemoveAdditionalService] Service marked for deletion');
-      }
+    console.log('🔥 [handleRemoveAdditionalService] Opening confirm modal for:', { serviceItemId, serviceName });
+    setDeleteConfirmModal({
+      visible: true,
+      serviceItemId,
+      serviceName
     });
+  };
+  
+  // 🆕 Confirm delete additional service
+  const confirmDeleteAdditionalService = () => {
+    const { serviceItemId, serviceName } = deleteConfirmModal;
+    console.log('🗑️ [confirmDeleteAdditionalService] Confirmed! Removing service:', serviceItemId);
+    
+    // ✅ Add to deletion list
+    setServicesToDelete(prev => {
+      const newList = [...prev, serviceItemId];
+      console.log('✅ [confirmDeleteAdditionalService] Updated servicesToDelete:', newList);
+      return newList;
+    });
+    
+    // ✅ Remove from editingAdditionalServices if it was being edited
+    setEditingAdditionalServices(prev => {
+      const updated = { ...prev };
+      delete updated[serviceItemId];
+      return updated;
+    });
+    
+    // Mark record as modified
+    setRecordModified(true);
+    
+    // Close modal
+    setDeleteConfirmModal({ visible: false, serviceItemId: null, serviceName: '' });
+    
+    message.success(`Đã đánh dấu xóa dịch vụ "${serviceName}". Nhấn "Cập nhật" để lưu thay đổi.`);
+    console.log('✅ [confirmDeleteAdditionalService] Service marked for deletion');
+  };
+  
+  // 🆕 Cancel delete additional service
+  const cancelDeleteAdditionalService = () => {
+    console.log('❌ [cancelDeleteAdditionalService] Cancelled');
+    setDeleteConfirmModal({ visible: false, serviceItemId: null, serviceName: '' });
   };
 
   // Handle form submit
@@ -659,13 +680,13 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         const currentAddOn = selectedMainServiceAddOns.find(a => a._id === currentServiceAddOnId);
         const currentQuantity = quantityChanged ? tempMainServiceQuantity : (record.quantity || 1);
         
-        // ✅ Calculate base cost from serviceAddOn price from API (NOT from record.serviceAddOnPrice in DB)
-        const serviceAddOnPrice = currentAddOn?.price || 0;
+        // ✅ Calculate base cost from serviceAddOn effective price (WITH priceSchedules applied)
+        const serviceAddOnPrice = currentAddOn ? getEffectivePrice(currentAddOn) : 0;
         const baseCost = serviceAddOnPrice * currentQuantity;
         
         // Calculate additional services cost (excluding deleted, including edited)
         const existingAdditionalCost = (record.additionalServices || [])
-          .filter(svc => !servicesToDelete.includes(svc._id)) // Exclude deleted services
+          .filter(svc => !servicesToDelete.some(id => String(id) === String(svc._id))) // Exclude deleted services
           .reduce((sum, svc) => {
             const editedValues = editingAdditionalServices[svc._id] || {};
             const quantity = editedValues.quantity !== undefined ? editedValues.quantity : (svc.quantity || 1);
@@ -689,52 +710,76 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
         
         if (serviceAddOnChanged || quantityChanged) {
           if (!currentAddOn) {
-            message.error('Không tìm thấy thông tin dịch vụ con đã chọn');
-            console.error('❌ currentAddOn not found. tempServiceAddOnId:', tempServiceAddOnId, 'selectedMainServiceAddOns:', selectedMainServiceAddOns);
-            setLoading(false);
-            return;
+            // ✅ Allow update even without serviceAddOn - use existing data from record
+            console.warn('⚠️ currentAddOn not found but allowing update. Using record data instead.');
+            const effectiveMainPrice = record.serviceAddOnPrice || 0;
+            
+            recordData = {
+              diagnosis: values.diagnosis,
+              notes: values.notes,
+              serviceAddOnId: record.serviceAddOnId || null,
+              serviceAddOnName: record.serviceAddOnName || null,
+              serviceAddOnUnit: record.serviceAddOnUnit || null,
+              serviceAddOnPrice: effectiveMainPrice,
+              quantity: currentQuantity,
+              totalCost: calculatedTotalCost,
+              treatmentIndications: [], // Will be set below
+              lastModifiedBy: currentUser._id || 'unknown'
+            };
+          } else {
+            const effectiveMainPrice = getEffectivePrice(currentAddOn);
+            console.log('✅ Service addon or quantity changed:', currentAddOn.name, effectiveMainPrice, 'x', currentQuantity);
+            
+            recordData = {
+              diagnosis: values.diagnosis,
+              notes: values.notes,
+              serviceAddOnId: currentAddOn._id,
+              serviceAddOnName: currentAddOn.name,
+              serviceAddOnUnit: currentAddOn.unit,
+              serviceAddOnPrice: effectiveMainPrice,
+              quantity: currentQuantity,
+              totalCost: calculatedTotalCost, // ✅ Always send totalCost from FE
+              treatmentIndications: [], // Will be set below
+              lastModifiedBy: currentUser._id || 'unknown'
+            };
           }
-          
-          const effectiveMainPrice = getEffectivePrice(currentAddOn);
-          console.log('✅ Service addon or quantity changed:', currentAddOn.name, effectiveMainPrice, 'x', currentQuantity);
-          
-          recordData = {
-            diagnosis: values.diagnosis,
-            notes: values.notes,
-            serviceAddOnId: currentAddOn._id,
-            serviceAddOnName: currentAddOn.name,
-            serviceAddOnUnit: currentAddOn.unit,
-            serviceAddOnPrice: effectiveMainPrice,
-            quantity: currentQuantity,
-            totalCost: calculatedTotalCost, // ✅ Always send totalCost from FE
-            treatmentIndications: [], // Will be set below
-            lastModifiedBy: currentUser._id || 'unknown'
-          };
         } else {
           // ✅ Even if no service changes, still send totalCost and serviceAddOn fields
           // to ensure backend has current values (fixes issue where serviceAddOnPrice = 0 after update)
           if (!currentAddOn) {
-            message.error('Không tìm thấy thông tin dịch vụ con đã chọn');
-            console.error('❌ currentAddOn not found. currentServiceAddOnId:', currentServiceAddOnId, 'selectedMainServiceAddOns:', selectedMainServiceAddOns);
-            setLoading(false);
-            return;
+            // ✅ Allow update even without serviceAddOn - use existing data from record
+            console.warn('⚠️ currentAddOn not found but allowing update. Using record data instead.');
+            const effectiveMainPrice = record.serviceAddOnPrice || 0;
+            
+            recordData = {
+              diagnosis: values.diagnosis,
+              notes: values.notes,
+              serviceAddOnId: record.serviceAddOnId || null,
+              serviceAddOnName: record.serviceAddOnName || null,
+              serviceAddOnUnit: record.serviceAddOnUnit || null,
+              serviceAddOnPrice: effectiveMainPrice,
+              quantity: currentQuantity,
+              totalCost: calculatedTotalCost,
+              treatmentIndications: [], // Will be set below
+              lastModifiedBy: currentUser._id || 'unknown'
+            };
+          } else {
+            const effectiveMainPrice = getEffectivePrice(currentAddOn);
+            console.log('ℹ️ Service addon unchanged, but including in update:', currentAddOn.name, effectiveMainPrice, 'x', currentQuantity);
+            
+            recordData = {
+              diagnosis: values.diagnosis,
+              notes: values.notes,
+              serviceAddOnId: currentAddOn._id,
+              serviceAddOnName: currentAddOn.name,
+              serviceAddOnUnit: currentAddOn.unit,
+              serviceAddOnPrice: effectiveMainPrice,
+              quantity: currentQuantity,
+              totalCost: calculatedTotalCost, // ✅ Always send totalCost from FE
+              treatmentIndications: [], // Will be set below
+              lastModifiedBy: currentUser._id || 'unknown'
+            };
           }
-          
-          const effectiveMainPrice = getEffectivePrice(currentAddOn);
-          console.log('ℹ️ Service addon unchanged, but including in update:', currentAddOn.name, effectiveMainPrice, 'x', currentQuantity);
-          
-          recordData = {
-            diagnosis: values.diagnosis,
-            notes: values.notes,
-            serviceAddOnId: currentAddOn._id,
-            serviceAddOnName: currentAddOn.name,
-            serviceAddOnUnit: currentAddOn.unit,
-            serviceAddOnPrice: effectiveMainPrice,
-            quantity: currentQuantity,
-            totalCost: calculatedTotalCost, // ✅ Always send totalCost from FE
-            treatmentIndications: [], // Will be set below
-            lastModifiedBy: currentUser._id || 'unknown'
-          };
         }
         
         
@@ -1330,8 +1375,9 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     const baseCost = (baseAddOnPrice || 0) * (baseQuantity || 1);
     
     // Calculate additional services cost (including edited values, excluding deleted)
+    // Convert _id to string for comparison
     const existingAdditionalCost = (record.additionalServices || [])
-      .filter(svc => !servicesToDelete.includes(svc._id)) // Exclude deleted services
+      .filter(svc => !servicesToDelete.some(id => String(id) === String(svc._id))) // Exclude deleted services
       .reduce((sum, svc) => {
         const editedValues = editingAdditionalServices[svc._id] || {};
         const quantity = editedValues.quantity !== undefined ? editedValues.quantity : (svc.quantity || 1);
@@ -1451,9 +1497,9 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
 
         {/* Additional Services Section */}
         {(() => {
-          // Filter out services marked for deletion
+          // Filter out services marked for deletion (convert to string for comparison)
           const existingServices = (record.additionalServices || []).filter(
-            svc => !servicesToDelete.includes(svc._id)
+            svc => !servicesToDelete.some(id => String(id) === String(svc._id))
           );
           const allServices = [...existingServices, ...tempAdditionalServices];
           
@@ -1533,7 +1579,9 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                             danger
                             size="small"
                             icon={<DeleteOutlined />}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('🗑️ Delete button clicked for:', svc._id, svc.serviceName, 'isTemporary:', svc.isTemporary);
                               if (svc.isTemporary) {
                                 handleRemoveTempAdditionalService(svc._id);
                               } else {
@@ -1933,19 +1981,17 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
     );
   };
 
-  // Tab 5: Treatment Indications (only for exam records)
+  // Tab 5: Treatment Indications (for all record types)
   const renderTreatmentIndicationsTab = () => (
     <div>
-      {recordType === 'exam' ? (
-        <>
-          <Alert
-            type="info"
-            message="Chỉ định điều trị"
-            description="Thêm các dịch vụ điều trị được khuyến nghị cho bệnh nhân. Dịch vụ và dịch vụ con sẽ được sử dụng để đặt lịch điều trị sau."
-            style={{ marginBottom: 16 }}
-          />
+      <Alert
+        type="info"
+        message="Chỉ định điều trị"
+        description="Thêm các dịch vụ điều trị được khuyến nghị cho bệnh nhân. Dịch vụ và dịch vụ con sẽ được sử dụng để đặt lịch điều trị sau."
+        style={{ marginBottom: 16 }}
+      />
 
-          <Form.List name="treatmentIndications">
+      <Form.List name="treatmentIndications">
             {(fields, { add, remove }) => (
               <>
                 {fields.map(({ key, name, ...restField }) => {
@@ -2133,18 +2179,6 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
               </>
             )}
           </Form.List>
-        </>
-      ) : (
-        <div style={{ 
-          padding: '24px', 
-          textAlign: 'center', 
-          background: '#f5f5f5',
-          borderRadius: '8px'
-        }}>
-          <ExperimentOutlined style={{ fontSize: 48, color: '#999', marginBottom: 8 }} />
-          <p style={{ color: '#999' }}>Chỉ định điều trị chỉ áp dụng cho hồ sơ khám bệnh</p>
-        </div>
-      )}
     </div>
   );
 
@@ -2202,6 +2236,7 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
   ];
 
   return (
+    <>
     <Modal
       title={
         <Space>
@@ -2252,6 +2287,21 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
       )}
 
     </Modal>
+    
+    {/* 🆕 Delete confirmation modal */}
+    <Modal
+      title="Xác nhận xóa dịch vụ"
+      open={deleteConfirmModal.visible}
+      onOk={confirmDeleteAdditionalService}
+      onCancel={cancelDeleteAdditionalService}
+      okText="Xóa"
+      cancelText="Hủy"
+      okButtonProps={{ danger: true }}
+    >
+      <p>Bạn có chắc muốn xóa dịch vụ <strong>"{deleteConfirmModal.serviceName}"</strong>?</p>
+      <p style={{ color: '#666', fontSize: 13 }}>Thay đổi sẽ được lưu khi bạn nhấn "Cập nhật".</p>
+    </Modal>
+    </>
   );
 };
 

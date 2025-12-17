@@ -75,18 +75,27 @@ const PaymentConfirmModal = ({ visible, onCancel, record, onSuccess }) => {
   };
 
   const serviceItems = getServiceItems();
-  const totalAmount = record.totalCost || 0;
+  
+  // 🔍 Calculate actual total from service items displayed
+  const calculatedTotal = serviceItems.reduce((sum, item) => sum + item.total, 0);
+  
+  // ✅ Use calculatedTotal for display to ensure consistency between detail and total
+  // record.totalCost may be outdated if prices changed or services were modified
+  const totalAmount = calculatedTotal;
   const appointmentDeposit = record.appointmentDeposit || 0;
   const remainingAmount = totalAmount - appointmentDeposit;
   const hasDeposit = appointmentDeposit > 0;
   const isOnlineBooking = record.appointmentBookingChannel === 'online';
+  
+  // Check if there's a mismatch between DB value and calculated value
+  const hasPriceMismatch = record.totalCost && Math.abs(record.totalCost - calculatedTotal) > 1;
 
-  // 🔍 Debug: Calculate actual total from service items
-  const calculatedTotal = serviceItems.reduce((sum, item) => sum + item.total, 0);
   console.log('💰 [PaymentConfirmModal] Price calculation:', {
-    'record.totalCost': totalAmount,
+    'record.totalCost (DB)': record.totalCost,
     'calculatedFromItems': calculatedTotal,
-    'difference': totalAmount - calculatedTotal,
+    'totalAmount (displayed)': totalAmount,
+    'difference': (record.totalCost || 0) - calculatedTotal,
+    'hasPriceMismatch': hasPriceMismatch,
     serviceItems: serviceItems.map(item => ({
       name: item.name,
       quantity: item.quantity,
@@ -301,6 +310,27 @@ const PaymentConfirmModal = ({ visible, onCancel, record, onSuccess }) => {
             </Col>
           </Row>
         </Card>
+
+        {/* Price Mismatch Warning */}
+        {hasPriceMismatch && (
+          <Alert
+            type="warning"
+            showIcon
+            message="Giá trong hồ sơ không khớp"
+            description={
+              <div>
+                <Text>Giá lưu trong hệ thống: <strong>{(record.totalCost || 0).toLocaleString('vi-VN')}đ</strong></Text>
+                <br />
+                <Text>Giá tính từ dịch vụ: <strong>{calculatedTotal.toLocaleString('vi-VN')}đ</strong></Text>
+                <br />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Hệ thống đang hiển thị giá tính từ dịch vụ. Vui lòng cập nhật lại hồ sơ để đồng bộ giá.
+                </Text>
+              </div>
+            }
+            style={{ marginBottom: 0 }}
+          />
+        )}
 
         {/* Warning Message */}
         <Card size="small" style={{ background: '#fffbe6', borderColor: '#ffe58f' }}>
