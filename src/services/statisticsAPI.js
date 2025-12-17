@@ -288,79 +288,128 @@ export const getRevenueStatistics = async (params = {}) => {
       }
     });
     
+    // ✅ STEP 1: Filter ra các dentist đã bị xóa TRƯỚC
+    const validDentistIds = new Set();
+    console.log('🔍 DentistMap size:', dentistMap.size);
+    console.log('🔍 DentistMap keys:', [...dentistMap.keys()]);
+    
+    const filteredByDentist = (backendData.byDentist || []).filter(dentist => {
+      const dentistInfo = dentistMap.get(dentist.dentistId);
+      console.log(`   Checking dentist ${dentist.dentistId}: ${dentistInfo ? '✅ Found' : '❌ Not found'}`);
+      if (!dentistInfo) {
+        console.warn(`⚠️ Dentist ${dentist.dentistId} không tồn tại (đã bị xóa?), loại bỏ ${dentist.totalRevenue?.toLocaleString('vi-VN')} VNĐ khỏi thống kê`);
+        return false;
+      }
+      validDentistIds.add(dentist.dentistId);
+      return true;
+    });
+
+    // ✅ STEP 2: Tính lại tổng doanh thu từ các dentist còn tồn tại
+    const recalculatedTotalRevenue = filteredByDentist.reduce((sum, d) => sum + (d.totalRevenue || 0), 0);
+    const recalculatedTotalAppointments = filteredByDentist.reduce((sum, d) => sum + (d.appointmentCount || 0), 0);
+    const recalculatedTotalServices = filteredByDentist.reduce((sum, d) => sum + (d.serviceCount || 0), 0);
+    
+    // 🔍 DEBUG LOG
+    console.log('📊 DEBUG Revenue Statistics:');
+    console.log('   - Backend totalRevenue:', backendData.summary?.totalRevenue?.toLocaleString('vi-VN'));
+    console.log('   - Filtered dentists:', filteredByDentist.length, '/', (backendData.byDentist || []).length);
+    console.log('   - Recalculated totalRevenue:', recalculatedTotalRevenue.toLocaleString('vi-VN'));
+    console.log('   - Recalculated totalAppointments:', recalculatedTotalAppointments);
+    console.log('   - Valid dentist IDs:', [...validDentistIds]);
+
+    // ✅ STEP 3: Filter rawDetails theo dentist còn tồn tại
+    const filteredRawDetails = (backendData.rawDetails || []).filter(detail => 
+      validDentistIds.has(detail.dentistId)
+    );
+
+    // ✅ STEP 4: Tính lại byService từ rawDetails đã filter
+    const serviceRevenueMap = new Map();
+    filteredRawDetails.forEach(detail => {
+      if (!serviceRevenueMap.has(detail.serviceId)) {
+        serviceRevenueMap.set(detail.serviceId, { revenue: 0, count: 0 });
+      }
+      const current = serviceRevenueMap.get(detail.serviceId);
+      current.revenue += detail.revenue || 0;
+      current.count += detail.count || 0;
+    });
+
     // Map backend structure to frontend structure
     return {
       success: true,
       data: {
         summary: {
-          totalRevenue: backendData.summary?.totalRevenue || 0,
-          totalAppointments: backendData.summary?.totalInvoices || 0,
-          totalServices: backendData.byService?.length || 0,
-          avgRevenuePerAppointment: backendData.summary?.averageValue || 0,
+          // ✅ Dùng số liệu đã tính lại
+          totalRevenue: recalculatedTotalRevenue,
+          totalAppointments: recalculatedTotalAppointments,
+          totalServices: backendData.byService?.filter(s => s.serviceId && serviceRevenueMap.has(s.serviceId))?.length || 0,
+          avgRevenuePerAppointment: recalculatedTotalAppointments > 0 
+            ? Math.round(recalculatedTotalRevenue / recalculatedTotalAppointments) 
+            : 0,
           period: backendData.period || {}
         },
-        // Enrich byDentist với thông tin từ API /api/user/all-staff
-        revenueByDentist: (backendData.byDentist || []).map(dentist => {
+        // ✅ Dùng danh sách đã filter
+        revenueByDentist: filteredByDentist.map(dentist => {
           const dentistInfo = dentistMap.get(dentist.dentistId);
           return {
             dentistId: dentist.dentistId,
-            dentistName: dentistInfo 
-              ? `${dentistInfo.fullName} (${dentistInfo.employeeCode})` 
-              : `Nha sỹ ${dentist.dentistId.slice(-4)}`,
+            dentistName: `${dentistInfo.fullName} (${dentistInfo.employeeCode})`,
             specialization: dentistInfo?.specialization || 'Tổng quát',
             totalRevenue: dentist.totalRevenue || 0,
             appointmentCount: dentist.appointmentCount || 0,
             serviceCount: dentist.serviceCount || 0,
             avgRevenuePerAppointment: dentist.avgRevenuePerAppointment || 0,
-            // Thêm thông tin từ API
             dentistFullName: dentistInfo?.fullName || 'N/A',
             dentistEmployeeCode: dentistInfo?.employeeCode || null,
             dentistEmail: dentistInfo?.email || null,
             dentistPhone: dentistInfo?.phone || null
           };
         }),
-        // Enrich byService với thông tin từ API /api/service
+        // ✅ Enrich byService - chỉ lấy services có trong rawDetails đã filter
         revenueByService: (backendData.byService || [])
-          .filter(service => service.totalRevenue > 0 && service.serviceId) // ✅ Chỉ hiển thị services có revenue > 0 VÀ có serviceId
+          .filter(service => service.serviceId && serviceRevenueMap.has(service.serviceId))
           .map(service => {
             const serviceInfo = serviceMap.get(service.serviceId);
+            const recalculated = serviceRevenueMap.get(service.serviceId) || { revenue: 0, count: 0 };
             return {
               serviceId: service.serviceId,
               serviceName: service.serviceName || (serviceInfo?.name || 'Dịch vụ không xác định'),
               serviceType: service.serviceType || (serviceInfo?.type || 'unknown'),
-              totalRevenue: service.totalRevenue || 0,
-              totalCount: service.totalCount || 0,
-              avgRevenuePerService: service.avgRevenuePerService || 0,
-              // Thêm thông tin từ API
+              // ✅ Dùng số liệu đã tính lại từ rawDetails
+              totalRevenue: recalculated.revenue,
+              totalCount: recalculated.count,
+              avgRevenuePerService: recalculated.count > 0 ? Math.round(recalculated.revenue / recalculated.count) : 0,
               servicePrice: serviceInfo?.price || serviceInfo?.basePrice || 0,
               serviceDuration: serviceInfo?.durationMinutes || 0,
               serviceParent: serviceInfo?.parentName || null
             };
           }),
-        // Map trends to revenueByTime
+        // Map trends to revenueByTime (giữ nguyên vì không liên quan đến dentist cụ thể)
         revenueByTime: (backendData.trends || []).map(trend => ({
           date: trend.date,
           revenue: trend.revenue || 0,
           count: trend.count || 0
         })),
-        // ✅ Map rawDetails for cross-filtering
-        rawDetails: (backendData.rawDetails || []).map(detail => ({
+        // ✅ Dùng rawDetails đã filter
+        rawDetails: filteredRawDetails.map(detail => ({
           dentistId: detail.dentistId,
           serviceId: detail.serviceId,
           revenue: detail.revenue || 0,
           count: detail.count || 0,
           invoiceCount: detail.invoiceCount || 0
         })),
-        // Comparison data - ✅ Filter giống revenueByService
+        // ✅ Comparison data - tính lại từ rawDetails đã filter
         comparison: (backendData.byService || [])
-          .filter(s => s.totalRevenue > 0 && s.serviceId) // ✅ Chỉ hiển thị services có revenue > 0 VÀ có serviceId
-          .map(s => ({
-            name: s.serviceName,
-            type: s.serviceType,
-            count: s.totalCount || 0,
-            revenue: s.totalRevenue || 0,
-            avgRevenue: s.avgRevenuePerService || 0
-          }))
+          .filter(s => s.serviceId && serviceRevenueMap.has(s.serviceId))
+          .map(s => {
+            const recalculated = serviceRevenueMap.get(s.serviceId) || { revenue: 0, count: 0 };
+            return {
+              name: s.serviceName,
+              type: s.serviceType,
+              count: recalculated.count,
+              revenue: recalculated.revenue,
+              avgRevenue: recalculated.count > 0 ? Math.round(recalculated.revenue / recalculated.count) : 0
+            };
+          })
       }
     };
   } catch (error) {
