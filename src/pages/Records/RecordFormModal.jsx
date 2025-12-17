@@ -1170,7 +1170,14 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                         : 0;
                       return (
                         <Option key={service._id} value={service._id}>
-                          {service.name}{minPrice > 0 ? ` - Từ ${minPrice.toLocaleString('vi-VN')}đ` : ''}
+                          <div style={{ lineHeight: 1.3 }}>
+                            <div style={{ fontSize: 13 }}>{service.name}</div>
+                            {minPrice > 0 && (
+                              <div style={{ fontSize: 11, color: '#666' }}>
+                                Từ {minPrice.toLocaleString('vi-VN')}đ
+                              </div>
+                            )}
+                          </div>
                         </Option>
                       );
                     })}
@@ -1454,22 +1461,25 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                     const hasSchedulePrice = schedulePrice !== null && schedulePrice !== basePrice;
                     return (
                       <Option key={addon._id} value={addon._id}>
-                        <Space>
-                          <span>{addon.name}</span>
-                          <Text type="secondary">-</Text>
-                          <Text 
-                            strong={!hasSchedulePrice}
-                            delete={hasSchedulePrice}
-                            type={hasSchedulePrice ? "secondary" : undefined}
-                            style={{ color: hasSchedulePrice ? undefined : '#1890ff' }}
-                          >
-                            {basePrice.toLocaleString('vi-VN')}đ
-                          </Text>
-                          {hasSchedulePrice && (
-                            <Tag color="red" style={{ fontWeight: 'bold' }}>{schedulePrice.toLocaleString('vi-VN')}đ</Tag>
-                          )}
-                          <Tag color="blue">{addon.unit}</Tag>
-                        </Space>
+                        <div style={{ lineHeight: 1.3 }}>
+                          <div style={{ fontSize: 13 }}>{addon.name} <span style={{ color: '#1890ff', fontSize: 11 }}>({addon.unit})</span></div>
+                          <div style={{ fontSize: 11 }}>
+                            {hasSchedulePrice ? (
+                              <>
+                                <span style={{ textDecoration: 'line-through', color: '#999', marginRight: 4 }}>
+                                  {basePrice.toLocaleString('vi-VN')}đ
+                                </span>
+                                <span style={{ color: '#f5222d', fontWeight: 'bold' }}>
+                                  {schedulePrice.toLocaleString('vi-VN')}đ
+                                </span>
+                              </>
+                            ) : (
+                              <span style={{ color: '#666' }}>
+                                {basePrice.toLocaleString('vi-VN')}đ
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </Option>
                     );
                   })}
@@ -1820,15 +1830,17 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                                 key={service._id} 
                                 value={service._id}
                               >
-                                <Space>
-                                  <span>{service.name}</span>
-                                  <Tag color={service.type === 'exam' ? 'blue' : 'green'}>
-                                    {service.type === 'exam' ? 'Khám' : 'Điều trị'}
-                                  </Tag>
-                                  <Tag color="cyan" style={{ fontSize: 10 }}>
+                                <div style={{ lineHeight: 1.3 }}>
+                                  <div style={{ fontSize: 13 }}>
+                                    {service.name}
+                                    <span style={{ color: service.type === 'exam' ? '#1890ff' : '#52c41a', fontSize: 11, marginLeft: 6 }}>
+                                      ({service.type === 'exam' ? 'Khám' : 'Điều trị'})
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: 11, color: '#13c2c2' }}>
                                     Còn {availableAddOns.length}/{allAddOns.length} dịch vụ con
-                                  </Tag>
-                                </Space>
+                                  </div>
+                                </div>
                               </Option>
                             );
                           });
@@ -1887,20 +1899,25 @@ const RecordFormModal = ({ visible, mode, record, onSuccess, onCancel }) => {
                             const hasSchedulePrice = schedulePrice !== null && schedulePrice !== basePrice;
                             return (
                               <Option key={addon._id} value={addon._id}>
-                                <Space>
-                                  <span>{addon.name}</span>
-                                  <Text type="secondary">-</Text>
-                                  <Text 
-                                    delete={hasSchedulePrice}
-                                    type="secondary"
-                                  >
-                                    {basePrice.toLocaleString('vi-VN')}đ
-                                  </Text>
-                                  {hasSchedulePrice && (
-                                    <Tag color="red" style={{ fontWeight: 'bold' }}>{schedulePrice.toLocaleString('vi-VN')}đ</Tag>
-                                  )}
-                                  <Tag color="blue">{addon.unit}</Tag>
-                                </Space>
+                                <div style={{ lineHeight: 1.3 }}>
+                                  <div style={{ fontSize: 13 }}>{addon.name}</div>
+                                  <div style={{ fontSize: 11 }}>
+                                    {hasSchedulePrice ? (
+                                      <>
+                                        <span style={{ textDecoration: 'line-through', color: '#999', marginRight: 4 }}>
+                                          {basePrice.toLocaleString('vi-VN')}đ
+                                        </span>
+                                        <span style={{ color: '#f5222d', fontWeight: 'bold' }}>
+                                          {schedulePrice.toLocaleString('vi-VN')}đ
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <span style={{ color: '#666' }}>
+                                        {basePrice.toLocaleString('vi-VN')}đ
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </Option>
                             );
                           });
