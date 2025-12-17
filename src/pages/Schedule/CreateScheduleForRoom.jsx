@@ -2197,8 +2197,21 @@ const CreateScheduleForRoom = () => {
                     );
                   }
 
+                  // 🆕 Filter out invalid schedules (room has subRooms but schedule has no subRoom)
+                  const roomHasSubRooms = selectedRoom?.hasSubRooms === true && 
+                                          Array.isArray(selectedRoom?.subRooms) && 
+                                          selectedRoom?.subRooms.length > 0;
+                  
+                  const validSchedules = scheduleListData.schedules.filter(schedule => {
+                    if (roomHasSubRooms && !schedule.subRoom) {
+                      console.warn(`⚠️ [CreateScheduleForRoom] Skipping invalid schedule: Room ${selectedRoom.name} has subRooms but schedule ${schedule.scheduleId} has no subRoom info`);
+                      return false;
+                    }
+                    return true;
+                  });
+
                   // 🆕 NHÓM schedules theo month/year
-                  const scheduleGroups = scheduleListData.schedules.reduce((groups, schedule) => {
+                  const scheduleGroups = validSchedules.reduce((groups, schedule) => {
                     const key = `${schedule.month}-${schedule.year}`;
                     if (!groups[key]) {
                       groups[key] = {

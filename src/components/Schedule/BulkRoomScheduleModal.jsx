@@ -72,11 +72,19 @@ const BulkRoomScheduleModal = ({
 
       if (data.schedules && Array.isArray(data.schedules)) {
         data.schedules.forEach(schedule => {
+          // 🆕 Nếu phòng có buồng (hasSubRooms) nhưng lịch không có thông tin buồng → bỏ qua (lịch không hợp lệ)
+          const roomHasSubRooms = room.hasSubRooms === true && Array.isArray(room.subRooms) && room.subRooms.length > 0;
+          if (roomHasSubRooms && !schedule.subRoom) {
+            console.warn(`⚠️ [BulkRoomScheduleModal] Skipping invalid schedule: Room ${room.name} has subRooms but schedule ${schedule.scheduleId} has no subRoom info`);
+            return; // Skip this schedule
+          }
+          
           schedules.push({
             ...schedule,
             roomId: room._id,
             roomName: room.name,
-            roomNumber: room.roomNumber
+            roomNumber: room.roomNumber,
+            roomHasSubRooms // 🆕 Thêm flag để biết phòng có buồng không
           });
         });
       }
