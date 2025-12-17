@@ -104,28 +104,6 @@ const RecordDetailDrawer = ({
       open={visible}
       extra={
         <Space>
-          {record.status === 'in-progress' && (
-            <>
-              <Button
-                icon={<EditOutlined />}
-                onClick={() => onEdit(record)}
-              >
-                Sửa
-              </Button>
-              <Button
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => onComplete(record)}
-                style={{ 
-                  backgroundColor: '#52c41a',
-                  borderColor: '#52c41a'
-                }}
-                disabled={!(record.diagnosis && record.diagnosis.trim() && record.totalCost > 0)}
-              >
-                Hoàn thành
-              </Button>
-            </>
-          )}
           <Button
             icon={<PrinterOutlined />}
             onClick={() => onPrint(record)}

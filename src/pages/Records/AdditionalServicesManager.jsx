@@ -298,9 +298,9 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
     ];
 
   const additionalServices = record?.additionalServices || [];
-  // 🔥 FIX: Service chính không có giá riêng, chỉ lấy serviceAddOnPrice
-  // servicePrice là giá base (không dùng), serviceAddOnPrice là giá thực tế của add-on
-  const baseCost = (record?.serviceAddOnPrice || 0); // CHỈ lấy serviceAddOnPrice
+  // 🔥 FIX: Service chính: giá = serviceAddOnPrice * quantity
+  const mainServiceQuantity = record?.quantity || 1;
+  const baseCost = (record?.serviceAddOnPrice || 0) * mainServiceQuantity;
   const additionalCost = additionalServices.reduce((sum, svc) => sum + (svc.totalPrice || 0), 0);
   const totalCost = baseCost + additionalCost;
 
@@ -344,6 +344,11 @@ const AdditionalServicesManager = ({ recordId, record, onUpdate }) => {
                   {record?.serviceAddOnName && (
                     <div style={{ fontSize: 13, color: '#888', marginTop: 2 }}>
                       ↳ {record.serviceAddOnName}
+                      {mainServiceQuantity > 1 && (
+                        <span style={{ marginLeft: 8, color: '#1890ff' }}>
+                          x{mainServiceQuantity}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
