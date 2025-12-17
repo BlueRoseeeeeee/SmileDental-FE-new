@@ -259,14 +259,14 @@ const ClinicUtilizationStatistics = () => {
       title: 'Phòng',
       dataIndex: 'roomName',
       key: 'roomName',
-      width: 150,
-      fixed: 'left'
+      width: '25%'
     },
     {
       title: 'Loại',
       dataIndex: 'roomType',
       key: 'roomType',
-      width: 120,
+      width: '15%',
+      align: 'center',
       render: (type) => (
         <Tag color={getRoomTypeColor(type)}>
           {getRoomTypeName(type)}
@@ -277,7 +277,7 @@ const ClinicUtilizationStatistics = () => {
       title: 'Tổng slot',
       dataIndex: 'totalSlots',
       key: 'totalSlots',
-      width: 100,
+      width: '15%',
       align: 'center',
       sorter: (a, b) => a.totalSlots - b.totalSlots
     },
@@ -285,7 +285,7 @@ const ClinicUtilizationStatistics = () => {
       title: 'Có lịch',
       dataIndex: 'bookedSlots',
       key: 'bookedSlots',
-      width: 100,
+      width: '15%',
       align: 'center',
       render: (value) => (
         <Text strong style={{ color: COLORS.booked }}>{value}</Text>
@@ -296,7 +296,7 @@ const ClinicUtilizationStatistics = () => {
       title: 'Trống',
       dataIndex: 'emptySlots',
       key: 'emptySlots',
-      width: 100,
+      width: '15%',
       align: 'center',
       render: (value) => (
         <Text type="secondary">{value}</Text>
@@ -307,7 +307,7 @@ const ClinicUtilizationStatistics = () => {
       title: 'Tỷ lệ sử dụng',
       dataIndex: 'utilizationRate',
       key: 'utilizationRate',
-      width: 150,
+      width: '15%',
       align: 'center',
       render: (rate) => {
         const rateValue = typeof rate === 'number' ? rate : 0;
@@ -323,18 +323,6 @@ const ClinicUtilizationStatistics = () => {
       },
       sorter: (a, b) => a.utilizationRate - b.utilizationRate,
       defaultSortOrder: 'descend'
-    },
-    {
-      title: 'TB/ngày',
-      dataIndex: 'avgSlotsPerDay',
-      key: 'avgSlotsPerDay',
-      width: 100,
-      align: 'center',
-      render: (value) => {
-        const avgValue = typeof value === 'number' ? value : 0;
-        return `${avgValue.toFixed(1)} slots`;
-      },
-      sorter: (a, b) => a.avgSlotsPerDay - b.avgSlotsPerDay
     }
   ];
 

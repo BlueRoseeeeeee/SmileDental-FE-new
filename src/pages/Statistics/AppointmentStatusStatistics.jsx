@@ -253,7 +253,7 @@ const AppointmentStatusStatistics = () => {
       sorter: (a, b) => a.noShow - b.noShow
     },
     {
-      title: 'Tỷ lệ thành công',
+      title: 'Tỷ lệ hoàn thành',
       dataIndex: 'completedRate',
       key: 'completedRate',
       width: 150,
