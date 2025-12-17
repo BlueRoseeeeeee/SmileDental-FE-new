@@ -408,6 +408,7 @@ const RevenueStatistics = () => {
       title: 'Dịch vụ',
       dataIndex: 'serviceName',
       key: 'serviceName',
+      width: '50%',
       render: (text, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{text}</div>
@@ -421,7 +422,8 @@ const RevenueStatistics = () => {
       title: 'Số lượng',
       dataIndex: 'totalCount',
       key: 'totalCount',
-      align: 'right',
+      width: '25%',
+      align: 'center',
       render: (value) => formatNumber(value),
       sorter: (a, b) => a.totalCount - b.totalCount
     },
@@ -429,19 +431,12 @@ const RevenueStatistics = () => {
       title: 'Doanh thu',
       dataIndex: 'totalRevenue',
       key: 'totalRevenue',
+      width: '25%',
       align: 'right',
       render: (value) => <span style={{ color: '#52c41a', fontWeight: 500 }}>{formatCurrency(value)}</span>,
       sorter: (a, b) => a.totalRevenue - b.totalRevenue,
       defaultSortOrder: 'descend'
-    },
-    // {
-    //   title: 'Giá TB',
-    //   dataIndex: 'avgRevenuePerService',
-    //   key: 'avgRevenuePerService',
-    //   align: 'right',
-    //   render: (value) => formatCurrency(value),
-    //   sorter: (a, b) => a.avgRevenuePerService - b.avgRevenuePerService
-    // }
+    }
   ];
 
   // ✅ Define tabItems only when data exists
@@ -621,12 +616,9 @@ const RevenueStatistics = () => {
                 return (
                   <Table.Summary.Row style={{ background: '#fafafa', fontWeight: 'bold' }}>
                     <Table.Summary.Cell>Tổng cộng ({pageData.length} dịch vụ)</Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">{formatNumber(totalCount)}</Table.Summary.Cell>
+                    <Table.Summary.Cell align="center">{formatNumber(totalCount)}</Table.Summary.Cell>
                     <Table.Summary.Cell align="right">
                       <span style={{ color: '#52c41a' }}>{formatCurrency(totalRevenue)}</span>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">
-                      {formatCurrency(totalCount > 0 ? totalRevenue / totalCount : 0)}
                     </Table.Summary.Cell>
                   </Table.Summary.Row>
                 );
@@ -1038,7 +1030,7 @@ const RevenueStatistics = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          {/* <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
                 title="Trung bình/lượt"
@@ -1048,7 +1040,7 @@ const RevenueStatistics = () => {
                 valueStyle={{ color: '#fa8c16' }}
               />
             </Card>
-          </Col>
+          </Col> */}
         </Row>
 
       <Tabs items={getTabItems()} />
