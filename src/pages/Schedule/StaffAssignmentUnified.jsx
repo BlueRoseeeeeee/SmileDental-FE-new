@@ -1379,7 +1379,12 @@ const StaffAssignmentUnified = () => {
   const handleSelectStaffForReplacement = async (staff) => {
     // 🔥 Check if staff has multiple roles
     const assignmentRoles = staff.assignmentRoles || [staff.assignmentRole || staff.role];
-    const validRoles = assignmentRoles.filter(r => r === 'dentist' || r === 'nurse');
+    const validRoles = assignmentRoles.filter(r => r === 'dentist' || r === 'nurse' || r === 'doctor');
+    
+    if (validRoles.length === 0) {
+      toast.error(`Nhân viên ${staff.displayName || staff.fullName} không có vai trò hợp lệ (dentist, doctor, hoặc nurse)`);
+      return;
+    }
     
     if (validRoles.length > 1) {
       // Multi-role user → Show role selection modal
@@ -1387,7 +1392,7 @@ const StaffAssignmentUnified = () => {
       setShowRoleSelectionModal(true);
     } else {
       // Single role → Directly show schedule
-      const role = validRoles[0] || staff.assignmentRole || staff.role;
+      const role = validRoles[0];
       await openStaffScheduleModal(staff, role);
     }
   };
@@ -1502,7 +1507,7 @@ const StaffAssignmentUnified = () => {
       if (selectedStaffForReplacement) {
         fetchStaffCalendar(
           selectedStaffForReplacement._id,
-          selectedStaffForReplacement.assignmentRole || selectedStaffForReplacement.role,
+          selectedRoleForViewing,
           targetPage
         );
       }
@@ -1525,7 +1530,7 @@ const StaffAssignmentUnified = () => {
     if (selectedStaffForReplacement) {
       fetchStaffCalendar(
         selectedStaffForReplacement._id,
-        selectedStaffForReplacement.assignmentRole || selectedStaffForReplacement.role,
+        selectedRoleForViewing,
         targetPage
       );
     }
@@ -1552,7 +1557,7 @@ const StaffAssignmentUnified = () => {
     if (selectedStaffForReplacement) {
       fetchStaffCalendar(
         selectedStaffForReplacement._id,
-        selectedStaffForReplacement.assignmentRole || selectedStaffForReplacement.role,
+        selectedRoleForViewing,
         monthDiff
       );
     }
@@ -1648,7 +1653,7 @@ const StaffAssignmentUnified = () => {
         shiftName: shiftName
       };
       
-      const role = selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role;
+      const role = selectedRoleForViewing;
       
       let response;
       if (role === 'dentist' || role === 'doctor') {
@@ -2204,8 +2209,7 @@ const StaffAssignmentUnified = () => {
       // Determine the actual role to replace based on selected slots
       const currentRole = rolesInSelectedSlots.size === 1 
         ? Array.from(rolesInSelectedSlots)[0]
-        : (selectedStaffForReplacement?.assignmentRole || 
-           (selectedStaffForReplacement?.role === 'doctor' ? 'dentist' : selectedStaffForReplacement?.role));
+        : selectedRoleForViewing;
 
       console.log(`✅ Replacing ${selectedStaffForReplacement.displayName} as ${currentRole}`);
 
@@ -2413,7 +2417,7 @@ const StaffAssignmentUnified = () => {
         // Refresh calendar data
         await fetchStaffCalendar(
           selectedStaffForReplacement._id,
-          selectedStaffForReplacement.role
+          selectedRoleForViewing
         );
         console.log('✅ Calendar data refreshed');
         
@@ -2480,7 +2484,7 @@ const StaffAssignmentUnified = () => {
         return;
       }
       
-      const role = selectedStaffForReplacement.assignmentRole || selectedStaffForReplacement.role;
+      const role = selectedRoleForViewing;
       
       console.log('🔄 Replacing staff in slots:', {
         totalEntries: selectedSlotsForReplacement.length,
@@ -5063,7 +5067,7 @@ const StaffAssignmentUnified = () => {
                       <Card size="small" style={{ backgroundColor: '#f5f5f5' }}>
                         <Space direction="vertical" size={0}>
                           <Text><strong>nhân viên:</strong> {selectedStaffForReplacement?.displayName || 'Chưa cập nhật'}</Text>
-                          <Text><strong>Vai trò:</strong> {getRoleLabel(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}</Text>
+                          <Text><strong>Vai trò:</strong> {getRoleLabel(selectedRoleForViewing)}</Text>
                           {selectedStaffForReplacement?.employeeCode && (
                             <Text><strong>Mã NV:</strong> {selectedStaffForReplacement.employeeCode}</Text>
                           )}
@@ -5458,8 +5462,8 @@ const StaffAssignmentUnified = () => {
                                     <Space direction="vertical" style={{ width: '100%' }}>
                                       <Text><strong>Số slot đã chọn:</strong> {totalSelectedSlotCountForStaff}</Text>
                                       <Text><strong>nhân viên hiện tại:</strong> {selectedStaffForReplacement ? (selectedStaffForReplacement.displayName || buildStaffDisplayName(selectedStaffForReplacement)) : 'Chưa chọn'}</Text>
-                                      <Text><strong>Vai trò:</strong> <Tag style={{fontSize:12}} color={getRoleTagColor(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}>
-                                        {getRoleLabel(selectedStaffForReplacement?.assignmentRole || selectedStaffForReplacement?.role)}
+                                      <Text><strong>Vai trò:</strong> <Tag style={{fontSize:12}} color={getRoleTagColor(selectedRoleForViewing)}>
+                                        {getRoleLabel(selectedRoleForViewing)}
                                       </Tag></Text>
                                     </Space>
                                   </Card>
@@ -5590,8 +5594,8 @@ const StaffAssignmentUnified = () => {
                                         }
                                       </Select>
                                       
-                                      {/* Remove Staff Button - chỉ hiển thị khi có slot đã phân công */}
-                                      {assignedSlotCountForStaff > 0 && (
+                                      {/* Remove Staff Button - chỉ hiển thị khi có slot đã chọn */}
+                                      {totalSelectedSlotCountForStaff > 0 && (
                                         <Button 
                                           danger
                                           block 
@@ -5602,7 +5606,7 @@ const StaffAssignmentUnified = () => {
                                           disabled={totalSelectedSlotCountForStaff === 0}
                                           icon={<DeleteOutlined />}
                                         >
-                                          Xóa nhân viên khỏi {assignedSlotCountForStaff} slot đã phân công
+                                          Xóa nhân viên khỏi {totalSelectedSlotCountForStaff} slot đã chọn
                                         </Button>
                                       )}
 
@@ -5653,14 +5657,14 @@ const StaffAssignmentUnified = () => {
                       
                       <Space direction="vertical" style={{ width: '100%' }} size="middle">
                         {(pendingStaffForRoleSelection.assignmentRoles || [pendingStaffForRoleSelection.assignmentRole || pendingStaffForRoleSelection.role])
-                          .filter(r => r === 'dentist' || r === 'nurse')
+                          .filter(r => r === 'dentist' || r === 'nurse' || r === 'doctor')
                           .map(role => (
                             <Button
                               key={role}
                               type="primary"
                               size="large"
                               block
-                              icon={role === 'dentist' ? <UserOutlined /> : <MedicineBoxOutlined />}
+                              icon={role === 'dentist' || role === 'doctor' ? <UserOutlined /> : <MedicineBoxOutlined />}
                               onClick={async () => {
                                 setShowRoleSelectionModal(false);
                                 await openStaffScheduleModal(pendingStaffForRoleSelection, role);
