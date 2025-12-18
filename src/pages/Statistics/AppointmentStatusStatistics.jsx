@@ -415,7 +415,7 @@ const AppointmentStatusStatistics = () => {
           <Row gutter={16} style={{ marginBottom: 24 }}>
             {/* Pie Chart - Status Distribution */}
             <Col xs={24} lg={10}>
-              <Card title="📊 Phân bố theo trạng thái" style={{ height: '100%' }}>
+              <Card title=" Phân bố theo trạng thái" style={{ height: '100%' }}>
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
@@ -456,7 +456,7 @@ const AppointmentStatusStatistics = () => {
 
             {/* Bar Chart - Timeline */}
             <Col xs={24} lg={14}>
-              <Card title="📈 Xu hướng theo thời gian" style={{ height: '100%' }}>
+              <Card title="Xu hướng theo thời gian" style={{ height: '100%' }}>
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={timelineChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -477,7 +477,7 @@ const AppointmentStatusStatistics = () => {
           {data.timeline && data.timeline.length > 1 && (
             <Row gutter={16} style={{ marginBottom: 24 }}>
               <Col xs={24}>
-                <Card title="📉 Tỷ lệ hoàn thành theo thời gian">
+                <Card title="Tỷ lệ hoàn thành theo thời gian">
                   <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={timelineChartData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -501,7 +501,7 @@ const AppointmentStatusStatistics = () => {
           {/* Dentist Breakdown Table */}
           {data.byDentist && data.byDentist.length > 0 && (
             <Card 
-              title="👨‍⚕️ Thống kê theo Nha sĩ"
+              title=" Thống kê theo Nha sĩ"
               extra={
                 <Button 
                   icon={<DownloadOutlined />} 
