@@ -34,6 +34,19 @@ const BookingChannelStatistics = () => {
   const [groupBy, setGroupBy] = useState('day');
   const [dateRange, setDateRange] = useState([dayjs().subtract(30, 'days'), dayjs()]);
 
+  // Format date for display based on groupBy
+  const formatDate = (date) => {
+    if (!date) return '';
+    if (groupBy === 'day') {
+      return dayjs(date).format('DD/MM');
+    } else if (groupBy === 'month') {
+      return dayjs(date).format('MM/YYYY');
+    } else if (groupBy === 'year') {
+      return dayjs(date).format('YYYY');
+    }
+    return date;
+  };
+
   // Không auto-call khi thay đổi filters - chỉ call khi click button
   const fetchData = async () => {
     if (loading) return; // Prevent multiple calls
@@ -381,9 +394,12 @@ const BookingChannelStatistics = () => {
                   textAnchor="end"
                   height={80}
                   interval={Math.floor(data.trend.length / 10)}
+                  tickFormatter={formatDate}
                 />
                 <YAxis />
-                <Tooltip />
+                <Tooltip 
+                  labelFormatter={(label) => formatDate(label)}
+                />
                 <Legend />
                 <Line 
                   type="monotone" 
