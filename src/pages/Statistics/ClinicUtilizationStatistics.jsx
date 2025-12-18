@@ -531,7 +531,7 @@ const ClinicUtilizationStatistics = () => {
           <Row gutter={16} style={{ marginBottom: 24 }}>
             {/* Bar Chart */}
             <Col xs={24} lg={16}>
-              <Card title="📊 Thống kê theo phòng">
+              <Card title="Thống kê theo phòng">
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={barChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -548,7 +548,7 @@ const ClinicUtilizationStatistics = () => {
 
             {/* Pie Chart */}
             <Col xs={24} lg={8}>
-              <Card title="📈 Tỷ lệ tổng quan">
+              <Card title="Tỷ lệ tổng quan">
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
@@ -575,7 +575,7 @@ const ClinicUtilizationStatistics = () => {
           {/* Shift Analysis */}
           <Row gutter={16} style={{ marginBottom: 24 }}>
             <Col xs={24}>
-              <Card title="⏰ Phân tích theo ca làm việc">
+              <Card title=" Phân tích theo ca làm việc">
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={shiftChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -597,7 +597,7 @@ const ClinicUtilizationStatistics = () => {
           {data.timeline && data.timeline.length > 1 && (
             <Row gutter={16} style={{ marginBottom: 24 }}>
               <Col xs={24}>
-                <Card title="📉 Xu hướng theo thời gian">
+                <Card title=" Xu hướng theo thời gian">
                   <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={data.timeline}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -626,7 +626,7 @@ const ClinicUtilizationStatistics = () => {
 
           {/* Detail Table */}
           <Card 
-            title="📋 Chi tiết theo phòng"
+            title=" Chi tiết theo phòng"
             extra={
               <Button 
                 icon={<DownloadOutlined />} 
