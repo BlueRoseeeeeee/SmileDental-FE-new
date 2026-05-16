@@ -1,13 +1,13 @@
 /*
  * Compatibility API wrapper
  * Many legacy services import './api' — create a small default axios instance
- * HARDCODED to production backend
+ * Defaults to local backend config.
  */
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { API_URLS } from '../config/apiConfig.js';
 
-// ⚠️ HARDCODED - Directly pointing to production backend
-const API_BASE_URL = 'https://be.smilecare.io.vn/api';
+const API_BASE_URL = API_URLS.api;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -18,7 +18,7 @@ const api = axios.create({
 });
 
 // Log để debug
-console.log('🔧 [API Config] Hardcoded baseURL:', API_BASE_URL);
+console.log('🔧 [API Config] baseURL:', API_BASE_URL);
 
 // Request interceptor: add token if present in localStorage
 api.interceptors.request.use(

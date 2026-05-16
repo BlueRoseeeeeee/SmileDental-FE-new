@@ -1,7 +1,7 @@
 import axios from 'axios';
+import { API_URLS } from '../config/apiConfig.js';
 
-// ⚠️ HARDCODED - Production backend URL
-const RECORD_API_BASE = 'https://be.smilecare.io.vn';
+const RECORD_API_BASE = API_URLS.record;
 
 // Create API instance with base URL
 const api = axios.create({

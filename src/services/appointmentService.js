@@ -3,9 +3,9 @@
  * Appointment Service - Quản lý đặt lịch khám
  */
 import axios from 'axios';
+import { API_URLS } from '../config/apiConfig.js';
 
-// ⚠️ HARDCODED - Production backend URL
-const APPOINTMENT_API_URL = 'https://be.smilecare.io.vn/api';
+const APPOINTMENT_API_URL = API_URLS.appointment;
 
 // Create axios instance for appointment service
 const appointmentApi = axios.create({

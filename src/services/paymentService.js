@@ -3,9 +3,9 @@
  * Payment Service - Quản lý thanh toán
  */
 import axios from 'axios';
+import { API_URLS } from '../config/apiConfig.js';
 
-// ⚠️ HARDCODED - Production backend URL
-const PAYMENT_API_URL = 'https://be.smilecare.io.vn/api';
+const PAYMENT_API_URL = API_URLS.payment;
 
 // Create axios instance for payment service
 const paymentApi = axios.create({

@@ -4,74 +4,62 @@
  */
 import axios from 'axios';
 import { toast } from './toastService.js';
+import { API_URLS } from '../config/apiConfig.js';
 
-// ⚠️ HARDCODED Configuration - Directly pointing to production backend
 // Configuration cho các microservices
 const MICROSERVICES_CONFIG = {
   auth: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.auth,
     timeout: 30000, // 30s
   },
   room: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.room,
     timeout: 30000, // 30s
   },
   service: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.service,
     timeout: 30000, // 30s
   },
   user: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.user,
     timeout: 30000, // 30s
   },
   schedule: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.schedule,
     timeout: 30000, // 30s
   },
   appointment: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.appointment,
     timeout: 30000, // 30s
   },
   payment: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.payment,
     timeout: 30000, // 30s
   },
   medicine: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.medicine,
     timeout: 30000, // 30s
   },
   record: {
-    baseURL: 'https://be.smilecare.io.vn',
+    baseURL: API_URLS.record,
     timeout: 30000, // 30s
   },
   invoice: {
-    baseURL: 'https://be.smilecare.io.vn/api/invoice',
+    baseURL: API_URLS.invoice,
     timeout: 30000, // 30s
   },
   statistic: {
-    baseURL: 'https://be.smilecare.io.vn/api',
+    baseURL: API_URLS.statistic,
     timeout: 30000, // 30s
   },
   chatbot: {
-    baseURL: 'https://be.smilecare.io.vn/api',
-    timeout: 30000, // 30s
-  },
-  statistic: {
-    baseURL: import.meta.env.VITE_STATISTIC_API_URL || 'http://localhost:3011/api',
-    timeout: 30000, // 30s
-  },
-  appointment: {
-    baseURL: import.meta.env.VITE_APPOINTMENT_API_URL || 'http://localhost:3006/api',
-    timeout: 30000, // 30s
-  },
-  chatbot: {
-    baseURL: import.meta.env.VITE_CHATBOT_API_URL || 'http://localhost:3013/api',
+    baseURL: API_URLS.chatbot,
     timeout: 30000, // 30s
   }
 };
 
 // Log để debug
-console.log('🔧 [apiFactory] Hardcoded baseURLs:', Object.fromEntries(
+console.log('🔧 [apiFactory] baseURLs:', Object.fromEntries(
   Object.entries(MICROSERVICES_CONFIG).map(([k, v]) => [k, v.baseURL])
 ));
 

@@ -1,11 +1,11 @@
 import axios from 'axios';
+import { API_URLS } from '../config/apiConfig.js';
 
-// ⚠️ HARDCODED - Production backend URLs
 // Use record-service URL for queue operations (call, complete, cancel)
-const RECORD_SERVICE_URL = 'https://be.smilecare.io.vn';
+const RECORD_SERVICE_URL = API_URLS.record;
 
 // Use appointment-service URL for queue viewing (getQueue, getQueueStats)
-const APPOINTMENT_SERVICE_URL = 'https://be.smilecare.io.vn';
+const APPOINTMENT_SERVICE_URL = API_URLS.appointmentService;
 
 // Create axios instance for record-service
 const recordApi = axios.create({

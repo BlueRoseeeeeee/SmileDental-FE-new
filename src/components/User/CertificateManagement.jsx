@@ -33,9 +33,10 @@ import {
 } from '@ant-design/icons';
 import { userService } from '../../services/userService.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { API_URLS } from '../../config/apiConfig.js';
 
 // Backend URL for certificate images
-const BACKEND_URL = 'https://be.smilecare.io.vn';
+const BACKEND_URL = API_URLS.userService;
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
